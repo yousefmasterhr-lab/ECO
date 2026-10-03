@@ -326,3 +326,16 @@ Whenever a global directive or styling standard is issued (including typography,
   - Provide a sanitized `.env.example` template for development setup.
   - The project root must maintain an authoritative `.gitignore` that permanently excludes `.env`, `node_modules/`, `dist/`, `*.log`, and temporary scratch or diagnostic scripts.
 
+---
+
+### Rule 35: Distinction Between Authentic Database Records and Experimental Sandbox Features (التمييز الصارم بين البيانات الحقيقية والمحاكاة التجريبية)
+- **Authentic Database Binding (ربط البيانات الحقيقية المعتمدة):**
+  - Any module with active operational tables in SQL Server (such as Chart of Accounts `dbo.Level5_View`, Ledger Postings `dbo.GeneralLedger_Details`, Approved Suppliers `dbo.Suppliers`, and Treasury Accounts `1201001-1202004`) must render 100% genuine database values without synthetic padding or artificial inflation.
+- **Prominent Experimental Badging (وسم الخصائص التجريبية بوضوح):**
+  - When engineering advanced upcoming modules whose database tables are provisioned in schema but currently contain zero production records (e.g., Phase 4 Engineering Contracts `CTR-*`, Progressive Extracts `EXT-*`, Billing Sandbox, Cheques Portfolio, or Analytical Cost-Center breakdowns):
+    1. Full interactive UI workflows and financial tokens must remain active and functional.
+    2. Header banners must prominently display amber preview badges: `تجريبي (بيئة محاكاة)`.
+    3. KPI stat cards, metric summaries, and tab selectors must be explicitly tagged with `(تجريبي) / (Preview)`.
+    4. Users must never be left in ambiguity regarding whether data originates from live ledger postings or an interactive preview sandbox.
+
+

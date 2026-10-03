@@ -116,6 +116,9 @@ export const ExtractsModule: React.FC = () => {
               <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#059669]/15 text-[#059669] dark:text-[#34D399] border border-[#059669]/30">
                 {t('محرك المستخلصات الجارية والختامية', 'Progressive Billings Engine')}
               </span>
+              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30">
+                {t('تجريبي (بيئة محاكاة المستخلصات)', 'Preview (Sandbox Extracts)')}
+              </span>
               <span className="text-xs text-[#5C665E] dark:text-[#8FA392]">
                 {t('حصر الكميات، الاستقطاعات التعاقدية، وتكاليف المشروعات (WIP)', 'Cumulative Progress, Deductions & Job Costing')}
               </span>
@@ -151,7 +154,10 @@ export const ExtractsModule: React.FC = () => {
         {/* Owner Extracts */}
         <div className="p-5 rounded-2xl border border-[#E0D9CB] dark:border-[#243628] bg-[#FBF9F5] dark:bg-[#141E16] space-y-2">
           <div className="flex items-center justify-between text-[#5C665E] dark:text-[#8FA392] text-xs font-bold">
-            <span>{t('إجمالي مستخلصات المالك المعتمدة', 'Approved Owner Extracts')}</span>
+            <span className="flex items-center gap-1">
+              <span>{t('إجمالي مستخلصات المالك المعتمدة', 'Approved Owner Extracts')}</span>
+              <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold">({t('تجريبي', 'Preview')})</span>
+            </span>
             <Building className="w-4 h-4 text-[#059669]" />
           </div>
           <div className="whitespace-nowrap">
@@ -162,14 +168,17 @@ export const ExtractsModule: React.FC = () => {
             />
           </div>
           <p className="text-[11px] text-[#5C665E] dark:text-[#8FA392]">
-            {extracts.filter(e => e.extractType === 'OWNER').length} {t('مستخلص معتمد لجهات الإسناد', 'owner extracts')}
+            {extracts.filter(e => e.extractType === 'OWNER').length} {t('مستخلص معتمد لجهات الإسناد (تجريبي)', 'owner extracts (preview)')}
           </p>
         </div>
 
         {/* Subcontractor Extracts */}
         <div className="p-5 rounded-2xl border border-[#E0D9CB] dark:border-[#243628] bg-[#FBF9F5] dark:bg-[#141E16] space-y-2">
           <div className="flex items-center justify-between text-[#5C665E] dark:text-[#8FA392] text-xs font-bold">
-            <span>{t('مستخلصات مقاولي الباطن المعتمدة', 'Subcontractor Extracts')}</span>
+            <span className="flex items-center gap-1">
+              <span>{t('مستخلصات مقاولي الباطن المعتمدة', 'Subcontractor Extracts')}</span>
+              <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold">({t('تجريبي', 'Preview')})</span>
+            </span>
             <HardHat className="w-4 h-4 text-[#D97706]" />
           </div>
           <div className="whitespace-nowrap">
@@ -180,14 +189,17 @@ export const ExtractsModule: React.FC = () => {
             />
           </div>
           <p className="text-[11px] text-[#5C665E] dark:text-[#8FA392]">
-            {extracts.filter(e => e.extractType === 'SUBCONTRACTOR').length} {t('مستخلص لحزم الأعمال التخصصية', 'trade package extracts')}
+            {extracts.filter(e => e.extractType === 'SUBCONTRACTOR').length} {t('مستخلص لحزم الأعمال التخصصية (تجريبي)', 'trade package extracts (preview)')}
           </p>
         </div>
 
         {/* Retention Guarantees Held */}
         <div className="p-5 rounded-2xl border border-[#E0D9CB] dark:border-[#243628] bg-[#FBF9F5] dark:bg-[#141E16] space-y-2">
           <div className="flex items-center justify-between text-[#5C665E] dark:text-[#8FA392] text-xs font-bold">
-            <span>{t('أمانات ضمان الأعمال المحتجزة (5%)', 'Retention Guarantees (5%)')}</span>
+            <span className="flex items-center gap-1">
+              <span>{t('أمانات ضمان الأعمال المحتجزة (5%)', 'Retention Guarantees (5%)')}</span>
+              <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold">({t('تجريبي', 'Preview')})</span>
+            </span>
             <ShieldCheck className="w-4 h-4 text-[#3B82F6]" />
           </div>
           <div className="whitespace-nowrap">
@@ -205,7 +217,10 @@ export const ExtractsModule: React.FC = () => {
         {/* Net Payables in View */}
         <div className="p-5 rounded-2xl border border-[#E0D9CB] dark:border-[#243628] bg-[#FBF9F5] dark:bg-[#141E16] space-y-2">
           <div className="flex items-center justify-between text-[#5C665E] dark:text-[#8FA392] text-xs font-bold">
-            <span>{t('صافي المستحق للصرف بالجدول', 'Net Payable in View')}</span>
+            <span className="flex items-center gap-1">
+              <span>{t('صافي المستحق للصرف بالجدول', 'Net Payable in View')}</span>
+              <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold">({t('تجريبي', 'Preview')})</span>
+            </span>
             <Coins className="w-4 h-4 text-[#059669]" />
           </div>
           <div className="whitespace-nowrap">
@@ -230,7 +245,7 @@ export const ExtractsModule: React.FC = () => {
             }`}
           >
             <Building className="w-4 h-4" />
-            <span>{t('مستخلصات المالك (Owner Extracts)', 'Owner Extracts')}</span>
+            <span>{t('مستخلصات المالك (تجريبي)', 'Owner Extracts (Preview)')}</span>
             <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/20">
               {extracts.filter(e => e.extractType === 'OWNER').length}
             </span>
@@ -245,7 +260,7 @@ export const ExtractsModule: React.FC = () => {
             }`}
           >
             <HardHat className="w-4 h-4" />
-            <span>{t('مستخلصات مقاولي الباطن (Subcontractors)', 'Subcontractor Extracts')}</span>
+            <span>{t('مستخلصات مقاولي الباطن (تجريبي)', 'Subcontractor Extracts (Preview)')}</span>
             <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/20">
               {extracts.filter(e => e.extractType === 'SUBCONTRACTOR').length}
             </span>
@@ -260,7 +275,7 @@ export const ExtractsModule: React.FC = () => {
             }`}
           >
             <BarChart3 className="w-4 h-4" />
-            <span>{t('محاسبة تكاليف المشروعات (WIP Job Costing)', 'WIP Job Costing & Margins')}</span>
+            <span>{t('محاسبة تكاليف المشروعات (WIP Job Costing - تجريبي)', 'WIP Job Costing & Margins (Preview)')}</span>
           </button>
         </div>
 

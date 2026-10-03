@@ -80,6 +80,9 @@ export const ContractsModule: React.FC = () => {
               <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#059669]/15 text-[#059669] dark:text-[#34D399] border border-[#059669]/30">
                 {t('عقود وارتباطات المشروعات', 'Contracts & Commitments')}
               </span>
+              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30">
+                {t('تجريبي (بيئة محاكاة العقود)', 'Preview (Sandbox Contracts)')}
+              </span>
               <span className="text-xs text-[#5C665E] dark:text-[#8FA392]">
                 {t('المرحلة الرابعة: المقاولات والمستخلصات', 'Phase 4: Contracting & Extracts')}
               </span>
@@ -115,21 +118,27 @@ export const ContractsModule: React.FC = () => {
         {/* Total Contract Value */}
         <div className="p-5 rounded-2xl border border-[#E0D9CB] dark:border-[#243628] bg-[#FBF9F5] dark:bg-[#141E16] space-y-2">
           <div className="flex items-center justify-between text-[#5C665E] dark:text-[#8FA392] text-xs font-bold">
-            <span>{t('إجمالي قيمة العقود النشطة', 'Total Active Contracts')}</span>
+            <span className="flex items-center gap-1">
+              <span>{t('إجمالي قيمة العقود النشطة', 'Total Active Contracts')}</span>
+              <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold">({t('تجريبي', 'Preview')})</span>
+            </span>
             <Coins className="w-4 h-4 text-[#059669]" />
           </div>
           <div className="whitespace-nowrap">
             <FinancialToken amount={totalValue} size="xl" />
           </div>
           <p className="text-[11px] text-[#5C665E] dark:text-[#8FA392]">
-            {filteredContracts.length} {t('عقد هندسي مسجل', 'registered contracts')}
+            {filteredContracts.length} {t('عقد هندسي مسجل (تجريبي)', 'registered contracts (preview)')}
           </p>
         </div>
 
         {/* Billed to Date */}
         <div className="p-5 rounded-2xl border border-[#E0D9CB] dark:border-[#243628] bg-[#FBF9F5] dark:bg-[#141E16] space-y-2">
           <div className="flex items-center justify-between text-[#5C665E] dark:text-[#8FA392] text-xs font-bold">
-            <span>{t('الأعمال المستخلصة حتى تاريخه', 'Billed to Date')}</span>
+            <span className="flex items-center gap-1">
+              <span>{t('الأعمال المستخلصة حتى تاريخه', 'Billed to Date')}</span>
+              <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold">({t('تجريبي', 'Preview')})</span>
+            </span>
             <TrendingUp className="w-4 h-4 text-[#059669]" />
           </div>
           <div className="whitespace-nowrap">
@@ -155,7 +164,10 @@ export const ContractsModule: React.FC = () => {
         {/* Remaining Backlog */}
         <div className="p-5 rounded-2xl border border-[#E0D9CB] dark:border-[#243628] bg-[#FBF9F5] dark:bg-[#141E16] space-y-2">
           <div className="flex items-center justify-between text-[#5C665E] dark:text-[#8FA392] text-xs font-bold">
-            <span>{t('القيمة المتبقية (Backlog)', 'Remaining Backlog')}</span>
+            <span className="flex items-center gap-1">
+              <span>{t('القيمة المتبقية (Backlog)', 'Remaining Backlog')}</span>
+              <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold">({t('تجريبي', 'Preview')})</span>
+            </span>
             <Percent className="w-4 h-4 text-[#D97706]" />
           </div>
           <div className="whitespace-nowrap">
@@ -173,7 +185,10 @@ export const ContractsModule: React.FC = () => {
         {/* Contractual Terms Standard */}
         <div className="p-5 rounded-2xl border border-[#E0D9CB] dark:border-[#243628] bg-[#FBF9F5] dark:bg-[#141E16] space-y-2">
           <div className="flex items-center justify-between text-[#5C665E] dark:text-[#8FA392] text-xs font-bold">
-            <span>{t('الشروط التعاقدية المعيارية', 'Standard Terms')}</span>
+            <span className="flex items-center gap-1">
+              <span>{t('الشروط التعاقدية المعيارية', 'Standard Terms')}</span>
+              <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold">({t('تجريبي', 'Preview')})</span>
+            </span>
             <CheckCircle2 className="w-4 h-4 text-[#059669]" />
           </div>
           <div className="text-xs text-[#1A241C] dark:text-[#F3EFE6] space-y-1">
@@ -205,7 +220,7 @@ export const ContractsModule: React.FC = () => {
             }`}
           >
             <Building className="w-4 h-4" />
-            <span>{t('عقود العملاء والملاك (Client Contracts)', 'Owner / Client Contracts')}</span>
+            <span>{t('عقود العملاء والملاك (تجريبي)', 'Owner / Client Contracts (Preview)')}</span>
             <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/20">
               {contracts.filter(c => c.contractType === 'CLIENT').length}
             </span>
@@ -220,7 +235,7 @@ export const ContractsModule: React.FC = () => {
             }`}
           >
             <HardHat className="w-4 h-4" />
-            <span>{t('عقود مقاولي الباطن (Subcontractor Packages)', 'Subcontractor Packages')}</span>
+            <span>{t('عقود مقاولي الباطن (تجريبي)', 'Subcontractor Packages (Preview)')}</span>
             <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/20">
               {contracts.filter(c => c.contractType === 'SUBCONTRACTOR').length}
             </span>
