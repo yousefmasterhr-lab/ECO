@@ -38,6 +38,8 @@ pnpm-debug.log*
 # Scratch & Inspection Scripts
 scratch*
 *.tmp
+old idea/
+apps erp 2023.txt
 
 # Operating System Files
 .DS_Store
