@@ -12,6 +12,7 @@ import {
   ChequeItem,
   ChequePayload,
   JournalEntryItem,
+  JournalLineItem,
   JournalPayload,
   ItemSKU,
   ClientRecord,
@@ -381,6 +382,19 @@ export class LocalSqlAdapter implements IFinancialRepository {
       }
     } catch (err: any) {
       console.warn('[LocalSqlAdapter] getJournals API error:', err.message);
+    }
+    return [];
+  }
+
+  async getJournalLines(noteNo: number): Promise<JournalLineItem[]> {
+    try {
+      const res = await fetch(`/api/finance/journals/${noteNo}/lines`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) return data;
+      }
+    } catch (err: any) {
+      console.warn(`[LocalSqlAdapter] getJournalLines API error for Note #${noteNo}:`, err.message);
     }
     return [];
   }

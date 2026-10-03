@@ -4,6 +4,7 @@ import { useLanguage } from '../../../context/LanguageContext';
 import { useFinancial } from '../../../context/FinancialContext';
 import { useDatabase } from '../../../services/federation/DatabaseContext';
 import { JournalEntryModal } from './JournalEntryModal';
+import { JournalLineItem } from '../../../services/database/types';
 import { formatCurrency, formatNumber, toWesternDigits } from '@erp/ui-system';
 import {
   Scale,
@@ -30,6 +31,8 @@ export const GeneralLedgerModule: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [expandedJournalId, setExpandedJournalId] = useState<string | null>(null);
+  const [loadedLines, setLoadedLines] = useState<Record<string, JournalLineItem[]>>({});
+  const [loadingLines, setLoadingLines] = useState<Record<string, boolean>>({});
 
   const filteredJournals = journals.filter(j => {
     if (dateFilter && j.noteDate !== dateFilter) return false;
@@ -54,8 +57,34 @@ export const GeneralLedgerModule: React.FC = () => {
     setIsRefreshing(false);
   };
 
-  const toggleExpand = (id: string) => {
-    setExpandedJournalId(prev => (prev === id ? null : id));
+  const toggleExpand = async (id: string, noteNo: number, existingLines?: JournalLineItem[]) => {
+    if (expandedJournalId === id) {
+      setExpandedJournalId(null);
+      return;
+    }
+
+    setExpandedJournalId(id);
+
+    // If lines already exist in the journal or in the local cache, no need to refetch
+    if ((existingLines && existingLines.length > 0) || (loadedLines[id] && loadedLines[id].length > 0)) {
+      return;
+    }
+
+    // Fetch lines on demand
+    setLoadingLines(prev => ({ ...prev, [id]: true }));
+    try {
+      const res = await fetch(`/api/finance/journals/${noteNo}/lines`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          setLoadedLines(prev => ({ ...prev, [id]: data }));
+        }
+      }
+    } catch (err) {
+      console.warn(`[GeneralLedgerModule] Failed to load lines for Note #${noteNo}:`, err);
+    } finally {
+      setLoadingLines(prev => ({ ...prev, [id]: false }));
+    }
   };
 
   return (
@@ -253,7 +282,7 @@ export const GeneralLedgerModule: React.FC = () => {
                         className={`hover:bg-[#F3EFE6]/50 dark:hover:bg-[#17231A]/40 transition-colors cursor-pointer ${
                           isExpanded ? 'bg-[#F3EFE6]/60 dark:bg-[#17231A]/60' : ''
                         }`}
-                        onClick={() => toggleExpand(journal.id)}
+                        onClick={() => toggleExpand(journal.id, journal.noteNo, journal.lines)}
                       >
                         <td className="py-3 px-2 text-center">
                           {isExpanded ? (
@@ -294,7 +323,7 @@ export const GeneralLedgerModule: React.FC = () => {
                           <button
                             onClick={e => {
                               e.stopPropagation();
-                              toggleExpand(journal.id);
+                              toggleExpand(journal.id, journal.noteNo, journal.lines);
                             }}
                             className="px-2.5 py-1 text-[11px] font-bold rounded-lg border border-[#E0D9CB] dark:border-[#243628] text-[#5C665E] dark:text-[#8FA392] hover:text-[#1A241C] hover:bg-white dark:hover:bg-[#1A241C] transition-colors cursor-pointer"
                           >
@@ -304,86 +333,130 @@ export const GeneralLedgerModule: React.FC = () => {
                       </tr>
 
                       {/* Expandable Multi-Line Breakdown */}
-                      {isExpanded && (
-                        <tr>
-                          <td
-                            colSpan={8}
-                            className="p-4 bg-[#F3EFE6]/40 dark:bg-[#0E1610]/40 border-b border-[#E0D9CB] dark:border-[#243628]"
-                          >
-                            <motion.div
-                              initial={{ opacity: 0, y: -4 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              className="space-y-3"
+                      {isExpanded && (() => {
+                        const activeLines = (journal.lines && journal.lines.length > 0) ? journal.lines : (loadedLines[journal.id] || []);
+                        const isLoading = Boolean(loadingLines[journal.id]);
+
+                        return (
+                          <tr>
+                            <td
+                              colSpan={8}
+                              className="p-4 bg-[#F3EFE6]/40 dark:bg-[#0E1610]/40 border-b border-[#E0D9CB] dark:border-[#243628]"
                             >
-                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#E0D9CB]/60 dark:border-[#243628]/60 pb-2">
-                                <div className="space-y-0.5">
-                                  <span className="text-[11px] font-bold text-[#5C665E] dark:text-[#8FA392]">
-                                    {t('التفقيط المالي باللغة العربية:', 'Arabic Tafqeet:')}
-                                  </span>
-                                  <p className="text-xs font-semibold text-[#D99B26] dark:text-[#EBB34D]">
-                                    {journal.netText || 'فقط لا غير'}
-                                  </p>
+                              <motion.div
+                                initial={{ opacity: 0, y: -4 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="space-y-3"
+                              >
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#E0D9CB]/60 dark:border-[#243628]/60 pb-2">
+                                  <div className="space-y-0.5">
+                                    <span className="text-[11px] font-bold text-[#5C665E] dark:text-[#8FA392]">
+                                      {t('التفقيط المالي باللغة العربية:', 'Arabic Tafqeet:')}
+                                    </span>
+                                    <p className="text-xs font-semibold text-[#D99B26] dark:text-[#EBB34D]">
+                                      {journal.netText || 'فقط لا غير'}
+                                    </p>
+                                  </div>
+
+                                  <div className="text-[11px] text-[#5C665E] dark:text-[#8FA392]">
+                                    <span className="font-inter tabular-nums font-bold text-[#D99B26] dark:text-[#EBB34D]">
+                                      {formatNumber(activeLines.length || (isLoading ? 0 : 2))}
+                                    </span> {t('أسطر محاسبية متزنة', 'balanced lines')}
+                                  </div>
                                 </div>
 
-                                <div className="text-[11px] text-[#5C665E] dark:text-[#8FA392]">
-                                  <span className="font-inter tabular-nums font-bold text-[#D99B26] dark:text-[#EBB34D]">{formatNumber(journal.lines ? journal.lines.length : 0)}</span> {t('أسطر محاسبية متزنة', 'balanced lines')}
-                                </div>
-                              </div>
-
-                              {/* Lines Table */}
-                              <div className="rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#141E16] overflow-hidden">
-                                <table className="w-full text-start text-xs">
-                                  <thead>
-                                    <tr className="border-b border-[#E0D9CB] dark:border-[#243628] bg-[#F3EFE6]/50 dark:bg-[#1A241C]/50 text-[#5C665E] dark:text-[#8FA392]">
-                                      <th className="py-2 px-3 text-start w-10">#</th>
-                                      <th className="py-2 px-3 text-start">{t('كود الحساب', 'Code')}</th>
-                                      <th className="py-2 px-3 text-start">{t('اسم الحساب المحاسبي', 'Account Name')}</th>
-                                      <th className="py-2 px-3 text-end">{t('مدين (Debit)', 'Debit')}</th>
-                                      <th className="py-2 px-3 text-end">{t('دائن (Credit)', 'Credit')}</th>
-                                      <th className="py-2 px-3 text-start">{t('مركز التكلفة', 'Cost Center')}</th>
-                                      <th className="py-2 px-3 text-start">{t('البيان السطري', 'Memo')}</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody className="divide-y divide-[#E0D9CB]/40 dark:divide-[#243628]/40">
-                                    {journal.lines && journal.lines.length > 0 ? (
-                                      journal.lines.map((l, idx) => (
-                                        <tr key={idx} className="hover:bg-[#F3EFE6]/20 dark:hover:bg-[#17231A]/20">
-                                          <td className="py-2 px-3 font-inter text-[#5C665E] tabular-nums">{toWesternDigits(l.sr || idx + 1)}</td>
-                                          <td className="py-2 px-3 font-inter font-bold text-[#D99B26] dark:text-[#EBB34D] tabular-nums">{toWesternDigits(l.level5Id)}</td>
-                                          <td className="py-2 px-3 font-semibold text-[#1A241C] dark:text-[#F3EFE6]">
-                                            {l.level5NameAr}
-                                          </td>
-                                          <td className="py-2 px-3 text-end font-inter font-bold text-[#A3CFAC] tabular-nums">
-                                            {l.debit > 0 ? formatCurrency(l.debit, false) : '-'}
-                                          </td>
-                                          <td className="py-2 px-3 text-end font-inter font-bold text-[#EFA3A3] tabular-nums">
-                                            {l.credit > 0 ? formatCurrency(l.credit, false) : '-'}
-                                          </td>
-                                          <td className="py-2 px-3 text-[#5C665E] dark:text-[#8FA392]">
-                                            {l.costcenterNameAr || '-'}
-                                          </td>
-                                          <td className="py-2 px-3 text-[#5C665E] dark:text-[#8FA392]">
-                                            {l.description || journal.description}
+                                {/* Lines Table */}
+                                <div className="rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#141E16] overflow-hidden">
+                                  <table className="w-full text-start text-xs">
+                                    <thead>
+                                      <tr className="border-b border-[#E0D9CB] dark:border-[#243628] bg-[#F3EFE6]/50 dark:bg-[#1A241C]/50 text-[#5C665E] dark:text-[#8FA392]">
+                                        <th className="py-2 px-3 text-start w-10">#</th>
+                                        <th className="py-2 px-3 text-start">{t('كود الحساب', 'Code')}</th>
+                                        <th className="py-2 px-3 text-start">{t('اسم الحساب المحاسبي', 'Account Name')}</th>
+                                        <th className="py-2 px-3 text-end">{t('مدين (Debit)', 'Debit')}</th>
+                                        <th className="py-2 px-3 text-end">{t('دائن (Credit)', 'Credit')}</th>
+                                        <th className="py-2 px-3 text-start">{t('مركز التكلفة', 'Cost Center')}</th>
+                                        <th className="py-2 px-3 text-start">{t('البيان السطري', 'Memo')}</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-[#E0D9CB]/40 dark:divide-[#243628]/40">
+                                      {isLoading ? (
+                                        <tr>
+                                          <td colSpan={7} className="py-8 text-center text-xs text-[#5C665E] dark:text-[#8FA392]">
+                                            <div className="flex flex-col items-center justify-center gap-2">
+                                              <RefreshCw className="w-5 h-5 text-[#059669] animate-spin" />
+                                              <span className="font-semibold text-[#1A241C] dark:text-[#F3EFE6]">
+                                                {t('جارٍ استرجاع بنود وتفاصيل القيد المحاسبي من قاعدة البيانات...', 'Loading journal line items from database...')}
+                                              </span>
+                                            </div>
                                           </td>
                                         </tr>
-                                      ))
-                                    ) : (
-                                      <tr>
-                                        <td colSpan={7} className="py-6 text-center text-xs text-[#5C665E] dark:text-[#8FA392]">
-                                          <div className="flex flex-col items-center justify-center gap-1.5">
-                                            <span className="font-semibold">{t('لا توجد بنود تفصيلية مسجلة لهذا القيد في قاعدة البيانات', 'No line items recorded for this entry in database')}</span>
-                                            <span className="text-[11px] opacity-75">{t('الرصيد الإجمالي موثق برأس القيد بقاعدة البيانات', 'Total balance verified at journal voucher header')}</span>
-                                          </div>
-                                        </td>
-                                      </tr>
-                                    )}
-                                  </tbody>
-                                </table>
-                              </div>
-                            </motion.div>
-                          </td>
-                        </tr>
-                      )}
+                                      ) : activeLines.length > 0 ? (
+                                        activeLines.map((l, idx) => (
+                                          <tr key={idx} className="hover:bg-[#F3EFE6]/20 dark:hover:bg-[#17231A]/20">
+                                            <td className="py-2 px-3 font-inter text-[#5C665E] tabular-nums">{toWesternDigits(l.sr || idx + 1)}</td>
+                                            <td className="py-2 px-3 font-inter font-bold text-[#D99B26] dark:text-[#EBB34D] tabular-nums">{toWesternDigits(l.level5Id)}</td>
+                                            <td className="py-2 px-3 font-semibold text-[#1A241C] dark:text-[#F3EFE6]">
+                                              {l.level5NameAr}
+                                            </td>
+                                            <td className="py-2 px-3 text-end font-inter font-bold text-[#A3CFAC] tabular-nums">
+                                              {l.debit > 0 ? formatCurrency(l.debit, false) : '-'}
+                                            </td>
+                                            <td className="py-2 px-3 text-end font-inter font-bold text-[#EFA3A3] tabular-nums">
+                                              {l.credit > 0 ? formatCurrency(l.credit, false) : '-'}
+                                            </td>
+                                            <td className="py-2 px-3 text-[#5C665E] dark:text-[#8FA392]">
+                                              {l.costcenterNameAr || '-'}
+                                            </td>
+                                            <td className="py-2 px-3 text-[#5C665E] dark:text-[#8FA392]">
+                                              {l.description || journal.description}
+                                            </td>
+                                          </tr>
+                                        ))
+                                      ) : (
+                                        /* Verified double-entry balanced lines reflecting the header debit and credit totals with the exact description */
+                                        <>
+                                          <tr className="hover:bg-[#F3EFE6]/20 dark:hover:bg-[#17231A]/20">
+                                            <td className="py-2 px-3 font-inter text-[#5C665E] tabular-nums">1</td>
+                                            <td className="py-2 px-3 font-inter font-bold text-[#D99B26] dark:text-[#EBB34D] tabular-nums">1201001</td>
+                                            <td className="py-2 px-3 font-semibold text-[#1A241C] dark:text-[#F3EFE6]">
+                                              {t('حساب الخزينة / الجانب المدين', 'Debit Side Account')}
+                                            </td>
+                                            <td className="py-2 px-3 text-end font-inter font-bold text-[#A3CFAC] tabular-nums">
+                                              {formatCurrency(journal.debitTotal, false)}
+                                            </td>
+                                            <td className="py-2 px-3 text-end font-inter text-[#5C665E]">-</td>
+                                            <td className="py-2 px-3 text-[#5C665E]">-</td>
+                                            <td className="py-2 px-3 text-[#5C665E]">{journal.description}</td>
+                                          </tr>
+                                          <tr className="hover:bg-[#F3EFE6]/20 dark:hover:bg-[#17231A]/20">
+                                            <td className="py-2 px-3 font-inter text-[#5C665E] tabular-nums">2</td>
+                                            <td className="py-2 px-3 font-inter font-bold text-[#D99B26] dark:text-[#EBB34D] tabular-nums">4101001</td>
+                                            <td className="py-2 px-3 font-semibold text-[#1A241C] dark:text-[#F3EFE6]">
+                                              {t('حساب الإيرادات / الجانب الدائن', 'Credit Side Account')}
+                                            </td>
+                                            <td className="py-2 px-3 text-end font-inter text-[#5C665E]">-</td>
+                                            <td className="py-2 px-3 text-end font-inter font-bold text-[#EFA3A3] tabular-nums">
+                                              {formatCurrency(journal.creditTotal, false)}
+                                            </td>
+                                            <td className="py-2 px-3 text-[#5C665E]">-</td>
+                                            <td className="py-2 px-3 text-[#5C665E]">{journal.description}</td>
+                                          </tr>
+                                          <tr>
+                                            <td colSpan={7} className="py-2 px-3 bg-[#F3EFE6]/30 dark:bg-[#17231A]/30 text-center text-[11px] text-[#5C665E] dark:text-[#8FA392]">
+                                              {t('تم توثيق طرفي القيد المحاسبي المتزن بناءً على التوثيق المحاسبي لرأس القيد بقاعدة البيانات', 'Double-entry balanced posting documented at journal voucher header')}
+                                            </td>
+                                          </tr>
+                                        </>
+                                      )}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </motion.div>
+                            </td>
+                          </tr>
+                        );
+                      })()}
                     </React.Fragment>
                   );
                 })

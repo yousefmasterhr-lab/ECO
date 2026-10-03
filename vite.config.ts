@@ -189,6 +189,23 @@ function sqlServerBridgePlugin() {
           return;
         }
 
+        // 10.1 Individual Journal Lines (On-Demand)
+        if (url?.startsWith('/api/finance/journals/') && url.endsWith('/lines')) {
+          try {
+            const match = url.match(/^\/api\/finance\/journals\/(\d+)\/lines/);
+            const noteNo = match ? Number(match[1]) : 0;
+            const bridge = getBridge();
+            const lines = await bridge.getJournalLines(noteNo, targetDb);
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify(lines));
+          } catch (err: any) {
+            res.statusCode = 500;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ error: err.message }));
+          }
+          return;
+        }
+
         // 11. Save Journal
         if (url === '/api/finance/journals/save' && req.method === 'POST') {
           try {

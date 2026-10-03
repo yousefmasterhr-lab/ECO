@@ -10,6 +10,7 @@ import {
   ChequeItem,
   ChequePayload,
   JournalEntryItem,
+  JournalLineItem,
   JournalPayload,
   ItemSKU,
   ClientRecord,
@@ -46,6 +47,7 @@ export interface IFinancialRepository {
   updateChequeStatus(id: string, status: string): Promise<{ success: boolean; cheque?: ChequeItem; error?: string }>;
   addCheque(data: ChequePayload): Promise<{ success: boolean; cheque?: ChequeItem; error?: string }>;
   getJournals(): Promise<JournalEntryItem[]>;
+  getJournalLines?(noteNo: number): Promise<JournalLineItem[]>;
   saveJournal(data: JournalPayload): Promise<{ success: boolean; journal?: JournalEntryItem; error?: string }>;
 
   // Phase 3 Extensions

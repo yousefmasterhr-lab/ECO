@@ -12,6 +12,7 @@ import {
   ChequeItem,
   ChequePayload,
   JournalEntryItem,
+  JournalLineItem,
   JournalPayload,
   ItemSKU,
   ClientRecord,
@@ -367,6 +368,14 @@ export class CloudAdapter implements IFinancialRepository {
 
   async getJournals(): Promise<JournalEntryItem[]> {
     return this.inMemoryJournals;
+  }
+
+  async getJournalLines(noteNo: number): Promise<JournalLineItem[]> {
+    const match = this.inMemoryJournals.find(j => Number(j.noteNo) === Number(noteNo));
+    if (match && match.lines && match.lines.length > 0) {
+      return match.lines;
+    }
+    return [];
   }
 
   async saveJournal(data: JournalPayload): Promise<{ success: boolean; journal?: JournalEntryItem; error?: string }> {

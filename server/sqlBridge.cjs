@@ -292,7 +292,7 @@ const getPool = getDatabasePool;
 
 // Universal Context Middleware (Extract target DB from Header or Query Param)
 app.use((req, res, next) => {
-  req.targetDb = req.headers['x-database-context'] || req.query.db || 'Tarabot_Data_2026';
+  req.targetDb = req.headers['x-database-context'] || req.query.db || req.query.databaseContext || 'Tarabot_Data_2026';
   next();
 });
 
@@ -1447,6 +1447,73 @@ async function getJournals(targetDb = 'Tarabot_Data_2026') {
   const existingNoteNos = new Set(list.map(j => Number(j.noteNo)));
   const uniqueAdded = addedJournals.filter(j => !existingNoteNos.has(Number(j.noteNo)));
   return [...uniqueAdded, ...list];
+}
+
+/**
+ * Retrieve individual journal lines by Note_No (On-Demand Fetching)
+ */
+async function getJournalLines(noteNo, targetDb = 'Tarabot_Data_2026') {
+  targetDb = sanitizeDatabaseName(targetDb);
+  const nNo = Number(noteNo);
+  if (!nNo) return [];
+
+  // Check in-memory added journals first
+  const addedMatch = addedJournals.find(j => Number(j.noteNo) === nNo);
+  if (addedMatch && addedMatch.lines && addedMatch.lines.length > 0) {
+    return addedMatch.lines;
+  }
+
+  try {
+    const linesSql = `
+      SELECT 
+        Note_No AS noteNo,
+        SR AS sr,
+        CAST(Level5_ID AS NVARCHAR(50)) AS level5Id,
+        Level5_Name_A AS level5NameAr,
+        ISNULL(Debit, 0) AS debit,
+        ISNULL(Credit, 0) AS credit,
+        Description AS description,
+        Costcenter_Name_A AS costcenterNameAr
+      FROM [${targetDb}].dbo.GeneralLedger_Details_View
+      WHERE Note_No = ${nNo}
+      ORDER BY SR ASC
+    `;
+    const rows = await querySqlJson(linesSql, targetDb);
+    if (rows && rows.length > 0) {
+      return rows.map((l, idx) => ({
+        sr: Number(l.sr ?? l.SR ?? idx + 1),
+        level5Id: String(l.level5Id ?? l.Level5_ID ?? '').trim(),
+        level5NameAr: l.level5NameAr ?? l.Level5_Name_A ?? '',
+        debit: Number(l.debit ?? l.Debit ?? 0),
+        credit: Number(l.credit ?? l.Credit ?? 0),
+        description: l.description ?? l.Description ?? '',
+        costcenterNameAr: l.costcenterNameAr ?? l.Costcenter_Name_A ?? ''
+      }));
+    }
+  } catch (err) {
+    console.warn(`[SQL Bridge] getJournalLines query failed on [${targetDb}] for Note ${nNo}:`, err.message);
+  }
+
+  // Fallback to local json
+  try {
+    const rawData = getLocalJson('tarabot_journals.json');
+    const matched = rawData.filter(r => Number(r.Note_No) === nNo);
+    if (matched.length > 0) {
+      return matched.map((r, idx) => ({
+        sr: Number(r.SR || idx + 1),
+        level5Id: String(r.Level5_ID || '').trim(),
+        level5NameAr: r.Level5_Name_A || '',
+        debit: Number(r.Debit || 0),
+        credit: Number(r.Credit || 0),
+        description: r.Description || '',
+        costcenterNameAr: r.Costcenter_Name_A || ''
+      }));
+    }
+  } catch (e) {
+    console.warn(`[SQL Bridge] getJournalLines json fallback warning:`, e.message);
+  }
+
+  return [];
 }
 
 function saveJournal(journalData) {
@@ -3399,6 +3466,15 @@ app.get('/api/finance/journals', async (req, res) => {
   }
 });
 
+app.get('/api/finance/journals/:noteNo/lines', async (req, res) => {
+  try {
+    const lines = await getJournalLines(req.params.noteNo, req.targetDb);
+    res.json(lines);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.post('/api/finance/journals/save', (req, res) => {
   try {
     const result = saveJournal(req.body);
@@ -3601,6 +3677,7 @@ module.exports = {
   updateChequeStatus,
   addCheque,
   getJournals,
+  getJournalLines,
   saveJournal,
   getItems,
   getClients,
