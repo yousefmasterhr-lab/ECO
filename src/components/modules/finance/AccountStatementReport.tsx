@@ -146,13 +146,16 @@ export const AccountStatementReport: React.FC = () => {
       }
     }
 
-    // 2. Default to primary cash register (1201001), active operating bank (1202001), or active account
-    const primaryCash = leafAccounts.find(a => a.code === '1201001' || a.id === '1201001');
-    const operatingBank = leafAccounts.find(a => a.code === '1202001' || a.id === '1202001');
-    const anyCashOrBank = leafAccounts.find(a => a.code.startsWith('1201') || a.code.startsWith('1202'));
+    // 2. Default to active liquid account with actual balance or activity, then fallback
+    const activeLiquidAccount = leafAccounts.find(
+      a => (a.code.startsWith('1201') || a.code.startsWith('1202') || a.code.startsWith('1206') || a.code.startsWith('1211')) && Math.abs(a.balance ?? 0) > 0
+    );
     const anyActiveAccount = leafAccounts.find(a => Math.abs(a.balance ?? 0) > 0);
+    const operatingBank = leafAccounts.find(a => a.code === '1202002' || a.code === '1202001' || a.id === '1202002');
+    const primaryCash = leafAccounts.find(a => a.code === '1201001' || a.id === '1201001');
+    const anyCashOrBank = leafAccounts.find(a => a.code.startsWith('1201') || a.code.startsWith('1202'));
 
-    const bestAccount = primaryCash || operatingBank || anyCashOrBank || anyActiveAccount || leafAccounts[0];
+    const bestAccount = activeLiquidAccount || anyActiveAccount || operatingBank || primaryCash || anyCashOrBank || leafAccounts[0];
 
     // If not selected or if currently pointing to dormant fixed asset 1101001 on initial load / DB switch
     if (!selectedAccountId || selectedAccountId === '1101001' || selectedAccountId === '1101') {

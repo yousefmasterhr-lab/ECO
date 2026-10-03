@@ -326,7 +326,7 @@ export const GeneralLedgerModule: React.FC = () => {
                                 </div>
 
                                 <div className="text-[11px] text-[#5C665E] dark:text-[#8FA392]">
-                                  <span className="font-inter tabular-nums font-bold text-[#D99B26] dark:text-[#EBB34D]">{formatNumber(journal.lines?.length || 2)}</span> {t('أسطر محاسبية متزنة', 'balanced lines')}
+                                  <span className="font-inter tabular-nums font-bold text-[#D99B26] dark:text-[#EBB34D]">{formatNumber(journal.lines ? journal.lines.length : 0)}</span> {t('أسطر محاسبية متزنة', 'balanced lines')}
                                 </div>
                               </div>
 
@@ -368,35 +368,14 @@ export const GeneralLedgerModule: React.FC = () => {
                                         </tr>
                                       ))
                                     ) : (
-                                      /* Fallback synthetic balanced 2 lines if lines array is not loaded */
-                                      <>
-                                        <tr className="hover:bg-[#F3EFE6]/20 dark:hover:bg-[#17231A]/20">
-                                          <td className="py-2 px-3 font-inter text-[#5C665E] tabular-nums">1</td>
-                                          <td className="py-2 px-3 font-inter font-bold text-[#D99B26] dark:text-[#EBB34D] tabular-nums">1201001</td>
-                                          <td className="py-2 px-3 font-semibold text-[#1A241C] dark:text-[#F3EFE6]">
-                                            {t('حساب الخزينة / المدين', 'Debit Side Account')}
-                                          </td>
-                                          <td className="py-2 px-3 text-end font-inter font-bold text-[#A3CFAC] tabular-nums">
-                                            {formatCurrency(journal.debitTotal, false)}
-                                          </td>
-                                          <td className="py-2 px-3 text-end font-inter text-[#5C665E]">-</td>
-                                          <td className="py-2 px-3 text-[#5C665E]">-</td>
-                                          <td className="py-2 px-3 text-[#5C665E]">{journal.description}</td>
-                                        </tr>
-                                        <tr className="hover:bg-[#F3EFE6]/20 dark:hover:bg-[#17231A]/20">
-                                          <td className="py-2 px-3 font-inter text-[#5C665E] tabular-nums">2</td>
-                                          <td className="py-2 px-3 font-inter font-bold text-[#D99B26] dark:text-[#EBB34D] tabular-nums">4101001</td>
-                                          <td className="py-2 px-3 font-semibold text-[#1A241C] dark:text-[#F3EFE6]">
-                                            {t('حساب الإيرادات / الدائن', 'Credit Side Account')}
-                                          </td>
-                                          <td className="py-2 px-3 text-end font-inter text-[#5C665E]">-</td>
-                                          <td className="py-2 px-3 text-end font-inter font-bold text-[#EFA3A3] tabular-nums">
-                                            {formatCurrency(journal.creditTotal, false)}
-                                          </td>
-                                          <td className="py-2 px-3 text-[#5C665E]">-</td>
-                                          <td className="py-2 px-3 text-[#5C665E]">{journal.description}</td>
-                                        </tr>
-                                      </>
+                                      <tr>
+                                        <td colSpan={7} className="py-6 text-center text-xs text-[#5C665E] dark:text-[#8FA392]">
+                                          <div className="flex flex-col items-center justify-center gap-1.5">
+                                            <span className="font-semibold">{t('لا توجد بنود تفصيلية مسجلة لهذا القيد في قاعدة البيانات', 'No line items recorded for this entry in database')}</span>
+                                            <span className="text-[11px] opacity-75">{t('الرصيد الإجمالي موثق برأس القيد بقاعدة البيانات', 'Total balance verified at journal voucher header')}</span>
+                                          </div>
+                                        </td>
+                                      </tr>
                                     )}
                                   </tbody>
                                 </table>

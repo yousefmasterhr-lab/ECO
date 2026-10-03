@@ -1384,13 +1384,27 @@ async function getJournals(targetDb = 'Tarabot_Data_2026') {
           const linesRows = await querySqlJson(linesSql, targetDb);
           const linesByNote = new Map();
           (linesRows || []).forEach(l => {
-            if (!linesByNote.has(l.noteNo)) linesByNote.set(l.noteNo, []);
-            linesByNote.get(l.noteNo).push(l);
+            const rawKey = l.noteNo ?? l.Note_No ?? l.NoteNo;
+            if (rawKey === undefined || rawKey === null) return;
+            const key = String(rawKey).trim();
+            if (!linesByNote.has(key)) linesByNote.set(key, []);
+            linesByNote.get(key).push({
+              sr: Number(l.sr ?? l.SR ?? 1),
+              level5Id: String(l.level5Id ?? l.Level5_ID ?? '').trim(),
+              level5NameAr: l.level5NameAr ?? l.Level5_Name_A ?? '',
+              debit: Number(l.debit ?? l.Debit ?? 0),
+              credit: Number(l.credit ?? l.Credit ?? 0),
+              description: l.description ?? l.Description ?? '',
+              costcenterNameAr: l.costcenterNameAr ?? l.Costcenter_Name_A ?? ''
+            });
           });
-          list = list.map(j => ({
-            ...j,
-            lines: linesByNote.get(j.noteNo) || []
-          }));
+          list = list.map(j => {
+            const key = String(j.noteNo ?? j.Note_No ?? '').trim();
+            return {
+              ...j,
+              lines: linesByNote.get(key) || []
+            };
+          });
         } catch (linesErr) {
           console.warn(`[SQL Bridge] GeneralLedger_Details_View query warning:`, linesErr.message);
         }
@@ -1398,15 +1412,33 @@ async function getJournals(targetDb = 'Tarabot_Data_2026') {
     }
   } catch (err) {
     console.warn(`[SQL Bridge] GeneralLedger_Head query failed on [${targetDb}], fallback to json:`, err.message);
-    list = getLocalJson('tarabot_journals.json').slice(0, 30).map(j => ({
-      id: `JV-${j.Note_No}`,
-      noteNo: j.Note_No,
-      noteDate: j.Note_Date,
-      description: j.Description,
-      debitTotal: j.Note_Debit || j.Debit || 0,
-      creditTotal: j.Note_Credit || j.Credit || 0,
-      netText: j.Note_Net_Text || '',
-      entryName: j.Entry_Name || 'System',
+    const rawData = getLocalJson('tarabot_journals.json');
+    const groupMap = new Map();
+    for (const r of rawData) {
+      const nNo = Number(r.Note_No);
+      if (!groupMap.has(nNo)) {
+        groupMap.set(nNo, { header: r, lines: [] });
+      }
+      groupMap.get(nNo).lines.push({
+        sr: Number(r.SR || groupMap.get(nNo).lines.length + 1),
+        level5Id: String(r.Level5_ID || ''),
+        level5NameAr: r.Level5_Name_A || '',
+        debit: Number(r.Debit || 0),
+        credit: Number(r.Credit || 0),
+        description: r.Description || '',
+        costcenterNameAr: r.Costcenter_Name_A || ''
+      });
+    }
+    list = Array.from(groupMap.values()).slice(0, 30).map(({ header, lines }) => ({
+      id: `JV-${header.Note_No}`,
+      noteNo: header.Note_No,
+      noteDate: String(header.Note_Date || '').replace(/\//g, '-'),
+      description: header.Description || lines[0]?.description || '',
+      debitTotal: lines.reduce((s, l) => s + l.debit, 0) || (header.Note_Debit || header.Debit || 0),
+      creditTotal: lines.reduce((s, l) => s + l.credit, 0) || (header.Note_Credit || header.Credit || 0),
+      netText: header.Note_Net_Text || '',
+      entryName: header.Entry_Name || 'System',
+      lines,
       status: 'POSTED'
     }));
   }

@@ -634,6 +634,7 @@ export interface StatementOfAccountLine {
   entryDate?: string;
   DocumentType?: string;
   Note_Date?: string;
+  [key: string]: any;
 }
 
 export interface StatementOfAccountReportData {
