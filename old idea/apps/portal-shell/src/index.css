@@ -1,0 +1,84 @@
+@import '../../../packages/ui-system/src/tokens/theme.css';
+
+/* Portal Shell Specific Enhancements */
+:root {
+  --header-height: 64px;
+  --sidebar-width: 280px;
+  --sidebar-collapsed-width: 80px;
+}
+
+/* Scrollbar Customization */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--erp-bg-base);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--erp-border-color);
+  border-radius: var(--erp-radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--erp-text-dim);
+}
+
+/* Custom Glassmorphism */
+.glass-panel {
+  background: var(--erp-bg-glass);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--erp-border-color);
+  box-shadow: var(--erp-shadow-md);
+}
+
+.glass-card {
+  background: var(--erp-bg-surface);
+  border: 1px solid var(--erp-border-color);
+  border-radius: var(--erp-radius-lg);
+  box-shadow: var(--erp-shadow-sm);
+  transition: transform var(--erp-transition-fast), box-shadow var(--erp-transition-fast), border-color var(--erp-transition-fast);
+}
+
+.glass-card:hover {
+  border-color: var(--erp-brand-primary);
+  box-shadow: var(--erp-shadow-md);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.25s ease-out forwards;
+}
+
+/* Pulse indicator */
+.pulse-badge {
+  display: inline-flex;
+  position: relative;
+}
+
+.pulse-badge::after {
+  content: '';
+  position: absolute;
+  top: -1px;
+  inset-inline-end: -1px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--erp-status-danger);
+  animation: ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes ping {
+  75%, 100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}

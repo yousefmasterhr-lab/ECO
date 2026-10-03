@@ -1,0 +1,15 @@
+[
+  { "id": 0, "nameAr": "تحليلي عام", "level4Id": 1101, "notice": "عام", "active": true, "category": "GENERAL" },
+  { "id": 1202001, "nameAr": "شركة المستقبل البنك الاهلى القطرى حساب رقم 00370000324630200568", "level4Id": 1202, "notice": "حساب بنكي جاري", "active": true, "category": "BANK" },
+  { "id": 2102001, "nameAr": "مصطفى محمد خليل", "level4Id": 2102, "notice": "رئيس مجلس الادارة", "active": true, "category": "BOARD" },
+  { "id": 2102002, "nameAr": "مهندس محمد مصطفى خليل", "level4Id": 2102, "notice": "الرئيس التنفيذى والعضو المنتدب", "active": true, "category": "BOARD" },
+  { "id": 2102003, "nameAr": "محمود محمد مصطفى", "level4Id": 2102, "notice": "عضو مجلس الادارة", "active": true, "category": "BOARD" },
+  { "id": 2102004, "nameAr": "مهندس محمد صلاح عطية", "level4Id": 2102, "notice": "عضو مجلس ادارة", "active": true, "category": "BOARD" },
+  { "id": 2202001, "nameAr": "ابو حمزة النجار", "level4Id": 2202, "notice": "مشروع شبرا النخل والعزيزية", "active": true, "category": "SUBCONTRACTOR" },
+  { "id": 2202002, "nameAr": "عزوز منصور تكيفات", "level4Id": 2202, "notice": "مشروع شبرا النخل والعزيزية + شبرا خيت والمحمودية", "active": true, "category": "SUBCONTRACTOR" },
+  { "id": 2202003, "nameAr": "محمد عبد الفتاح السباك", "level4Id": 2202, "notice": "مشروع شبرا النخل والعزيزية", "active": true, "category": "SUBCONTRACTOR" },
+  { "id": 2202004, "nameAr": "محمود ابو عمر الحداد", "level4Id": 2202, "notice": "مشروع شبرا النخل والعزيزية", "active": true, "category": "SUBCONTRACTOR" },
+  { "id": 2202005, "nameAr": "ابوسيف كهربائى", "level4Id": 2202, "notice": "مشروع شبرا النخل والعزيزية", "active": true, "category": "SUBCONTRACTOR" },
+  { "id": 3135001, "nameAr": "ايجار ثقالات ومعدات", "level4Id": 3135, "notice": "معدات مواقع", "active": true, "category": "EQUIPMENT" },
+  { "id": 3201001, "nameAr": "وقود وزيوت ادارى ومواقع", "level4Id": 3201, "notice": "مصاريف تشغيلية", "active": true, "category": "OPERATIONAL" }
+]

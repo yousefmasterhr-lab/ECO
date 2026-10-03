@@ -1,0 +1,129 @@
+[
+  {
+    "itemId": 1001,
+    "skuCode": "MAT-STL-12",
+    "nameAr": "حديد تسليح 12 مم عز الدخيلة",
+    "nameEn": "Rebar Steel 12mm Ezz Steel",
+    "category": "حديد ومعادن تسليح",
+    "vatRate": 0.15,
+    "averageCost": 38500.0,
+    "retailPrice": 42000.0,
+    "wholesalePrice": 40500.0,
+    "stockBalance": 45.0,
+    "units": [
+      { "unitId": 1, "unitNameAr": "طن", "multiplier": 1.0 },
+      { "unitId": 2, "unitNameAr": "كيلوجرام", "multiplier": 0.001 }
+    ]
+  },
+  {
+    "itemId": 1002,
+    "skuCode": "MAT-CEM-SRC",
+    "nameAr": "أسمنت بورتلاندي مقاوم للكبريتات (شيكارة 50 كجم)",
+    "nameEn": "Sulphate Resistant Cement 50kg",
+    "category": "أسمنت وركام",
+    "vatRate": 0.15,
+    "averageCost": 195.0,
+    "retailPrice": 230.0,
+    "wholesalePrice": 215.0,
+    "stockBalance": 850.0,
+    "units": [
+      { "unitId": 3, "unitNameAr": "شيكارة (50 كجم)", "multiplier": 1.0 },
+      { "unitId": 1, "unitNameAr": "طن (20 شيكارة)", "multiplier": 20.0 }
+    ]
+  },
+  {
+    "itemId": 1003,
+    "skuCode": "MAT-SND-01",
+    "nameAr": "رمل حرش نظيف معتمد للخلطات الخرسانية",
+    "nameEn": "Coarse Graded Concrete Sand",
+    "category": "ركام ورمل",
+    "vatRate": 0.15,
+    "averageCost": 140.0,
+    "retailPrice": 180.0,
+    "wholesalePrice": 165.0,
+    "stockBalance": 320.0,
+    "units": [
+      { "unitId": 4, "unitNameAr": "متر مكعب", "multiplier": 1.0 },
+      { "unitId": 5, "unitNameAr": "نقلة تريلا (24 م³)", "multiplier": 24.0 }
+    ]
+  },
+  {
+    "itemId": 1004,
+    "skuCode": "MAT-GRV-02",
+    "nameAr": "سن أحمر متدرج مقاس 2 لزوم الخرسانة المسلحة",
+    "nameEn": "Crushed Stone Aggregate Size 2",
+    "category": "ركام ورمل",
+    "vatRate": 0.15,
+    "averageCost": 260.0,
+    "retailPrice": 310.0,
+    "wholesalePrice": 290.0,
+    "stockBalance": 210.0,
+    "units": [
+      { "unitId": 4, "unitNameAr": "متر مكعب", "multiplier": 1.0 },
+      { "unitId": 5, "unitNameAr": "نقلة تريلا (24 م³)", "multiplier": 24.0 }
+    ]
+  },
+  {
+    "itemId": 1005,
+    "skuCode": "MAT-BRK-RED",
+    "nameAr": "طوب طفلي أحمر مفرغ مقاس 25×12×6 سم",
+    "nameEn": "Perforated Red Clay Bricks 25x12x6cm",
+    "category": "طوب وبلوك",
+    "vatRate": 0.15,
+    "averageCost": 1600.0,
+    "retailPrice": 1950.0,
+    "wholesalePrice": 1800.0,
+    "stockBalance": 65.0,
+    "units": [
+      { "unitId": 6, "unitNameAr": "ألف طوبة", "multiplier": 1.0 },
+      { "unitId": 7, "unitNameAr": "طوبة واحدة", "multiplier": 0.001 }
+    ]
+  },
+  {
+    "itemId": 1006,
+    "skuCode": "MAT-RMC-350",
+    "nameAr": "خرسانة جاهزة رتبة 350 كجم/سم² مقاومة للملوحة",
+    "nameEn": "Ready-Mix Concrete Grade 350 SRC",
+    "category": "خرسانة جاهزة",
+    "vatRate": 0.15,
+    "averageCost": 1250.0,
+    "retailPrice": 1450.0,
+    "wholesalePrice": 1380.0,
+    "stockBalance": 150.0,
+    "units": [
+      { "unitId": 4, "unitNameAr": "متر مكعب", "multiplier": 1.0 }
+    ]
+  },
+  {
+    "itemId": 1007,
+    "skuCode": "MAT-CRM-FLR",
+    "nameAr": "سيراميك أرضيات باركيه فرز أول مقاس 60×60",
+    "nameEn": "Porcelain Floor Tiles 60x60 First Choice",
+    "category": "تشطيبات وسيراميك",
+    "vatRate": 0.15,
+    "averageCost": 135.0,
+    "retailPrice": 175.0,
+    "wholesalePrice": 155.0,
+    "stockBalance": 480.0,
+    "units": [
+      { "unitId": 8, "unitNameAr": "متر مربع", "multiplier": 1.0 },
+      { "unitId": 9, "unitNameAr": "كرتونة (1.44 م²)", "multiplier": 1.44 }
+    ]
+  },
+  {
+    "itemId": 1008,
+    "skuCode": "MAT-CAB-4MM",
+    "nameAr": "كابلات نحاسية معزولة 4 مم² معتمدة السويدي",
+    "nameEn": "Elsewedy Copper Insulated Cables 4mm",
+    "category": "تأسيسات كهروميكانيكية",
+    "vatRate": 0.15,
+    "averageCost": 2200.0,
+    "retailPrice": 2650.0,
+    "wholesalePrice": 2450.0,
+    "stockBalance": 42.0,
+    "units": [
+      { "unitId": 10, "unitNameAr": "لفة 100 متر", "multiplier": 1.0 },
+      { "unitId": 11, "unitNameAr": "متر طولي", "multiplier": 0.01 }
+    ]
+  }
+]

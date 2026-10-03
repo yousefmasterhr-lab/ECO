@@ -1,0 +1,62 @@
+[
+  {
+    "clientId": 1204001,
+    "nameAr": "شركة إعمار للتطوير العقاري (المملكة)",
+    "nameEn": "Emaar Real Estate Development (KSA)",
+    "vatNo": "310987654321003",
+    "limitAmount": 5000000.0,
+    "tel": "0112589000",
+    "address": "أبراج العليا - طريق الملك فهد - الرياض",
+    "currentBalance": 1245000.0
+  },
+  {
+    "clientId": 1204002,
+    "nameAr": "شركة شبه الجزيرة للمقاولات العامة",
+    "nameEn": "Shibh Al Jazira Contracting Co.",
+    "vatNo": "310456789123003",
+    "limitAmount": 8000000.0,
+    "tel": "0112394551",
+    "address": "طريق خريص - حي الروضة - الرياض",
+    "currentBalance": 890000.0
+  },
+  {
+    "clientId": 1204003,
+    "nameAr": "مجموعة طلعت مصطفى القابضة للتطوير العمراني",
+    "nameEn": "Talaat Moustafa Group Holding (TMG)",
+    "vatNo": "300-123-456",
+    "limitAmount": 10000000.0,
+    "tel": "0224158890",
+    "address": "مدينتي - القاهرة الجديدة - مصر",
+    "currentBalance": 2350000.0
+  },
+  {
+    "clientId": 1204004,
+    "nameAr": "شركة حسن علام للمقاولات العامة والإنشاءات",
+    "nameEn": "Hassan Allam Construction",
+    "vatNo": "200-987-654",
+    "limitAmount": 6500000.0,
+    "tel": "0222603344",
+    "address": "الميرغني - مصر الجديدة - القاهرة",
+    "currentBalance": 450000.0
+  },
+  {
+    "clientId": 1204005,
+    "nameAr": "شركة الزامل للصناعات الحديدية والإنشاءات",
+    "nameEn": "Zamil Industrial & Steel Construction",
+    "vatNo": "310321654987003",
+    "limitAmount": 7500000.0,
+    "tel": "0138471111",
+    "address": "المنطقة الصناعية الأولى - الدمام",
+    "currentBalance": 1680000.0
+  },
+  {
+    "clientId": 1204006,
+    "nameAr": "شركة النيل العامة للإنشاء ورصف الطرق",
+    "nameEn": "El Nile General Contracting Co.",
+    "vatNo": "100-456-789",
+    "limitAmount": 4000000.0,
+    "tel": "0225789944",
+    "address": "شارع السبتية - بولاق - القاهرة",
+    "currentBalance": 320000.0
+  }
+]

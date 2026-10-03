@@ -1,0 +1,266 @@
+﻿[
+    {
+        "Level3_ID":  "12",
+        "Level4_ID":  "1201",
+        "Level4_Name_A":  "الخزينة",
+        "Account_Nature":  "0"
+    },
+    {
+        "Level3_ID":  "12",
+        "Level4_ID":  "1202",
+        "Level4_Name_A":  "البنوك",
+        "Account_Nature":  "0"
+    },
+    {
+        "Level3_ID":  "12",
+        "Level4_ID":  "1203",
+        "Level4_Name_A":  "المخزون",
+        "Account_Nature":  "0"
+    },
+    {
+        "Level3_ID":  "12",
+        "Level4_ID":  "1205",
+        "Level4_Name_A":  "سلف العاملين",
+        "Account_Nature":  "0"
+    },
+    {
+        "Level3_ID":  "12",
+        "Level4_ID":  "1206",
+        "Level4_Name_A":  "العهد",
+        "Account_Nature":  "0"
+    },
+    {
+        "Level3_ID":  "21",
+        "Level4_ID":  "2101",
+        "Level4_Name_A":  "راس المال",
+        "Account_Nature":  "1"
+    },
+    {
+        "Level3_ID":  "21",
+        "Level4_ID":  "2102",
+        "Level4_Name_A":  "جارى الشركاء",
+        "Account_Nature":  "1"
+    },
+    {
+        "Level3_ID":  "22",
+        "Level4_ID":  "2201",
+        "Level4_Name_A":  "الموردين",
+        "Account_Nature":  "1"
+    },
+    {
+        "Level3_ID":  "22",
+        "Level4_ID":  "2202",
+        "Level4_Name_A":  "مقاولى الباطن",
+        "Account_Nature":  "1"
+    },
+    {
+        "Level3_ID":  "31",
+        "Level4_ID":  "3101",
+        "Level4_Name_A":  "الهدم",
+        "Account_Nature":  "0"
+    },
+    {
+        "Level3_ID":  "31",
+        "Level4_ID":  "3102",
+        "Level4_Name_A":  "الحفر",
+        "Account_Nature":  "0"
+    },
+    {
+        "Level3_ID":  "31",
+        "Level4_ID":  "3103",
+        "Level4_Name_A":  "الاحلال",
+        "Account_Nature":  "0"
+    },
+    {
+        "Level3_ID":  "31",
+        "Level4_ID":  "3104",
+        "Level4_Name_A":  "الخرسانة العادية",
+        "Account_Nature":  "0"
+    },
+    {
+        "Level3_ID":  "31",
+        "Level4_ID":  "3105",
+        "Level4_Name_A":  "الخرسانة المسلحة",
+        "Account_Nature":  "0"
+    },
+    {
+        "Level3_ID":  "31",
+        "Level4_ID":  "3106",
+        "Level4_Name_A":  "العزل",
+        "Account_Nature":  "0"
+    },
+    {
+        "Level3_ID":  "31",
+        "Level4_ID":  "3107",
+        "Level4_Name_A":  "اعمال المبانى",
+        "Account_Nature":  "0"
+    },
+    {
+        "Level3_ID":  "31",
+        "Level4_ID":  "3108",
+        "Level4_Name_A":  "بياض محارة",
+        "Account_Nature":  "0"
+    },
+    {
+        "Level3_ID":  "31",
+        "Level4_ID":  "3109",
+        "Level4_Name_A":  "الصحى ",
+        "Account_Nature":  "0"
+    },
+    {
+        "Level3_ID":  "31",
+        "Level4_ID":  "3110",
+        "Level4_Name_A":  "الكهرباء",
+        "Account_Nature":  "0"
+    },
+    {
+        "Level3_ID":  "31",
+        "Level4_ID":  "3111",
+        "Level4_Name_A":  "الحريق",
+        "Account_Nature":  "0"
+    },
+    {
+        "Level3_ID":  "31",
+        "Level4_ID":  "3112",
+        "Level4_Name_A":  "التكيفات",
+        "Account_Nature":  "0"
+    },
+    {
+        "Level3_ID":  "31",
+        "Level4_ID":  "3113",
+        "Level4_Name_A":  "السيراميك",
+        "Account_Nature":  "0"
+    },
+    {
+        "Level3_ID":  "31",
+        "Level4_ID":  "3114",
+        "Level4_Name_A":  "الرخام",
+        "Account_Nature":  "0"
+    },
+    {
+        "Level3_ID":  "31",
+        "Level4_ID":  "3115",
+        "Level4_Name_A":  "الجبس بورد",
+        "Account_Nature":  "0"
+    },
+    {
+        "Level3_ID":  "31",
+        "Level4_ID":  "3116",
+        "Level4_Name_A":  "الدهانات",
+        "Account_Nature":  "0"
+    },
+    {
+        "Level3_ID":  "31",
+        "Level4_ID":  "3117",
+        "Level4_Name_A":  "النجارة",
+        "Account_Nature":  "0"
+    },
+    {
+        "Level3_ID":  "31",
+        "Level4_ID":  "3118",
+        "Level4_Name_A":  "الالومنتال",
+        "Account_Nature":  "0"
+    },
+    {
+        "Level3_ID":  "31",
+        "Level4_ID":  "3119",
+        "Level4_Name_A":  "اللوفر",
+        "Account_Nature":  "0"
+    },
+    {
+        "Level3_ID":  "31",
+        "Level4_ID":  "3120",
+        "Level4_Name_A":  "دهانات ايبوكسى",
+        "Account_Nature":  "0"
+    },
+    {
+        "Level3_ID":  "31",
+        "Level4_ID":  "3121",
+        "Level4_Name_A":  "البلاط الموزايكو",
+        "Account_Nature":  "0"
+    },
+    {
+        "Level3_ID":  "31",
+        "Level4_ID":  "3122",
+        "Level4_Name_A":  "بلدورة",
+        "Account_Nature":  "0"
+    },
+    {
+        "Level3_ID":  "31",
+        "Level4_ID":  "3123",
+        "Level4_Name_A":  "الانترلوك",
+        "Account_Nature":  "0"
+    },
+    {
+        "Level3_ID":  "31",
+        "Level4_ID":  "3124",
+        "Level4_Name_A":  "الحدادة الكريتال",
+        "Account_Nature":  "0"
+    },
+    {
+        "Level3_ID":  "31",
+        "Level4_ID":  "3125",
+        "Level4_Name_A":  "الكلادينج",
+        "Account_Nature":  "0"
+    },
+    {
+        "Level3_ID":  "31",
+        "Level4_ID":  "3126",
+        "Level4_Name_A":  "مايكا",
+        "Account_Nature":  "0"
+    },
+    {
+        "Level3_ID":  "31",
+        "Level4_ID":  "3127",
+        "Level4_Name_A":  "زجاج السيكوريت",
+        "Account_Nature":  "0"
+    },
+    {
+        "Level3_ID":  "31",
+        "Level4_ID":  "3128",
+        "Level4_Name_A":  "الاستليس",
+        "Account_Nature":  "0"
+    },
+    {
+        "Level3_ID":  "31",
+        "Level4_ID":  "3129",
+        "Level4_Name_A":  "الستاير",
+        "Account_Nature":  "0"
+    },
+    {
+        "Level3_ID":  "31",
+        "Level4_ID":  "3130",
+        "Level4_Name_A":  "شعارات",
+        "Account_Nature":  "0"
+    },
+    {
+        "Level3_ID":  "31",
+        "Level4_ID":  "3131",
+        "Level4_Name_A":  "اليفط",
+        "Account_Nature":  "0"
+    },
+    {
+        "Level3_ID":  "31",
+        "Level4_ID":  "3132",
+        "Level4_Name_A":  "لوحات استرشادية",
+        "Account_Nature":  "0"
+    },
+    {
+        "Level3_ID":  "31",
+        "Level4_ID":  "3133",
+        "Level4_Name_A":  "مزروعات",
+        "Account_Nature":  "0"
+    },
+    {
+        "Level3_ID":  "31",
+        "Level4_ID":  "3135",
+        "Level4_Name_A":  "تقالات",
+        "Account_Nature":  "0"
+    },
+    {
+        "Level3_ID":  "32",
+        "Level4_ID":  "3201",
+        "Level4_Name_A":  "المصروفات العمومية",
+        "Account_Nature":  "0"
+    }
+]

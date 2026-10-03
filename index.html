@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ar" dir="rtl" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>ECO - منظومة إدارة الموارد المؤسسية الذكية</title>
+    <meta name="description" content="ECO - منظومة إدارة الموارد المؤسسية الذكية والمشروعات والمقاولات والشؤون المالية" />
+    
+    <!-- PWA Web App Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- Theme & Color Schemes: Locked to Nocturnal Olive -->
+    <meta name="theme-color" content="#0E1610" />
+    <meta name="color-scheme" content="dark" />
+
+    <!-- Single Corporate Brand Lockdown & Legacy Theme Storage Purge -->
+    <script>
+      (function() {
+        try {
+          localStorage.removeItem('tarabot_active_palette');
+          localStorage.removeItem('erp_ambient_luminescence');
+          localStorage.removeItem('theme');
+          document.documentElement.classList.add('dark');
+          document.documentElement.classList.remove('light');
+          document.documentElement.removeAttribute('data-theme');
+        } catch (e) {}
+      })();
+    </script>
+    
+    <!-- Apple iOS Safari Web App Configuration -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="ECO" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
+    
+    <!-- Official Favicons -->
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23D99B26' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7'/%3E%3Cpath d='M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8'/%3E%3Cpath d='M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4'/%3E%3Cpath d='M2 7h20'/%3E%3C/svg%3E" />
+    
+    <!-- Google Fonts: Cairo (Arabic) & Inter (English/Latin) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  </head>
+  <body class="bg-[#FBF9F5] text-[#1A241C] dark:bg-[#0E1610] dark:text-[#F3EFE6] font-cairo antialiased selection:bg-[#D99B26] selection:text-[#1C291E] min-h-screen overflow-x-hidden pt-safe pb-safe">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

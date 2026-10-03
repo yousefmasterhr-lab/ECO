@@ -1,0 +1,41 @@
+{
+  "mainCostCenters": [
+    { "id": 31, "nameAr": "مندوبي التسـويق", "nameEn": "Marketing Representatives" },
+    { "id": 51, "nameAr": "مراكز التكلفة العامة والتشغيلية", "nameEn": "Operational Cost Centers" },
+    { "id": 52, "nameAr": "المشروعات الإنشائية والهندسية", "nameEn": "Engineering Projects" }
+  ],
+  "costCenters": [
+    { "id": 0, "nameAr": "مركز تكلفة عام", "mainCenterId": 51, "debit": 125000, "credit": 80000, "directCosts": 85000, "indirectCosts": 40000, "revenue": 140000 },
+    { "id": 51001, "nameAr": "مركز تكلفة الصيانة والإدارة", "mainCenterId": 51, "debit": 430000, "credit": 290000, "directCosts": 260000, "indirectCosts": 170000, "revenue": 520000 },
+    { "id": 52001, "nameAr": "سجل مدنى كفر ابراش الشرقية", "mainCenterId": 52, "debit": 3850000, "credit": 1200000, "directCosts": 2900000, "indirectCosts": 950000, "revenue": 4800000 },
+    { "id": 52002, "nameAr": "سجل مدنى البلاشون الشرقية", "mainCenterId": 52, "debit": 2950000, "credit": 850000, "directCosts": 2200000, "indirectCosts": 750000, "revenue": 3750000 },
+    { "id": 52003, "nameAr": "قسم شرطة روض الفرج القاهرة", "mainCenterId": 52, "debit": 7200000, "credit": 2400000, "directCosts": 5600000, "indirectCosts": 1600000, "revenue": 9500000 },
+    { "id": 52004, "nameAr": "قسم شرطة اول طنطا الغربية", "mainCenterId": 52, "debit": 5800000, "credit": 1900000, "directCosts": 4400000, "indirectCosts": 1400000, "revenue": 7600000 },
+    { "id": 52005, "nameAr": "مركز شرطة سيدى سالم كفر الشيخ", "mainCenterId": 52, "debit": 4100000, "credit": 1350000, "directCosts": 3100000, "indirectCosts": 1000000, "revenue": 5400000 },
+    { "id": 52006, "nameAr": "قسم تصاريح عمل فاقوس الشرقية", "mainCenterId": 52, "debit": 3300000, "credit": 1100000, "directCosts": 2500000, "indirectCosts": 800000, "revenue": 4200000 },
+    { "id": 52007, "nameAr": "نقطة شرطة البربا اسيوط", "mainCenterId": 52, "debit": 1850000, "credit": 620000, "directCosts": 1400000, "indirectCosts": 450000, "revenue": 2400000 },
+    { "id": 52008, "nameAr": "نقطة شرطة ام القصور اسيوط", "mainCenterId": 52, "debit": 1920000, "credit": 640000, "directCosts": 1450000, "indirectCosts": 470000, "revenue": 2500000 },
+    { "id": 52009, "nameAr": "نقطة شرطة اولاد الياس اسيوط", "mainCenterId": 52, "debit": 1780000, "credit": 590000, "directCosts": 1350000, "indirectCosts": 430000, "revenue": 2300000 },
+    { "id": 52010, "nameAr": "قسم شرطة باب شرقى الاسكندرية", "mainCenterId": 52, "debit": 6400000, "credit": 2100000, "directCosts": 4900000, "indirectCosts": 1500000, "revenue": 8300000 },
+    { "id": 52011, "nameAr": "مجمع تراخيص مرور العتبة", "mainCenterId": 52, "debit": 11500000, "credit": 3800000, "directCosts": 8900000, "indirectCosts": 2600000, "revenue": 14900000 },
+    { "id": 52012, "nameAr": "قسم شرطة الجماليه", "mainCenterId": 52, "debit": 4600000, "credit": 1550000, "directCosts": 3500000, "indirectCosts": 1100000, "revenue": 5900000 },
+    { "id": 52013, "nameAr": "مستشفى الشرطة العجوزة", "mainCenterId": 52, "debit": 16800000, "credit": 5600000, "directCosts": 13100000, "indirectCosts": 3700000, "revenue": 21800000 },
+    { "id": 52014, "nameAr": "نقطة شرطة بنى فيز اسيوط", "mainCenterId": 52, "debit": 1650000, "credit": 550000, "directCosts": 1250000, "indirectCosts": 400000, "revenue": 2150000 },
+    { "id": 52015, "nameAr": "نقطة شرطة الدوير اسيوط", "mainCenterId": 52, "debit": 1720000, "credit": 580000, "directCosts": 1300000, "indirectCosts": 420000, "revenue": 2250000 },
+    { "id": 52016, "nameAr": "سجل مدنى العزيزية الشرقية", "mainCenterId": 52, "debit": 2800000, "credit": 920000, "directCosts": 2100000, "indirectCosts": 700000, "revenue": 3600000 },
+    { "id": 52017, "nameAr": "سجل مدنى شبرا النخل الشرقية", "mainCenterId": 52, "debit": 3100000, "credit": 1050000, "directCosts": 2350000, "indirectCosts": 750000, "revenue": 4000000 },
+    { "id": 52018, "nameAr": "سجل مدنى شبرا خيت البحيرة", "mainCenterId": 52, "debit": 3400000, "credit": 1150000, "directCosts": 2600000, "indirectCosts": 800000, "revenue": 4400000 },
+    { "id": 52019, "nameAr": "سجل مدنى المحمودية البحيرة", "mainCenterId": 52, "debit": 3250000, "credit": 1080000, "directCosts": 2450000, "indirectCosts": 800000, "revenue": 4200000 },
+    { "id": 52020, "nameAr": "سجل مدنى السرو دمياط", "mainCenterId": 52, "debit": 2600000, "credit": 870000, "directCosts": 1950000, "indirectCosts": 650000, "revenue": 3350000 },
+    { "id": 52021, "nameAr": "سجل مدنى الركابية دمياط", "mainCenterId": 52, "debit": 2500000, "credit": 830000, "directCosts": 1900000, "indirectCosts": 600000, "revenue": 3200000 },
+    { "id": 52022, "nameAr": "نقطة شرطة شرشابة زفتى الغربية", "mainCenterId": 52, "debit": 2100000, "credit": 700000, "directCosts": 1600000, "indirectCosts": 500000, "revenue": 2700000 },
+    { "id": 52023, "nameAr": "نقطة شرطة عابدين القاهرة", "mainCenterId": 52, "debit": 3600000, "credit": 1200000, "directCosts": 2750000, "indirectCosts": 850000, "revenue": 4650000 },
+    { "id": 52024, "nameAr": "قسم شرطة الشرابية القاهرة", "mainCenterId": 52, "debit": 5200000, "credit": 1750000, "directCosts": 3950000, "indirectCosts": 1250000, "revenue": 6750000 },
+    { "id": 52025, "nameAr": "مركز شرطة منفلوط اسيوط", "mainCenterId": 52, "debit": 4900000, "credit": 1650000, "directCosts": 3700000, "indirectCosts": 1200000, "revenue": 6350000 },
+    { "id": 52026, "nameAr": "سجل مدنى منفلوط اسيوط", "mainCenterId": 52, "debit": 2900000, "credit": 970000, "directCosts": 2200000, "indirectCosts": 700000, "revenue": 3750000 },
+    { "id": 52027, "nameAr": "سجل مدنى ابوتيج اسيوط", "mainCenterId": 52, "debit": 2750000, "credit": 910000, "directCosts": 2050000, "indirectCosts": 700000, "revenue": 3550000 },
+    { "id": 52028, "nameAr": "سجل مدنى صدفا اسيوط", "mainCenterId": 52, "debit": 2650000, "credit": 880000, "directCosts": 2000000, "indirectCosts": 650000, "revenue": 3400000 },
+    { "id": 52029, "nameAr": "سجل مدنى ساحة سليم اسيوط", "mainCenterId": 52, "debit": 2800000, "credit": 940000, "directCosts": 2100000, "indirectCosts": 700000, "revenue": 3600000 },
+    { "id": 52030, "nameAr": "قسم شرطة العمرانية القاهرة", "mainCenterId": 52, "debit": 8100000, "credit": 2700000, "directCosts": 6200000, "indirectCosts": 1900000, "revenue": 10500000 }
+  ]
+}

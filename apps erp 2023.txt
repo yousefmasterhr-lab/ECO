@@ -1,0 +1,457 @@
+Architectural Inventory & Codebase Dissection: APPS ERP Application 2023
+This technical audit provides a recursive, deep-level architectural dissection of the APPS ERP Application 2023 system. The analysis is based on static reflection of the compiled binaries, schema extraction from the active Microsoft SQL Server instance (Tarabot_Data_2023), local configuration databases (Profile\Data.mdb), Crystal Reports report definitions, and deployment orchestration assets.
+
+Phase 1: Directory Tree & Ecosystem Inventory
+1.1 Architectural Ecosystem Overview
+The application is a classic two-tier client-server enterprise Windows Forms ERP developed in Visual Basic .NET targeting the .NET Framework 3.5 (CLR 2.0/3.5, 32-bit x86). The runtime leverages Telerik RadControls for WinForms (v2010.3.10.1109) for UI presentation, SAP Crystal Reports .NET Runtime (v13.0.2000.0) for business intelligence reporting, and Microsoft Jet 4.0 / ACE OLEDB for local encrypted node configuration.
+
+APPS ERP Application 2023 (Root)
+│
+├── [Runtime Executable & Manifests]
+│   ├── APPS ERP Application 2023.exe      (Primary 32-bit VB.NET WinForms Binary, 53.3 MB)
+│   ├── Apps_Application_2017.pdb          (Program Debug Database symbol file, 17.4 MB)
+│   ├── Apps_Application_2017.xml          (XML IntelliSense & strongly-typed DataSet documentation)
+│   ├── Apps_Application_2017.vshost.exe  (Visual Studio 2008/2010 Hosting Process stub)
+│   └── Form1.vshost.exe.manifest          (Application activation manifest)
+│
+├── [Local Encrypted Configuration Store]
+│   └── Profile\
+│       └── Data.mdb                       (Encrypted MS Access Jet 4.0 configuration database)
+│
+├── [Third-Party UI & Peripheral Libraries]
+│   ├── Telerik.WinControls.dll            (Core Telerik WinForms presentation framework)
+│   ├── Telerik.WinControls.UI.dll         (RadGridView, RadButton, RadTextBox, RadDropDownList)
+│   ├── Telerik.WinControls.GridView.dll   (Enterprise data grids and filtering engines)
+│   ├── Telerik.WinControls.RadDock.dll    (Docking and MDI window layouts)
+│   ├── Telerik.WinControls.RadChart.dll   (Chart visualizers for accounts & cost centers)
+│   ├── Telerik.WinControls.Themes.*.dll   (Aqua, Breeze, Desert, Office2007Black, Windows7)
+│   ├── TelerikCommon.dll / TelerikData.dll(Internal Telerik reflection & data binding)
+│   ├── MessagingToolkit.QRCode.dll        (QR Code barcode generation for ZATCA e-invoicing)
+│   └── zxing.dll                          (Zebra Crossing 1D/2D barcode reader/encoder)
+│
+├── [Crystal Reports Template Assets (164 .rpt files)]
+│   ├── Financial & GL:                    Journal_Note_Report*.rpt, TrialBalance_Report*.rpt,
+│   │                                      Balance_Sheet_Report*.rpt, Income_Report*.rpt
+│   ├── Chart of Accounts:                 Level1_Report*.rpt through Level5_Report*.rpt,
+│   │                                      Analysis_Report*.rpt, CostCenter_Report*.rpt
+│   ├── Invoicing & Sales:                 Sales_Note_Report*.rpt, Sales_By_Invoices_Report.rpt,
+│   │                                      Sales_R_Note_Report*.rpt, OfferPrice_Note_Report.rpt
+│   ├── Purchasing:                        Purchase_Note_Report*.rpt, Purchase_By_Items_Report.rpt,
+│   │                                      Purchase_R_Note_Report*.rpt, Purchase_Order_Note_Report.rpt
+│   ├── Warehousing & Inventory:           Stock_Note_Report*.rpt, Item_Card_Report*.rpt,
+│   │                                      Stock_Report_By_Cost*.rpt, Transfer_Note_Report*.rpt
+│   ├── Banking & Cheques:                 Cheques_Receipt_Report.rpt, Cheques_Delivery_Report.rpt,
+│   │                                      Banks_Transfers_Issue_Report.rpt
+│   ├── Contracting & Projects:            Contract_Note_Report*.rpt, Extract_Note_Report*.rpt
+│   └── HR & Payroll:                      Payroll_Report*.rpt, Attendance_Report*.rpt
+│
+├── [Central Database & Backup Repository]
+│   ├── DB\
+│   │   ├── New.sql                        (Table truncation cleanup script listing 98 core tables)
+│   │   ├── Stoped_Clients_View.txt        (SQL View script for dormant client analysis)
+│   │   └── test.bak                       (SQL Server test database backup archive)
+│   ├── Backup\2023\
+│   │   ├── 31-5-2023.bak                  (Baseline production database backup)
+│   │   ├── 13-1-2024\                     (Uncompressed MDF/LDF relational files)
+│   │   │   ├── Tarabot_Data_2023.mdf      (Primary SQL Server Data file)
+│   │   │   └── Tarabot_Data_2023_log.ldf  (Transaction Log file)
+│   │   └── *.rar                          (Compressed point-in-time database archives)
+│
+├── [Deployment Automation, Scripts & Tooling]
+│   └── ex\
+│       ├── 01_restore_db.sql / db_restore.sql (Automated SQL database restoration routines)
+│       ├── 02_superadmin_seed.sql / admin_account.sql (58-column SuperAdmin RBAC seeding)
+│       ├── 03_firewall_setup.bat / open_sql_ports.bat (Inbound TCP 1433 / UDP 1434 firewall rules)
+│       ├── 04_auto_activate.ps1 / auto_register_node.ps1 (Hardware CPU token calculation & injection)
+│       ├── 05_client_provisioning.ps1 / provision_client.ps1 (Workstation node deployment)
+│       ├── 06_keygen.py / token_calculator.py (Mathematical keygen for CPU hardware binding)
+│       ├── DEPLOYMENT.md                  (Comprehensive operational and architecture manual)
+│       ├── connection_reference.txt       (Vault containing discovered database credentials)
+│       └── master_orchestrator.ps1        (Full-stack zero-touch bootstrap orchestrator)
+│
+├── [Prerequisite Installers & Redists]
+│   └── Install\
+│       ├── License.txt                    (Known hardware ID & activation token ledger)
+│       ├── Step1\SQLEXPRADV_x86_ENU.exe   (Microsoft SQL Server 2008/2012 Express x86 installer)
+│       ├── Step2\CRRuntime_32bit_13_0_2.msi (SAP Crystal Reports Runtime for .NET Framework 32-bit)
+│       └── Others\                        (AnyDesk.exe, TeamViewer_15.exe, Arabic/Urdu TTF fonts)
+│
+└── [Runtime Media & Media Storage]
+    ├── Logo\1.jpg                         (Organization corporate identity banner for reports)
+    ├── Employees_Photos\3101040001.jpg    (Employee profile biometric photo storage)
+    └── QR_Code_Photos\                    (Cached temporary BMP/JPG ZATCA QR code matrices)
+1.2 Ecosystem File Type & Linkage Matrix
+File / Directory	File Type	Operational Purpose	Linkage & Dependent Components
+APPS ERP Application 2023.exe	Win32 PE (.NET 3.5 Assembly)	Primary application runtime executable containing all business forms, calculation modules, and data access layers.	Executes via Windows Shell; loads Telerik UI DLLs, Crystal Reports, and OLEDB drivers.
+Profile\Data.mdb	Microsoft Access (Jet 4.0 / ACE)	Encrypted node configuration registry. Stores server IP, SQL instance, database name, SQL credentials, active user session, and hardware activation key.	Opened on application startup by Login.vb via OleDbConnection (Conn.Profile_Conn) using password awlad mosa.
+Telerik.WinControls.*.dll	.NET Assembly (v2010.3)	Rich desktop UI controls: multi-column grids, docked toolbars, date pickers, themes, and input masks.	Loaded dynamically by APPS ERP Application 2023.exe during form instantiation.
+CrystalDecisions.*.dll	.NET Assembly (v13.0)	Reporting engine runtime managing formula evaluations, database parameter passing, and print spooling.	Referenced by 164 .rpt wrapper classes in Apps_Application_2017.
+MessagingToolkit.QRCode.dll	.NET Assembly	Generates 2D QR Code bitmaps formatted according to Saudi ZATCA e-invoicing Phase 1 TLV specs.	Called by Sales_Form via TLVCls during invoice submission and printing.
+*.rpt (164 files in root)	Crystal Reports RPT Template	Pre-compiled report templates defining visual page layouts, group headers/footers, and formulas.	Loaded at runtime by report viewer forms (*_View.vb) and bound to strongly typed DataSets.
+Tarabot_Data_2023.mdf	SQL Server Relational DB	Central database containing all financial ledgers, inventory balances, master records, and user security tables.	Connected via System.Data.SqlClient.SqlConnection (Conn.MdF_Conn) over TCP port 1433.
+ex\token_calculator.py	Python Script	Reverse-engineered keygen that computes 14-digit hardware activation tokens from WMI CPU ProcessorId.	Used by DevOps/System Administrators to generate valid node registration keys for client PCs.
+Logo\1.jpg	JPEG Graphic	Corporate company header logo dynamically embedded into financial statements and invoice printouts.	Read by report viewer forms and injected into Crystal Report Logo image object.
+Phase 2: Binary Decomposition & Namespace Mapping (APPS ERP Application 2023.exe)
+Static reflection and decompilation of APPS ERP Application 2023.exe reveals 851 total types, consisting of 210 Windows Forms, 14 strongly-typed DataSets/DataTables, and 626 helper, business logic, and Crystal Report proxy classes.
+
+Namespace: Apps_Application_2017
+├── Core Architecture & Singletons
+│   ├── Conn                             (Global SQL Server and OLEDB connection registry)
+│   ├── mero / ToWord                    (Tafqeet: Arabic/English number-to-words currency converter)
+│   ├── TLVCls (zatca.einvoicing)        (ZATCA Phase 1 Tag-Length-Value QR encoder)
+│   ├── Resizer / ResizeControls         (Dynamic DPI and form scaling engine)
+│   └── My.MyApplication / MyForms      (VB.NET Application framework context)
+│
+├── Security & Node Provisioning
+│   ├── Login                            (Node hardware verification, PIN check, session cache)
+│   ├── Data_Form                        (Host/Workstation connection setup & activation wizard)
+│   ├── Users_Form                       (58/71-column granular RBAC permission matrix)
+│   └── BackUp_Form                      (Direct SQL BACKUP DATABASE command executor)
+│
+├── Financial Accounting & General Ledger
+│   ├── GeneralLedger_Form               (Manual double-entry journal vouchers)
+│   ├── Receivable_Form / Payable_Form   (Cash/Bank receipt vouchers and payment vouchers)
+│   ├── Cheque_Delivery_Form / Cheque_Issue_Form (Cheque lifecycle management)
+│   ├── Level1_Form ... Level5_Form      (5-Level hierarchical Chart of Accounts management)
+│   ├── Costcenters_Form / Main_Costcenters_Form (Cost center allocation tree)
+│   └── Accounts_Analysis_Form           (Sub-ledger analytical categorization)
+│
+├── Sales, Commercial & Invoicing
+│   ├── Sales_Form (1 to 5)              (Point of Sale & Trade sales invoicing)
+│   ├── Sales_R_Form (1 to 5)            (Sales Returns with stock reversal & credit notes)
+│   ├── Sales_Journals_Form (1 to 5)     (Automated double-entry sales journal generation)
+│   ├── OfferPrice_Form                  (Customer price quotation and estimation)
+│   └── Clients_Form / SalesMen_Form     (Customer CRM master and sales representative tracking)
+│
+├── Purchasing & Supply Chain
+│   ├── Purchase_Form (1 to 2)           (Vendor bills, gross/net cost, tax handling)
+│   ├── Purchase_Order_Form              (PO lifecycle tracking)
+│   ├── Purchase_R_Form (1 to 2)         (Vendor returns and debit note issuance)
+│   ├── Purchase_Journals_Form (1 to 2)  (Automated purchasing journal vouchers)
+│   └── Suppliers_Form                   (Vendor master accounts and credit terms)
+│
+├── Inventory & Warehousing
+│   ├── Stock_Form / Stock_Form_For_Inventory (Opening balances & direct warehouse receipts)
+│   ├── Transfer_Form                    (Inter-warehouse transfers between locations)
+│   ├── Stock_Adjustment_Form            (Physical inventory reconciliation & write-offs)
+│   ├── Internal_Issue_Form / Internal_Delivery_Form (Internal departmental stock movements)
+│   ├── External_Issue_Form / External_Delivery_Form (External job/site stock movements)
+│   ├── Deperitation_Form                (Asset depreciation / damaged goods disposal)
+│   ├── Gifts_Issue_Form / Gifts_Delivery_Form (Promotional inventory samples)
+│   ├── Unpack_Assemble_Form             (Bill of Materials kitting and assembly breakdown)
+│   └── Items_Form / Units_Form          (SKU master, multi-unit conversions, barcode indexing)
+│
+├── Contracting & Engineering Projects
+│   ├── Contracts_Form / Contracts_Form_For_Clients (Project contract terms and milestones)
+│   ├── Extracts_Form / Extracts_Form_For_Clients   (Contractor/Client progressive billings / مستخلصات)
+│   └── Project_Cost_Form                (WIP job costing and milestone completion margin)
+│
+└── HR, Personnel & Payroll
+    ├── Employees_Form                   (Employee master records, salary rates, allowances)
+    ├── Attendance_Form / Attendance_Execute_Form (Daily timesheets and biometric processing)
+    └── Salary_Form                      (Monthly payroll sheet preparation & bank disbursement)
+2.1 Application Architecture & Startup Sequence
+Entry Point: The application starts via Apps_Application_2017.My.MyApplication (WindowsFormsApplicationBase), launching 
+
+Login
+ as the startup form.
+Local Configuration Reading:
+Login_Load constructs an OLEDB connection to Profile\Data.mdb using password awlad mosa.
+Queries Profile_User: extracts Server_Name, Data_Name, Data_User, Data_Password, and Activation_Code.
+If Server_Name or Data_Name is empty, the application redirects immediately to 
+
+Data_Form
+.
+Hardware Binding Enforcement:
+Login.CpuId() queries WMI class Win32_Processor to retrieve the machine's hardware processor ID.
+It computes the mathematical token verification formula: $$\text{TargetID} = \frac{\frac{\text{Val}(\text{Activation_Code})}{41.0} + 864864864}{321.0} - 1111111110$$
+If TargetID does not equal the CPU Hardware ID, the system locks execution and displays Data_Form to prompt for an activation key.
+SQL Handshake & Authentication:
+Establishes persistent connection Conn.MdF_Conn to SQL Server: Data Source=<Server_Name>;Initial Catalog=<Data_Name>;User ID=<Data_User>;Password=<Data_Password>
+Authenticates entered User_ID and User_Pin against dbo.Users.
+Queries the 58 RBAC columns of dbo.Users.
+Caches active user credentials in Profile\Data.mdb -> Users_Table.
+Dashboard Transition:
+Opens 
+
+ControlPanel
+ (MDI Shell).
+Loops through all UI navigation buttons (RadButton), setting Visible = True/False based on the operator's permission flags in dbo.Users.
+2.2 Deep Inspection of Core Engine Classes
+1. Apps_Application_2017.Conn
+Namespace: Apps_Application_2017
+Role: Global Connection Registry & Window Layout State Manager.
+Key Static Fields:
+public static SqlConnection MdF_Conn: Primary persistent SQL Server connection used by all transaction forms.
+public static SqlConnection W_MdF_Conn: Secondary connection object for workstation queries.
+public static OleDbConnection Profile_Conn: Connection handle to local Profile\Data.mdb.
+public static ConnectionInfo connectionInfo: Crystal Reports authentication carrier passed to reports.
+public static String Server_Name, Data_Name, Data_User, Data_Password: Active database credentials.
+Sizing parameters: Form_W, Form_H, Form_T, Form_B, Form_R (Window coordinate presets).
+2. Apps_Application_2017.zatca.einvoicing.TLVCls
+Namespace: Apps_Application_2017.zatca.einvoicing
+Role: Implementation of Saudi ZATCA (Zakat, Tax and Customs Authority) Phase 1 E-Invoicing QR Code Generator.
+Data Structure: Encapsulates 5 specific TLV tags:
+Tag 1: Seller's Name (Seller)
+Tag 2: VAT Registration Number (VatNo)
+Tag 3: Invoice Timestamp (dateTime)
+Tag 4: Invoice Total with VAT (Total)
+Tag 5: Total VAT Amount (Tax)
+Key Methods:
+private Byte[] getBytes(Int32 id, Byte[] Value): Formats Tag ID, Length byte, and UTF-8 value payload.
+public String ToBase64(): Concatenates all 5 TLV byte arrays and converts them into a Base64 string for QR matrix encoding via MessagingToolkit.QRCode.
+3. Apps_Application_2017.ToWord & Apps_Application_2017.CurrencyInfo
+Namespace: Apps_Application_2017
+Role: Dual Arabic and English financial number-to-words spelling (Tafqeet / تفقيط).
+Key Methods:
+public String ConvertToArabic(): Converts large decimal monetary amounts into grammatically accurate Arabic text, handling singular, dual, and plural rules (e.g., "فقط مائة وأربعة وعشرون ريالاً سعودياً وخمسون هللة لا غير").
+public String ConvertToEnglish(): Produces standard English currency strings.
+private String ProcessArabicGroup(Int32 groupNumber, Int32 groupLevel, Decimal remainingNumber): Processes 3-digit number groups with masculine/feminine currency matching.
+2.3 Detailed Form & Transaction Module Breakdown
+General Ledger & Accounting (GeneralLedger_Form)
+Class: 
+
+Apps_Application_2017.GeneralLedger_Form
+ (Base: Telerik.WinControls.UI.RadForm, 255 controls, 279 methods)
+Core Responsibilities: Entry, validation, balance checking, and posting of manual multi-line General Ledger Journal Vouchers (سند قيد عام).
+Controls & Data Grid:
+_Note_No (Voucher Number), _Note_Date (Date), _Note_Description (Memo)
+_Level5_GridView: Autocomplete grid for 5th-level detail accounts from Level5_View.
+_Costcenters_GridView: Grid lookup for cost centers (Costcenters_View).
+_Analysis_GridView: Grid lookup for sub-ledger analytical dimensions (Accounts_Analysis_View).
+_Currency_GridView: Multi-currency selection with _Transaction_Exchange rate multiplier.
+Double-Entry Balance Engine: _Note_Debit, _Note_Credit, _Note_Balance. Enforces $\sum \text{Debit} - \sum \text{Credit} = 0$ before unlocking _Save.
+Amount in Words: _Note_Net_Text updated dynamically via ToWord.ConvertToArabic().
+Primary Event Handlers & Data Pipeline:
+Add_Transaction_Click: Adds an entry row to in-memory DataTable (Adap_D_V), computes exchange rate conversion (Actual_Debit * Exchange = Debit), and recalculates header totals via Find_Total().
+Save_Click:
+Validates Note_Balance == 0.
+Writes header record to dbo.GeneralLedger_Head via Adap_H.Update().
+Writes line items to dbo.GeneralLedger_Details via Adap_D.Update().
+Commits audit metadata: Entry_ID, Entry_Name, Flag = 1.
+Print_Click: Injects voucher parameters into Journal_Note_Report.rpt and displays Journal_Note_View.
+Sales & Invoicing (Sales_Form)
+Class: 
+
+Apps_Application_2017.Sales_Form
+ (Base: RadForm, 279 controls, 458 methods)
+Core Responsibilities: Point-of-sale and commercial trade sales invoicing, multi-unit barcode lookup, trade discount calculation, VAT tax computation, ZATCA QR code generation, and automated accounting journal creation.
+Cart & Calculation Fields:
+_Note_Type: Dropdown selecting payment term (1 = Cash / نقدي, 2 = Credit / آجل).
+Line Calculations: Qty * Price = Total, Total - Discount_Amount = Net.
+Unit Conversion: _Unit_Exchang converts pack/box quantity to base unit (Actual_Qty = Qty * Unit_Exchang).
+Taxes: _Vat_Tax_Per (15%), _Vat_Tax_Amount, _D_Tax_Per (Withholding/Discount tax), _D_Tax_Amount, _Note_Net_With_Tax.
+Automated Double-Entry Account: _Debit_Level5_ID dynamically maps to Cash Account (for cash sales) or Client Account (for credit sales).
+Primary Event Handlers:
+Save_Click:
+Writes to dbo.Sales_Head and line items to dbo.Sales_Details.
+Automatic Journal Creation: Automatically generates a balancing double-entry voucher in dbo.Sales_Journals_Head and dbo.Sales_Journals_Details:
+Debit: Customer / Cash Account (Debit_Level5_ID) for Note_Net_With_Tax.
+Credit: Sales Revenue Account (Sales_Settings.Sales_Level5_ID) for Note_Net.
+Credit: Output VAT Tax Account (Sales_Settings.Tax_Level5_ID) for Note_Tax.
+Inventory Deduction: Reduces dbo.Items_Details.Balance and Actual_Balance for the specified Inventory_ID.
+ZATCA QR Code Matrix: Calls TLVCls.ToBase64(), converts to barcode image, saves into QR_Code_Photos\, and sends to Sales_Note_Report.rpt.
+Purchasing & Vendor Invoicing (Purchase_Form)
+Class: 
+
+Apps_Application_2017.Purchase_Form
+ (Base: RadForm, 251 controls, 434 methods)
+Core Responsibilities: Vendor bill recording, cost price adjustments, input VAT tracking, automated purchase journal creation, and moving average cost updating.
+Primary Event Handlers:
+Save_Click:
+Writes to dbo.Purchase_Head and dbo.Purchase_Details.
+Writes balancing accounting entries to dbo.Purchase_Journals_Head / dbo.Purchase_Journals_Details:
+Debit: Inventory Account (Stock_Settings.Stock_Level5_ID) for Note_Net.
+Debit: Input VAT Tax Account (Purchase_Settings.Tax_Level5_ID) for Note_Tax.
+Credit: Vendor Account (Supplier_Level5_ID) / Cash Account for Note_Net_With_Tax.
+Moving Average Cost Calculation: Updates Items.Average_Cost in dbo.Items: $$\text{New Average Cost} = \frac{(\text{Current Stock} \times \text{Average Cost}) + (\text{Received Qty} \times \text{Purchase Price})}{\text{Current Stock} + \text{Received Qty}}$$
+Inventory & Warehousing (Stock_Form)
+Class: 
+
+Apps_Application_2017.Stock_Form
+ (Base: RadForm, 259 controls, 244 methods)
+Core Responsibilities: Opening balance stock entry, warehouse stock additions, and inventory revaluation.
+Data Adapters:
+Adap_H: dbo.Stock_Head
+Adap_D: dbo.Stock_Details
+Acc_Adap_H: dbo.GeneralLedger_Head (Opening balance equity offset)
+Balance_Adap: Updates dbo.Items_Details.Balance per warehouse.
+User Security & Roles (Users_Form)
+Class: 
+
+Apps_Application_2017.Users_Form
+ (Base: RadForm, 270 controls, 409 methods)
+Core Responsibilities: User provisioning and assignment of granular operational flags across 58 permission columns.
+Primary Event Handlers:
+Save_Click: Executes parameterized SQL INSERT INTO dbo.Users or UPDATE dbo.Users. Note that passwords (User_Pin) are stored as plaintext strings with direct ASCII equality checks during authentication.
+Phase 3: Central Database Architecture (Tarabot_Data_2023)
+Inspection of the SQL Server database catalog via INFORMATION_SCHEMA and sys.objects provides the exact structural profile:
+
+Total Tables: 192
+Total Views: 239
+Triggers: 0 (Business logic is enforced entirely at the ADO.NET client level)
+Stored Procedures: 0 (Data access uses direct inline dynamic SQL parameterized commands)
+3.1 Entity Relationship & Schema Categorization
++----------------------------------------------------------------------------------------------------+
+|                                    CENTRAL DATABASE ENTITY DOMAINS                                 |
++----------------------------------------------------------------------------------------------------+
+  1. GENERAL LEDGER & CHART OF ACCOUNTS
+     Level1 (Assets, Liabilities, Equity, Revenues, Expenses)
+       └── Level2 (Current Assets, Non-Current Assets, ...)
+             └── Level3 (Cash & Cash Equivalents, Accounts Receivable, ...)
+                   └── Level4 (Main Bank Accounts, Trade Debtors, ...)
+                         └── Level5 (Detail Posting Accounts - 330 accounts)
+                               ├── GeneralLedger_Head  ──< GeneralLedger_Details
+                               ├── Receivable_Head     ──< Receivable_Details
+                               └── Payable_Head        ──< Payable_Details
+     Cost Centers: Main_Costcenters ──< Costcenters (32 active centers)
+     Analytical Sub-Ledgers: Accounts_Analysis (13 dimensions)
+  2. COMMERCIAL SALES & DISTRIBUTION
+     Clients (Customers) ──< Sales_Head (Invoices 1-5) ──< Sales_Details (Line Items 1-5)
+                                    │
+                                    ├───> Sales_Journals_Head ──< Sales_Journals_Details
+                                    └───> Sales_Payment (Receipt collections)
+     Sales Returns: Sales_R_Head (1-5) ──< Sales_R_Details (1-5) ──< Sales_R_Journals_*
+     Quotations:    OfferPrice_Head ──< OfferPrice_Details
+  3. PROCUREMENT & VENDORS
+     Suppliers (Vendors) ──< Purchase_Head (Bills 1-2) ──< Purchase_Details (Line Items 1-2)
+                                    │
+                                    └───> Purchase_Journals_Head ──< Purchase_Journals_Details
+     Purchase Orders: Purchase_Orders_Head ──< Purchase_Orders_Details
+     Vendor Returns:  Purchase_R_Head (1-2) ──< Purchase_R_Details (1-2) ──< Purchase_R_Journals_*
+  4. INVENTORY & WAREHOUSING
+     Inventories (Warehouses)
+       └── Items_Details (Warehouse Balance & Location Matrix)
+             ^
+     Items (SKU Master)
+       ├── Main_Categories ──< Sub_Categories
+       ├── Units (Base Units & Packaging Multipliers)
+       └── Stock_Notes_Type (Transaction direction: +1, -1, 0)
+     Operational Stock Movements:
+       ├── Stock_Head             ──< Stock_Details              (Warehouse Inflows)
+       ├── Transfer_Delivery_Head ──< Transfer_Delivery_Details  (Warehouse Transfers)
+       ├── Stock_Adjustment_Head  ──< Stock_Adjustment_Details   (Inventory Reconciliations)
+       ├── Internal_Issue_Head    ──< Internal_Issue_Details     (Departmental Issues)
+       ├── External_Issue_Head    ──< External_Issue_Details     (Job Site Issues)
+       ├── Deperitation_Head      ──< Deperitation_Details       (Damaged/Depreciated Stock)
+       └── Unpack_Assemble_Head   ──< Unpack_Assemble_Details    (BOM Assembly/Disassembly)
+  5. CONTRACTING & PROJECT ENGINEERING
+     Contracts_Head (Projects) ──< Contracts_Details
+       └── Extracts_Head (Progress billings) ──< Extracts_Details
+             └── Projects_Cost_Head ──< Projects_Cost_Details
+  6. HR & WORKFORCE MANAGEMENT
+     Employees (Employee Master)
+       ├── Attendance_Head ──< Attendance_Details (Biometric Timesheets)
+       └── Salary_Head     ──< Salary_Details     (Payroll Registers)
++----------------------------------------------------------------------------------------------------+
+3.2 Master Table Catalog & Structural Blueprint
+The table below catalogs key relational entities in Tarabot_Data_2023, detailing their functional purpose, primary keys, and schemas:
+
+Table Name	Active Rows	Columns	Primary Key	Key Structural Columns & Audit Fields	Functional Domain
+Users	2	71	User_ID	User_Name, User_Pin, App_Language, 58 Permission flags (GeneralLedger, Sales1, Stock, Purchase, etc.)	Security & RBAC
+Level1	4	9	Level1_ID	Level1_Name_A, Level1_Name_E, Level1_Type, Active	Chart of Accounts (L1)
+Level2	4	9	Level2_ID	Level1_ID, Level2_Name_A, Level2_Name_E, Active	Chart of Accounts (L2)
+Level3	9	9	Level3_ID	Level2_ID, Level3_Name_A, Level3_Name_E, Active	Chart of Accounts (L3)
+Level4	70	13	Level4_ID	Level3_ID, Level4_Name_A, Level4_Name_E, Balance_Sheet_Type, Incom_Type, Account_Nature	Chart of Accounts (L4)
+Level5	330	11	Level5_ID	Level4_ID, Level5_Name_A, Level5_Name_E, Analysis_Type, Module_Type, Account_Nature	Chart of Accounts (L5 Detail)
+Costcenters	32	9	Costcenter_ID	Main_Costcenter_ID, Costcenter_Name_A, Costcenter_Name_E, Active	Cost Allocation
+Accounts_Analysis	13	11	Analysis_ID	Analysis_Name_A, Analysis_Name_E, Analysis_Type, Active	Sub-Ledger Analysis
+GeneralLedger_Head	16	15	Note_No	Note_Date, Note_Date_H, Note_Debit, Note_Credit, Note_Net_Text, Entry_ID, Entry_Name, Flag	General Ledger Header
+GeneralLedger_Details	78	19	Note_No, SR	Level5_ID, Costcenter_ID, Analysis_ID, Currency_ID, Exchange, Actual_Debit, Debit, Actual_Credit, Credit	General Ledger Lines
+Receivable_Head	6	19	Note_No	Note_Date, Note_Debit, Note_Credit, Previous_Balance, Account_Balance, Entry_ID, Flag	Cash Receipt Vouchers
+Receivable_Details	12	19	Note_No, SR	Level5_ID, Currency_ID, Exchange, Actual_Debit, Debit, Costcenter_ID, Analysis_ID	Receipt Voucher Lines
+Payable_Head	109	19	Note_No	Note_Date, Note_Debit, Note_Credit, Previous_Balance, Account_Balance, Entry_ID, Flag	Payment Vouchers
+Payable_Details	218	19	Note_No, SR	Level5_ID, Currency_ID, Exchange, Actual_Credit, Credit, Costcenter_ID, Analysis_ID	Payment Voucher Lines
+Cheques	0	23	Note_No	Cheque_No, Cheque_Date, Due_Date, Bank_ID, Client_ID, Supplier_ID, Amount, Status	Commercial Paper/Cheques
+Items	0	22	Item_ID	Item_Name_A, Sub_Category_ID, Default_Unit_ID, First_Cost, Last_Cost, Average_Cost, Active	SKU Master
+Items_Details	18	6	Item_ID, SR	Unit_ID, Inventory_ID, Unit_Exchang, Retail_Price, Wholesale_Price, Balance, Actual_Balance	Warehouse Stock & Prices
+Sales_Head (1-5)	0	41	Note_No	Note_Date, Client_ID, Inventory_ID, SalesMan_ID, Note_Total, Note_Discount, Note_Tax, Note_Net_With_Tax	Sales Invoice Headers
+Sales_Details (1-5)	0	17	Note_No, SR	Item_ID, Unit_ID, Unit_Exchang, Qty, Actual_Qty, Price, Actual_Price, Net, Cost	Sales Invoice Lines
+Sales_Journals_Head	0	15	Note_No	Note_Date, Note_Debit, Note_Credit, Entry_ID, Entry_Name, Flag	Auto Sales Journals
+Sales_Journals_Details	0	19	Note_No, SR	Level5_ID, Costcenter_ID, Debit, Credit, Description	Auto Sales Journal Lines
+Purchase_Head (1-2)	0	38	Note_No	Note_Date, Supplier_ID, Inventory_ID, Note_Total, Note_Discount, Note_Tax, Note_Net_With_Tax	Vendor Bill Headers
+Purchase_Details (1-2)	0	16	Note_No, SR	Item_ID, Unit_ID, Unit_Exchang, Qty, Actual_Qty, Price, Net, Cost	Vendor Bill Lines
+Stock_Head	0	21	Note_No	Note_Date, Inventory_ID, Level5_ID, Note_Total, Entry_ID, Flag	Stock Receiving Receipts
+Stock_Details	0	14	Note_No, SR	Item_ID, Unit_ID, Qty, Actual_Qty, Price, Actual_Price, Net	Stock Receiving Lines
+Transfer_Delivery_Head	0	19	Note_No	Note_Date, From_Inventory_ID, To_Inventory_ID, Note_Total, Entry_ID, Flag	Warehouse Transfers
+Contracts_Head	0	19	Contract_No	Contract_Date, Client_ID, Contract_Total, Retention_Per, Advance_Payment, Status	Project Contracts
+Extracts_Head	0	22	Extract_No	Contract_No, Extract_Date, Previous_Amount, Current_Amount, Deductions, Net_Amount	Progressive Billing (مستخلص)
+Employees	0	40	Employee_ID	Employee_Name_A, Job_ID, Department_ID, Basic_Salary, Allowances, Deductions, Hire_Date	Human Resources Master
+Salary_Head	0	14	Note_No	Month, Year, Total_Basic, Total_Allowances, Total_Deductions, Net_Payable	Monthly Payroll Head
+Notes_Types	33	3	Note_Type_ID	Note_Type_Name_A, Note_Type_Name_E (Defines commercial voucher categories)	Financial Taxonomy
+Stock_Notes_Type	38	4	Note_Type_ID	Note_Type_Name_A, Note_Type_Effect (+1 Addition, -1 Subtraction, 0 Transfer)	Inventory Dynamics
+3.3 Relational View Architecture (239 Views)
+Rather than executing stored procedures, APPS ERP 2023 executes parameterized SELECT queries against a comprehensive layer of 239 SQL Server Views.
+
+Key analytical views include:
+
+Level5_View: Joins Level5 -> Level4 -> Level3 -> Level2 -> Level1. Denormalizes the complete 5-tier Chart of Accounts tree into every row, attaching Balance_Sheet_Type, Incom_Type, Module_Type, and Account_Nature.
+Items_With_Balance_View: Computes live stock on hand by joining Items with Items_Details across specific Inventory_ID warehouse partitions.
+Sales_R_Details_View1: Combines line items, item masters, units, currency rates, warehouse codes, and stock movement multipliers into a unified view for profitability analysis.
+GeneralLedger_View: Blends GeneralLedger_Head and GeneralLedger_Details with Level5_View, Costcenters_View, and Currencies for real-time Trial Balance and Ledger generation.
+Phase 4: Data Flow & Inter-Component Pipeline
+4.1 Connection Lifecycle & State Pipeline
+The application avoids transient connection pooling or ORM abstraction in favor of a persistent singleton ADO.NET connection model:
+
++----------------------------------------------------------------------------------------------------+
+|                                    CONNECTION & DATA FLOW PIPELINE                                 |
++----------------------------------------------------------------------------------------------------+
+  [STEP 1: NODE BOOTSTRAP]
+  Application Launch (APPS ERP Application 2023.exe)
+         │
+         ▼
+  Open Local Node Registry: Profile\Data.mdb (Encrypted Jet 4.0, Key: "awlad mosa")
+         │
+         ├───> Read Profile_User: Server_Name, Data_Name, Data_User, Data_Password
+         └───> Validate Hardware ID: Verify WMI Win32_Processor CPU Token
+  [STEP 2: CENTRAL SQL SERVER HANDSHAKE]
+  Instantiate Connection Singleton:
+  Apps_Application_2017.Conn.MdF_Conn = new SqlConnection("Server=...;Database=...;User Id=...;Password=...")
+  Conn.MdF_Conn.Open()  <--- [PERSISTENT SINGLETON: REMAINS OPEN FOR LIFETIME OF DESKTOP SESSION]
+  [STEP 3: OPERATOR AUTHENTICATION & RBAC CACHING]
+  Execute Query: SELECT * FROM dbo.Users WHERE User_ID = @UID AND User_Pin = @Pin
+         │
+         ├───> Success: Cache User_ID & User_Name into Profile\Data.mdb -> Users_Table
+         └───> Load ControlPanel: Set UI Module Buttons (Visible = True/False) from 58 RBAC Flags
+  [STEP 4: TRANSACTION DISPATCH & BUSINESS EXECUTION]
+  Operator performs Transaction (e.g., Sales_Form, GeneralLedger_Form, Purchase_Form):
+         │
+         ├───> ADO.NET SqlDataAdapter (Adap_H, Adap_D) fills in-memory DataTables
+         ├───> In-Memory Cart & Math: Tax calculations, multi-unit conversions, discount cascades
+         ├───> Double-Entry Balancing Verification (Debit - Credit == 0)
+         │
+         ├───> Transaction Commit (Synchronous over Conn.MdF_Conn):
+         │       1. Adap_H.Update()  ---> [dbo.Sales_Head / dbo.GeneralLedger_Head]
+         │       2. Adap_D.Update()  ---> [dbo.Sales_Details / dbo.GeneralLedger_Details]
+         │       3. Auto-Journals    ---> [dbo.Sales_Journals_Head / Details]
+         │       4. Stock Balance    ---> [dbo.Items_Details (Balance +/- Qty)]
+         │
+         └───> Post-Transaction: Call ToWord.ConvertToArabic(Total) -> Display Tafqeet in UI
+  [STEP 5: REPORTING & PRINT DISPATCH]
+  Operator clicks "Print" (e.g., Trial Balance, Tax Invoice, Item Card):
+         │
+         ├───> Form initializes strongly-typed DataSet (e.g., Sales_DS, TrialBalance_By_Level1)
+         ├───> Adap_Print queries SQL Server View (e.g., Sales_Details_View1, Level5_View)
+         ├───> Populate in-memory DataTables
+         │
+         ├───> Load Crystal Report (.rpt file, e.g., Sales_Note_Report.rpt)
+         ├───> Apply Conn.connectionInfo (ServerName, DBName, User, Password) to TableLogOnInfos
+         ├───> SetDataSource(DataSet.Tables[0])
+         ├───> Pass Parameters (Company Logo: Logo\1.jpg, ZATCA QR Code: QR_Code_Photos\*.jpg)
+         │
+         └───> Render report in CrystalReportViewer Modal Window
++----------------------------------------------------------------------------------------------------+
+4.2 Critical Architectural Findings for Modern Web ERP Migration
+Decouple Business Logic from UI:
+In the legacy desktop app, business calculations (FIFO/Weighted Average cost updating, tax calculations, and double-entry balancing) are executed in WinForms UI event handlers (Save_Click, Qty_TextChanged).
+Modern Architecture: Must be migrated into a stateless TypeScript/Node.js or .NET Core Web API service layer with automated database transactions (BEGIN TRAN ... COMMIT).
+Eliminate Client-Side Plaintext Security:
+Profile\Data.mdb stores SQL credentials and dbo.Users stores authentication PINs in plaintext.
+Modern Architecture: Implement secure hashing (Argon2id/bcrypt) and JWT/OAuth2 Bearer tokens with Role-Based Access Control (RBAC) reflecting the 58 granular permissions.
+Database View Preservation:
+The 239 SQL Server views in Tarabot_Data_2023 represent clean denormalizations of accounting hierarchies and stock balances.
+Modern Architecture: These views can be preserved or directly mapped via an ORM (e.g., Prisma, Drizzle, or Entity Framework Core) as database read-models.
+ZATCA & Reporting Engine Migration:
+TLVCls.vb logic can be implemented as a lightweight utility module in modern TypeScript/Python.
+The 164 Crystal Reports (.rpt) should be transitioned to modern web-native reporting frameworks (e.g., headless PDF rendering with @react-pdf/renderer or Puppeteer HTML-to-PDF).
+4:25 AM

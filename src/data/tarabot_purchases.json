@@ -1,0 +1,76 @@
+[
+  {
+    "id": "BILL-2023-5001",
+    "noteNo": 5001,
+    "noteDate": "2023-11-05",
+    "noteType": "CREDIT",
+    "supplierId": 2201004,
+    "supplierNameAr": "على زغلول مورد حديد واسمنت",
+    "vatNo": "300220100400003",
+    "inventoryId": 1,
+    "inventoryNameAr": "المستودع الرئيسي - الرياض",
+    "totalAmount": 770000.0,
+    "discountAmount": 0.0,
+    "netAmount": 770000.0,
+    "vatAmount": 115500.0,
+    "grandTotal": 885500.0,
+    "netText": "فقط ثمانمائة وخمسة وثمانون ألف وخمسمائة ريال سعودي لا غير",
+    "journalNo": 9005,
+    "status": "POSTED",
+    "lines": [
+      {
+        "sr": 1,
+        "itemId": 1001,
+        "itemNameAr": "حديد تسليح 12 مم عالي المقاومة سابك",
+        "unitId": 1,
+        "unitNameAr": "طن",
+        "unitExchange": 1.0,
+        "qty": 20.0,
+        "price": 38500.0,
+        "total": 770000.0,
+        "vatRate": 0.15,
+        "vatAmount": 115500.0,
+        "netWithTax": 885500.0,
+        "oldCost": 38200.0,
+        "newCost": 38500.0
+      }
+    ]
+  },
+  {
+    "id": "BILL-2023-5002",
+    "noteNo": 5002,
+    "noteDate": "2023-11-08",
+    "noteType": "CASH",
+    "supplierId": 2201001,
+    "supplierNameAr": "محمود سلطان مورد احلال ورمل وزلط",
+    "vatNo": "300220100100003",
+    "inventoryId": 1,
+    "inventoryNameAr": "المستودع الرئيسي - الرياض",
+    "totalAmount": 70000.0,
+    "discountAmount": 0.0,
+    "netAmount": 70000.0,
+    "vatAmount": 10500.0,
+    "grandTotal": 80500.0,
+    "netText": "فقط ثمانون ألف وخمسمائة ريال سعودي لا غير",
+    "journalNo": 9006,
+    "status": "POSTED",
+    "lines": [
+      {
+        "sr": 1,
+        "itemId": 1003,
+        "itemNameAr": "رمل مغسول ناعم للبناء والخرسانة",
+        "unitId": 2,
+        "unitNameAr": "متر مكعب",
+        "unitExchange": 1.0,
+        "qty": 500.0,
+        "price": 140.0,
+        "total": 70000.0,
+        "vatRate": 0.15,
+        "vatAmount": 10500.0,
+        "netWithTax": 80500.0,
+        "oldCost": 135.0,
+        "newCost": 140.0
+      }
+    ]
+  }
+]

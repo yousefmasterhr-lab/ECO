@@ -1,0 +1,63 @@
+{
+  "name": "ECO - منظومة إدارة الموارد المؤسسية الذكية",
+  "short_name": "ECO",
+  "description": "منظومة ECO لإدارة الموارد المؤسسية والمشروعات والمقاولات والمكتب الفني والمالية",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0E1610",
+  "theme_color": "#0E1610",
+  "dir": "rtl",
+  "lang": "ar",
+  "categories": ["business", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-192-maskable.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "المستخلصات (IPCs)",
+      "short_name": "المستخلصات",
+      "description": "متابعة مستخلصات المقاولين والاستشاري",
+      "url": "/?module=engineering&sub=eng_ipc",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "الجدول الزمني",
+      "short_name": "الجدول الزمني",
+      "description": "محطات الإنجاز ومقارنة التنفيذ",
+      "url": "/?module=engineering&sub=eng_schedule",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "المقاولون والتوريدات",
+      "short_name": "المقاولون",
+      "description": "سجل المقاولين والعقود",
+      "url": "/?module=engineering&sub=eng_contractors",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

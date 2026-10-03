@@ -1,0 +1,17 @@
+﻿[
+    {
+        "Level1_ID":  "1",
+        "Level2_ID":  "1",
+        "Level2_Name_A":  "الاصول"
+    },
+    {
+        "Level1_ID":  "2",
+        "Level2_ID":  "2",
+        "Level2_Name_A":  "الخصوم"
+    },
+    {
+        "Level1_ID":  "3",
+        "Level2_ID":  "3",
+        "Level2_Name_A":  "المصروفات"
+    }
+]
