@@ -83,6 +83,9 @@ export const SalesModule: React.FC = () => {
                 <Sparkles className="w-3 h-3" />
                 {taxConfig.authorityBadgeAr}
               </span>
+              <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30">
+                {t('تجريبي (بيئة محاكاة الفوترة)', 'Preview (Sandbox Invoicing)')}
+              </span>
               <span className="text-xs text-[#5C665E] dark:text-[#8FA392] font-mono">
                 {activeDatabase} / Sales_Head & Details
               </span>
@@ -154,7 +157,10 @@ export const SalesModule: React.FC = () => {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-6">
           <div className="p-3.5 rounded-xl bg-white/80 dark:bg-[#1A241C]/80 border border-[#E0D9CB]/80 dark:border-[#243628]/80">
             <div className="flex items-center justify-between text-xs text-[#5C665E] dark:text-[#8FA392] mb-1">
-              <span>{t('إجمالي المبيعات الشاملة', 'Total Sales Volume')}</span>
+              <span className="flex items-center gap-1">
+                <span>{t('إجمالي المبيعات الشاملة', 'Total Sales Volume')}</span>
+                <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold">({t('تجريبي', 'Preview')})</span>
+              </span>
               <ShoppingCart className="w-3.5 h-3.5 text-[#059669]" />
             </div>
             <div className="font-mono font-black text-lg text-[#1A241C] dark:text-[#F3EFE6] flex items-baseline gap-1.5">
@@ -162,13 +168,16 @@ export const SalesModule: React.FC = () => {
               <span className="text-xs font-normal text-[#5C665E] dark:text-[#8FA392]">{taxConfig.currencySymbolAr}</span>
             </div>
             <div className="text-[11px] text-emerald-600 font-semibold mt-1">
-              {formatNumber(salesInvoices.length)} {t('فواتير معتمدة', 'Invoices')}
+              {formatNumber(salesInvoices.length)} {t('فواتير معتمدة (تجريبي)', 'Invoices (Preview)')}
             </div>
           </div>
 
           <div className="p-3.5 rounded-xl bg-white/80 dark:bg-[#1A241C]/80 border border-[#E0D9CB]/80 dark:border-[#243628]/80">
             <div className="flex items-center justify-between text-xs text-[#5C665E] dark:text-[#8FA392] mb-1">
-              <span>{t(`ضريبة القيمة المضافة (${taxConfig.vatLabel})`, `Output VAT (${taxConfig.vatLabel})`)}</span>
+              <span className="flex items-center gap-1">
+                <span>{t(`ضريبة القيمة المضافة (${taxConfig.vatLabel})`, `Output VAT (${taxConfig.vatLabel})`)}</span>
+                <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold">({t('تجريبي', 'Preview')})</span>
+              </span>
               <Percent className="w-3.5 h-3.5 text-emerald-600" />
             </div>
             <div className="font-mono font-black text-lg text-emerald-600 dark:text-emerald-400 flex items-baseline gap-1.5">
@@ -182,7 +191,10 @@ export const SalesModule: React.FC = () => {
 
           <div className="p-3.5 rounded-xl bg-white/80 dark:bg-[#1A241C]/80 border border-[#E0D9CB]/80 dark:border-[#243628]/80">
             <div className="flex items-center justify-between text-xs text-[#5C665E] dark:text-[#8FA392] mb-1">
-              <span>{t('المبيعات الآجلة (عملاء)', 'Credit Sales (Clients)')}</span>
+              <span className="flex items-center gap-1">
+                <span>{t('المبيعات الآجلة (عملاء)', 'Credit Sales (Clients)')}</span>
+                <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold">({t('تجريبي', 'Preview')})</span>
+              </span>
               <Building className="w-3.5 h-3.5 text-blue-600" />
             </div>
             <div className="font-mono font-black text-lg text-blue-600 dark:text-blue-400 flex items-baseline gap-1.5">
@@ -196,7 +208,10 @@ export const SalesModule: React.FC = () => {
 
           <div className="p-3.5 rounded-xl bg-white/80 dark:bg-[#1A241C]/80 border border-[#E0D9CB]/80 dark:border-[#243628]/80">
             <div className="flex items-center justify-between text-xs text-[#5C665E] dark:text-[#8FA392] mb-1">
-              <span>{t('المبيعات النقدية (الصندوق)', 'Cash Sales')}</span>
+              <span className="flex items-center gap-1">
+                <span>{t('المبيعات النقدية (الصندوق)', 'Cash Sales')}</span>
+                <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold">({t('تجريبي', 'Preview')})</span>
+              </span>
               <TrendingUp className="w-3.5 h-3.5 text-amber-600" />
             </div>
             <div className="font-mono font-black text-lg text-amber-600 dark:text-amber-400 flex items-baseline gap-1.5">
@@ -222,7 +237,7 @@ export const SalesModule: React.FC = () => {
                 : 'text-[#5C665E] dark:text-[#8FA392] hover:text-[#1A241C] dark:hover:text-[#F3EFE6]'
             }`}
           >
-            {t('فواتير المبيعات الضريبية', 'Sales Invoices')} ({salesInvoices.length})
+            {t('فواتير المبيعات الضريبية (تجريبي)', 'Sales Invoices (Preview)')} ({salesInvoices.length})
           </button>
 
           <button

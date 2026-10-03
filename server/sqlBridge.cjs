@@ -1082,30 +1082,16 @@ async function getTreasuryBalances(targetDb = 'Tarabot_Data_2026') {
         CASE WHEN v.Level4_ID = '1201' THEN 'CASH' ELSE 'BANK' END AS type,
         ISNULL(SUM(g.Debit), 0) AS totalDebit,
         ISNULL(SUM(g.Credit), 0) AS totalCredit,
-        -- Starting liquidity injection for operating accounts if ledger is fresh
-        ISNULL(SUM(g.Debit - g.Credit), 0) + 
-        CASE 
-          WHEN v.Level5_ID = 1201001 THEN 850000 
-          WHEN v.Level5_ID = 1202001 THEN 1420000 
-          WHEN v.Level5_ID = 1202002 THEN 980000 
-          WHEN v.Level5_ID = 1202003 THEN 1150000 
-          WHEN v.Level5_ID = 1202004 THEN 640000 
-          ELSE 100000 
-        END AS balance,
+        -- Authentic double-entry ledger balance from database
+        ISNULL(SUM(g.Debit - g.Credit), 0) AS balance,
         'EGP' AS currency,
         CASE 
-          WHEN v.Level5_ID = 1202001 THEN 'بنك المستقبل ايجى بنك'
-          WHEN v.Level5_ID = 1202002 THEN 'بنك مصر - فرع طلعت حرب'
-          WHEN v.Level5_ID = 1202003 THEN 'بنك مصر - حساب عمليات المشروعات'
-          WHEN v.Level5_ID = 1202004 THEN 'بنك QNB الأهلي'
-          ELSE 'صندوق الخزينة الرئيسي'
+          WHEN v.Level4_ID = '1201' THEN 'صندوق الخزينة الرئيسي'
+          ELSE v.Level5_Name_A
         END AS bankName,
         CASE 
-          WHEN v.Level5_ID = 1202001 THEN 'EG1200416051860010000'
-          WHEN v.Level5_ID = 1202002 THEN 'EG4880199000000476000'
-          WHEN v.Level5_ID = 1202003 THEN 'EG2260001000017357000'
-          WHEN v.Level5_ID = 1202004 THEN 'EG0003700003246302005'
-          ELSE 'MAIN-SAFE-01'
+          WHEN v.Level4_ID = '1201' THEN 'MAIN-SAFE-01'
+          ELSE 'ACC-' + CAST(v.Level5_ID AS NVARCHAR(50))
         END AS accountNumber
       FROM [${targetDb}].dbo.Level5_View v
       LEFT JOIN [${targetDb}].dbo.GeneralLedger_Details g ON v.Level5_ID = g.Level5_ID
@@ -1751,12 +1737,12 @@ async function getCostCentersTree(targetDb = 'Tarabot_Data_2026') {
     const rows = await querySqlJson(sql, targetDb);
     if (rows && rows.length > 0) {
       const enriched = rows.map(r => {
-        const d = r.debit || 250000;
-        const c = r.credit || 180000;
+        const d = Number(r.debit) || 0;
+        const c = Number(r.credit) || 0;
         const direct = Math.round(d * 0.75);
         const indirect = Math.round(d * 0.25);
         const rev = Math.round(d * 1.25);
-        const margin = rev > 0 ? Math.round(((rev - d) / rev) * 100) : 20;
+        const margin = rev > 0 ? Math.round(((rev - d) / rev) * 100) : 0;
         return {
           ...r,
           debit: d,

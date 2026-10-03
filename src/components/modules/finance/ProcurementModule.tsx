@@ -75,6 +75,9 @@ export const ProcurementModule: React.FC = () => {
                 <TrendingUp className="w-3 h-3" />
                 {t('محرك تسعير المخزون بمتوسط التكلفة المرجح المتحرك', 'Moving Average Inventory Costing Engine')}
               </span>
+              <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30">
+                {t('تجريبي (بيئة محاكاة التوريد)', 'Preview (Sandbox Procurement)')}
+              </span>
               <span className="text-xs text-[#5C665E] dark:text-[#8FA392] font-mono">
                 {activeDatabase} / Purchase_Head & dbo.Suppliers
               </span>
@@ -117,21 +120,27 @@ export const ProcurementModule: React.FC = () => {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-6">
           <div className="p-3.5 rounded-xl bg-white/80 dark:bg-[#1A241C]/80 border border-[#E0D9CB]/80 dark:border-[#243628]/80">
             <div className="flex items-center justify-between text-xs text-[#5C665E] dark:text-[#8FA392] mb-1">
-              <span>{t('إجمالي تكلفة المشتريات', 'Total Spend')}</span>
+              <span className="flex items-center gap-1">
+                <span>{t('إجمالي تكلفة المشتريات', 'Total Spend')}</span>
+                <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold">({t('تجريبي', 'Preview')})</span>
+              </span>
               <Truck className="w-3.5 h-3.5 text-amber-600" />
             </div>
             <div className="font-inter font-black text-lg text-[#1A241C] dark:text-[#F3EFE6] tabular-nums">
               {formatCurrency(totalProcurementSpend)}
             </div>
             <div className="text-[11px] text-[#5C665E] dark:text-[#8FA392] font-inter tabular-nums mt-1 flex items-center justify-between">
-              <span>{formatNumber(purchaseBills.length)} {t('فواتير', 'bills')}</span>
+              <span>{formatNumber(purchaseBills.length)} {t('فواتير (تجريبي)', 'bills')}</span>
               <span>آجل: {formatCurrency(creditBillsTotal)} | نقدي: {formatCurrency(cashBillsTotal)}</span>
             </div>
           </div>
 
           <div className="p-3.5 rounded-xl bg-white/80 dark:bg-[#1A241C]/80 border border-[#E0D9CB]/80 dark:border-[#243628]/80">
             <div className="flex items-center justify-between text-xs text-[#5C665E] dark:text-[#8FA392] mb-1">
-              <span>{t('ضريبة المدخلات (15%)', 'Input VAT (15%)')}</span>
+              <span className="flex items-center gap-1">
+                <span>{t('ضريبة المدخلات (15%)', 'Input VAT (15%)')}</span>
+                <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold">({t('تجريبي', 'Preview')})</span>
+              </span>
               <Percent className="w-3.5 h-3.5 text-[#A3CFAC]" />
             </div>
             <div className="font-inter font-black text-lg text-[#A3CFAC] tabular-nums">
@@ -144,20 +153,26 @@ export const ProcurementModule: React.FC = () => {
 
           <div className="p-3.5 rounded-xl bg-white/80 dark:bg-[#1A241C]/80 border border-[#E0D9CB]/80 dark:border-[#243628]/80">
             <div className="flex items-center justify-between text-xs text-[#5C665E] dark:text-[#8FA392] mb-1">
-              <span>{t('الموردون المسجلون', 'Registered Suppliers')}</span>
+              <span className="flex items-center gap-1">
+                <span>{t('الموردون المسجلون', 'Registered Suppliers')}</span>
+                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">({t('حقيقي', 'Live DB')})</span>
+              </span>
               <Building className="w-3.5 h-3.5 text-blue-600" />
             </div>
             <div className="font-mono font-black text-lg text-blue-600 dark:text-blue-400">
               {suppliers.length} <span className="text-xs font-normal">{t('مورد معتمد', 'Vendors')}</span>
             </div>
-            <div className="text-[11px] text-[#5C665E] dark:text-[#8FA392] mt-1">
-              {t('من قاعدة بيانات Tarabot', 'From Tarabot SQL')}
+            <div className="text-[11px] text-emerald-700 dark:text-emerald-400 font-semibold mt-1">
+              {t('مطابق لقاعدة بيانات Tarabot (dbo.Suppliers)', 'From Tarabot dbo.Suppliers')}
             </div>
           </div>
 
           <div className="p-3.5 rounded-xl bg-white/80 dark:bg-[#1A241C]/80 border border-[#E0D9CB]/80 dark:border-[#243628]/80">
             <div className="flex items-center justify-between text-xs text-[#5C665E] dark:text-[#8FA392] mb-1">
-              <span>{t('أصناف الخامات والمخزون', 'Inventory SKUs')}</span>
+              <span className="flex items-center gap-1">
+                <span>{t('أصناف الخامات والمخزون', 'Inventory SKUs')}</span>
+                <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold">({t('تجريبي', 'Preview')})</span>
+              </span>
               <Package className="w-3.5 h-3.5 text-purple-600" />
             </div>
             <div className="font-mono font-black text-lg text-purple-600 dark:text-purple-400">
@@ -182,7 +197,7 @@ export const ProcurementModule: React.FC = () => {
                 : 'text-[#5C665E] dark:text-[#8FA392] hover:text-[#1A241C] dark:hover:text-[#F3EFE6]'
             }`}
           >
-            {t('فواتير التوريد والمشتريات', 'Procurement Bills')} ({purchaseBills.length})
+            {t('فواتير التوريد والمشتريات (تجريبي)', 'Procurement Bills (Preview)')} ({purchaseBills.length})
           </button>
 
           <button
@@ -193,7 +208,7 @@ export const ProcurementModule: React.FC = () => {
                 : 'text-[#5C665E] dark:text-[#8FA392] hover:text-[#1A241C] dark:hover:text-[#F3EFE6]'
             }`}
           >
-            {t('سجل الموردين المعتمدين', 'Suppliers Registry')} ({suppliers.length})
+            {t('سجل الموردين المعتمدين (حقيقي)', 'Suppliers Registry (Live DB)')} ({suppliers.length})
           </button>
 
           <button
@@ -204,7 +219,7 @@ export const ProcurementModule: React.FC = () => {
                 : 'text-[#5C665E] dark:text-[#8FA392] hover:text-[#1A241C] dark:hover:text-[#F3EFE6]'
             }`}
           >
-            {t('تسعير المخزون ومتوسط التكلفة', 'Inventory Costing Matrix')} ({items.length})
+            {t('تسعير المخزون ومتوسط التكلفة (تجريبي)', 'Inventory Costing (Preview)')} ({items.length})
           </button>
         </div>
 

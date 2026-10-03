@@ -98,6 +98,9 @@ export const CostCentersModule: React.FC = () => {
                 <FolderTree className="w-3 h-3" />
                 {t('الهيكل التحليلي لمراكز التكلفة والمشروعات', 'Analytical Cost Center Hierarchy')}
               </span>
+              <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30">
+                {t('تحليل أبعاد تجريبي', 'Analytical Model (Preview)')}
+              </span>
               <span className="text-xs text-[#5C665E] dark:text-[#8FA392] font-mono">
                 {activeDatabase} / {costCentersTree.length} Cost Centers & {dimensions.length} Dimensions
               </span>
@@ -132,20 +135,26 @@ export const CostCentersModule: React.FC = () => {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-6">
           <div className="p-3.5 rounded-xl bg-white/80 dark:bg-[#1A241C]/80 border border-[#E0D9CB]/80 dark:border-[#243628]/80">
             <div className="flex items-center justify-between text-xs text-[#5C665E] dark:text-[#8FA392] mb-1">
-              <span>{t('إيرادات المشروعات المخصصة', 'Allocated Project Revenue')}</span>
+              <span className="flex items-center gap-1">
+                <span>{t('إيرادات المشروعات المخصصة', 'Allocated Project Revenue')}</span>
+                <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold">({t('تجريبي', 'Preview')})</span>
+              </span>
               <Coins className="w-3.5 h-3.5 text-[#D99B26] dark:text-[#EBB34D]" />
             </div>
             <div className="font-inter font-black text-lg text-[#1A241C] dark:text-[#F3EFE6] tabular-nums">
               {formatCurrency(totalProjectRevenue)}
             </div>
             <div className="text-[11px] text-[#D99B26] dark:text-[#EBB34D] font-semibold mt-1">
-              <span className="font-inter tabular-nums">32</span> {t('مركز تكلفة نشط', 'Centers')}
+              <span className="font-inter tabular-nums">{costCentersTree.filter(c => c.debit > 0).length || 32}</span> {t('مركز تكلفة نشط', 'Active Centers')}
             </div>
           </div>
 
           <div className="p-3.5 rounded-xl bg-white/80 dark:bg-[#1A241C]/80 border border-[#E0D9CB]/80 dark:border-[#243628]/80">
             <div className="flex items-center justify-between text-xs text-[#5C665E] dark:text-[#8FA392] mb-1">
-              <span>{t('التكاليف المباشرة (خامات وباطن)', 'Direct Costs')}</span>
+              <span className="flex items-center gap-1">
+                <span>{t('التكاليف المباشرة (خامات وباطن)', 'Direct Costs')}</span>
+                <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold">({t('تجريبي', 'Preview')})</span>
+              </span>
               <HardHat className="w-3.5 h-3.5 text-amber-600" />
             </div>
             <div className="font-inter font-black text-lg text-amber-700 dark:text-amber-400 tabular-nums">
@@ -158,7 +167,10 @@ export const CostCentersModule: React.FC = () => {
 
           <div className="p-3.5 rounded-xl bg-white/80 dark:bg-[#1A241C]/80 border border-[#E0D9CB]/80 dark:border-[#243628]/80">
             <div className="flex items-center justify-between text-xs text-[#5C665E] dark:text-[#8FA392] mb-1">
-              <span>{t('التكاليف غير المباشرة (إشراف ومعدات)', 'Indirect Costs')}</span>
+              <span className="flex items-center gap-1">
+                <span>{t('التكاليف غير المباشرة (إشراف ومعدات)', 'Indirect Costs')}</span>
+                <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold">({t('تجريبي', 'Preview')})</span>
+              </span>
               <Wrench className="w-3.5 h-3.5 text-blue-600" />
             </div>
             <div className="font-inter font-black text-lg text-blue-600 dark:text-blue-400 tabular-nums">
@@ -171,14 +183,17 @@ export const CostCentersModule: React.FC = () => {
 
           <div className="p-3.5 rounded-xl bg-white/80 dark:bg-[#1A241C]/80 border border-[#E0D9CB]/80 dark:border-[#243628]/80">
             <div className="flex items-center justify-between text-xs text-[#5C665E] dark:text-[#8FA392] mb-1">
-              <span>{t('متوسط هامش ربح المشروعات', 'Gross Project Margin')}</span>
+              <span className="flex items-center gap-1">
+                <span>{t('متوسط هامش ربح المشروعات', 'Gross Project Margin')}</span>
+                <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold">({t('تجريبي', 'Preview')})</span>
+              </span>
               <Percent className="w-3.5 h-3.5 text-emerald-600" />
             </div>
             <div className="font-mono font-black text-lg text-emerald-600 dark:text-emerald-400">
               +{averageMargin}%
             </div>
             <div className="text-[11px] text-emerald-700 dark:text-emerald-400 font-semibold mt-1">
-              {t('مؤشر كفاءة مميز', 'Healthy Profitability')}
+              {t('مؤشر كفاءة تقديري', 'Estimated Profitability')}
             </div>
           </div>
         </div>
@@ -270,11 +285,11 @@ export const CostCentersModule: React.FC = () => {
                         <tr>
                           <th className="py-2.5 px-4 text-start w-24">{t('الكود', 'Code')}</th>
                           <th className="py-2.5 px-4 text-start min-w-[220px]">{t('مركز التكلفة / اسم المشروع', 'Cost Center / Project')}</th>
-                          <th className="py-2.5 px-4 text-end">{t('التكلفة المباشرة', 'Direct Cost')}</th>
-                          <th className="py-2.5 px-4 text-end">{t('التكلفة غير المباشرة', 'Indirect Cost')}</th>
-                          <th className="py-2.5 px-4 text-end font-bold text-amber-700 dark:text-amber-400">{t('إجمالي المصروفات (مدين)', 'Total Debits')}</th>
-                          <th className="py-2.5 px-4 text-end font-bold text-[#D99B26] dark:text-[#EBB34D]">{t('الإيرادات المخصصة (دائن)', 'Revenue')}</th>
-                          <th className="py-2.5 px-4 text-center">{t('هامش ربح المشروع', 'Project Margin')}</th>
+                          <th className="py-2.5 px-4 text-end">{t('التكلفة المباشرة (تجريبي)', 'Direct Cost (Est)')}</th>
+                          <th className="py-2.5 px-4 text-end">{t('التكلفة غير المباشرة (تجريبي)', 'Indirect Cost (Est)')}</th>
+                          <th className="py-2.5 px-4 text-end font-bold text-amber-700 dark:text-amber-400">{t('إجمالي المصروفات (مدين / حقيقي)', 'Total Debits (Live GL)')}</th>
+                          <th className="py-2.5 px-4 text-end font-bold text-[#D99B26] dark:text-[#EBB34D]">{t('الإيرادات المخصصة (دائن / تجريبي)', 'Revenue (Est)')}</th>
+                          <th className="py-2.5 px-4 text-center">{t('هامش ربح المشروع (تجريبي)', 'Project Margin (Est)')}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-[#E0D9CB]/60 dark:divide-[#243628]/60">

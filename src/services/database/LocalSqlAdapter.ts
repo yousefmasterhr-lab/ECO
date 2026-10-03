@@ -221,54 +221,87 @@ export class LocalSqlAdapter implements IFinancialRepository {
         nameAr: 'الخزينة الرئيسية',
         nameEn: 'Main Cash Register',
         type: 'CASH',
-        balance: 830864,
+        balance: 0,
         currency: 'EGP',
         bankName: 'صندوق الخزينة الرئيسي',
         accountNumber: 'SAFE-01'
       },
       {
+        id: '1201002',
+        code: '1201002',
+        nameAr: 'خزينة المصروفات النثرية',
+        nameEn: 'Petty Cash Safe',
+        type: 'CASH',
+        balance: 0,
+        currency: 'EGP',
+        bankName: 'صندوق الخزينة الرئيسي',
+        accountNumber: 'PETTY-02'
+      },
+      {
+        id: '1201003',
+        code: '1201003',
+        nameAr: 'خزائن المواقع',
+        nameEn: 'Site Cash Safes',
+        type: 'CASH',
+        balance: -30853,
+        currency: 'EGP',
+        bankName: 'صندوق الخزينة الرئيسي',
+        accountNumber: 'SITE-03'
+      },
+      {
+        id: '1201004',
+        code: '1201004',
+        nameAr: 'خزينة عملات أجنبية',
+        nameEn: 'Foreign Currency Safe',
+        type: 'CASH',
+        balance: 0,
+        currency: 'EGP',
+        bankName: 'صندوق الخزينة الرئيسي',
+        accountNumber: 'FX-04'
+      },
+      {
         id: '1202001',
         code: '1202001',
-        nameAr: 'حساب المستقبل ايجى بنك 0041605186001',
-        nameEn: 'EGY Bank Corporate Account',
+        nameAr: 'بنك مصر - 2260004000001861',
+        nameEn: 'Banque Misr 1861',
         type: 'BANK',
-        balance: 1420000,
+        balance: 1653.14,
         currency: 'EGP',
-        bankName: 'بنك المستقبل ايجى بنك',
-        accountNumber: 'EG1200416051860010000'
+        bankName: 'بنك مصر',
+        accountNumber: '2260004000001861'
       },
       {
         id: '1202002',
         code: '1202002',
-        nameAr: 'الاطلنطى جروب بنك مصر 4880199000000476',
-        nameEn: 'Banque Misr Operations',
+        nameAr: 'بنك مصر - 2260001000007375',
+        nameEn: 'Banque Misr 7375',
         type: 'BANK',
-        balance: 980000,
+        balance: -1188445.5,
         currency: 'EGP',
-        bankName: 'بنك مصر - فرع طلعت حرب',
-        accountNumber: 'EG4880199000000476000'
+        bankName: 'بنك مصر',
+        accountNumber: '2260001000007375'
       },
       {
         id: '1202003',
         code: '1202003',
-        nameAr: 'ترابط للمقاولات والتوريدات حساب 2260001000017357',
-        nameEn: 'Tarabot Contracting Banque Misr',
+        nameAr: 'بنك مصر - 2260001000021578',
+        nameEn: 'Banque Misr 21578',
         type: 'BANK',
-        balance: 994117,
+        balance: 2590724.2,
         currency: 'EGP',
-        bankName: 'بنك مصر - حساب المشروعات',
-        accountNumber: 'EG2260001000017357000'
+        bankName: 'بنك مصر',
+        accountNumber: '2260001000021578'
       },
       {
         id: '1202004',
         code: '1202004',
-        nameAr: 'المستقبل البنك الاهلى القطرى QNB رقم 000370000324630200568',
-        nameEn: 'QNB Corporate Account',
+        nameAr: 'بنك القاهرة - 1749695810818002',
+        nameEn: 'Banque du Caire 8002',
         type: 'BANK',
-        balance: 640000,
+        balance: 0,
         currency: 'EGP',
-        bankName: 'بنك QNB الأهلي',
-        accountNumber: 'EG0003700003246302005'
+        bankName: 'بنك القاهرة',
+        accountNumber: '1749695810818002'
       }
     ];
   }

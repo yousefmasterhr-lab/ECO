@@ -121,8 +121,8 @@ export const TreasuryModule: React.FC = () => {
               <span className="font-bold text-[#1A241C] dark:text-[#F3EFE6]">
                 {t('مؤشر كفاية السيولة الفورية (Quick Liquidity Ratio)', 'Instant Liquidity Coverage')}
               </span>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#2A3F30] text-[#A3CFAC] border border-[#243628]">
-                {t('نطاق آمن ممتاز (Safe Zone)', 'Safe Zone')}
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#EBB34D]/15 text-[#D99B26] dark:text-[#EBB34D] border border-[#EBB34D]/30">
+                {t('مؤشر تقديري تجريبي', 'Estimated Ratio (Preview)')}
               </span>
             </div>
 
@@ -134,7 +134,7 @@ export const TreasuryModule: React.FC = () => {
                 </strong>
               </span>
               <span className="text-[#5C665E] dark:text-[#8FA392]">
-                {t('الالتزامات الوشيكة:', 'Obligations:')}
+                {t('الالتزامات الوشيكة (تجريبي):', 'Obligations (Est):')}
                 <strong className="text-[#8FA392] ms-1 font-inter tabular-nums">
                   {formatCurrency(shortTermPayables)}
                 </strong>
@@ -165,11 +165,14 @@ export const TreasuryModule: React.FC = () => {
               <Banknote className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-[#1A241C] dark:text-[#F3EFE6]">
-                {t('صناديق الخزينة النقدية (Cash Registers)', 'Cash Registers')}
+              <h2 className="text-sm font-bold text-[#1A241C] dark:text-[#F3EFE6] flex items-center gap-2">
+                <span>{t('صناديق الخزينة النقدية (Cash Registers)', 'Cash Registers')}</span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#2A3F30] text-[#A3CFAC] border border-[#243628]">
+                  {t('بيانات مطابقة لقاعدة البيانات', 'Live Database Verified')}
+                </span>
               </h2>
               <span className="text-[11px] text-[#5C665E] dark:text-[#8FA392]">
-                {t('الخزائن الرئيسية وصناديق العهد النقدية', 'Main and site cash registers')}
+                {t('أرصدة الخزائن الرئيسية وصناديق العهد من دفتر الأستاذ العام', 'Cash registers from General Ledger')}
               </span>
             </div>
           </div>

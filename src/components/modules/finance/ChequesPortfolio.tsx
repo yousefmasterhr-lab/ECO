@@ -141,6 +141,9 @@ export const ChequesPortfolio: React.FC = () => {
               <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-[#0D9488]/15 text-[#0D9488] dark:text-[#2DD4BF] border border-[#0D9488]/30">
                 {t('محفظة الأوراق المالية والشيكات', 'Commercial Paper & Cheques Engine')}
               </span>
+              <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30">
+                {t('تجريبي (بيانات محاكاة)', 'Preview (Sandbox Data)')}
+              </span>
               <span className="text-xs text-[#5C665E] dark:text-[#8FA392] font-mono">
                 {activeDatabase} / dbo.Cheques (1203001 & 2102001)
               </span>
@@ -202,7 +205,7 @@ export const ChequesPortfolio: React.FC = () => {
             }`}
           >
             <ArrowDownLeft className="w-4 h-4 text-emerald-600" />
-            <span>{t('شيكات تحت التحصيل (الواردة / أوراق قبض)', 'Received Cheques (Portfolio)')}</span>
+            <span>{t('شيكات تحت التحصيل (الواردة / تجريبي)', 'Received Cheques (Preview)')}</span>
             <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-emerald-500/10 text-emerald-700 dark:text-emerald-300">
               {cheques.filter(c => c.type === 'RECEIVABLE').length}
             </span>
@@ -220,7 +223,7 @@ export const ChequesPortfolio: React.FC = () => {
             }`}
           >
             <ArrowUpRight className="w-4 h-4 text-amber-600" />
-            <span>{t('شيكات صادرة للموردين (أوراق دفع)', 'Issued Cheques (Payable)')}</span>
+            <span>{t('شيكات صادرة للموردين (أوراق دفع / تجريبي)', 'Issued Cheques (Preview)')}</span>
             <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-amber-500/10 text-amber-700 dark:text-amber-300">
               {cheques.filter(c => c.type === 'PAYABLE').length}
             </span>
@@ -233,8 +236,9 @@ export const ChequesPortfolio: React.FC = () => {
         {/* Total Value */}
         <div className="p-4 rounded-2xl border border-[#E0D9CB] dark:border-[#243628] bg-[#FBF9F5] dark:bg-[#141E16] space-y-1.5">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-[#5C665E] dark:text-[#8FA392]">
-              {t('إجمالي قيمة المحفظة', 'Total Portfolio Value')}
+            <span className="text-xs text-[#5C665E] dark:text-[#8FA392] flex items-center gap-1">
+              <span>{t('إجمالي قيمة المحفظة', 'Total Portfolio Value')}</span>
+              <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold">({t('تجريبي', 'Preview')})</span>
             </span>
             <div className="w-8 h-8 rounded-lg bg-[#EBB34D]/15 text-[#D99B26] dark:text-[#EBB34D] flex items-center justify-center">
               <Receipt className="w-4 h-4" />
@@ -251,8 +255,9 @@ export const ChequesPortfolio: React.FC = () => {
         {/* Under Collection */}
         <div className="p-4 rounded-2xl border border-[#E0D9CB] dark:border-[#243628] bg-[#FBF9F5] dark:bg-[#141E16] space-y-1.5">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-[#5C665E] dark:text-[#8FA392]">
-              {t('برسم التحصيل / سارية', 'Under Collection')}
+            <span className="text-xs text-[#5C665E] dark:text-[#8FA392] flex items-center gap-1">
+              <span>{t('برسم التحصيل / سارية', 'Under Collection')}</span>
+              <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold">({t('تجريبي', 'Preview')})</span>
             </span>
             <div className="w-8 h-8 rounded-lg bg-[#EBB34D]/15 text-[#D99B26] dark:text-[#EBB34D] flex items-center justify-center">
               <Clock className="w-4 h-4" />
@@ -269,8 +274,9 @@ export const ChequesPortfolio: React.FC = () => {
         {/* Cleared */}
         <div className="p-4 rounded-2xl border border-[#E0D9CB] dark:border-[#243628] bg-[#FBF9F5] dark:bg-[#141E16] space-y-1.5">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-[#5C665E] dark:text-[#8FA392]">
-              {t('تم تحصيلها بالبنك', 'Cleared in Bank')}
+            <span className="text-xs text-[#5C665E] dark:text-[#8FA392] flex items-center gap-1">
+              <span>{t('تم تحصيلها بالبنك', 'Cleared in Bank')}</span>
+              <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold">({t('تجريبي', 'Preview')})</span>
             </span>
             <div className="w-8 h-8 rounded-lg bg-[#2A3F30] text-[#A3CFAC] flex items-center justify-center">
               <CheckCircle2 className="w-4 h-4" />
@@ -287,8 +293,9 @@ export const ChequesPortfolio: React.FC = () => {
         {/* Bounced */}
         <div className="p-4 rounded-2xl border border-[#E0D9CB] dark:border-[#243628] bg-[#FBF9F5] dark:bg-[#141E16] space-y-1.5">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-[#5C665E] dark:text-[#8FA392]">
-              {t('شيكات مرتدة / مرفوضة', 'Bounced Cheques')}
+            <span className="text-xs text-[#5C665E] dark:text-[#8FA392] flex items-center gap-1">
+              <span>{t('شيكات مرتدة / مرفوضة', 'Bounced Cheques')}</span>
+              <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold">({t('تجريبي', 'Preview')})</span>
             </span>
             <div className="w-8 h-8 rounded-lg bg-[#3F2A2A] text-[#EFA3A3] flex items-center justify-center">
               <AlertTriangle className="w-4 h-4" />
