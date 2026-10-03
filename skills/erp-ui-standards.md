@@ -338,4 +338,19 @@ Whenever a global directive or styling standard is issued (including typography,
     3. KPI stat cards, metric summaries, and tab selectors must be explicitly tagged with `(تجريبي) / (Preview)`.
     4. Users must never be left in ambiguity regarding whether data originates from live ledger postings or an interactive preview sandbox.
 
+---
+
+### Rule 36: Dynamic Database Discovery & Cloudflare-to-Tailscale Bridge Architecture (المزامنة الحية لقواعد البيانات وبوابة ربط Cloudflare مع Tailscale)
+- **Dynamic Card Discovery (توليد الكروت ديناميكياً فقط للقواعد المكتشفة فعلياً):**
+  - Database cards in the Federation Hub and Switcher must never be static or hardcoded.
+  - When querying the server (`sys.databases` via SQL Bridge), cards are created exclusively for databases that are physically present and verified online.
+  - If a database is not found or connection is not established, no dummy card may be rendered ("الكارت ميبقاش موجود على الفاضي").
+- **Prohibition of "Fleet / أسطول" Terminology:**
+  - Database hubs must use accurate, standard enterprise terminology: `قواعد البيانات المتصلة (Connected Databases)` rather than military/maritime terms like "أسطول".
+- **Cloudflare Edge + Tailscale Bridge Standard:**
+  - Modern web applications hosted on Cloudflare edge CDNs (such as `eco.hrsup.com`) run client-side JavaScript in user browsers that cannot establish direct TCP sockets to SQL Server Port 1433.
+  - A secure API Bridge Gateway (running `sqlBridge.cjs` on port 5000) exposed via Cloudflare Tunnel (`cloudflared`) or Tailscale Funnel provides the secure HTTPS bridge.
+  - The frontend dynamically routes all `/api/*` traffic to the configured gateway URL (`localStorage.eco_api_base_url`) via a central fetch interceptor.
+
+
 

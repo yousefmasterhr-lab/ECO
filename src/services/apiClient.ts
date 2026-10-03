@@ -57,6 +57,27 @@ export async function apiRequest<T = any>(endpoint: string, options: RequestInit
   }
 }
 
+export const getApiBaseUrl = (): string => {
+  try {
+    const customUrl = localStorage.getItem('eco_api_base_url');
+    if (customUrl && customUrl.trim()) {
+      return customUrl.trim().replace(/\/+$/, '');
+    }
+  } catch {}
+  return ((import.meta as any).env?.VITE_API_BASE_URL as string) || '';
+};
+
+export const setApiBaseUrl = (url: string): void => {
+  try {
+    if (!url || !url.trim()) {
+      localStorage.removeItem('eco_api_base_url');
+    } else {
+      localStorage.setItem('eco_api_base_url', url.trim().replace(/\/+$/, ''));
+    }
+    window.dispatchEvent(new CustomEvent('eco-api-url-changed', { detail: { url } }));
+  } catch {}
+};
+
 // Global Fetch Interceptor
 let isFetchIntercepted = false;
 
@@ -66,10 +87,15 @@ export function setupFetchInterceptor(): void {
 
   window.fetch = async function (input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
     const activeDb = getActiveDatabaseContext();
-    const urlString = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+    let urlString = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
 
     // Check if this is an API call
     if (urlString.startsWith('/api') || urlString.includes('/api/')) {
+      const baseUrl = getApiBaseUrl();
+      if (urlString.startsWith('/api') && baseUrl) {
+        urlString = `${baseUrl}${urlString}`;
+      }
+
       const headers = new Headers(init?.headers || (typeof input === 'object' && 'headers' in input ? (input as any).headers : undefined));
       if (!headers.has('X-Database-Context')) {
         headers.set('X-Database-Context', activeDb);
@@ -78,6 +104,8 @@ export function setupFetchInterceptor(): void {
         ...init,
         headers,
       };
+
+      return originalFetch.call(this, urlString, init);
     }
 
     return originalFetch.call(this, input, init);

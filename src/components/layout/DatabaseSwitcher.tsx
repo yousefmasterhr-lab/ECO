@@ -161,7 +161,7 @@ export const DatabaseSwitcher: React.FC = () => {
           </div>
           <div className="flex items-center gap-1 text-[10px] text-[#5C665E] dark:text-[#8FA392]">
             <span className="truncate max-w-[110px]">
-              {isRtl ? activeDatabaseMeta?.categoryNameAr : activeDatabaseMeta?.categoryNameEn}
+              {isRtl ? (activeDatabaseMeta?.categoryNameAr || t('المنظومة المالية', 'Financial System')) : (activeDatabaseMeta?.categoryNameEn || 'Financial System')}
             </span>
             <span className="text-[9px] font-semibold opacity-80">
               {isRemote ? '• 🟢 Tailscale' : '• 🟡 محلي (طوارئ)'}
@@ -223,8 +223,14 @@ export const DatabaseSwitcher: React.FC = () => {
             </div>
           </div>
 
-          {/* Categorized Fleet Scrollable Area */}
+          {/* Categorized Databases Scrollable Area */}
           <div className="max-h-[360px] overflow-y-auto space-y-2.5 p-1 pr-1.5">
+            {databases.length === 0 && (
+              <div className="text-center py-6 px-3 space-y-1 text-xs text-[#8FA392]">
+                <p className="font-bold text-[#F3EFE6]">{t('لا توجد قواعد بيانات مكتشفة', 'No Databases Found')}</p>
+                <p className="text-[11px]">{t('افتح مركز التكامل لمزامنة القواعد الحية', 'Open Hub to sync live databases')}</p>
+              </div>
+            )}
             {CATEGORY_GROUPS.map(group => {
               const dbs = groupedDatabases.get(group.id) || [];
               if (dbs.length === 0) return null;

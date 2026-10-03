@@ -2812,39 +2812,25 @@ async function getDatabaseFleet() {
       databases: fleet
     };
   } catch (err) {
-    console.warn('[SQL Bridge Federation] Live database fleet query failed, engaging fail-safe fallback:', err.message);
-    const fallbackFleet = Object.values(DB_REGISTRY).map(reg => ({
-      name: reg.name,
-      displayNameAr: reg.displayNameAr,
-      displayNameEn: reg.displayNameEn,
-      category: reg.category,
-      categoryNameAr: reg.categoryNameAr,
-      categoryNameEn: reg.categoryNameEn,
-      categoryIcon: reg.categoryIcon,
-      isPrimary: Boolean(reg.isPrimary),
-      createDate: '2026-03-25T16:00:00.000Z',
-      status: 'ONLINE (SAFE_MODE)',
-      sizeMb: 50.0,
-      descriptionAr: reg.descriptionAr
-    }));
+    console.warn('[SQL Bridge Federation] Live database fleet query failed, no active databases discovered:', err.message);
 
     return {
       connected: false,
       isFailSafe: true,
       active_mode: 'LOCAL_FALLBACK',
       target_db: 'master',
-      latency_status: 'fallback',
+      latency_status: 'error',
       environment: 'LOCAL_FALLBACK',
       error: err.message,
       host: 'localhost',
       port: 1433,
       portProxyTarget: '192.168.1.50:49748',
-      engine: 'Local SQL Server Express (Fail-Safe Adapter)',
-      activePoolsCount: connectionPools.size,
+      engine: 'Microsoft SQL Server (Not Connected)',
+      activePoolsCount: 0,
       latencyMs: 0,
-      totalDatabases: fallbackFleet.length,
+      totalDatabases: 0,
       timestamp: new Date().toISOString(),
-      databases: fallbackFleet
+      databases: []
     };
   }
 }
