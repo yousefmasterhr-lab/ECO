@@ -1,7 +1,31 @@
 /**
  * Enterprise Reactive API Client & Fetch Interceptor
  * Injects 'X-Database-Context' into all outgoing /api/* requests
+ * 
+ * Default Production Gateway: https://datatest.hrsup.com (Cloudflare Tunnel: eco-data-bridge)
  */
+
+export const PRODUCTION_DEFAULT_GATEWAY = 'https://datatest.hrsup.com';
+export const LOCAL_DEV_DEFAULT_GATEWAY = 'http://localhost:5000';
+
+/**
+ * Determines whether the current execution context is in production
+ * Detects hrsup.com domains, Cloudflare Pages (*.pages.dev), and Vite production builds.
+ */
+export const isProductionEnvironment = (): boolean => {
+  if (typeof window !== 'undefined') {
+    const host = window.location.hostname.toLowerCase();
+    // Production Cloudflare Pages or custom enterprise domain
+    if (host.includes('hrsup.com') || host.includes('pages.dev') || host.includes('cloudflare')) {
+      return true;
+    }
+    // Explicit local development
+    if (host === 'localhost' || host === '127.0.0.1' || host === '0.0.0.0' || host.endsWith('.local')) {
+      return false;
+    }
+  }
+  return Boolean((import.meta as any).env?.PROD);
+};
 
 export const getActiveDatabaseContext = (): string => {
   try {
@@ -12,19 +36,69 @@ export const getActiveDatabaseContext = (): string => {
 };
 
 /**
- * Universal Central API Client Interceptor
- * Injects X-Database-Context into every request based on user active database selection
+ * Resolves the active API Gateway Base URL following the strict precedence:
+ * 1. User-specified URL in localStorage ('eco_api_base_url')
+ * 2. Environment variable (VITE_API_BASE_URL if present)
+ * 3. Default production fallback: https://datatest.hrsup.com
+ * 4. Local development fallback: http://localhost:5000
  */
-export async function apiRequest<T = any>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const activeDatabase = localStorage.getItem('selected_database') || localStorage.getItem('erp_active_db_context') || 'Tarabot_Data_2026';
+export const getApiBaseUrl = (): string => {
+  try {
+    // 1. User-specified URL in localStorage (if manually set by admin)
+    const customUrl = localStorage.getItem('eco_api_base_url');
+    if (customUrl && customUrl.trim()) {
+      return customUrl.trim().replace(/\/+$/, '');
+    }
+  } catch {}
+
+  // 2. Environment variable (VITE_API_BASE_URL if present)
+  const envUrl = ((import.meta as any).env?.VITE_API_BASE_URL as string)?.trim();
+  if (envUrl) {
+    return envUrl.replace(/\/+$/, '');
+  }
+
+  // 3. Default production fallback
+  if (isProductionEnvironment()) {
+    return PRODUCTION_DEFAULT_GATEWAY;
+  }
+
+  // 4. Local development fallback
+  return LOCAL_DEV_DEFAULT_GATEWAY;
+};
+
+export const setApiBaseUrl = (url: string): void => {
+  try {
+    if (!url || !url.trim() || url.trim() === PRODUCTION_DEFAULT_GATEWAY) {
+      localStorage.removeItem('eco_api_base_url');
+    } else {
+      localStorage.setItem('eco_api_base_url', url.trim().replace(/\/+$/, ''));
+    }
+    window.dispatchEvent(new CustomEvent('eco-api-url-changed', { detail: { url } }));
+  } catch {}
+};
+
+/**
+ * Universal Central API Client Interceptor
+ * Injects X-Database-Context and Accept headers into every request
+ * Provides resilient retry logic for transient tunnel reconnects (502/503/504)
+ */
+export async function apiRequest<T = any>(
+  endpoint: string,
+  options: RequestInit = {},
+  retries = 1
+): Promise<T> {
+  const activeDatabase = getActiveDatabaseContext();
+  const baseUrl = getApiBaseUrl();
 
   const headers: Record<string, string> = {
+    'Accept': 'application/json',
     'Content-Type': 'application/json',
     'X-Database-Context': activeDatabase,
     ...(options.headers as Record<string, string>),
   };
 
-  const targetUrl = endpoint.startsWith('http') ? endpoint : `http://localhost:5000${endpoint}`;
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const targetUrl = endpoint.startsWith('http') ? endpoint : `${baseUrl}${cleanEndpoint}`;
 
   try {
     const response = await fetch(targetUrl, {
@@ -33,50 +107,41 @@ export async function apiRequest<T = any>(endpoint: string, options: RequestInit
     });
 
     if (!response.ok) {
+      // If 502/503/504 Bad Gateway from tunnel during temporary reconnect, retry once
+      if (retries > 0 && [502, 503, 504].includes(response.status)) {
+        await new Promise(resolve => setTimeout(resolve, 800));
+        return apiRequest<T>(endpoint, options, retries - 1);
+      }
       const err = await response.json().catch(() => ({}));
       throw new Error(err.error || `HTTP error! status: ${response.status}`);
     }
 
     return response.json();
   } catch (err: any) {
-    // If port 5000 is unreachable directly from browser (e.g. served via Vite proxy/middleware on :3000), fallback gracefully
-    if (!endpoint.startsWith('http') && typeof window !== 'undefined' && window.location.port !== '5000') {
-      const fallbackResponse = await fetch(endpoint, {
-        ...options,
-        headers,
-      });
-
-      if (!fallbackResponse.ok) {
-        const fallbackErr = await fallbackResponse.json().catch(() => ({}));
-        throw new Error(fallbackErr.error || `HTTP error! status: ${fallbackResponse.status}`);
-      }
-
-      return fallbackResponse.json();
+    // If network failure / connection drop and retries remain, attempt retry
+    if (retries > 0 && (err.name === 'TypeError' || err.message?.includes('fetch') || err.message?.includes('network'))) {
+      await new Promise(resolve => setTimeout(resolve, 800));
+      return apiRequest<T>(endpoint, options, retries - 1);
     }
+
+    // If targetUrl is not localhost and failed, and user is local dev, fallback gracefully to localhost
+    if (!endpoint.startsWith('http') && typeof window !== 'undefined') {
+      const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      if (isLocalHost && !targetUrl.includes('localhost:5000')) {
+        const fallbackResponse = await fetch(`http://localhost:5000${cleanEndpoint}`, {
+          ...options,
+          headers,
+        });
+
+        if (fallbackResponse.ok) {
+          return fallbackResponse.json();
+        }
+      }
+    }
+
     throw err;
   }
 }
-
-export const getApiBaseUrl = (): string => {
-  try {
-    const customUrl = localStorage.getItem('eco_api_base_url');
-    if (customUrl && customUrl.trim()) {
-      return customUrl.trim().replace(/\/+$/, '');
-    }
-  } catch {}
-  return ((import.meta as any).env?.VITE_API_BASE_URL as string) || '';
-};
-
-export const setApiBaseUrl = (url: string): void => {
-  try {
-    if (!url || !url.trim()) {
-      localStorage.removeItem('eco_api_base_url');
-    } else {
-      localStorage.setItem('eco_api_base_url', url.trim().replace(/\/+$/, ''));
-    }
-    window.dispatchEvent(new CustomEvent('eco-api-url-changed', { detail: { url } }));
-  } catch {}
-};
 
 // Global Fetch Interceptor
 let isFetchIntercepted = false;
@@ -90,21 +155,59 @@ export function setupFetchInterceptor(): void {
     let urlString = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
 
     // Check if this is an API call
-    if (urlString.startsWith('/api') || urlString.includes('/api/')) {
+    if (urlString.startsWith('/api') || urlString.startsWith('api/')) {
       const baseUrl = getApiBaseUrl();
-      if (urlString.startsWith('/api') && baseUrl) {
-        urlString = `${baseUrl}${urlString}`;
-      }
+      const cleanUrl = urlString.startsWith('/') ? urlString : `/${urlString}`;
+      urlString = baseUrl ? `${baseUrl}${cleanUrl}` : cleanUrl;
 
-      const headers = new Headers(init?.headers || (typeof input === 'object' && 'headers' in input ? (input as any).headers : undefined));
+      const headers = new Headers(
+        init?.headers || (typeof input === 'object' && 'headers' in input ? (input as any).headers : undefined)
+      );
+
       if (!headers.has('X-Database-Context')) {
         headers.set('X-Database-Context', activeDb);
       }
+      if (!headers.has('Accept')) {
+        headers.set('Accept', 'application/json');
+      }
+
       init = {
         ...init,
         headers,
       };
 
+      try {
+        const res = await originalFetch.call(this, urlString, init);
+        // Handle transient 502/503/504 from Cloudflare Tunnel reconnection
+        if ([502, 503, 504].includes(res.status)) {
+          await new Promise(r => setTimeout(r, 600));
+          return originalFetch.call(this, urlString, init);
+        }
+        return res;
+      } catch (err: any) {
+        // Retry once on network disconnect
+        try {
+          await new Promise(r => setTimeout(r, 600));
+          return await originalFetch.call(this, urlString, init);
+        } catch {
+          throw err;
+        }
+      }
+    } else if (urlString.includes('/api/')) {
+      // If absolute URL to an API endpoint
+      const headers = new Headers(
+        init?.headers || (typeof input === 'object' && 'headers' in input ? (input as any).headers : undefined)
+      );
+      if (!headers.has('X-Database-Context')) {
+        headers.set('X-Database-Context', activeDb);
+      }
+      if (!headers.has('Accept')) {
+        headers.set('Accept', 'application/json');
+      }
+      init = {
+        ...init,
+        headers,
+      };
       return originalFetch.call(this, urlString, init);
     }
 
@@ -130,4 +233,3 @@ export const apiClient = {
     });
   },
 };
-

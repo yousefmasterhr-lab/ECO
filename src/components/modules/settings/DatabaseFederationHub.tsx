@@ -248,7 +248,7 @@ export const DatabaseFederationHub: React.FC = () => {
                   dir="ltr"
                   value={bridgeUrlInput}
                   onChange={e => setBridgeUrlInput(e.target.value)}
-                  placeholder="https://api.hrsup.com أو https://my-tunnel.trycloudflare.com أو http://localhost:5000"
+                  placeholder="https://datatest.hrsup.com (الافتراضي للإنتاج) أو http://localhost:5000"
                   className="w-full bg-[#121B14] border border-[#243628] rounded-lg px-3 py-1.5 text-xs text-[#F3EFE6] placeholder-[#8FA392] focus:outline-hidden focus:border-[#EBB34D] font-mono"
                 />
               </div>
@@ -284,13 +284,7 @@ export const DatabaseFederationHub: React.FC = () => {
                   </code>
                 </li>
                 <li>
-                  {t('استخدم Cloudflare Tunnel المجاني لإنشاء رابط HTTPS آمن لخادم الربط:', 'Expose port 5000 securely via a free Cloudflare Tunnel:')}
-                  <code className="block mt-1 p-2 rounded-lg bg-[#17231A] font-mono text-[#A3CFAC] text-[11px]" dir="ltr">
-                    cloudflared tunnel --url http://localhost:5000
-                  </code>
-                </li>
-                <li>
-                  {t('أو اربط نطاقك الفرعي (مثل https://api.hrsup.com) بالبورت 5000 من لوحة تحكم Cloudflare Zero Trust.', 'Or route a custom subdomain (e.g. https://api.hrsup.com) to port 5000.')}
+                  {t('النفق الدائم المعتمد للمنظومة هو https://datatest.hrsup.com مربوط بنفق eco-data-bridge ويوجه للبورت 5000 تلقائياً بشهادة SSL كاملة.', 'The permanent enterprise tunnel is https://datatest.hrsup.com bound to eco-data-bridge routing to port 5000 with full SSL.')}
                 </li>
                 <li>
                   {t('ضع الرابط في خانة البوابة أعلاه واضغط "حفظ واختبار المزامنة". سيكتشف النظام القواعد الحقيقية فقط ويعرض كروتها تلقائياً.', 'Paste the HTTPS tunnel URL in the field above and click "Save & Sync". Only verified databases will be discovered and carded.')}

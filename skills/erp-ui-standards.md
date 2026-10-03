@@ -351,6 +351,9 @@ Whenever a global directive or styling standard is issued (including typography,
   - Modern web applications hosted on Cloudflare edge CDNs (such as `eco.hrsup.com`) run client-side JavaScript in user browsers that cannot establish direct TCP sockets to SQL Server Port 1433.
   - A secure API Bridge Gateway (running `sqlBridge.cjs` on port 5000) exposed via Cloudflare Tunnel (`cloudflared`) or Tailscale Funnel provides the secure HTTPS bridge.
   - The frontend dynamically routes all `/api/*` traffic to the configured gateway URL (`localStorage.eco_api_base_url`) via a central fetch interceptor.
+  - **Permanent Production Gateway Endpoint:**
+    - The dedicated production Cloudflare Tunnel `eco-data-bridge` is permanently bound to `https://datatest.hrsup.com` routing to `http://localhost:5000`.
+    - `src/services/apiClient.ts` hardcodes `https://datatest.hrsup.com` as the default production fallback so end users on `https://eco.hrsup.com/` never need manual URL configuration.
 
 
 
