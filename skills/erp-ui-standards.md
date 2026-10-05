@@ -361,13 +361,17 @@ Whenever a global directive or styling standard is issued (including typography,
 - **High-Contrast White Print Backgrounds (خلفية بيضاء عالية التباين للطباعة):**
   - All print preview modals and `@media print` sheets must render with crisp white backgrounds (`#ffffff`), dark legible typography (`#0f172a`), and high-contrast borders (`#cbd5e1` / `#94a3b8`).
   - Dark mode surfaces, glow effects, and muted low-contrast grays must never leak into printable sheets.
-- **Sub-Header & Metadata Realignment (توزيع ترويسة البيانات وتوسيط التاريخ وحذف اسم المستخدم):**
-  - The ledger title (`حساب الأستاذ العام`) is positioned on the far left of the page (`text-left`).
-  - The issue date (`تاريخ الإصدار: YYYY-MM-DD`) is positioned directly in the horizontal center (`text-center`).
-  - Author/user name (e.g., `م. أحمد مصطفى`) is completely omitted from the printable sub-header.
-- **Prominent Table Header (`<thead>` ترويسة جدول بارزة وواضحة):**
-  - The first header row cells must have generous breathing room: `py-3.5 px-3` (`print:py-2.5 print:px-2`).
-  - Header typography and contrast: `text-sm font-bold text-slate-900 bg-slate-100/90`.
+- **Sub-Header 3-Way Alignment (توزيع ترويسة البيانات الثلاثي):**
+  - Directly above the summary cards, the metadata bar follows a 3-way distributed alignment:
+    - **Right Side (`text-right`):** `حساب الأستاذ العام` (`subtitleAr`).
+    - **Center (`text-center`):** `تاريخ الإصدار: YYYY-MM-DD` (`تاريخ الإصدار`).
+    - **Far Left (`text-left`):** Current user's formal display name (`userName` e.g., `م. أحمد مصطفى`) — display name only, never the raw email.
+  - Implemented using a balanced 3-column grid (`grid grid-cols-3 items-center`) or flex distribution so each element is anchored cleanly to its respective boundary.
+- **Ledger Row Hierarchy & Prominent Framing (التسلسل البصري لصفوف الجدول وترويسة وخاتمة py-3):**
+  - **Header Row (`<thead>`):** Prominently sized with `py-3 px-3` (`print:py-2.5 print:px-2`), `text-xs md:text-sm font-bold text-slate-900 bg-slate-100`.
+  - **Transaction Rows (`<tbody>`):** Efficiently compacted with `py-1 px-2` (`print:py-1 print:px-2`), font size `11px`, and `leading-tight` to preserve vertical print density.
+  - **Grand Total Row (`<tfoot>` / Summary Row):** Prominently sized with `py-3 px-3` (`print:py-2.5 print:px-2`), `text-sm md:text-base font-extrabold text-slate-950`.
+  - The negative ending balance `(428,000.00)` is styled in high-contrast red (`text-rose-600 text-negative-balance`) with `overflow-visible px-3 print:px-2.5` to ensure comfortable breathing room away from the rounded border line.
 - **Sealed 1.5px Outer Table Borders (إغلاق وتحديد الإطار الخارجي للجدول 1.5px):**
   - Table container and table elements enforce high-contrast outer closing borders:
     ```css
@@ -393,23 +397,14 @@ Whenever a global directive or styling standard is issued (including typography,
     6. `دائن` (Credit): **11%** (compact, nowrap, tabular-nums)
     7. `الرصيد` (Balance): **11%** (compact, nowrap, tabular-nums, `overflow-visible px-2`)
   - The `الرصيد` column is allocated **11%** with `overflow-visible px-2` to guarantee negative numbers like `(428,000.00)` never collide with the rounded left border or get clipped.
-- **Print Density Compression & Elimination of Orphan Signatures (تكثيف الطباعة ودمج التوقيعات في نفس الصفحة):**
-  - To prevent signature blocks from spilling over onto a standalone blank page (e.g. Page 4), vertical density must be rigorously optimized:
-    - Table cell padding set to `py-1 px-2` (`padding: 4px 8px !important; font-size: 11px !important; line-height: 1.25 !important;`).
-    - Top KPI summary cards set to compact padding `py-1.5 px-2.5` with `mb-2`.
-    - Signature approval cards streamlined to `h-16 print:h-14` with `mt-2 pt-1` and `page-break-inside: avoid; break-inside: avoid;`.
-    - `@page` margins set to compact `8mm 10mm 10mm 10mm;`.
-- **Grand Total Row Expansion (توسيع وتضخيم صف الإجمالي العام):**
-  - Final summary row (`الإجمالي العام والرصيد الختامي`) cell padding: `py-2 px-2 print:py-1.5 print:px-2`.
-  - Typography size and weight: `text-xs md:text-sm print:text-[11px] font-extrabold text-slate-950`.
-  - The grand summary row renders strictly ONCE at the very end of the data rows on the final page (`page-break-inside: avoid;`).
-- **Minimalist Single-Title Approval Signatures & Handwriting Room (صناديق التوقيعات وسطر التاريخ المنضبط):**
-  - Official print layouts feature three clean approval boxes (`المحاسب`, `المراجع`, `يعتمد`) without secondary titles.
-  - Handwritten signature and date lines are styled with explicit `dir="rtl"` and sufficient handwritten room:
+- **Comfortable Signature Block & Open Handwriting Slots (صناديق الاعتماد وسطر التاريخ اليدوي المفتوح):**
+  - Official print layouts feature three comfortable approval boxes (`المحاسب`, `المراجع`, `يعتمد`) with a prominent height (`min-h-[90px] print:min-h-[75px]`).
+  - Completely omit any hardcoded year prefix (`202`).
+  - Open, unconstrained dotted slots are provided for handwriting the day, month, and 4-digit year manually:
     ```html
-    <div class="flex items-center justify-between text-[11px] text-slate-700 mt-2 px-2">
+    <div class="flex items-center justify-between text-xs text-slate-700 mt-4 px-2" dir="rtl">
       <span>التوقيع: .....................</span>
-      <span dir="rtl">التاريخ: &nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp; / 202&nbsp;&nbsp;&nbsp;&nbsp;م</span>
+      <span>التاريخ: &nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; م</span>
     </div>
     ```
 - **Dynamic Red Highlighting for Negative Balances (تمييز الأرصدة السالبة باللون الأحمر الصريح):**

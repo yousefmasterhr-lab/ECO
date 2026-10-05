@@ -11,6 +11,7 @@ interface ReportPrintLayoutProps {
   subtitleAr?: string;
   periodText?: string;
   filterText?: string;
+  userName?: string;
   children: React.ReactNode;
 }
 
@@ -22,6 +23,7 @@ export const ReportPrintLayout: React.FC<ReportPrintLayoutProps> = ({
   subtitleAr,
   periodText,
   filterText,
+  userName,
   children,
 }) => {
   const { t } = useLanguage();
@@ -100,16 +102,22 @@ export const ReportPrintLayout: React.FC<ReportPrintLayoutProps> = ({
           </div>
         </div>
 
-        {/* Subtitle / Filter notes / Metadata Realignment */}
+        {/* Subtitle / Filter notes / Metadata 3-Way Realignment */}
         <div className="grid grid-cols-3 items-center text-xs text-slate-600 print:text-gray-700 pb-2 border-b border-slate-200 print:border-gray-400">
-          <div className="text-right font-mono text-[11px] print:text-[10px] text-slate-600 print:text-gray-700">
-            {filterText || ''}
+          {/* Right Side (text-right): حساب الأستاذ العام */}
+          <div className="text-right font-bold text-slate-800 print:text-black text-xs print:text-[11px]">
+            {subtitleAr || 'حساب الأستاذ العام'}
+            {filterText && <span className="font-mono font-normal mr-2 text-[10px]">({filterText})</span>}
           </div>
+
+          {/* Center (text-center): تاريخ الإصدار: {issueDate} */}
           <div className="text-center font-mono text-[11px] print:text-[10px] text-slate-700 print:text-black font-semibold">
             تاريخ الإصدار: {formatDate(new Date())}
           </div>
+
+          {/* Far Left (text-left): Current user's display name */}
           <div className="text-left font-bold text-slate-800 print:text-black text-xs print:text-[11px]">
-            {subtitleAr || 'حساب الأستاذ العام'}
+            {userName || ''}
           </div>
         </div>
 
@@ -119,44 +127,44 @@ export const ReportPrintLayout: React.FC<ReportPrintLayoutProps> = ({
         </div>
 
         {/* Formal Audit Signatures Block */}
-        <div className="pt-2 mt-2 print:pt-1 print:mt-1.5 border-t border-slate-300 print:border-black page-break-inside-avoid break-inside-avoid">
-          <div className="grid grid-cols-3 gap-3 print:gap-2 text-center text-xs print:text-[10px]">
+        <div className="pt-3 mt-4 print:pt-2 print:mt-2 border-t border-slate-300 print:border-black page-break-inside-avoid break-inside-avoid">
+          <div className="grid grid-cols-3 gap-4 print:gap-3 text-center text-xs print:text-[10px]">
             {/* Box 1: المحاسب */}
-            <div className="p-2 print:p-1.5 rounded-xl border border-slate-300 print:border-black bg-slate-50 print:bg-white flex flex-col justify-between h-16 print:h-14">
+            <div className="p-3 print:p-2 rounded-xl border border-slate-300 print:border-black bg-slate-50 print:bg-white flex flex-col justify-between min-h-[90px] print:min-h-[75px]">
               <div>
-                <span className="font-black block text-xs print:text-[11px] text-slate-900 print:text-black">
+                <span className="font-black block text-sm print:text-xs text-slate-900 print:text-black">
                   المحاسب
                 </span>
               </div>
-              <div className="flex items-center justify-between text-[11px] print:text-[10px] text-slate-700 print:text-black mt-2 print:mt-1 px-2">
+              <div className="flex items-center justify-between text-xs print:text-[10px] text-slate-700 print:text-black mt-4 print:mt-2 px-2" dir="rtl">
                 <span>التوقيع: .....................</span>
-                <span dir="rtl">التاريخ: &nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp; / 202&nbsp;&nbsp;&nbsp;&nbsp;م</span>
+                <span>التاريخ: &nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; م</span>
               </div>
             </div>
 
             {/* Box 2: المراجع */}
-            <div className="p-2 print:p-1.5 rounded-xl border border-slate-300 print:border-black bg-slate-50 print:bg-white flex flex-col justify-between h-16 print:h-14">
+            <div className="p-3 print:p-2 rounded-xl border border-slate-300 print:border-black bg-slate-50 print:bg-white flex flex-col justify-between min-h-[90px] print:min-h-[75px]">
               <div>
-                <span className="font-black block text-xs print:text-[11px] text-slate-900 print:text-black">
+                <span className="font-black block text-sm print:text-xs text-slate-900 print:text-black">
                   المراجع
                 </span>
               </div>
-              <div className="flex items-center justify-between text-[11px] print:text-[10px] text-slate-700 print:text-black mt-2 print:mt-1 px-2">
+              <div className="flex items-center justify-between text-xs print:text-[10px] text-slate-700 print:text-black mt-4 print:mt-2 px-2" dir="rtl">
                 <span>التوقيع: .....................</span>
-                <span dir="rtl">التاريخ: &nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp; / 202&nbsp;&nbsp;&nbsp;&nbsp;م</span>
+                <span>التاريخ: &nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; م</span>
               </div>
             </div>
 
             {/* Box 3: يعتمد */}
-            <div className="p-2 print:p-1.5 rounded-xl border border-slate-300 print:border-black bg-slate-50 print:bg-white flex flex-col justify-between h-16 print:h-14">
+            <div className="p-3 print:p-2 rounded-xl border border-slate-300 print:border-black bg-slate-50 print:bg-white flex flex-col justify-between min-h-[90px] print:min-h-[75px]">
               <div>
-                <span className="font-black block text-xs print:text-[11px] text-slate-900 print:text-black">
+                <span className="font-black block text-sm print:text-xs text-slate-900 print:text-black">
                   يعتمد
                 </span>
               </div>
-              <div className="flex items-center justify-between text-[11px] print:text-[10px] text-slate-700 print:text-black mt-2 print:mt-1 px-2">
+              <div className="flex items-center justify-between text-xs print:text-[10px] text-slate-700 print:text-black mt-4 print:mt-2 px-2" dir="rtl">
                 <span>الاعتماد: .....................</span>
-                <span dir="rtl">التاريخ: &nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp; / 202&nbsp;&nbsp;&nbsp;&nbsp;م</span>
+                <span>التاريخ: &nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; م</span>
               </div>
             </div>
           </div>
