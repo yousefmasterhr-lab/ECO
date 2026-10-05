@@ -355,5 +355,36 @@ Whenever a global directive or styling standard is issued (including typography,
     - The dedicated production Cloudflare Tunnel `eco-data-bridge` is permanently bound to `https://datatest.hrsup.com` routing to `http://localhost:5000`.
     - `src/services/apiClient.ts` hardcodes `https://datatest.hrsup.com` as the default production fallback so end users on `https://eco.hrsup.com/` never need manual URL configuration.
 
+---
+
+### Rule 37: Executive Financial Statement Print & Curvature Standards (معايير فخامة طباعة كشوف الحسابات والأستاذ العام)
+- **High-Contrast White Print Backgrounds (خلفية بيضاء عالية التباين للطباعة):**
+  - All print preview modals and `@media print` sheets must render with crisp white backgrounds (`#ffffff`), dark legible typography (`#0f172a`), and high-contrast borders (`#cbd5e1` / `#94a3b8`).
+  - Dark mode surfaces, glow effects, and muted low-contrast grays must never leak into printable sheets.
+- **Curvy Rounded Outer Framing (`rounded-2xl`):**
+  - Financial tables must shed sharp, jagged outer corners in favor of an elegant executive container (`rounded-2xl border border-slate-300 overflow-hidden shadow-sm`).
+  - The inner table must use `border-separate border-spacing-0` so the 16px corner radius curves cleanly across the top header row and bottom cells without visual distortion or harsh cuts.
+- **Center-Aligned Data Cells & Expanded Narration Width (توسيط الأرقام وتوسيع حقل البيان):**
+  - All financial table cells (dates, entry numbers, transaction types, debits, credits, and balances) must be center-aligned horizontally and vertically (`text-center align-middle`).
+  - Fixed metadata columns must tightly hug their content (`whitespace-nowrap px-3 py-2.5` or `py-4 px-3` for headers).
+  - The narration/description column (`البيان`) must occupy the dominant remaining table width (`min-w-[340px]` or flexible stretch) so detailed accounting narratives display comfortably without cramped multi-line breaking.
+- **Enlarged Prominent Table Header (`<thead> / <th>`):**
+  - Header rows must stand out with increased height, generous padding (`py-4 px-3`), and bold prominent typography (`text-sm md:text-base font-bold text-slate-900 bg-slate-100`).
+- **Last-Page-Only Grand Total Enforcement (إظهار صف الإجمالي في الصفحة الأخيرة فقط ومنع تكراره):**
+  - The grand summary row (`الإجمالي العام والرصيد الختامي`) must render strictly ONCE at the very end of the data rows on the final page (`page-break-inside: avoid;`).
+  - Summary rows must never be placed in a repeating `<tfoot>` (`display: table-footer-group`), which erroneously duplicates the totals at the bottom of intermediate pages.
+- **Multi-Page Print Pagination (`1 - X`):**
+  - Page numbering must be configured using standard CSS Paged Media (`@page { size: A4 portrait; margin: 12mm; @bottom-center { content: counter(page) " - " counter(pages); font-family: inherit; font-size: 11px; color: #64748b; } }`).
+  - Pages must print cleanly with numbering formatted as `1 - 5`, `2 - 5`, `3 - 5`, etc.
+- **Dynamic User Display Name Attribution (نسبة الاستخراج للاسم الحقيقي للمستخدم):**
+  - Subtitles must dynamically reflect the active authenticated user's formal display name retrieved from user/auth state (e.g., `من حساب الأستاذ العام - م. أحمد مصطفى`).
+  - Display names must be formatted with the human-readable Arabic/English title and name, NEVER displaying raw email addresses.
+- **Standardized Three-Box Approval Signatures (اعتمادات التوقيع الرسمية الثلاثية):**
+  - Official print layouts must feature three standardized approval boxes:
+    1. **Box 1:** `المحاسب` (Financial Accountant)
+    2. **Box 2:** `المراجع` (Internal Auditor / Head of Accounts)
+    3. **Box 3:** `يعتمد` (Final Executive / CFO Authorization)
+
+
 
 

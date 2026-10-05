@@ -119,11 +119,11 @@ export const ReportPrintLayout: React.FC<ReportPrintLayoutProps> = ({
         {/* Formal Audit Signatures Block */}
         <div className="pt-6 mt-8 border-t-2 border-slate-300 print:border-black page-break-inside-avoid">
           <div className="grid grid-cols-3 gap-6 text-center text-xs">
-            {/* Box 1: Prepared By */}
+            {/* Box 1: المحاسب */}
             <div className="p-3.5 rounded-xl border border-slate-300 print:border-black bg-slate-50 print:bg-white flex flex-col justify-between h-28">
               <div>
                 <span className="font-black block text-sm text-slate-900 print:text-black">
-                  إعداد (Prepared By)
+                  المحاسب
                 </span>
                 <span className="text-[10px] text-slate-500 print:text-gray-600 block mt-0.5">
                   المحاسب المالي المختص
@@ -135,11 +135,11 @@ export const ReportPrintLayout: React.FC<ReportPrintLayoutProps> = ({
               </div>
             </div>
 
-            {/* Box 2: Audited By */}
+            {/* Box 2: المراجع */}
             <div className="p-3.5 rounded-xl border border-slate-300 print:border-black bg-slate-50 print:bg-white flex flex-col justify-between h-28">
               <div>
                 <span className="font-black block text-sm text-slate-900 print:text-black">
-                  مراجعة الحسابات (Audited By)
+                  المراجع
                 </span>
                 <span className="text-[10px] text-slate-500 print:text-gray-600 block mt-0.5">
                   رئيس قسم الحسابات العامة
@@ -151,11 +151,11 @@ export const ReportPrintLayout: React.FC<ReportPrintLayoutProps> = ({
               </div>
             </div>
 
-            {/* Box 3: Chief Financial Officer */}
+            {/* Box 3: يعتمد */}
             <div className="p-3.5 rounded-xl border border-slate-300 print:border-black bg-slate-50 print:bg-white flex flex-col justify-between h-28">
               <div>
                 <span className="font-black block text-sm text-slate-900 print:text-black">
-                  المدير المالي (Chief Financial Officer)
+                  يعتمد
                 </span>
                 <span className="text-[10px] text-slate-500 print:text-gray-600 block mt-0.5">
                   الاعتماد والختم الرسمي

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useLanguage } from '../../../context/LanguageContext';
+import { useNavigation } from '../../../context/NavigationContext';
 import { useFinancial } from '../../../context/FinancialContext';
 import { useDatabase } from '../../../services/federation/DatabaseContext';
 import { getFiscalDateRange } from '../../../utils/fiscalYearHelper';
@@ -56,6 +57,7 @@ function findAccountInTree(nodes: AccountNode[], codeOrId: string): AccountNode 
 export const AccountStatementReport: React.FC = () => {
   const { t } = useLanguage();
   const { activeDatabase } = useDatabase();
+  const { currentUser } = useNavigation();
   const {
     fetchStatementOfAccount,
     accounts,
@@ -767,7 +769,7 @@ export const AccountStatementReport: React.FC = () => {
         titleAr={`كشف حساب: ${data?.accountNameAr || ''} (${data?.level5Id || ''})`}
         titleEn={`Statement of Account - ${data?.level5Id || ''}`}
         periodText={`من ${startDate} إلى ${endDate}`}
-        subtitleAr="مستخرج رسمي من واقع قيود دفتر الأستاذ العام المعتمدة"
+        subtitleAr={`من حساب الأستاذ العام - ${currentUser?.nameAr || currentUser?.nameEn || 'م. أحمد مصطفى'}`}
       >
         {data && (
           <div className="space-y-4">
@@ -830,76 +832,111 @@ export const AccountStatementReport: React.FC = () => {
               </div>
             </div>
 
-            {/* Table */}
-            <table className="w-full text-right border-collapse text-[10px] print:text-[9px] border border-slate-300">
-              <thead className="print:table-header-group">
-                <tr className="border-b-2 border-slate-400 bg-slate-100 font-black">
-                  <th className="py-2 px-1.5 border border-slate-300 text-slate-900 w-20">
-                    التاريخ
-                  </th>
-                  <th className="py-2 px-1.5 border border-slate-300 text-slate-900 w-16">
-                    رقم القيد
-                  </th>
-                  <th className="py-2 px-1.5 border border-slate-300 text-slate-900 w-20">
-                    نوع السند
-                  </th>
-                  <th className="py-2 px-2 border border-slate-300 text-slate-900">
-                    البيان
-                  </th>
-                  <th className="py-2 px-1.5 border border-slate-300 text-slate-900 text-left w-20">
-                    مدين
-                  </th>
-                  <th className="py-2 px-1.5 border border-slate-300 text-slate-900 text-left w-20">
-                    دائن
-                  </th>
-                  <th className="py-2 px-1.5 border border-slate-300 text-slate-900 text-left w-24">
-                    الرصيد
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr className="border-b border-slate-300 font-bold bg-slate-50 text-slate-900">
-                  <td className="py-1 px-1.5 border border-slate-300 font-mono text-slate-900">{startDate}</td>
-                  <td className="py-1 px-1.5 border border-slate-300 text-center font-mono text-slate-900">-</td>
-                  <td className="py-1 px-1.5 border border-slate-300 text-slate-900">رصيد أول المدة</td>
-                  <td className="py-1 px-2 border border-slate-300 text-slate-900">رصيد مرحل من فترات سابقة</td>
-                  <td className="py-1 px-1.5 border border-slate-300 text-left font-mono font-semibold text-blue-900" dir="ltr">{data.openingBalance >= 0 ? formatEGP(data.openingBalance) : '-'}</td>
-                  <td className="py-1 px-1.5 border border-slate-300 text-left font-mono font-semibold text-amber-900" dir="ltr">{data.openingBalance < 0 ? formatEGP(Math.abs(data.openingBalance)) : '-'}</td>
-                  <td className="py-1 px-1.5 border border-slate-300 text-left font-mono font-bold text-slate-900 whitespace-nowrap" dir="ltr">
-                    {data.openingBalance < 0
-                      ? `(${formatEGP(Math.abs(data.openingBalance))})`
-                      : formatEGP(data.openingBalance)}
-                  </td>
-                </tr>
-                {data.transactions.map((t, i) => (
-                  <tr key={i} className="border-b border-slate-300 hover:bg-slate-50/50">
-                    <td className="py-1 px-1.5 border border-slate-300 font-mono text-slate-900">{t.noteDate}</td>
-                    <td className="py-1 px-1.5 border border-slate-300 font-mono text-slate-900">#{t.noteNo}</td>
-                    <td className="py-1 px-1.5 border border-slate-300 text-slate-900">{t.voucherType}</td>
-                    <td className="py-1 px-2 border border-slate-300 text-slate-900">{t.description}</td>
-                    <td className="py-1 px-1.5 border border-slate-300 text-left font-mono font-semibold text-blue-900" dir="ltr">{t.debit > 0 ? formatEGP(t.debit) : '-'}</td>
-                    <td className="py-1 px-1.5 border border-slate-300 text-left font-mono font-semibold text-amber-900" dir="ltr">{t.credit > 0 ? formatEGP(t.credit) : '-'}</td>
-                    <td className="py-1 px-1.5 border border-slate-300 text-left font-mono font-bold text-slate-900 whitespace-nowrap" dir="ltr">
-                      {t.runningBalance < 0
-                        ? `(${formatEGP(Math.abs(t.runningBalance))})`
-                        : formatEGP(t.runningBalance)}
+            {/* Curvy Rounded Frame */}
+            <div className="rounded-2xl border border-slate-300 overflow-hidden shadow-sm bg-white print:rounded-2xl print:border print:border-slate-300">
+              <table className="w-full border-separate border-spacing-0 text-[11px] print:text-[10px]">
+                <thead className="print:table-header-group bg-slate-100">
+                  <tr className="border-b border-slate-300">
+                    <th className="py-4 px-3 text-center align-middle whitespace-nowrap text-sm md:text-base font-bold text-slate-900 border-b border-slate-300 border-l border-slate-200">
+                      التاريخ
+                    </th>
+                    <th className="py-4 px-3 text-center align-middle whitespace-nowrap text-sm md:text-base font-bold text-slate-900 border-b border-slate-300 border-l border-slate-200">
+                      رقم القيد
+                    </th>
+                    <th className="py-4 px-3 text-center align-middle whitespace-nowrap text-sm md:text-base font-bold text-slate-900 border-b border-slate-300 border-l border-slate-200">
+                      نوع السند
+                    </th>
+                    <th className="py-4 px-4 text-center align-middle min-w-[340px] text-sm md:text-base font-bold text-slate-900 border-b border-slate-300 border-l border-slate-200">
+                      البيان
+                    </th>
+                    <th className="py-4 px-3 text-center align-middle whitespace-nowrap text-sm md:text-base font-bold text-slate-900 border-b border-slate-300 border-l border-slate-200">
+                      مدين
+                    </th>
+                    <th className="py-4 px-3 text-center align-middle whitespace-nowrap text-sm md:text-base font-bold text-slate-900 border-b border-slate-300 border-l border-slate-200">
+                      دائن
+                    </th>
+                    <th className="py-4 px-3 text-center align-middle whitespace-nowrap text-sm md:text-base font-bold text-slate-900 border-b border-slate-300">
+                      الرصيد
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {/* Opening Balance Row */}
+                  <tr className="border-b border-slate-300 font-bold bg-slate-50 text-slate-900">
+                    <td className="py-2.5 px-3 text-center align-middle whitespace-nowrap border-b border-slate-200 border-l border-slate-200 font-mono text-slate-900">
+                      {startDate}
+                    </td>
+                    <td className="py-2.5 px-3 text-center align-middle whitespace-nowrap border-b border-slate-200 border-l border-slate-200 font-mono text-slate-900">
+                      -
+                    </td>
+                    <td className="py-2.5 px-3 text-center align-middle whitespace-nowrap border-b border-slate-200 border-l border-slate-200 text-slate-900">
+                      رصيد أول المدة
+                    </td>
+                    <td className="py-2.5 px-4 text-center align-middle min-w-[340px] border-b border-slate-200 border-l border-slate-200 text-slate-900">
+                      رصيد مرحل من فترات محاسبية سابقة
+                    </td>
+                    <td className="py-2.5 px-3 text-center align-middle whitespace-nowrap border-b border-slate-200 border-l border-slate-200 font-mono font-semibold text-blue-900" dir="ltr">
+                      {data.openingBalance >= 0 ? formatEGP(data.openingBalance) : '-'}
+                    </td>
+                    <td className="py-2.5 px-3 text-center align-middle whitespace-nowrap border-b border-slate-200 border-l border-slate-200 font-mono font-semibold text-amber-900" dir="ltr">
+                      {data.openingBalance < 0 ? formatEGP(Math.abs(data.openingBalance)) : '-'}
+                    </td>
+                    <td className="py-2.5 px-3 text-center align-middle whitespace-nowrap border-b border-slate-200 font-mono font-bold text-slate-900" dir="ltr">
+                      {data.openingBalance < 0
+                        ? `(${formatEGP(Math.abs(data.openingBalance))})`
+                        : formatEGP(data.openingBalance)}
                     </td>
                   </tr>
-                ))}
-              </tbody>
-              <tfoot className="print:table-footer-group">
-                <tr className="border-t-2 border-slate-400 bg-slate-100 font-bold text-slate-900">
-                  <td colSpan={4} className="py-1.5 px-2 text-center border border-slate-300 text-slate-900">الإجمالي العام والرصيد الختامي</td>
-                  <td className="py-1.5 px-1.5 border border-slate-300 text-left font-mono font-bold text-blue-900" dir="ltr">{formatEGP(data.totalDebit)}</td>
-                  <td className="py-1.5 px-1.5 border border-slate-300 text-left font-mono font-bold text-amber-900" dir="ltr">{formatEGP(data.totalCredit)}</td>
-                  <td className="py-1.5 px-1.5 border border-slate-300 text-left font-mono font-black text-slate-900 whitespace-nowrap" dir="ltr">
-                    {data.endingBalance < 0
-                      ? `(${formatEGP(Math.abs(data.endingBalance))})`
-                      : formatEGP(data.endingBalance)}
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
+
+                  {/* Transaction Rows */}
+                  {data.transactions.map((t, i) => (
+                    <tr key={i} className="border-b border-slate-200 hover:bg-slate-50/50">
+                      <td className="py-2.5 px-3 text-center align-middle whitespace-nowrap border-b border-slate-200 border-l border-slate-200 font-mono text-slate-900">
+                        {t.noteDate}
+                      </td>
+                      <td className="py-2.5 px-3 text-center align-middle whitespace-nowrap border-b border-slate-200 border-l border-slate-200 font-mono text-slate-900">
+                        #{t.noteNo}
+                      </td>
+                      <td className="py-2.5 px-3 text-center align-middle whitespace-nowrap border-b border-slate-200 border-l border-slate-200 text-slate-900">
+                        {t.voucherType}
+                      </td>
+                      <td className="py-2.5 px-4 text-center align-middle min-w-[340px] border-b border-slate-200 border-l border-slate-200 text-slate-900">
+                        {t.description}
+                      </td>
+                      <td className="py-2.5 px-3 text-center align-middle whitespace-nowrap border-b border-slate-200 border-l border-slate-200 font-mono font-semibold text-blue-900" dir="ltr">
+                        {t.debit > 0 ? formatEGP(t.debit) : '-'}
+                      </td>
+                      <td className="py-2.5 px-3 text-center align-middle whitespace-nowrap border-b border-slate-200 border-l border-slate-200 font-mono font-semibold text-amber-900" dir="ltr">
+                        {t.credit > 0 ? formatEGP(t.credit) : '-'}
+                      </td>
+                      <td className="py-2.5 px-3 text-center align-middle whitespace-nowrap border-b border-slate-200 font-mono font-bold text-slate-900" dir="ltr">
+                        {t.runningBalance < 0
+                          ? `(${formatEGP(Math.abs(t.runningBalance))})`
+                          : formatEGP(t.runningBalance)}
+                      </td>
+                    </tr>
+                  ))}
+
+                  {/* Grand Total Row - Renders strictly ONCE at the very end of data rows on the final page */}
+                  <tr className="border-t-2 border-slate-400 bg-slate-100 font-bold text-slate-900 page-break-inside-avoid print:bg-slate-100">
+                    <td colSpan={4} className="py-3 px-4 text-center align-middle border-t-2 border-slate-400 border-l border-slate-200 text-slate-900 font-bold text-xs md:text-sm">
+                      الإجمالي العام والرصيد الختامي
+                    </td>
+                    <td className="py-3 px-3 text-center align-middle whitespace-nowrap border-t-2 border-slate-400 border-l border-slate-200 font-mono font-bold text-blue-900" dir="ltr">
+                      {formatEGP(data.totalDebit)}
+                    </td>
+                    <td className="py-3 px-3 text-center align-middle whitespace-nowrap border-t-2 border-slate-400 border-l border-slate-200 font-mono font-bold text-amber-900" dir="ltr">
+                      {formatEGP(data.totalCredit)}
+                    </td>
+                    <td className="py-3 px-3 text-center align-middle whitespace-nowrap border-t-2 border-slate-400 font-mono font-black text-slate-900" dir="ltr">
+                      {data.endingBalance < 0
+                        ? `(${formatEGP(Math.abs(data.endingBalance))})`
+                        : formatEGP(data.endingBalance)}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </ReportPrintLayout>
