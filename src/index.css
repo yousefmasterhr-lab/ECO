@@ -245,7 +245,7 @@ table {
 @media print {
   @page {
     size: A4 portrait;
-    margin: 10mm 12mm 15mm 12mm;
+    margin: 8mm 10mm 10mm 10mm;
     @bottom-center {
       content: counter(page) " - " counter(pages);
       font-family: inherit;
@@ -385,7 +385,10 @@ table {
   table th {
     background-color: #f1f5f9 !important;
     color: #0f172a !important;
-    padding: 4px 4px !important;
+    padding: 5px 8px !important;
+    font-size: 11px !important;
+    line-height: 1.25 !important;
+    box-sizing: border-box !important;
   }
 
   table:not(.border-separate) th {
@@ -394,9 +397,19 @@ table {
 
   table td {
     color: #0f172a !important;
-    padding: 3px 4px !important;
+    padding: 4px 8px !important;
     word-break: break-word !important;
     overflow-wrap: break-word !important;
+    font-size: 11px !important;
+    line-height: 1.25 !important;
+    box-sizing: border-box !important;
+  }
+
+  table td.whitespace-nowrap,
+  table td.tabular-nums,
+  table td[dir="ltr"] {
+    white-space: nowrap !important;
+    overflow: visible !important;
   }
 
   table:not(.border-separate) td {
@@ -433,14 +446,15 @@ table {
     break-inside: auto !important;
   }
 
-  .page-break-inside-avoid {
+  .page-break-inside-avoid,
+  .break-inside-avoid {
     page-break-inside: avoid !important;
     break-inside: avoid !important;
   }
 
   .print-page-number {
     position: fixed !important;
-    bottom: 5mm !important;
+    bottom: 3mm !important;
     left: 0 !important;
     right: 0 !important;
     text-align: center !important;

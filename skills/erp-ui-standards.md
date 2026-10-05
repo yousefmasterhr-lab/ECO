@@ -386,22 +386,32 @@ Whenever a global directive or styling standard is issued (including typography,
   - Financial print tables must strictly occupy `width: 100% !important; max-width: 100% !important;` with `table-layout: fixed !important; border-collapse: separate !important;`.
   - Column widths must be locked using exact mathematical percentages totaling 100% across all 7 columns:
     1. `التاريخ` (Date): **11%** (compact, nowrap)
-    2. `رقم القيد` (Entry #): **8%** (compact, nowrap)
-    3. `نوع السند` (Type): **10%** (compact, nowrap)
-    4. `البيان` (Description): **39%** (flexible, `break-words leading-snug`)
+    2. `رقم القيد` (Entry #): **9%** (compact, nowrap)
+    3. `نوع السند` (Type): **11%** (compact, nowrap)
+    4. `البيان` (Description): **36%** (flexible, `break-words leading-tight`)
     5. `مدين` (Debit): **11%** (compact, nowrap, tabular-nums)
     6. `دائن` (Credit): **11%** (compact, nowrap, tabular-nums)
-    7. `الرصيد` (Balance): **10%** (compact, nowrap, tabular-nums)
-  - Under no circumstances may columns (like `دائن` or `الرصيد`) be cropped or pushed outside printable A4 boundaries.
+    7. `الرصيد` (Balance): **11%** (compact, nowrap, tabular-nums, `overflow-visible px-2`)
+  - The `الرصيد` column is allocated **11%** with `overflow-visible px-2` to guarantee negative numbers like `(428,000.00)` never collide with the rounded left border or get clipped.
+- **Print Density Compression & Elimination of Orphan Signatures (تكثيف الطباعة ودمج التوقيعات في نفس الصفحة):**
+  - To prevent signature blocks from spilling over onto a standalone blank page (e.g. Page 4), vertical density must be rigorously optimized:
+    - Table cell padding set to `py-1 px-2` (`padding: 4px 8px !important; font-size: 11px !important; line-height: 1.25 !important;`).
+    - Top KPI summary cards set to compact padding `py-1.5 px-2.5` with `mb-2`.
+    - Signature approval cards streamlined to `h-16 print:h-14` with `mt-2 pt-1` and `page-break-inside: avoid; break-inside: avoid;`.
+    - `@page` margins set to compact `8mm 10mm 10mm 10mm;`.
 - **Grand Total Row Expansion (توسيع وتضخيم صف الإجمالي العام):**
-  - Final summary row (`الإجمالي العام والرصيد الختامي`) cell padding: `py-3.5 px-3` (`print:py-2.5 print:px-2`).
-  - High-impact typography size and weight: `text-sm md:text-base font-extrabold text-slate-950`.
+  - Final summary row (`الإجمالي العام والرصيد الختامي`) cell padding: `py-2 px-2 print:py-1.5 print:px-2`.
+  - Typography size and weight: `text-xs md:text-sm print:text-[11px] font-extrabold text-slate-950`.
   - The grand summary row renders strictly ONCE at the very end of the data rows on the final page (`page-break-inside: avoid;`).
-- **Minimalist Single-Title Approval Signatures (تبسيط مسميات اعتمادات التوقيع الرسمية الثلاثية):**
-  - Official print layouts feature three clean, uncluttered approval boxes without secondary titles:
-    1. **Box 1:** `المحاسب` (Keep signature and date lines; omit secondary titles like "المحاسب المالي المختص").
-    2. **Box 2:** `المراجع` (Keep signature and date lines; omit secondary titles like "رئيس قسم الحسابات العامة").
-    3. **Box 3:** `يعتمد` (Keep stamp/approval and date lines; omit secondary titles like "الاعتماد والختم الرسمي").
+- **Minimalist Single-Title Approval Signatures & Handwriting Room (صناديق التوقيعات وسطر التاريخ المنضبط):**
+  - Official print layouts feature three clean approval boxes (`المحاسب`, `المراجع`, `يعتمد`) without secondary titles.
+  - Handwritten signature and date lines are styled with explicit `dir="rtl"` and sufficient handwritten room:
+    ```html
+    <div class="flex items-center justify-between text-[11px] text-slate-700 mt-2 px-2">
+      <span>التوقيع: .....................</span>
+      <span dir="rtl">التاريخ: &nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp; / 202&nbsp;&nbsp;&nbsp;&nbsp;م</span>
+    </div>
+    ```
 - **Dynamic Red Highlighting for Negative Balances (تمييز الأرصدة السالبة باللون الأحمر الصريح):**
   - All cumulative balances in the "الرصيد" column (opening balance, transaction rows, and grand totals) that evaluate to negative (`balance < 0` or rendered with parentheses) must be styled in high-contrast red:
     - Tailwind classes: `text-rose-600 font-semibold text-negative-balance` (Hex `#dc2626` / `#e11d48`).
@@ -414,7 +424,7 @@ Whenever a global directive or styling standard is issued (including typography,
     ```css
     @page {
       size: A4 portrait;
-      margin: 10mm 12mm 15mm 12mm;
+      margin: 8mm 10mm 10mm 10mm;
       @bottom-center {
         content: counter(page) " - " counter(pages);
         font-family: inherit;
@@ -428,7 +438,7 @@ Whenever a global directive or styling standard is issued (including typography,
     ```css
     .print-page-number {
       position: fixed;
-      bottom: 5mm;
+      bottom: 3mm;
       left: 0;
       right: 0;
       text-align: center;
