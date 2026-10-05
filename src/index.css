@@ -218,7 +218,7 @@ table, .tabular-nums, .font-mono, .font-inter, .num-western {
 @media print {
   @page {
     size: A4 portrait;
-    margin: 12mm;
+    margin: 8mm 10mm;
     @bottom-center {
       content: counter(page) " - " counter(pages);
       font-family: inherit;
@@ -329,32 +329,25 @@ table, .tabular-nums, .font-mono, .font-inter, .num-western {
     page-break-inside: auto !important;
     break-inside: auto !important;
     width: 100% !important;
-  }
-
-  table:not(.border-separate) {
+    max-width: 100% !important;
+    table-layout: fixed !important;
     border-collapse: collapse !important;
-  }
-
-  table.border-separate {
-    border-collapse: separate !important;
-    border-spacing: 0 !important;
+    box-sizing: border-box !important;
   }
 
   table th {
     background-color: #f1f5f9 !important;
     color: #0f172a !important;
-  }
-
-  table:not(.border-separate) th {
     border: 1px solid #cbd5e1 !important;
+    padding: 4px 4px !important;
   }
 
   table td {
     color: #0f172a !important;
-  }
-
-  table:not(.border-separate) td {
     border: 1px solid #cbd5e1 !important;
+    padding: 3px 4px !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
   }
 
   thead {

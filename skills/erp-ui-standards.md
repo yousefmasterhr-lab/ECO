@@ -361,20 +361,32 @@ Whenever a global directive or styling standard is issued (including typography,
 - **High-Contrast White Print Backgrounds (خلفية بيضاء عالية التباين للطباعة):**
   - All print preview modals and `@media print` sheets must render with crisp white backgrounds (`#ffffff`), dark legible typography (`#0f172a`), and high-contrast borders (`#cbd5e1` / `#94a3b8`).
   - Dark mode surfaces, glow effects, and muted low-contrast grays must never leak into printable sheets.
+- **Strict 100% Width & Table-Fixed Column Geometry (منع انقطاع الأعمدة والالتزام التام بعرض 100%):**
+  - Financial print tables must strictly occupy `width: 100% !important; max-width: 100% !important;` with `table-layout: fixed !important; border-collapse: collapse !important;`.
+  - Column widths must be locked using exact mathematical percentages totaling 100% across all 7 columns:
+    1. `التاريخ` (Date): **11%** (compact, nowrap)
+    2. `رقم القيد` (Entry #): **8%** (compact, nowrap)
+    3. `نوع السند` (Type): **10%** (compact, nowrap)
+    4. `البيان` (Description): **39%** (flexible, `break-words leading-snug`)
+    5. `مدين` (Debit): **11%** (compact, nowrap, tabular-nums)
+    6. `دائن` (Credit): **11%** (compact, nowrap, tabular-nums)
+    7. `الرصيد` (Balance): **10%** (compact, nowrap, tabular-nums)
+  - Under no circumstances may columns (like `دائن` or `الرصيد`) be cropped or pushed outside printable A4 boundaries.
+- **Print Density Consolidation & Elimination of Orphan Signatures (تكثيف الطباعة ومنع انعزال التوقيعات في صفحة فارغة):**
+  - To prevent signature blocks from spilling over onto a trailing blank orphan page (e.g. Page 5), vertical density must be rigorously optimized:
+    - `@page` margins set to compact `8mm 10mm`.
+    - Table cell vertical padding reduced in print mode (`padding: 3px 4px !important;`).
+    - Signature approval boxes scaled to a streamlined compact height (`h-24 print:h-18` with `print:p-1.5`) while retaining `page-break-inside: avoid;`.
+    - Corporate headers and summary metric cards styled with compact print padding (`print:p-1.5 print:gap-2 print:mb-2`).
 - **Curvy Rounded Outer Framing (`rounded-2xl`):**
-  - Financial tables must shed sharp, jagged outer corners in favor of an elegant executive container (`rounded-2xl border border-slate-300 overflow-hidden shadow-sm`).
-  - The inner table must use `border-separate border-spacing-0` so the 16px corner radius curves cleanly across the top header row and bottom cells without visual distortion or harsh cuts.
-- **Center-Aligned Data Cells & Expanded Narration Width (توسيط الأرقام وتوسيع حقل البيان):**
+  - Financial tables are housed in an elegant executive container (`rounded-2xl border border-slate-300 overflow-hidden shadow-sm`).
+- **Center-Aligned Data Cells (توسيط الأرقام والنصوص في الخلايا):**
   - All financial table cells (dates, entry numbers, transaction types, debits, credits, and balances) must be center-aligned horizontally and vertically (`text-center align-middle`).
-  - Fixed metadata columns must tightly hug their content (`whitespace-nowrap px-3 py-2.5` or `py-4 px-3` for headers).
-  - The narration/description column (`البيان`) must occupy the dominant remaining table width (`min-w-[340px]` or flexible stretch) so detailed accounting narratives display comfortably without cramped multi-line breaking.
-- **Enlarged Prominent Table Header (`<thead> / <th>`):**
-  - Header rows must stand out with increased height, generous padding (`py-4 px-3`), and bold prominent typography (`text-sm md:text-base font-bold text-slate-900 bg-slate-100`).
 - **Last-Page-Only Grand Total Enforcement (إظهار صف الإجمالي في الصفحة الأخيرة فقط ومنع تكراره):**
   - The grand summary row (`الإجمالي العام والرصيد الختامي`) must render strictly ONCE at the very end of the data rows on the final page (`page-break-inside: avoid;`).
   - Summary rows must never be placed in a repeating `<tfoot>` (`display: table-footer-group`), which erroneously duplicates the totals at the bottom of intermediate pages.
 - **Multi-Page Print Pagination (`1 - X`):**
-  - Page numbering must be configured using standard CSS Paged Media (`@page { size: A4 portrait; margin: 12mm; @bottom-center { content: counter(page) " - " counter(pages); font-family: inherit; font-size: 11px; color: #64748b; } }`).
+  - Page numbering must be configured using standard CSS Paged Media (`@page { size: A4 portrait; margin: 8mm 10mm; @bottom-center { content: counter(page) " - " counter(pages); font-family: inherit; font-size: 11px; color: #64748b; } }`).
   - Pages must print cleanly with numbering formatted as `1 - 5`, `2 - 5`, `3 - 5`, etc.
 - **Dynamic User Display Name Attribution (نسبة الاستخراج للاسم الحقيقي للمستخدم):**
   - Subtitles must dynamically reflect the active authenticated user's formal display name retrieved from user/auth state (e.g., `من حساب الأستاذ العام - م. أحمد مصطفى`).

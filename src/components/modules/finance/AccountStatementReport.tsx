@@ -774,42 +774,42 @@ export const AccountStatementReport: React.FC = () => {
         {data && (
           <div className="space-y-4">
             {/* Header Totals / Summary Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center text-xs p-3 rounded-2xl border border-slate-300 bg-white text-slate-900 font-bold shadow-xs">
-              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-300 text-slate-900">
-                <span className="block text-[11px] text-slate-600 mb-1 font-bold">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 print:gap-2 text-center text-xs print:text-[10px] p-3 print:p-2 rounded-2xl border border-slate-300 bg-white text-slate-900 font-bold shadow-xs print:shadow-none print:mb-2">
+              <div className="p-2.5 print:p-1.5 rounded-xl bg-slate-50 border border-slate-300 text-slate-900">
+                <span className="block text-[11px] print:text-[9.5px] text-slate-600 mb-1 print:mb-0.5 font-bold">
                   رصيد أول المدة:
                 </span>
-                <span dir="ltr" className="font-mono text-sm font-bold text-slate-900 inline-block">
+                <span dir="ltr" className="font-mono text-sm print:text-xs font-bold text-slate-900 inline-block">
                   {data.openingBalance < 0
                     ? `(${formatEGP(Math.abs(data.openingBalance))} جم)`
                     : `${formatEGP(data.openingBalance)} جم`}
                 </span>
               </div>
-              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-300 text-slate-900">
-                <span className="block text-[11px] text-slate-600 mb-1 font-bold">
+              <div className="p-2.5 print:p-1.5 rounded-xl bg-slate-50 border border-slate-300 text-slate-900">
+                <span className="block text-[11px] print:text-[9.5px] text-slate-600 mb-1 print:mb-0.5 font-bold">
                   إجمالي المدين:
                 </span>
-                <span dir="ltr" className="font-mono text-sm font-bold text-blue-900 inline-block">
+                <span dir="ltr" className="font-mono text-sm print:text-xs font-bold text-blue-900 inline-block">
                   {formatEGP(data.totalDebit)} جم
                 </span>
               </div>
-              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-300 text-slate-900">
-                <span className="block text-[11px] text-slate-600 mb-1 font-bold">
+              <div className="p-2.5 print:p-1.5 rounded-xl bg-slate-50 border border-slate-300 text-slate-900">
+                <span className="block text-[11px] print:text-[9.5px] text-slate-600 mb-1 print:mb-0.5 font-bold">
                   إجمالي الدائن:
                 </span>
-                <span dir="ltr" className="font-mono text-sm font-bold text-amber-900 inline-block">
+                <span dir="ltr" className="font-mono text-sm print:text-xs font-bold text-amber-900 inline-block">
                   {formatEGP(data.totalCredit)} جم
                 </span>
               </div>
               <div
-                className={`p-2.5 rounded-xl transition-colors ${
+                className={`p-2.5 print:p-1.5 rounded-xl transition-colors ${
                   data.endingBalance < 0
                     ? 'bg-rose-50 border-2 border-rose-300 text-rose-700 font-bold'
                     : 'bg-slate-50 border border-slate-300 text-slate-900 font-bold'
                 }`}
               >
                 <span
-                  className={`block text-[11px] mb-1 font-bold ${
+                  className={`block text-[11px] print:text-[9.5px] mb-1 print:mb-0.5 font-bold ${
                     data.endingBalance < 0
                       ? 'text-rose-700'
                       : 'text-slate-600'
@@ -819,7 +819,7 @@ export const AccountStatementReport: React.FC = () => {
                 </span>
                 <span
                   dir="ltr"
-                  className={`font-mono text-sm font-bold inline-block ${
+                  className={`font-mono text-sm print:text-xs font-bold inline-block ${
                     data.endingBalance < 0
                       ? 'text-rose-700'
                       : 'text-slate-900'
@@ -832,30 +832,39 @@ export const AccountStatementReport: React.FC = () => {
               </div>
             </div>
 
-            {/* Curvy Rounded Frame */}
-            <div className="rounded-2xl border border-slate-300 overflow-hidden shadow-sm bg-white print:rounded-2xl print:border print:border-slate-300">
-              <table className="w-full border-separate border-spacing-0 text-[11px] print:text-[10px]">
+            {/* Curvy Rounded Frame - 100% Width */}
+            <div className="rounded-2xl border border-slate-300 overflow-hidden shadow-sm bg-white print:rounded-2xl print:border print:border-slate-300 w-full max-w-full">
+              <table className="w-full max-w-full table-fixed border-collapse text-[10px] print:text-[9.5px]">
+                <colgroup>
+                  <col className="w-[11%]" style={{ width: '11%' }} />
+                  <col className="w-[8%]" style={{ width: '8%' }} />
+                  <col className="w-[10%]" style={{ width: '10%' }} />
+                  <col className="w-[39%]" style={{ width: '39%' }} />
+                  <col className="w-[11%]" style={{ width: '11%' }} />
+                  <col className="w-[11%]" style={{ width: '11%' }} />
+                  <col className="w-[10%]" style={{ width: '10%' }} />
+                </colgroup>
                 <thead className="print:table-header-group bg-slate-100">
                   <tr className="border-b border-slate-300">
-                    <th className="py-4 px-3 text-center align-middle whitespace-nowrap text-sm md:text-base font-bold text-slate-900 border-b border-slate-300 border-l border-slate-200">
+                    <th style={{ width: '11%' }} className="py-2 px-1 text-center align-middle whitespace-nowrap text-xs md:text-sm print:text-[10px] font-bold text-slate-900 border border-slate-300">
                       التاريخ
                     </th>
-                    <th className="py-4 px-3 text-center align-middle whitespace-nowrap text-sm md:text-base font-bold text-slate-900 border-b border-slate-300 border-l border-slate-200">
+                    <th style={{ width: '8%' }} className="py-2 px-0.5 text-center align-middle whitespace-nowrap text-xs md:text-sm print:text-[10px] font-bold text-slate-900 border border-slate-300">
                       رقم القيد
                     </th>
-                    <th className="py-4 px-3 text-center align-middle whitespace-nowrap text-sm md:text-base font-bold text-slate-900 border-b border-slate-300 border-l border-slate-200">
+                    <th style={{ width: '10%' }} className="py-2 px-1 text-center align-middle whitespace-nowrap text-xs md:text-sm print:text-[10px] font-bold text-slate-900 border border-slate-300">
                       نوع السند
                     </th>
-                    <th className="py-4 px-4 text-center align-middle min-w-[340px] text-sm md:text-base font-bold text-slate-900 border-b border-slate-300 border-l border-slate-200">
+                    <th style={{ width: '39%' }} className="py-2 px-1.5 text-center align-middle break-words leading-snug text-xs md:text-sm print:text-[10px] font-bold text-slate-900 border border-slate-300">
                       البيان
                     </th>
-                    <th className="py-4 px-3 text-center align-middle whitespace-nowrap text-sm md:text-base font-bold text-slate-900 border-b border-slate-300 border-l border-slate-200">
+                    <th style={{ width: '11%' }} className="py-2 px-1 text-center align-middle whitespace-nowrap tabular-nums text-xs md:text-sm print:text-[10px] font-bold text-slate-900 border border-slate-300">
                       مدين
                     </th>
-                    <th className="py-4 px-3 text-center align-middle whitespace-nowrap text-sm md:text-base font-bold text-slate-900 border-b border-slate-300 border-l border-slate-200">
+                    <th style={{ width: '11%' }} className="py-2 px-1 text-center align-middle whitespace-nowrap tabular-nums text-xs md:text-sm print:text-[10px] font-bold text-slate-900 border border-slate-300">
                       دائن
                     </th>
-                    <th className="py-4 px-3 text-center align-middle whitespace-nowrap text-sm md:text-base font-bold text-slate-900 border-b border-slate-300">
+                    <th style={{ width: '10%' }} className="py-2 px-1 text-center align-middle whitespace-nowrap tabular-nums text-xs md:text-sm print:text-[10px] font-bold text-slate-900 border border-slate-300">
                       الرصيد
                     </th>
                   </tr>
@@ -863,25 +872,25 @@ export const AccountStatementReport: React.FC = () => {
                 <tbody>
                   {/* Opening Balance Row */}
                   <tr className="border-b border-slate-300 font-bold bg-slate-50 text-slate-900">
-                    <td className="py-2.5 px-3 text-center align-middle whitespace-nowrap border-b border-slate-200 border-l border-slate-200 font-mono text-slate-900">
+                    <td className="py-1.5 px-1 print:py-1 print:px-0.5 text-center align-middle whitespace-nowrap border border-slate-300 font-mono text-slate-900">
                       {startDate}
                     </td>
-                    <td className="py-2.5 px-3 text-center align-middle whitespace-nowrap border-b border-slate-200 border-l border-slate-200 font-mono text-slate-900">
+                    <td className="py-1.5 px-0.5 print:py-1 print:px-0.5 text-center align-middle whitespace-nowrap border border-slate-300 font-mono text-slate-900">
                       -
                     </td>
-                    <td className="py-2.5 px-3 text-center align-middle whitespace-nowrap border-b border-slate-200 border-l border-slate-200 text-slate-900">
+                    <td className="py-1.5 px-1 print:py-1 print:px-0.5 text-center align-middle whitespace-nowrap border border-slate-300 text-slate-900">
                       رصيد أول المدة
                     </td>
-                    <td className="py-2.5 px-4 text-center align-middle min-w-[340px] border-b border-slate-200 border-l border-slate-200 text-slate-900">
+                    <td className="py-1.5 px-1.5 print:py-1 print:px-1 text-center align-middle break-words leading-snug border border-slate-300 text-slate-900">
                       رصيد مرحل من فترات محاسبية سابقة
                     </td>
-                    <td className="py-2.5 px-3 text-center align-middle whitespace-nowrap border-b border-slate-200 border-l border-slate-200 font-mono font-semibold text-blue-900" dir="ltr">
+                    <td className="py-1.5 px-1 print:py-1 print:px-0.5 text-center align-middle whitespace-nowrap border border-slate-300 font-mono tabular-nums font-semibold text-blue-900" dir="ltr">
                       {data.openingBalance >= 0 ? formatEGP(data.openingBalance) : '-'}
                     </td>
-                    <td className="py-2.5 px-3 text-center align-middle whitespace-nowrap border-b border-slate-200 border-l border-slate-200 font-mono font-semibold text-amber-900" dir="ltr">
+                    <td className="py-1.5 px-1 print:py-1 print:px-0.5 text-center align-middle whitespace-nowrap border border-slate-300 font-mono tabular-nums font-semibold text-amber-900" dir="ltr">
                       {data.openingBalance < 0 ? formatEGP(Math.abs(data.openingBalance)) : '-'}
                     </td>
-                    <td className="py-2.5 px-3 text-center align-middle whitespace-nowrap border-b border-slate-200 font-mono font-bold text-slate-900" dir="ltr">
+                    <td className="py-1.5 px-1 print:py-1 print:px-0.5 text-center align-middle whitespace-nowrap border border-slate-300 font-mono tabular-nums font-bold text-slate-900" dir="ltr">
                       {data.openingBalance < 0
                         ? `(${formatEGP(Math.abs(data.openingBalance))})`
                         : formatEGP(data.openingBalance)}
@@ -891,25 +900,25 @@ export const AccountStatementReport: React.FC = () => {
                   {/* Transaction Rows */}
                   {data.transactions.map((t, i) => (
                     <tr key={i} className="border-b border-slate-200 hover:bg-slate-50/50">
-                      <td className="py-2.5 px-3 text-center align-middle whitespace-nowrap border-b border-slate-200 border-l border-slate-200 font-mono text-slate-900">
+                      <td className="py-1.5 px-1 print:py-1 print:px-0.5 text-center align-middle whitespace-nowrap border border-slate-300 font-mono text-slate-900">
                         {t.noteDate}
                       </td>
-                      <td className="py-2.5 px-3 text-center align-middle whitespace-nowrap border-b border-slate-200 border-l border-slate-200 font-mono text-slate-900">
+                      <td className="py-1.5 px-0.5 print:py-1 print:px-0.5 text-center align-middle whitespace-nowrap border border-slate-300 font-mono text-slate-900">
                         #{t.noteNo}
                       </td>
-                      <td className="py-2.5 px-3 text-center align-middle whitespace-nowrap border-b border-slate-200 border-l border-slate-200 text-slate-900">
+                      <td className="py-1.5 px-1 print:py-1 print:px-0.5 text-center align-middle whitespace-nowrap border border-slate-300 text-slate-900">
                         {t.voucherType}
                       </td>
-                      <td className="py-2.5 px-4 text-center align-middle min-w-[340px] border-b border-slate-200 border-l border-slate-200 text-slate-900">
+                      <td className="py-1.5 px-1.5 print:py-1 print:px-1 text-center align-middle break-words leading-snug border border-slate-300 text-slate-900">
                         {t.description}
                       </td>
-                      <td className="py-2.5 px-3 text-center align-middle whitespace-nowrap border-b border-slate-200 border-l border-slate-200 font-mono font-semibold text-blue-900" dir="ltr">
+                      <td className="py-1.5 px-1 print:py-1 print:px-0.5 text-center align-middle whitespace-nowrap border border-slate-300 font-mono tabular-nums font-semibold text-blue-900" dir="ltr">
                         {t.debit > 0 ? formatEGP(t.debit) : '-'}
                       </td>
-                      <td className="py-2.5 px-3 text-center align-middle whitespace-nowrap border-b border-slate-200 border-l border-slate-200 font-mono font-semibold text-amber-900" dir="ltr">
+                      <td className="py-1.5 px-1 print:py-1 print:px-0.5 text-center align-middle whitespace-nowrap border border-slate-300 font-mono tabular-nums font-semibold text-amber-900" dir="ltr">
                         {t.credit > 0 ? formatEGP(t.credit) : '-'}
                       </td>
-                      <td className="py-2.5 px-3 text-center align-middle whitespace-nowrap border-b border-slate-200 font-mono font-bold text-slate-900" dir="ltr">
+                      <td className="py-1.5 px-1 print:py-1 print:px-0.5 text-center align-middle whitespace-nowrap border border-slate-300 font-mono tabular-nums font-bold text-slate-900" dir="ltr">
                         {t.runningBalance < 0
                           ? `(${formatEGP(Math.abs(t.runningBalance))})`
                           : formatEGP(t.runningBalance)}
@@ -919,16 +928,16 @@ export const AccountStatementReport: React.FC = () => {
 
                   {/* Grand Total Row - Renders strictly ONCE at the very end of data rows on the final page */}
                   <tr className="border-t-2 border-slate-400 bg-slate-100 font-bold text-slate-900 page-break-inside-avoid print:bg-slate-100">
-                    <td colSpan={4} className="py-3 px-4 text-center align-middle border-t-2 border-slate-400 border-l border-slate-200 text-slate-900 font-bold text-xs md:text-sm">
+                    <td colSpan={4} className="py-2 px-2 print:py-1.5 print:px-1 text-center align-middle border border-slate-300 text-slate-900 font-bold text-xs md:text-sm print:text-[10px]">
                       الإجمالي العام والرصيد الختامي
                     </td>
-                    <td className="py-3 px-3 text-center align-middle whitespace-nowrap border-t-2 border-slate-400 border-l border-slate-200 font-mono font-bold text-blue-900" dir="ltr">
+                    <td className="py-2 px-1 print:py-1.5 print:px-0.5 text-center align-middle whitespace-nowrap border border-slate-300 font-mono tabular-nums font-bold text-blue-900" dir="ltr">
                       {formatEGP(data.totalDebit)}
                     </td>
-                    <td className="py-3 px-3 text-center align-middle whitespace-nowrap border-t-2 border-slate-400 border-l border-slate-200 font-mono font-bold text-amber-900" dir="ltr">
+                    <td className="py-2 px-1 print:py-1.5 print:px-0.5 text-center align-middle whitespace-nowrap border border-slate-300 font-mono tabular-nums font-bold text-amber-900" dir="ltr">
                       {formatEGP(data.totalCredit)}
                     </td>
-                    <td className="py-3 px-3 text-center align-middle whitespace-nowrap border-t-2 border-slate-400 font-mono font-black text-slate-900" dir="ltr">
+                    <td className="py-2 px-1 print:py-1.5 print:px-0.5 text-center align-middle whitespace-nowrap border border-slate-300 font-mono tabular-nums font-black text-slate-900" dir="ltr">
                       {data.endingBalance < 0
                         ? `(${formatEGP(Math.abs(data.endingBalance))})`
                         : formatEGP(data.endingBalance)}

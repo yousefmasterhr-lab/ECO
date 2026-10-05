@@ -117,51 +117,51 @@ export const ReportPrintLayout: React.FC<ReportPrintLayoutProps> = ({
         </div>
 
         {/* Formal Audit Signatures Block */}
-        <div className="pt-6 mt-8 border-t-2 border-slate-300 print:border-black page-break-inside-avoid">
-          <div className="grid grid-cols-3 gap-6 text-center text-xs">
+        <div className="pt-4 mt-6 print:pt-2 print:mt-3 border-t-2 border-slate-300 print:border-black page-break-inside-avoid">
+          <div className="grid grid-cols-3 gap-4 print:gap-3 text-center text-xs print:text-[10px]">
             {/* Box 1: المحاسب */}
-            <div className="p-3.5 rounded-xl border border-slate-300 print:border-black bg-slate-50 print:bg-white flex flex-col justify-between h-28">
+            <div className="p-3 print:p-1.5 rounded-xl border border-slate-300 print:border-black bg-slate-50 print:bg-white flex flex-col justify-between h-24 print:h-18">
               <div>
-                <span className="font-black block text-sm text-slate-900 print:text-black">
+                <span className="font-black block text-sm print:text-xs text-slate-900 print:text-black">
                   المحاسب
                 </span>
-                <span className="text-[10px] text-slate-500 print:text-gray-600 block mt-0.5">
+                <span className="text-[10px] print:text-[9px] text-slate-500 print:text-gray-600 block mt-0.5">
                   المحاسب المالي المختص
                 </span>
               </div>
-              <div className="pt-3 border-t border-dashed border-slate-300 print:border-gray-400 flex items-center justify-between text-[11px] text-slate-600 print:text-black px-1">
+              <div className="pt-2 print:pt-1 border-t border-dashed border-slate-300 print:border-gray-400 flex items-center justify-between text-[11px] print:text-[9px] text-slate-600 print:text-black px-1">
                 <span>التوقيع:</span>
                 <span>التاريخ: &nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp; / 202&nbsp;&nbsp;</span>
               </div>
             </div>
 
             {/* Box 2: المراجع */}
-            <div className="p-3.5 rounded-xl border border-slate-300 print:border-black bg-slate-50 print:bg-white flex flex-col justify-between h-28">
+            <div className="p-3 print:p-1.5 rounded-xl border border-slate-300 print:border-black bg-slate-50 print:bg-white flex flex-col justify-between h-24 print:h-18">
               <div>
-                <span className="font-black block text-sm text-slate-900 print:text-black">
+                <span className="font-black block text-sm print:text-xs text-slate-900 print:text-black">
                   المراجع
                 </span>
-                <span className="text-[10px] text-slate-500 print:text-gray-600 block mt-0.5">
+                <span className="text-[10px] print:text-[9px] text-slate-500 print:text-gray-600 block mt-0.5">
                   رئيس قسم الحسابات العامة
                 </span>
               </div>
-              <div className="pt-3 border-t border-dashed border-slate-300 print:border-gray-400 flex items-center justify-between text-[11px] text-slate-600 print:text-black px-1">
+              <div className="pt-2 print:pt-1 border-t border-dashed border-slate-300 print:border-gray-400 flex items-center justify-between text-[11px] print:text-[9px] text-slate-600 print:text-black px-1">
                 <span>التوقيع:</span>
                 <span>التاريخ: &nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp; / 202&nbsp;&nbsp;</span>
               </div>
             </div>
 
             {/* Box 3: يعتمد */}
-            <div className="p-3.5 rounded-xl border border-slate-300 print:border-black bg-slate-50 print:bg-white flex flex-col justify-between h-28">
+            <div className="p-3 print:p-1.5 rounded-xl border border-slate-300 print:border-black bg-slate-50 print:bg-white flex flex-col justify-between h-24 print:h-18">
               <div>
-                <span className="font-black block text-sm text-slate-900 print:text-black">
+                <span className="font-black block text-sm print:text-xs text-slate-900 print:text-black">
                   يعتمد
                 </span>
-                <span className="text-[10px] text-slate-500 print:text-gray-600 block mt-0.5">
+                <span className="text-[10px] print:text-[9px] text-slate-500 print:text-gray-600 block mt-0.5">
                   الاعتماد والختم الرسمي
                 </span>
               </div>
-              <div className="pt-3 border-t border-dashed border-slate-300 print:border-gray-400 flex items-center justify-between text-[11px] text-slate-600 print:text-black px-1">
+              <div className="pt-2 print:pt-1 border-t border-dashed border-slate-300 print:border-gray-400 flex items-center justify-between text-[11px] print:text-[9px] text-slate-600 print:text-black px-1">
                 <span>الاعتماد:</span>
                 <span>التاريخ: &nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp; / 202&nbsp;&nbsp;</span>
               </div>
