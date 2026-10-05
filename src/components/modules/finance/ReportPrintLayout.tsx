@@ -69,7 +69,7 @@ export const ReportPrintLayout: React.FC<ReportPrintLayoutProps> = ({
       }
     >
       {/* Printable Document Sheet */}
-      <div className="p-8 sm:p-10 space-y-6 text-[#1A241C] dark:text-[#F3EFE6] print:text-black print:p-4 print:overflow-visible font-sans bg-white dark:bg-[#17231A]">
+      <div className="report-print-sheet p-8 sm:p-10 space-y-6 text-[#1A241C] dark:text-[#F3EFE6] print:text-black print:p-0 print:overflow-visible font-sans bg-white dark:bg-[#17231A] print:bg-white print:w-full print:h-auto print:max-h-none print:static">
         {/* Corporate Header */}
         <div className="flex items-center justify-between border-b-2 border-[#1A241C] dark:border-[#243628] print:border-black pb-4">
           <div className="space-y-1">
@@ -93,7 +93,7 @@ export const ReportPrintLayout: React.FC<ReportPrintLayoutProps> = ({
               {titleEn}
             </div>
             {periodText && (
-              <div className="text-[10px] font-mono text-[#5C665E] dark:text-[#8FA392] mt-1">
+              <div className="text-[10px] font-mono text-[#5C665E] dark:text-[#8FA392] mt-1 print:text-black">
                 الفترة: {periodText}
               </div>
             )}
@@ -112,24 +112,59 @@ export const ReportPrintLayout: React.FC<ReportPrintLayoutProps> = ({
         )}
 
         {/* Report Main Content */}
-        <div className="report-content-body space-y-4">
+        <div className="report-content-body space-y-4 print:overflow-visible print:h-auto print:max-h-none">
           {children}
         </div>
 
         {/* Formal Audit Signatures Block */}
-        <div className="pt-8 border-t-2 border-gray-300 dark:border-[#243628] print:border-black page-break-inside-avoid">
+        <div className="pt-6 mt-8 border-t-2 border-slate-300 dark:border-[#243628] print:border-black page-break-inside-avoid">
           <div className="grid grid-cols-3 gap-6 text-center text-xs">
-            <div className="space-y-8 p-3 rounded-xl border border-gray-200 dark:border-[#243628] print:border-black">
-              <span className="font-bold block text-[#1A241C] dark:text-[#F3EFE6] print:text-black">المحاسب المالي</span>
-              <span className="text-gray-400 dark:text-[#8FA392] print:text-gray-500 block text-[11px]">التوقيع: ............................</span>
+            {/* Box 1: Prepared By */}
+            <div className="p-3.5 rounded-xl border border-slate-300 dark:border-[#243628] print:border-black bg-slate-50/50 dark:bg-slate-900/30 print:bg-white flex flex-col justify-between h-28">
+              <div>
+                <span className="font-black block text-sm text-[#1A241C] dark:text-[#F3EFE6] print:text-black">
+                  إعداد (Prepared By)
+                </span>
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 print:text-gray-600 block mt-0.5">
+                  المحاسب المالي المختص
+                </span>
+              </div>
+              <div className="pt-3 border-t border-dashed border-slate-300 dark:border-slate-700 print:border-gray-400 flex items-center justify-between text-[11px] text-slate-600 dark:text-slate-400 print:text-black px-1">
+                <span>التوقيع:</span>
+                <span>التاريخ: &nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp; / 202&nbsp;&nbsp;</span>
+              </div>
             </div>
-            <div className="space-y-8 p-3 rounded-xl border border-gray-200 dark:border-[#243628] print:border-black">
-              <span className="font-bold block text-[#1A241C] dark:text-[#F3EFE6] print:text-black">رئيس الحسابات</span>
-              <span className="text-gray-400 dark:text-[#8FA392] print:text-gray-500 block text-[11px]">التوقيع: ............................</span>
+
+            {/* Box 2: Audited By */}
+            <div className="p-3.5 rounded-xl border border-slate-300 dark:border-[#243628] print:border-black bg-slate-50/50 dark:bg-slate-900/30 print:bg-white flex flex-col justify-between h-28">
+              <div>
+                <span className="font-black block text-sm text-[#1A241C] dark:text-[#F3EFE6] print:text-black">
+                  مراجعة الحسابات (Audited By)
+                </span>
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 print:text-gray-600 block mt-0.5">
+                  رئيس قسم الحسابات العامة
+                </span>
+              </div>
+              <div className="pt-3 border-t border-dashed border-slate-300 dark:border-slate-700 print:border-gray-400 flex items-center justify-between text-[11px] text-slate-600 dark:text-slate-400 print:text-black px-1">
+                <span>التوقيع:</span>
+                <span>التاريخ: &nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp; / 202&nbsp;&nbsp;</span>
+              </div>
             </div>
-            <div className="space-y-8 p-3 rounded-xl border border-gray-200 dark:border-[#243628] print:border-black">
-              <span className="font-bold block text-[#1A241C] dark:text-[#F3EFE6] print:text-black">المدير المالي (CFO)</span>
-              <span className="text-gray-400 dark:text-[#8FA392] print:text-gray-500 block text-[11px]">الاعتماد والختم: ............................</span>
+
+            {/* Box 3: Chief Financial Officer */}
+            <div className="p-3.5 rounded-xl border border-slate-300 dark:border-[#243628] print:border-black bg-slate-50/50 dark:bg-slate-900/30 print:bg-white flex flex-col justify-between h-28">
+              <div>
+                <span className="font-black block text-sm text-[#1A241C] dark:text-[#F3EFE6] print:text-black">
+                  المدير المالي (Chief Financial Officer)
+                </span>
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 print:text-gray-600 block mt-0.5">
+                  الاعتماد والختم الرسمي
+                </span>
+              </div>
+              <div className="pt-3 border-t border-dashed border-slate-300 dark:border-slate-700 print:border-gray-400 flex items-center justify-between text-[11px] text-slate-600 dark:text-slate-400 print:text-black px-1">
+                <span>الاعتماد:</span>
+                <span>التاريخ: &nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp; / 202&nbsp;&nbsp;</span>
+              </div>
             </div>
           </div>
         </div>

@@ -78,14 +78,15 @@ export const Modal: React.FC<ModalProps> = ({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
             onClick={onClose}
-            className="fixed inset-0 z-[100] bg-black/75 backdrop-blur-sm transition-opacity"
+            className="fixed inset-0 z-[100] bg-black/75 backdrop-blur-sm transition-opacity print:hidden"
             aria-hidden="true"
           />
 
           {/* Modal Dialog Container */}
           <div
             key="modal-portal-container"
-            className="fixed inset-0 z-[101] overflow-y-auto flex items-center justify-center p-4 sm:p-6"
+            id="erp-modal-container"
+            className="fixed inset-0 z-[101] overflow-y-auto flex items-center justify-center p-4 sm:p-6 print:static print:inset-auto print:overflow-visible print:p-0 print:m-0 print:block print:h-auto print:max-h-none print:w-full"
             dir={dir}
             onClick={onClose}
           >
@@ -95,13 +96,13 @@ export const Modal: React.FC<ModalProps> = ({
               exit={{ opacity: 0, scale: 0.95, y: 16 }}
               transition={{ type: 'spring', damping: 25, stiffness: 350 }}
               onClick={(e) => e.stopPropagation()}
-              className={`w-full ${maxWidth} max-h-[92vh] flex flex-col rounded-2xl border border-[#243628] bg-[#17231A] text-[#F3EFE6] shadow-2xl overflow-hidden ${className}`}
+              className={`w-full ${maxWidth} max-h-[92vh] flex flex-col rounded-2xl border border-[#243628] bg-[#17231A] text-[#F3EFE6] shadow-2xl overflow-hidden print:static print:max-h-none print:h-auto print:overflow-visible print:border-none print:shadow-none print:rounded-none print:p-0 print:m-0 print:w-full print:block print:bg-white print:text-black ${className}`}
             >
               {/* Optional Custom Header or Default Header */}
               {customHeader ? (
                 customHeader
               ) : title ? (
-                <div className="flex items-center justify-between p-4 sm:p-5 border-b border-[#243628] bg-[#121B14] shrink-0">
+                <div className="flex items-center justify-between p-4 sm:p-5 border-b border-[#243628] bg-[#121B14] shrink-0 print:hidden">
                   <div className="flex items-center gap-3 min-w-0">
                     {Icon && (
                       <div className="w-10 h-10 rounded-xl bg-[#2A3F30] text-[#A3CFAC] border border-[#3E5C46] flex items-center justify-center shadow-xs shrink-0">
@@ -140,7 +141,7 @@ export const Modal: React.FC<ModalProps> = ({
               ) : null}
 
               {/* Scrollable Content Body */}
-              <div className={`flex-1 overflow-y-auto ${contentClassName}`}>
+              <div className={`flex-1 overflow-y-auto print:overflow-visible print:h-auto print:max-h-none print:block ${contentClassName}`}>
                 {children}
               </div>
 
