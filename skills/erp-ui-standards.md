@@ -361,8 +361,29 @@ Whenever a global directive or styling standard is issued (including typography,
 - **High-Contrast White Print Backgrounds (خلفية بيضاء عالية التباين للطباعة):**
   - All print preview modals and `@media print` sheets must render with crisp white backgrounds (`#ffffff`), dark legible typography (`#0f172a`), and high-contrast borders (`#cbd5e1` / `#94a3b8`).
   - Dark mode surfaces, glow effects, and muted low-contrast grays must never leak into printable sheets.
+- **Sub-Header & Metadata Realignment (توزيع ترويسة البيانات وتوسيط التاريخ وحذف اسم المستخدم):**
+  - The ledger title (`حساب الأستاذ العام`) is positioned on the far left of the page (`text-left`).
+  - The issue date (`تاريخ الإصدار: YYYY-MM-DD`) is positioned directly in the horizontal center (`text-center`).
+  - Author/user name (e.g., `م. أحمد مصطفى`) is completely omitted from the printable sub-header.
+- **Prominent Table Header (`<thead>` ترويسة جدول بارزة وواضحة):**
+  - The first header row cells must have generous breathing room: `py-3.5 px-3` (`print:py-2.5 print:px-2`).
+  - Header typography and contrast: `text-sm font-bold text-slate-900 bg-slate-100/90`.
+- **Sealed 1.5px Outer Table Borders (إغلاق وتحديد الإطار الخارجي للجدول 1.5px):**
+  - Table container and table elements enforce high-contrast outer closing borders:
+    ```css
+    .ledger-table-container {
+      border: 1.5px solid #cbd5e1 !important;
+      border-radius: 1rem !important;
+      overflow: hidden !important;
+    }
+    table {
+      border-left: 1.5px solid #cbd5e1 !important;
+      border-right: 1.5px solid #cbd5e1 !important;
+    }
+    ```
+  - Explicit styling ensures neither the left nor right border is clipped by page margins or wrapper overflows.
 - **Strict 100% Width & Table-Fixed Column Geometry (منع انقطاع الأعمدة والالتزام التام بعرض 100%):**
-  - Financial print tables must strictly occupy `width: 100% !important; max-width: 100% !important;` with `table-layout: fixed !important; border-collapse: collapse !important;`.
+  - Financial print tables must strictly occupy `width: 100% !important; max-width: 100% !important;` with `table-layout: fixed !important; border-collapse: separate !important;`.
   - Column widths must be locked using exact mathematical percentages totaling 100% across all 7 columns:
     1. `التاريخ` (Date): **11%** (compact, nowrap)
     2. `رقم القيد` (Entry #): **8%** (compact, nowrap)
@@ -372,36 +393,50 @@ Whenever a global directive or styling standard is issued (including typography,
     6. `دائن` (Credit): **11%** (compact, nowrap, tabular-nums)
     7. `الرصيد` (Balance): **10%** (compact, nowrap, tabular-nums)
   - Under no circumstances may columns (like `دائن` or `الرصيد`) be cropped or pushed outside printable A4 boundaries.
-- **Print Density Consolidation & Elimination of Orphan Signatures (تكثيف الطباعة ومنع انعزال التوقيعات في صفحة فارغة):**
-  - To prevent signature blocks from spilling over onto a trailing blank orphan page (e.g. Page 5), vertical density must be rigorously optimized:
-    - `@page` margins set to compact `8mm 10mm`.
-    - Table cell vertical padding reduced in print mode (`padding: 3px 4px !important;`).
-    - Signature approval boxes scaled to a streamlined compact height (`h-24 print:h-18` with `print:p-1.5`) while retaining `page-break-inside: avoid;`.
-    - Corporate headers and summary metric cards styled with compact print padding (`print:p-1.5 print:gap-2 print:mb-2`).
-- **Curvy Rounded Outer Framing (`rounded-2xl` & `border-separate`):**
-  - Financial tables are housed in an elegant executive container (`rounded-2xl border border-slate-300 overflow-hidden shadow-sm`).
-  - Tables utilize `border-separate border-spacing-0` so corner cells seamlessly follow the 16px border radius without sharp jagged artifacts.
+- **Grand Total Row Expansion (توسيع وتضخيم صف الإجمالي العام):**
+  - Final summary row (`الإجمالي العام والرصيد الختامي`) cell padding: `py-3.5 px-3` (`print:py-2.5 print:px-2`).
+  - High-impact typography size and weight: `text-sm md:text-base font-extrabold text-slate-950`.
+  - The grand summary row renders strictly ONCE at the very end of the data rows on the final page (`page-break-inside: avoid;`).
+- **Minimalist Single-Title Approval Signatures (تبسيط مسميات اعتمادات التوقيع الرسمية الثلاثية):**
+  - Official print layouts feature three clean, uncluttered approval boxes without secondary titles:
+    1. **Box 1:** `المحاسب` (Keep signature and date lines; omit secondary titles like "المحاسب المالي المختص").
+    2. **Box 2:** `المراجع` (Keep signature and date lines; omit secondary titles like "رئيس قسم الحسابات العامة").
+    3. **Box 3:** `يعتمد` (Keep stamp/approval and date lines; omit secondary titles like "الاعتماد والختم الرسمي").
 - **Dynamic Red Highlighting for Negative Balances (تمييز الأرصدة السالبة باللون الأحمر الصريح):**
   - All cumulative balances in the "الرصيد" column (opening balance, transaction rows, and grand totals) that evaluate to negative (`balance < 0` or rendered with parentheses) must be styled in high-contrast red:
     - Tailwind classes: `text-rose-600 font-semibold text-negative-balance` (Hex `#dc2626` / `#e11d48`).
-    - In `@media print`, strict print preservation is enforced via `.text-negative-balance { color: #dc2626 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }` to ensure Chrome, Edge, and other print engines render the red value vividly.
+    - In `@media print`, strict print preservation is enforced via `.text-negative-balance { color: #dc2626 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }`.
     - Positive and zero balance values remain standard high-contrast dark slate (`text-slate-900 font-bold`).
 - **Center-Aligned Data Cells (توسيط الأرقام والنصوص في الخلايا):**
   - All financial table cells (dates, entry numbers, transaction types, debits, credits, and balances) must be center-aligned horizontally and vertically (`text-center align-middle`).
-- **Last-Page-Only Grand Total Enforcement (إظهار صف الإجمالي في الصفحة الأخيرة فقط ومنع تكراره):**
-  - The grand summary row (`الإجمالي العام والرصيد الختامي`) must render strictly ONCE at the very end of the data rows on the final page (`page-break-inside: avoid;`).
-  - Summary rows must never be placed in a repeating `<tfoot>` (`display: table-footer-group`), which erroneously duplicates the totals at the bottom of intermediate pages.
-- **Multi-Page Print Pagination (`1 - X`):**
-  - Page numbering must be configured using standard CSS Paged Media (`@page { size: A4 portrait; margin: 8mm 10mm; @bottom-center { content: counter(page) " - " counter(pages); font-family: inherit; font-size: 11px; color: #64748b; } }`).
-  - Pages must print cleanly with numbering formatted as `1 - 5`, `2 - 5`, `3 - 5`, etc.
-- **Dynamic User Display Name Attribution (نسبة الاستخراج للاسم الحقيقي للمستخدم):**
-  - Subtitles must dynamically reflect the active authenticated user's formal display name retrieved from user/auth state (e.g., `من حساب الأستاذ العام - م. أحمد مصطفى`).
-  - Display names must be formatted with the human-readable Arabic/English title and name, NEVER displaying raw email addresses.
-- **Standardized Three-Box Approval Signatures (اعتمادات التوقيع الرسمية الثلاثية):**
-  - Official print layouts must feature three standardized approval boxes:
-    1. **Box 1:** `المحاسب` (Financial Accountant)
-    2. **Box 2:** `المراجع` (Internal Auditor / Head of Accounts)
-    3. **Box 3:** `يعتمد` (Final Executive / CFO Authorization)
+- **A4 Multi-Page Print Pagination (`1 - X` ترقيم الصفحات المنضبط أسفل الورقة):**
+  - Page numbering configured using CSS Paged Media `@bottom-center`:
+    ```css
+    @page {
+      size: A4 portrait;
+      margin: 10mm 12mm 15mm 12mm;
+      @bottom-center {
+        content: counter(page) " - " counter(pages);
+        font-family: inherit;
+        font-size: 11px;
+        font-weight: 600;
+        color: #475569;
+      }
+    }
+    ```
+  - Printable footer pinned to the bottom of the page for fallback support:
+    ```css
+    .print-page-number {
+      position: fixed;
+      bottom: 5mm;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-size: 11px;
+      color: #64748b;
+    }
+    ```
+
 
 
 

@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useLanguage } from '../../../context/LanguageContext';
-import { useNavigation } from '../../../context/NavigationContext';
 import { useFinancial } from '../../../context/FinancialContext';
 import { useDatabase } from '../../../services/federation/DatabaseContext';
 import { getFiscalDateRange } from '../../../utils/fiscalYearHelper';
@@ -57,7 +56,6 @@ function findAccountInTree(nodes: AccountNode[], codeOrId: string): AccountNode 
 export const AccountStatementReport: React.FC = () => {
   const { t } = useLanguage();
   const { activeDatabase } = useDatabase();
-  const { currentUser } = useNavigation();
   const {
     fetchStatementOfAccount,
     accounts,
@@ -781,7 +779,7 @@ export const AccountStatementReport: React.FC = () => {
         titleAr={`كشف حساب: ${data?.accountNameAr || ''} (${data?.level5Id || ''})`}
         titleEn={`Statement of Account - ${data?.level5Id || ''}`}
         periodText={`من ${startDate} إلى ${endDate}`}
-        subtitleAr={`من حساب الأستاذ العام - ${currentUser?.nameAr || currentUser?.nameEn || 'م. أحمد مصطفى'}`}
+        subtitleAr="حساب الأستاذ العام"
       >
         {data && (
           <div className="space-y-4">
@@ -844,9 +842,9 @@ export const AccountStatementReport: React.FC = () => {
               </div>
             </div>
 
-            {/* Curvy Rounded Frame - No Sharp Corners */}
-            <div className="rounded-2xl border border-slate-300 overflow-hidden shadow-sm bg-white print:rounded-2xl print:border print:border-slate-300 w-full max-w-full">
-              <table className="w-full max-w-full table-fixed border-separate border-spacing-0 text-[10px] print:text-[9.5px]">
+            {/* Sealed Outer Frame - High-Contrast Closing Borders */}
+            <div className="ledger-table-container rounded-2xl border-[1.5px] border-slate-300 overflow-hidden shadow-sm bg-white print:rounded-2xl w-full max-w-full">
+              <table className="ledger-table w-full max-w-full table-fixed border-separate border-spacing-0 text-[10px] print:text-[9.5px]">
                 <colgroup>
                   <col className="w-[11%]" style={{ width: '11%' }} />
                   <col className="w-[8%]" style={{ width: '8%' }} />
@@ -856,27 +854,27 @@ export const AccountStatementReport: React.FC = () => {
                   <col className="w-[11%]" style={{ width: '11%' }} />
                   <col className="w-[10%]" style={{ width: '10%' }} />
                 </colgroup>
-                <thead className="print:table-header-group bg-slate-100">
+                <thead className="print:table-header-group bg-slate-100/90">
                   <tr className="border-b border-slate-300">
-                    <th style={{ width: '11%' }} className="py-2 px-1 text-center align-middle whitespace-nowrap text-xs md:text-sm print:text-[10px] font-bold text-slate-900 border-b border-slate-300 border-l border-slate-300 first:rounded-tr-2xl">
+                    <th style={{ width: '11%' }} className="py-3.5 px-3 print:py-2.5 print:px-2 text-center align-middle whitespace-nowrap text-sm font-bold text-slate-900 bg-slate-100/90 border-b border-slate-300 border-l border-slate-300 first:rounded-tr-2xl">
                       التاريخ
                     </th>
-                    <th style={{ width: '8%' }} className="py-2 px-0.5 text-center align-middle whitespace-nowrap text-xs md:text-sm print:text-[10px] font-bold text-slate-900 border-b border-slate-300 border-l border-slate-300">
+                    <th style={{ width: '8%' }} className="py-3.5 px-3 print:py-2.5 print:px-2 text-center align-middle whitespace-nowrap text-sm font-bold text-slate-900 bg-slate-100/90 border-b border-slate-300 border-l border-slate-300">
                       رقم القيد
                     </th>
-                    <th style={{ width: '10%' }} className="py-2 px-1 text-center align-middle whitespace-nowrap text-xs md:text-sm print:text-[10px] font-bold text-slate-900 border-b border-slate-300 border-l border-slate-300">
+                    <th style={{ width: '10%' }} className="py-3.5 px-3 print:py-2.5 print:px-2 text-center align-middle whitespace-nowrap text-sm font-bold text-slate-900 bg-slate-100/90 border-b border-slate-300 border-l border-slate-300">
                       نوع السند
                     </th>
-                    <th style={{ width: '39%' }} className="py-2 px-1.5 text-center align-middle break-words leading-snug text-xs md:text-sm print:text-[10px] font-bold text-slate-900 border-b border-slate-300 border-l border-slate-300">
+                    <th style={{ width: '39%' }} className="py-3.5 px-3 print:py-2.5 print:px-2 text-center align-middle break-words leading-snug text-sm font-bold text-slate-900 bg-slate-100/90 border-b border-slate-300 border-l border-slate-300">
                       البيان
                     </th>
-                    <th style={{ width: '11%' }} className="py-2 px-1 text-center align-middle whitespace-nowrap tabular-nums text-xs md:text-sm print:text-[10px] font-bold text-slate-900 border-b border-slate-300 border-l border-slate-300">
+                    <th style={{ width: '11%' }} className="py-3.5 px-3 print:py-2.5 print:px-2 text-center align-middle whitespace-nowrap tabular-nums text-sm font-bold text-slate-900 bg-slate-100/90 border-b border-slate-300 border-l border-slate-300">
                       مدين
                     </th>
-                    <th style={{ width: '11%' }} className="py-2 px-1 text-center align-middle whitespace-nowrap tabular-nums text-xs md:text-sm print:text-[10px] font-bold text-slate-900 border-b border-slate-300 border-l border-slate-300">
+                    <th style={{ width: '11%' }} className="py-3.5 px-3 print:py-2.5 print:px-2 text-center align-middle whitespace-nowrap tabular-nums text-sm font-bold text-slate-900 bg-slate-100/90 border-b border-slate-300 border-l border-slate-300">
                       دائن
                     </th>
-                    <th style={{ width: '10%' }} className="py-2 px-1 text-center align-middle whitespace-nowrap tabular-nums text-xs md:text-sm print:text-[10px] font-bold text-slate-900 border-b border-slate-300 last:rounded-tl-2xl">
+                    <th style={{ width: '10%' }} className="py-3.5 px-3 print:py-2.5 print:px-2 text-center align-middle whitespace-nowrap tabular-nums text-sm font-bold text-slate-900 bg-slate-100/90 border-b border-slate-300 last:rounded-tl-2xl">
                       الرصيد
                     </th>
                   </tr>
@@ -948,19 +946,19 @@ export const AccountStatementReport: React.FC = () => {
 
                   {/* Grand Total Row - Renders strictly ONCE at the very end of data rows on the final page */}
                   <tr className="border-t-2 border-slate-400 bg-slate-100 font-bold text-slate-900 page-break-inside-avoid print:bg-slate-100">
-                    <td colSpan={4} className="py-2 px-2 print:py-1.5 print:px-1 text-center align-middle border-t-2 border-slate-400 border-l border-slate-300 text-slate-900 font-bold text-xs md:text-sm print:text-[10px] first:rounded-br-2xl">
+                    <td colSpan={4} className="py-3.5 px-3 print:py-2.5 print:px-2 text-center align-middle border-t-2 border-slate-400 border-l border-slate-300 text-slate-950 font-extrabold text-sm md:text-base print:text-xs first:rounded-br-2xl">
                       الإجمالي العام والرصيد الختامي
                     </td>
-                    <td className="py-2 px-1 print:py-1.5 print:px-0.5 text-center align-middle whitespace-nowrap border-t-2 border-slate-400 border-l border-slate-300 font-mono tabular-nums font-bold text-blue-900" dir="ltr">
+                    <td className="py-3.5 px-3 print:py-2.5 print:px-2 text-center align-middle whitespace-nowrap border-t-2 border-slate-400 border-l border-slate-300 font-mono tabular-nums text-sm md:text-base print:text-xs font-extrabold text-blue-950" dir="ltr">
                       {formatEGP(data.totalDebit)}
                     </td>
-                    <td className="py-2 px-1 print:py-1.5 print:px-0.5 text-center align-middle whitespace-nowrap border-t-2 border-slate-400 border-l border-slate-300 font-mono tabular-nums font-bold text-amber-900" dir="ltr">
+                    <td className="py-3.5 px-3 print:py-2.5 print:px-2 text-center align-middle whitespace-nowrap border-t-2 border-slate-400 border-l border-slate-300 font-mono tabular-nums text-sm md:text-base print:text-xs font-extrabold text-amber-950" dir="ltr">
                       {formatEGP(data.totalCredit)}
                     </td>
-                    <td className={`py-2 px-1 print:py-1.5 print:px-0.5 text-center align-middle whitespace-nowrap border-t-2 border-slate-400 font-mono tabular-nums last:rounded-bl-2xl ${
+                    <td className={`py-3.5 px-3 print:py-2.5 print:px-2 text-center align-middle whitespace-nowrap border-t-2 border-slate-400 font-mono tabular-nums text-sm md:text-base print:text-xs font-extrabold last:rounded-bl-2xl ${
                       data.endingBalance < 0
-                        ? 'text-rose-600 font-bold text-negative-balance'
-                        : 'font-black text-slate-900'
+                        ? 'text-rose-600 text-negative-balance'
+                        : 'text-slate-950'
                     }`} dir="ltr">
                       {data.endingBalance < 0
                         ? `(${formatEGP(Math.abs(data.endingBalance))})`

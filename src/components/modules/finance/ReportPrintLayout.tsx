@@ -100,16 +100,18 @@ export const ReportPrintLayout: React.FC<ReportPrintLayoutProps> = ({
           </div>
         </div>
 
-        {/* Subtitle / Filter notes */}
-        {(subtitleAr || filterText) && (
-          <div className="flex items-center justify-between text-xs text-slate-600 print:text-gray-700 pb-2 border-b border-slate-200 print:border-gray-400">
-            {subtitleAr && <span>{subtitleAr}</span>}
-            {filterText && <span className="font-mono">{filterText}</span>}
-            <span className="font-mono text-[10px]">
-              تاريخ الإصدار: {formatDate(new Date())}
-            </span>
+        {/* Subtitle / Filter notes / Metadata Realignment */}
+        <div className="grid grid-cols-3 items-center text-xs text-slate-600 print:text-gray-700 pb-2 border-b border-slate-200 print:border-gray-400">
+          <div className="text-right font-mono text-[11px] print:text-[10px] text-slate-600 print:text-gray-700">
+            {filterText || ''}
           </div>
-        )}
+          <div className="text-center font-mono text-[11px] print:text-[10px] text-slate-700 print:text-black font-semibold">
+            تاريخ الإصدار: {formatDate(new Date())}
+          </div>
+          <div className="text-left font-bold text-slate-800 print:text-black text-xs print:text-[11px]">
+            {subtitleAr || 'حساب الأستاذ العام'}
+          </div>
+        </div>
 
         {/* Report Main Content */}
         <div className="report-content-body space-y-4 print:overflow-visible print:h-auto print:max-h-none">
@@ -125,9 +127,6 @@ export const ReportPrintLayout: React.FC<ReportPrintLayoutProps> = ({
                 <span className="font-black block text-sm print:text-xs text-slate-900 print:text-black">
                   المحاسب
                 </span>
-                <span className="text-[10px] print:text-[9px] text-slate-500 print:text-gray-600 block mt-0.5">
-                  المحاسب المالي المختص
-                </span>
               </div>
               <div className="pt-2 print:pt-1 border-t border-dashed border-slate-300 print:border-gray-400 flex items-center justify-between text-[11px] print:text-[9px] text-slate-600 print:text-black px-1">
                 <span>التوقيع:</span>
@@ -140,9 +139,6 @@ export const ReportPrintLayout: React.FC<ReportPrintLayoutProps> = ({
               <div>
                 <span className="font-black block text-sm print:text-xs text-slate-900 print:text-black">
                   المراجع
-                </span>
-                <span className="text-[10px] print:text-[9px] text-slate-500 print:text-gray-600 block mt-0.5">
-                  رئيس قسم الحسابات العامة
                 </span>
               </div>
               <div className="pt-2 print:pt-1 border-t border-dashed border-slate-300 print:border-gray-400 flex items-center justify-between text-[11px] print:text-[9px] text-slate-600 print:text-black px-1">
@@ -157,9 +153,6 @@ export const ReportPrintLayout: React.FC<ReportPrintLayoutProps> = ({
                 <span className="font-black block text-sm print:text-xs text-slate-900 print:text-black">
                   يعتمد
                 </span>
-                <span className="text-[10px] print:text-[9px] text-slate-500 print:text-gray-600 block mt-0.5">
-                  الاعتماد والختم الرسمي
-                </span>
               </div>
               <div className="pt-2 print:pt-1 border-t border-dashed border-slate-300 print:border-gray-400 flex items-center justify-between text-[11px] print:text-[9px] text-slate-600 print:text-black px-1">
                 <span>الاعتماد:</span>
@@ -168,6 +161,9 @@ export const ReportPrintLayout: React.FC<ReportPrintLayoutProps> = ({
             </div>
           </div>
         </div>
+
+        {/* Printable Fixed Page Number Footer Fallback */}
+        <div className="print-page-number hidden print:block pointer-events-none select-none" />
       </div>
     </Modal>
   );
