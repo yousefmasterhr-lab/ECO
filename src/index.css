@@ -221,6 +221,16 @@ table, .tabular-nums, .font-mono, .font-inter, .num-western {
     margin: 12mm;
   }
 
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  body, .print-container {
+    background: #ffffff !important;
+    color: #0f172a !important;
+  }
+
   /* 1. Global Reset: prevent 1-page truncation, unclip overflow and height */
   html, body {
     height: auto !important;
@@ -228,10 +238,6 @@ table, .tabular-nums, .font-mono, .font-inter, .num-western {
     max-height: none !important;
     overflow: visible !important;
     position: static !important;
-    background: #ffffff !important;
-    color: #000000 !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
     margin: 0 !important;
     padding: 0 !important;
   }
@@ -246,7 +252,8 @@ table, .tabular-nums, .font-mono, .font-inter, .num-western {
 
   /* 3. When printing from within a modal/portal, hide app background root */
   body:has(#erp-modal-container) #root,
-  body:has(.report-print-sheet) #root {
+  body:has(.report-print-sheet) #root,
+  body:has(.print-container) #root {
     display: none !important;
   }
 
@@ -289,10 +296,11 @@ table, .tabular-nums, .font-mono, .font-inter, .num-western {
     border-radius: 0 !important;
     width: 100% !important;
     background: transparent !important;
-    color: #000000 !important;
+    color: #0f172a !important;
   }
 
-  .report-print-sheet {
+  .report-print-sheet,
+  .print-container {
     position: static !important;
     width: 100% !important;
     height: auto !important;
@@ -301,7 +309,7 @@ table, .tabular-nums, .font-mono, .font-inter, .num-western {
     padding: 0 !important;
     margin: 0 !important;
     background: #ffffff !important;
-    color: #000000 !important;
+    color: #0f172a !important;
   }
 
   .report-content-body {
@@ -316,6 +324,17 @@ table, .tabular-nums, .font-mono, .font-inter, .num-western {
     break-inside: auto !important;
     width: 100% !important;
     border-collapse: collapse !important;
+  }
+
+  table th {
+    background-color: #f1f5f9 !important;
+    color: #0f172a !important;
+    border: 1px solid #cbd5e1 !important;
+  }
+
+  table td {
+    color: #0f172a !important;
+    border: 1px solid #cbd5e1 !important;
   }
 
   thead {
