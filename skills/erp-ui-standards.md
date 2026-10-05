@@ -378,8 +378,14 @@ Whenever a global directive or styling standard is issued (including typography,
     - Table cell vertical padding reduced in print mode (`padding: 3px 4px !important;`).
     - Signature approval boxes scaled to a streamlined compact height (`h-24 print:h-18` with `print:p-1.5`) while retaining `page-break-inside: avoid;`.
     - Corporate headers and summary metric cards styled with compact print padding (`print:p-1.5 print:gap-2 print:mb-2`).
-- **Curvy Rounded Outer Framing (`rounded-2xl`):**
+- **Curvy Rounded Outer Framing (`rounded-2xl` & `border-separate`):**
   - Financial tables are housed in an elegant executive container (`rounded-2xl border border-slate-300 overflow-hidden shadow-sm`).
+  - Tables utilize `border-separate border-spacing-0` so corner cells seamlessly follow the 16px border radius without sharp jagged artifacts.
+- **Dynamic Red Highlighting for Negative Balances (تمييز الأرصدة السالبة باللون الأحمر الصريح):**
+  - All cumulative balances in the "الرصيد" column (opening balance, transaction rows, and grand totals) that evaluate to negative (`balance < 0` or rendered with parentheses) must be styled in high-contrast red:
+    - Tailwind classes: `text-rose-600 font-semibold text-negative-balance` (Hex `#dc2626` / `#e11d48`).
+    - In `@media print`, strict print preservation is enforced via `.text-negative-balance { color: #dc2626 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }` to ensure Chrome, Edge, and other print engines render the red value vividly.
+    - Positive and zero balance values remain standard high-contrast dark slate (`text-slate-900 font-bold`).
 - **Center-Aligned Data Cells (توسيط الأرقام والنصوص في الخلايا):**
   - All financial table cells (dates, entry numbers, transaction types, debits, credits, and balances) must be center-aligned horizontally and vertically (`text-center align-middle`).
 - **Last-Page-Only Grand Total Enforcement (إظهار صف الإجمالي في الصفحة الأخيرة فقط ومنع تكراره):**
