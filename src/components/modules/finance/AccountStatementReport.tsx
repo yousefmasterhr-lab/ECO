@@ -846,8 +846,8 @@ export const AccountStatementReport: React.FC = () => {
             </div>
 
             {/* Sealed Outer Frame - High-Contrast Closing Borders */}
-            <div className="ledger-table-container rounded-2xl border-[1.5px] border-slate-300 overflow-hidden shadow-sm bg-white print:rounded-2xl w-full max-w-full">
-              <table className="ledger-table w-full max-w-full table-fixed border-separate border-spacing-0 text-[10px] print:text-[9.5px]">
+            <div className="ledger-table-container rounded-2xl border-[1.5px] border-slate-300 overflow-hidden shadow-sm bg-white print:border-none print:shadow-none print:rounded-none print:overflow-visible w-full max-w-full">
+              <table className="ledger-table w-full max-w-full table-fixed border-separate border-spacing-0 print:border-collapse text-[10px] print:text-[9.5px]">
                 <colgroup>
                   <col className="w-[11%]" style={{ width: '11%' }} />
                   <col className="w-[9%]" style={{ width: '9%' }} />
@@ -948,17 +948,17 @@ export const AccountStatementReport: React.FC = () => {
                   ))}
 
                   {/* Grand Total Row - Renders strictly ONCE at the very end of data rows on the final page */}
-                  <tr className="border-t-2 border-slate-400 bg-slate-100 font-bold text-slate-900 page-break-inside-avoid print:bg-slate-100">
-                    <td colSpan={4} className="py-3 px-3 print:py-2.5 print:px-2 text-center align-middle border-t-2 border-slate-400 border-l border-slate-300 text-slate-950 font-extrabold text-sm md:text-base print:text-xs leading-tight first:rounded-br-2xl">
+                  <tr className="border-t-2 border-b-2 border-slate-400 bg-slate-100 font-bold text-slate-900 page-break-inside-avoid print:bg-slate-100">
+                    <td colSpan={4} className="py-3 px-3 print:py-2.5 print:px-2 text-center align-middle border-t-2 border-b-2 border-slate-400 border-l border-slate-300 text-slate-950 font-extrabold text-sm md:text-base print:text-xs leading-tight first:rounded-br-2xl print:rounded-none">
                       الإجمالي العام والرصيد الختامي
                     </td>
-                    <td className="py-3 px-3 print:py-2.5 print:px-2 text-center align-middle whitespace-nowrap border-t-2 border-slate-400 border-l border-slate-300 font-mono tabular-nums text-sm md:text-base print:text-xs leading-tight font-extrabold text-blue-950" dir="ltr">
+                    <td className="py-3 px-3 print:py-2.5 print:px-2 text-center align-middle whitespace-nowrap border-t-2 border-b-2 border-slate-400 border-l border-slate-300 font-mono tabular-nums text-sm md:text-base print:text-xs leading-tight font-extrabold text-blue-950" dir="ltr">
                       {formatEGP(data.totalDebit)}
                     </td>
-                    <td className="py-3 px-3 print:py-2.5 print:px-2 text-center align-middle whitespace-nowrap border-t-2 border-slate-400 border-l border-slate-300 font-mono tabular-nums text-sm md:text-base print:text-xs leading-tight font-extrabold text-amber-950" dir="ltr">
+                    <td className="py-3 px-3 print:py-2.5 print:px-2 text-center align-middle whitespace-nowrap border-t-2 border-b-2 border-slate-400 border-l border-slate-300 font-mono tabular-nums text-sm md:text-base print:text-xs leading-tight font-extrabold text-amber-950" dir="ltr">
                       {formatEGP(data.totalCredit)}
                     </td>
-                    <td className={`py-3 px-3 print:py-2.5 print:px-2.5 text-center align-middle whitespace-nowrap overflow-visible border-t-2 border-slate-400 font-mono tabular-nums text-sm md:text-base print:text-xs leading-tight font-extrabold last:rounded-bl-2xl ${
+                    <td className={`py-3 px-3 print:py-2.5 print:px-2.5 text-center align-middle whitespace-nowrap overflow-visible border-t-2 border-b-2 border-slate-400 font-mono tabular-nums text-sm md:text-base print:text-xs leading-tight font-extrabold last:rounded-bl-2xl print:rounded-none ${
                       data.endingBalance < 0
                         ? 'text-rose-600 text-negative-balance'
                         : 'text-slate-950'

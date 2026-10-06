@@ -372,22 +372,31 @@ Whenever a global directive or styling standard is issued (including typography,
   - **Transaction Rows (`<tbody>`):** Efficiently compacted with `py-1 px-2` (`print:py-1 print:px-2`), font size `11px`, and `leading-tight` to preserve vertical print density.
   - **Grand Total Row (`<tfoot>` / Summary Row):** Prominently sized with `py-3 px-3` (`print:py-2.5 print:px-2`), `text-sm md:text-base font-extrabold text-slate-950`.
   - The negative ending balance `(428,000.00)` is styled in high-contrast red (`text-rose-600 text-negative-balance`) with `overflow-visible px-3 print:px-2.5` to ensure comfortable breathing room away from the rounded border line.
-- **Sealed 1.5px Outer Table Borders (إغلاق وتحديد الإطار الخارجي للجدول 1.5px):**
-  - Table container and table elements enforce high-contrast outer closing borders:
+- **Table Border Encapsulation & Prevention of Dangling Line Leaks (منع تسريب خطوط الإطارات وحصر الحدود في الجدول):**
+  - When tables split across multiple pages, outer wrapper `div` borders leak and extend downwards past the table into page break white space.
+  - In `@media print`, borders must be removed completely from outer container wrappers (`border: none !important; box-shadow: none !important;`) and bound directly to the `<table>` element and its constituent rows:
     ```css
-    .ledger-table-container {
-      border: 1.5px solid #cbd5e1 !important;
-      border-radius: 1rem !important;
-      overflow: hidden !important;
-    }
-    table {
-      border-left: 1.5px solid #cbd5e1 !important;
-      border-right: 1.5px solid #cbd5e1 !important;
+    @media print {
+      .ledger-table-container {
+        border: none !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+        overflow: visible !important;
+      }
+      table {
+        border-collapse: collapse !important;
+        border-top: 1.5px solid #cbd5e1 !important;
+        border-left: 1.5px solid #cbd5e1 !important;
+        border-right: 1.5px solid #cbd5e1 !important;
+      }
+      tr {
+        page-break-inside: avoid !important;
+      }
     }
     ```
-  - Explicit styling ensures neither the left nor right border is clipped by page margins or wrapper overflows.
+  - Each row's bottom border (`border-b`) cleanly seals the table at each page break, and the final grand total row features a distinct closing bottom border (`border-b-2 border-slate-400`).
 - **Strict 100% Width & Table-Fixed Column Geometry (منع انقطاع الأعمدة والالتزام التام بعرض 100%):**
-  - Financial print tables must strictly occupy `width: 100% !important; max-width: 100% !important;` with `table-layout: fixed !important; border-collapse: separate !important;`.
+  - Financial print tables must strictly occupy `width: 100% !important; max-width: 100% !important;` with `table-layout: fixed !important;`.
   - Column widths must be locked using exact mathematical percentages totaling 100% across all 7 columns:
     1. `التاريخ` (Date): **11%** (compact, nowrap)
     2. `رقم القيد` (Entry #): **9%** (compact, nowrap)
@@ -396,17 +405,19 @@ Whenever a global directive or styling standard is issued (including typography,
     5. `مدين` (Debit): **11%** (compact, nowrap, tabular-nums)
     6. `دائن` (Credit): **11%** (compact, nowrap, tabular-nums)
     7. `الرصيد` (Balance): **11%** (compact, nowrap, tabular-nums, `overflow-visible px-2`)
-  - The `الرصيد` column is allocated **11%** with `overflow-visible px-2` to guarantee negative numbers like `(428,000.00)` never collide with the rounded left border or get clipped.
-- **Comfortable Signature Block & Open Handwriting Slots (صناديق الاعتماد وسطر التاريخ اليدوي المفتوح):**
-  - Official print layouts feature three comfortable approval boxes (`المحاسب`, `المراجع`, `يعتمد`) with a prominent height (`min-h-[90px] print:min-h-[75px]`).
-  - Completely omit any hardcoded year prefix (`202`).
-  - Open, unconstrained dotted slots are provided for handwriting the day, month, and 4-digit year manually:
-    ```html
-    <div class="flex items-center justify-between text-xs text-slate-700 mt-4 px-2" dir="rtl">
-      <span>التوقيع: .....................</span>
-      <span>التاريخ: &nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; م</span>
-    </div>
-    ```
+  - The `الرصيد` column is allocated **11%** with `overflow-visible px-2` to guarantee negative numbers like `(428,000.00)` never collide with the left border or get clipped.
+- **Spacious Signature Box Anatomy & Open Canvas (صناديق الاعتماد الموسعة والمساحة البيضاء المفتوحة للتوقيع):**
+  - Official print layouts feature three spacious approval boxes (`المحاسب`, `المراجع`, `يعتمد`) with a prominent height (`min-h-[110px] print:min-h-[105px]`).
+  - **No "التوقيع" Dots Line:** Completely remove dotted lines (`التوقيع: .....................`) to keep a clean, generous signing canvas for handwritten signatures and physical stamps.
+  - **Box Anatomy (هيكلية الصندوق):**
+    - **Top:** Header title in `font-bold text-sm text-slate-900 print:text-black`.
+    - **Middle:** Unobstructed white space for physical signing and stamping.
+    - **Bottom:** Center-aligned handwritten date slot anchored cleanly with `mt-auto pt-4`:
+      ```html
+      <div class="mt-auto pt-4 text-center text-xs text-slate-700" dir="rtl">
+        التاريخ: &nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; م
+      </div>
+      ```
 - **Dynamic Red Highlighting for Negative Balances (تمييز الأرصدة السالبة باللون الأحمر الصريح):**
   - All cumulative balances in the "الرصيد" column (opening balance, transaction rows, and grand totals) that evaluate to negative (`balance < 0` or rendered with parentheses) must be styled in high-contrast red:
     - Tailwind classes: `text-rose-600 font-semibold text-negative-balance` (Hex `#dc2626` / `#e11d48`).
@@ -414,30 +425,33 @@ Whenever a global directive or styling standard is issued (including typography,
     - Positive and zero balance values remain standard high-contrast dark slate (`text-slate-900 font-bold`).
 - **Center-Aligned Data Cells (توسيط الأرقام والنصوص في الخلايا):**
   - All financial table cells (dates, entry numbers, transaction types, debits, credits, and balances) must be center-aligned horizontally and vertically (`text-center align-middle`).
-- **A4 Multi-Page Print Pagination (`1 - X` ترقيم الصفحات المنضبط أسفل الورقة):**
-  - Page numbering configured using CSS Paged Media `@bottom-center`:
+- **Physical Printer Margin Clearance & A4 Pagination (رفع ترقيم الصفحات وتفادي هوامش الطابعات الفيزيائية):**
+  - Page numbering configured using CSS Paged Media `@bottom-center` with at least `20mm` bottom margin so hardware print margins never cut page counters in half:
     ```css
     @page {
       size: A4 portrait;
-      margin: 8mm 10mm 10mm 10mm;
+      margin-top: 10mm;
+      margin-inline: 12mm;
+      margin-bottom: 20mm; /* Extra room so footer never clips */
       @bottom-center {
         content: counter(page) " - " counter(pages);
         font-family: inherit;
         font-size: 11px;
         font-weight: 600;
-        color: #475569;
+        color: #64748b;
       }
     }
     ```
-  - Printable footer pinned to the bottom of the page for fallback support:
+  - Printable fallback footer raised to `10mm` from the physical sheet edge:
     ```css
     .print-page-number {
       position: fixed;
-      bottom: 3mm;
+      bottom: 10mm; /* Lifted up away from hardware cutoff margins */
       left: 0;
       right: 0;
       text-align: center;
       font-size: 11px;
+      font-weight: 600;
       color: #64748b;
     }
     ```

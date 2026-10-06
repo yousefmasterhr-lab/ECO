@@ -127,44 +127,41 @@ export const ReportPrintLayout: React.FC<ReportPrintLayoutProps> = ({
         </div>
 
         {/* Formal Audit Signatures Block */}
-        <div className="pt-3 mt-4 print:pt-2 print:mt-2 border-t border-slate-300 print:border-black page-break-inside-avoid break-inside-avoid">
+        <div className="pt-3 mt-4 print:pt-2 print:mt-3 border-t border-slate-300 print:border-black page-break-inside-avoid break-inside-avoid">
           <div className="grid grid-cols-3 gap-4 print:gap-3 text-center text-xs print:text-[10px]">
             {/* Box 1: المحاسب */}
-            <div className="p-3 print:p-2 rounded-xl border border-slate-300 print:border-black bg-slate-50 print:bg-white flex flex-col justify-between min-h-[90px] print:min-h-[75px]">
+            <div className="py-4 px-3 print:py-3.5 print:px-2.5 rounded-xl border border-slate-300 print:border-black bg-slate-50 print:bg-white flex flex-col justify-between min-h-[110px] print:min-h-[105px]">
               <div>
-                <span className="font-black block text-sm print:text-xs text-slate-900 print:text-black">
+                <span className="font-bold block text-sm text-slate-900 print:text-black">
                   المحاسب
                 </span>
               </div>
-              <div className="flex items-center justify-between text-xs print:text-[10px] text-slate-700 print:text-black mt-4 print:mt-2 px-2" dir="rtl">
-                <span>التوقيع: .....................</span>
-                <span>التاريخ: &nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; م</span>
+              <div className="mt-auto pt-4 text-center text-xs print:text-[10px] text-slate-700 print:text-black" dir="rtl">
+                التاريخ: &nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; م
               </div>
             </div>
 
             {/* Box 2: المراجع */}
-            <div className="p-3 print:p-2 rounded-xl border border-slate-300 print:border-black bg-slate-50 print:bg-white flex flex-col justify-between min-h-[90px] print:min-h-[75px]">
+            <div className="py-4 px-3 print:py-3.5 print:px-2.5 rounded-xl border border-slate-300 print:border-black bg-slate-50 print:bg-white flex flex-col justify-between min-h-[110px] print:min-h-[105px]">
               <div>
-                <span className="font-black block text-sm print:text-xs text-slate-900 print:text-black">
+                <span className="font-bold block text-sm text-slate-900 print:text-black">
                   المراجع
                 </span>
               </div>
-              <div className="flex items-center justify-between text-xs print:text-[10px] text-slate-700 print:text-black mt-4 print:mt-2 px-2" dir="rtl">
-                <span>التوقيع: .....................</span>
-                <span>التاريخ: &nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; م</span>
+              <div className="mt-auto pt-4 text-center text-xs print:text-[10px] text-slate-700 print:text-black" dir="rtl">
+                التاريخ: &nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; م
               </div>
             </div>
 
             {/* Box 3: يعتمد */}
-            <div className="p-3 print:p-2 rounded-xl border border-slate-300 print:border-black bg-slate-50 print:bg-white flex flex-col justify-between min-h-[90px] print:min-h-[75px]">
+            <div className="py-4 px-3 print:py-3.5 print:px-2.5 rounded-xl border border-slate-300 print:border-black bg-slate-50 print:bg-white flex flex-col justify-between min-h-[110px] print:min-h-[105px]">
               <div>
-                <span className="font-black block text-sm print:text-xs text-slate-900 print:text-black">
+                <span className="font-bold block text-sm text-slate-900 print:text-black">
                   يعتمد
                 </span>
               </div>
-              <div className="flex items-center justify-between text-xs print:text-[10px] text-slate-700 print:text-black mt-4 print:mt-2 px-2" dir="rtl">
-                <span>الاعتماد: .....................</span>
-                <span>التاريخ: &nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; م</span>
+              <div className="mt-auto pt-4 text-center text-xs print:text-[10px] text-slate-700 print:text-black" dir="rtl">
+                التاريخ: &nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; م
               </div>
             </div>
           </div>
