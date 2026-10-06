@@ -1341,24 +1341,34 @@ function addCheque(chequeData) {
 }
 
 /**
- * 2.4: General Ledger Manual Journal Vouchers
+ * 2.4: General Ledger Manual Journal Vouchers - Uncapped Full Dataset Ingestion
  */
-async function getJournals(targetDb = 'Tarabot_Data_2026') {
+async function getJournals(targetDb = 'Tarabot_Data_2026', options = {}) {
   targetDb = sanitizeDatabaseName(targetDb);
   let list = [];
   try {
+    const conditions = [];
+    if (options.startDate) {
+      conditions.push(`REPLACE(h.Note_Date, '/', '-') >= '${String(options.startDate).replace(/'/g, "''")}'`);
+    }
+    if (options.endDate) {
+      conditions.push(`REPLACE(h.Note_Date, '/', '-') <= '${String(options.endDate).replace(/'/g, "''")}'`);
+    }
+    const whereSql = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
     const sql = `
-      SELECT TOP 50
+      SELECT
         'JV-' + CAST(h.Note_No AS NVARCHAR(20)) AS id,
         h.Note_No AS noteNo,
         REPLACE(h.Note_Date, '/', '-') AS noteDate,
         h.Description AS description,
-        h.Note_Debit AS debitTotal,
-        h.Note_Credit AS creditTotal,
+        ISNULL(h.Note_Debit, 0) AS debitTotal,
+        ISNULL(h.Note_Credit, 0) AS creditTotal,
         h.Note_Net_Text AS netText,
         h.Entry_Name AS entryName,
         'POSTED' AS status
       FROM [${targetDb}].dbo.GeneralLedger_Head h
+      ${whereSql}
       ORDER BY h.Note_No DESC
     `;
     const rows = await querySqlJson(sql, targetDb);
@@ -1367,6 +1377,9 @@ async function getJournals(targetDb = 'Tarabot_Data_2026') {
       const noteNos = list.map(j => j.noteNo).filter(Boolean);
       if (noteNos.length > 0) {
         try {
+          // Pre-fetch details for the most recent 250 entries to keep network fast & avoid SQL Server IN limit (1,000 exprs).
+          // Older entries have lines fetched seamlessly on-demand via /api/finance/journals/:noteNo/lines.
+          const prefetchNoteNos = noteNos.slice(0, 250);
           const linesSql = `
             SELECT 
               Note_No AS noteNo,
@@ -1378,7 +1391,7 @@ async function getJournals(targetDb = 'Tarabot_Data_2026') {
               Description AS description,
               Costcenter_Name_A AS costcenterNameAr
             FROM [${targetDb}].dbo.GeneralLedger_Details_View
-            WHERE Note_No IN (${noteNos.join(',')})
+            WHERE Note_No IN (${prefetchNoteNos.join(',')})
             ORDER BY Note_No DESC, SR ASC
           `;
           const linesRows = await querySqlJson(linesSql, targetDb);
@@ -1429,7 +1442,8 @@ async function getJournals(targetDb = 'Tarabot_Data_2026') {
         costcenterNameAr: r.Costcenter_Name_A || ''
       });
     }
-    list = Array.from(groupMap.values()).slice(0, 30).map(({ header, lines }) => ({
+    // Return all entries from fallback without artificial pagination clamp
+    list = Array.from(groupMap.values()).map(({ header, lines }) => ({
       id: `JV-${header.Note_No}`,
       noteNo: header.Note_No,
       noteDate: String(header.Note_Date || '').replace(/\//g, '-'),
@@ -1447,6 +1461,57 @@ async function getJournals(targetDb = 'Tarabot_Data_2026') {
   const existingNoteNos = new Set(list.map(j => Number(j.noteNo)));
   const uniqueAdded = addedJournals.filter(j => !existingNoteNos.has(Number(j.noteNo)));
   return [...uniqueAdded, ...list];
+}
+
+/**
+ * True aggregate sum and count metrics of the entire General Ledger dataset
+ */
+async function getJournalSummary(targetDb = 'Tarabot_Data_2026', options = {}) {
+  targetDb = sanitizeDatabaseName(targetDb);
+  try {
+    const conditions = [];
+    if (options.startDate) {
+      conditions.push(`REPLACE(h.Note_Date, '/', '-') >= '${String(options.startDate).replace(/'/g, "''")}'`);
+    }
+    if (options.endDate) {
+      conditions.push(`REPLACE(h.Note_Date, '/', '-') <= '${String(options.endDate).replace(/'/g, "''")}'`);
+    }
+    const whereSql = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+    const sql = `
+      SELECT 
+        COUNT(*) AS totalCount,
+        ISNULL(SUM(h.Note_Debit), 0) AS totalDebit,
+        ISNULL(SUM(h.Note_Credit), 0) AS totalCredit
+      FROM [${targetDb}].dbo.GeneralLedger_Head h
+      ${whereSql}
+    `;
+    const rows = await querySqlJson(sql, targetDb);
+    if (rows && rows.length > 0) {
+      const totalCount = Number(rows[0].totalCount || 0);
+      const totalDebit = Number(rows[0].totalDebit || 0);
+      const totalCredit = Number(rows[0].totalCredit || 0);
+      return {
+        totalCount,
+        totalDebit,
+        totalCredit,
+        isBalanced: Math.abs(totalDebit - totalCredit) < 0.01
+      };
+    }
+  } catch (err) {
+    console.warn(`[SQL Bridge] getJournalSummary query warning:`, err.message);
+  }
+
+  // Fallback to complete in-memory calculation from getJournals
+  const allJournals = await getJournals(targetDb, options);
+  const totalDebit = allJournals.reduce((s, j) => s + (j.debitTotal || 0), 0);
+  const totalCredit = allJournals.reduce((s, j) => s + (j.creditTotal || 0), 0);
+  return {
+    totalCount: allJournals.length,
+    totalDebit,
+    totalCredit,
+    isBalanced: Math.abs(totalDebit - totalCredit) < 0.01
+  };
 }
 
 /**
@@ -3459,8 +3524,19 @@ app.post('/api/finance/cheques/add', (req, res) => {
 
 app.get('/api/finance/journals', async (req, res) => {
   try {
-    const journals = await getJournals(req.targetDb);
+    const { startDate, endDate } = req.query;
+    const journals = await getJournals(req.targetDb, { startDate, endDate });
     res.json(journals);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/finance/journals/summary', async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    const summary = await getJournalSummary(req.targetDb, { startDate, endDate });
+    res.json(summary);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -3677,6 +3753,7 @@ module.exports = {
   updateChequeStatus,
   addCheque,
   getJournals,
+  getJournalSummary,
   getJournalLines,
   saveJournal,
   getItems,

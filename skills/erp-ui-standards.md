@@ -506,8 +506,21 @@ Whenever a global directive or styling standard is issued (including typography,
     If remaining space cannot accommodate both the rows and signatures, the browser automatically pushes the last 2-3 transactions along with the grand total and signatures to the next page, ensuring authentic transaction data always accompanies signatures.
   - **Invariant 3 (الكثافة المرنة واستيعاب التجاوزات الطفيفة):** Elastic density scaling and tight print margins (`print:mt-1.5 print:pt-1`, `print:min-h-[90px]`, `.print-ledger-container { transform: scale(0.97); transform-origin: top center; }`) must prioritize absorbing the approval block into the preceding page before triggering a multi-row page split.
 
+---
 
+## Rule 38: Uncapped Enterprise Journal & Ledger Data Ingestion (الاستيعاب الكامل لدفاتر الأستاذ واليومية العامة بدون قيود تجزئة تعسفية)
 
+1. **Uncapped Pipeline Ingestion (حظر القيود التعسفية مثل TOP 50):**
+   - Financial reporting, general journal registers, and ledger statements must **never** be artificially throttled or clamped by hardcoded SQL clauses (such as arbitrary `SELECT TOP 50` or sliced pagination limits).
+   - The data pipeline must ingest and serve the complete dataset of committed, posted vouchers from connected tenant databases (`GeneralLedger_Head`, `GeneralLedger_Details`, `Level5_View`, etc.) across all schemas (`Tarabot_Data_2026`, `MK_Khalil_Db_2026`, etc.) with optional date-range or criteria filtering.
+   - For high-volume multi-line details, avoid SQL Server expression limits (max 1,000 items in `WHERE ... IN (...)`) by prefetching recent active window chunks and loading exhaustive details on-demand via specialized endpoints (`/api/finance/journals/:noteNo/lines`).
 
+2. **Integrity of Ledger Aggregate Metrics (اتزان وحساب المؤشرات التراكمية على كامل البيانات):**
+   - All financial summary KPIs—including **Total Posted Vouchers** (`إجمالي القيود المرحلة`), **Total Debit Turnovers** (`إجمالي الحركات المدينة`), **Total Credit Turnovers** (`إجمالي الحركات الدائنة`), and **Double-Entry Balance Integrity** (`اتزان الأستاذ العام = 0.00 ج.م`)—must **always** compute against the complete dataset (`COUNT(*)`, `SUM(Debit)`, `SUM(Credit)`), never against a sliced or paginated subset.
+   - Status badges must dynamically reflect the authentic total count (e.g., `إجمالي القيود المرحلة: {totalCount} قيداً مرحلاً`) with distinct indicators when active in-memory search/date filters are applied.
 
-
+3. **High-Volume Client-Side Scalability & 60 FPS Viewport (تصفح مرن فائق السرعة للبيانات الضخمة):**
+   - When presenting hundreds or thousands of journal records, client views must never choke browser memory or degrade UI rendering.
+   - Employ fluid pagination (defaulting to 50 entries per page with selectors for 25, 50, 100, 250) or virtual scrolling, maintaining consistent 60 FPS interaction.
+   - Provide an explicit **"عرض الكل" (Show All)** toggle allowing accountants to view the full unbroken ledger when required, accompanied by clear performance indicators.
+   - Search queries (by voucher number, general narration, Arabic Tafqeet, or posting author) must evaluate dynamically and instantaneously using memoized data structures.
