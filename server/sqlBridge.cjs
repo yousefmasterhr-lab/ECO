@@ -1347,72 +1347,99 @@ async function getJournals(targetDb = 'Tarabot_Data_2026', options = {}) {
   targetDb = sanitizeDatabaseName(targetDb);
   let list = [];
   try {
+    let headCols = [];
+    try {
+      const pool = await getPool(targetDb);
+      headCols = await getTableColumns(pool, 'GeneralLedger_Head', targetDb);
+    } catch (e) {}
+
+    const colNo = resolveColumn(headCols, ['Note_No', 'EntryNo', 'Entry_No', 'Doc_No', 'NoteNo'], 'Note_No');
+    const colDate = resolveColumn(headCols, ['Note_Date', 'EntryDate', 'Entry_Date', 'Date', 'Doc_Date'], 'Note_Date');
+    const colDesc = resolveColumn(headCols, ['Description', 'GeneralDescription', 'General_Description', 'Doc_Description', 'Memo'], 'Description');
+    const colDebit = resolveColumn(headCols, ['Note_Debit', 'TotalDebit', 'Total_Debit', 'Debit', 'Madeen'], 'Note_Debit');
+    const colCredit = resolveColumn(headCols, ['Note_Credit', 'TotalCredit', 'Total_Credit', 'Credit', 'Daeen'], 'Note_Credit');
+    const colNet = resolveColumn(headCols, ['Note_Net_Text', 'Tafqeet', 'NetText', 'Net_Text'], null);
+    const colEntry = resolveColumn(headCols, ['Entry_Name', 'UserName', 'User_Name'], null);
+    const colDocType = resolveColumn(headCols, ['DocType', 'Doc_Type', 'Entry_Type'], null);
+    const colStatus = resolveColumn(headCols, ['PostedStatus', 'Posted_Status', 'Status'], null);
+
     const conditions = [];
     if (options.startDate) {
-      conditions.push(`REPLACE(h.Note_Date, '/', '-') >= '${String(options.startDate).replace(/'/g, "''")}'`);
+      conditions.push(`REPLACE(CAST(h.[${colDate}] AS NVARCHAR(30)), '/', '-') >= '${String(options.startDate).replace(/'/g, "''")}'`);
     }
     if (options.endDate) {
-      conditions.push(`REPLACE(h.Note_Date, '/', '-') <= '${String(options.endDate).replace(/'/g, "''")}'`);
+      conditions.push(`REPLACE(CAST(h.[${colDate}] AS NVARCHAR(30)), '/', '-') <= '${String(options.endDate).replace(/'/g, "''")}'`);
     }
     const whereSql = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
     const sql = `
       SELECT
-        'JV-' + CAST(h.Note_No AS NVARCHAR(20)) AS id,
-        h.Note_No AS noteNo,
-        REPLACE(h.Note_Date, '/', '-') AS noteDate,
-        h.Description AS description,
-        ISNULL(h.Note_Debit, 0) AS debitTotal,
-        ISNULL(h.Note_Credit, 0) AS creditTotal,
-        h.Note_Net_Text AS netText,
-        h.Entry_Name AS entryName,
+        'JV-' + CAST(h.[${colNo}] AS NVARCHAR(20)) AS id,
+        h.[${colNo}] AS noteNo,
+        h.[${colNo}] AS entryNo,
+        REPLACE(CAST(h.[${colDate}] AS NVARCHAR(30)), '/', '-') AS noteDate,
+        REPLACE(CAST(h.[${colDate}] AS NVARCHAR(30)), '/', '-') AS entryDate,
+        h.[${colDesc}] AS description,
+        h.[${colDesc}] AS generalDescription,
+        ISNULL(h.[${colDebit}], 0) AS debitTotal,
+        ISNULL(h.[${colDebit}], 0) AS totalDebit,
+        ISNULL(h.[${colCredit}], 0) AS creditTotal,
+        ISNULL(h.[${colCredit}], 0) AS totalCredit,
+        ${colNet ? `ISNULL(h.[${colNet}], '')` : `''`} AS netText,
+        ${colEntry ? `ISNULL(h.[${colEntry}], 'System')` : `'System'`} AS entryName,
+        ${colDocType ? `ISNULL(h.[${colDocType}], 'JV')` : `'JV'`} AS docType,
+        ${colStatus ? `ISNULL(h.[${colStatus}], 'POSTED')` : `'POSTED'`} AS postedStatus,
         'POSTED' AS status
       FROM [${targetDb}].dbo.GeneralLedger_Head h
       ${whereSql}
-      ORDER BY h.Note_No DESC
+      ORDER BY h.[${colNo}] DESC
     `;
     const rows = await querySqlJson(sql, targetDb);
     if (rows && rows.length > 0) {
       list = rows;
-      const noteNos = list.map(j => j.noteNo).filter(Boolean);
+      const noteNos = list.map(j => j.noteNo ?? j.entryNo).filter(Boolean);
       if (noteNos.length > 0) {
         try {
-          // Pre-fetch details for the most recent 250 entries to keep network fast & avoid SQL Server IN limit (1,000 exprs).
-          // Older entries have lines fetched seamlessly on-demand via /api/finance/journals/:noteNo/lines.
-          const prefetchNoteNos = noteNos.slice(0, 250);
-          const linesSql = `
-            SELECT 
-              Note_No AS noteNo,
-              SR AS sr,
-              CAST(Level5_ID AS NVARCHAR(50)) AS level5Id,
-              Level5_Name_A AS level5NameAr,
-              ISNULL(Debit, 0) AS debit,
-              ISNULL(Credit, 0) AS credit,
-              Description AS description,
-              Costcenter_Name_A AS costcenterNameAr
-            FROM [${targetDb}].dbo.GeneralLedger_Details_View
-            WHERE Note_No IN (${prefetchNoteNos.join(',')})
-            ORDER BY Note_No DESC, SR ASC
-          `;
-          const linesRows = await querySqlJson(linesSql, targetDb);
+          // Batch fetch sub-line breakdowns across all entries in chunks of 500
+          // to ingest the complete journal sequence (e.g. #61 to #285+) without hitting SQL Server 1,000 parameter limits
           const linesByNote = new Map();
-          (linesRows || []).forEach(l => {
-            const rawKey = l.noteNo ?? l.Note_No ?? l.NoteNo;
-            if (rawKey === undefined || rawKey === null) return;
-            const key = String(rawKey).trim();
-            if (!linesByNote.has(key)) linesByNote.set(key, []);
-            linesByNote.get(key).push({
-              sr: Number(l.sr ?? l.SR ?? 1),
-              level5Id: String(l.level5Id ?? l.Level5_ID ?? '').trim(),
-              level5NameAr: l.level5NameAr ?? l.Level5_Name_A ?? '',
-              debit: Number(l.debit ?? l.Debit ?? 0),
-              credit: Number(l.credit ?? l.Credit ?? 0),
-              description: l.description ?? l.Description ?? '',
-              costcenterNameAr: l.costcenterNameAr ?? l.Costcenter_Name_A ?? ''
+          const BATCH_SIZE = 500;
+          for (let i = 0; i < noteNos.length; i += BATCH_SIZE) {
+            const batch = noteNos.slice(i, i + BATCH_SIZE);
+            if (batch.length === 0) continue;
+            const linesSql = `
+              SELECT 
+                Note_No AS noteNo,
+                SR AS sr,
+                CAST(Level5_ID AS NVARCHAR(50)) AS level5Id,
+                Level5_Name_A AS level5NameAr,
+                ISNULL(Debit, 0) AS debit,
+                ISNULL(Credit, 0) AS credit,
+                Description AS description,
+                Costcenter_Name_A AS costcenterNameAr
+              FROM [${targetDb}].dbo.GeneralLedger_Details_View
+              WHERE Note_No IN (${batch.join(',')})
+              ORDER BY Note_No DESC, SR ASC
+            `;
+            const linesRows = await querySqlJson(linesSql, targetDb);
+            (linesRows || []).forEach(l => {
+              const rawKey = l.noteNo ?? l.Note_No ?? l.NoteNo;
+              if (rawKey === undefined || rawKey === null) return;
+              const key = String(rawKey).trim();
+              if (!linesByNote.has(key)) linesByNote.set(key, []);
+              linesByNote.get(key).push({
+                sr: Number(l.sr ?? l.SR ?? 1),
+                level5Id: String(l.level5Id ?? l.Level5_ID ?? '').trim(),
+                level5NameAr: l.level5NameAr ?? l.Level5_Name_A ?? '',
+                debit: Number(l.debit ?? l.Debit ?? 0),
+                credit: Number(l.credit ?? l.Credit ?? 0),
+                description: l.description ?? l.Description ?? '',
+                costcenterNameAr: l.costcenterNameAr ?? l.Costcenter_Name_A ?? ''
+              });
             });
-          });
+          }
           list = list.map(j => {
-            const key = String(j.noteNo ?? j.Note_No ?? '').trim();
+            const key = String(j.noteNo ?? j.entryNo ?? '').trim();
             return {
               ...j,
               lines: linesByNote.get(key) || []
@@ -1428,7 +1455,7 @@ async function getJournals(targetDb = 'Tarabot_Data_2026', options = {}) {
     const rawData = getLocalJson('tarabot_journals.json');
     const groupMap = new Map();
     for (const r of rawData) {
-      const nNo = Number(r.Note_No);
+      const nNo = Number(r.Note_No || r.EntryNo || 0);
       if (!groupMap.has(nNo)) {
         groupMap.set(nNo, { header: r, lines: [] });
       }
@@ -1444,12 +1471,17 @@ async function getJournals(targetDb = 'Tarabot_Data_2026', options = {}) {
     }
     // Return all entries from fallback without artificial pagination clamp
     list = Array.from(groupMap.values()).map(({ header, lines }) => ({
-      id: `JV-${header.Note_No}`,
-      noteNo: header.Note_No,
-      noteDate: String(header.Note_Date || '').replace(/\//g, '-'),
-      description: header.Description || lines[0]?.description || '',
-      debitTotal: lines.reduce((s, l) => s + l.debit, 0) || (header.Note_Debit || header.Debit || 0),
-      creditTotal: lines.reduce((s, l) => s + l.credit, 0) || (header.Note_Credit || header.Credit || 0),
+      id: `JV-${header.Note_No || header.EntryNo}`,
+      noteNo: header.Note_No || header.EntryNo,
+      entryNo: header.Note_No || header.EntryNo,
+      noteDate: String(header.Note_Date || header.EntryDate || '').replace(/\//g, '-'),
+      entryDate: String(header.Note_Date || header.EntryDate || '').replace(/\//g, '-'),
+      description: header.Description || header.GeneralDescription || lines[0]?.description || '',
+      generalDescription: header.Description || header.GeneralDescription || lines[0]?.description || '',
+      debitTotal: lines.reduce((s, l) => s + l.debit, 0) || (header.Note_Debit || header.Debit || header.TotalDebit || 0),
+      totalDebit: lines.reduce((s, l) => s + l.debit, 0) || (header.Note_Debit || header.Debit || header.TotalDebit || 0),
+      creditTotal: lines.reduce((s, l) => s + l.credit, 0) || (header.Note_Credit || header.Credit || header.TotalCredit || 0),
+      totalCredit: lines.reduce((s, l) => s + l.credit, 0) || (header.Note_Credit || header.Credit || header.TotalCredit || 0),
       netText: header.Note_Net_Text || '',
       entryName: header.Entry_Name || 'System',
       lines,
@@ -1458,8 +1490,8 @@ async function getJournals(targetDb = 'Tarabot_Data_2026', options = {}) {
   }
 
   // Prepend added in-memory journals (strictly preventing duplicate voucher IDs)
-  const existingNoteNos = new Set(list.map(j => Number(j.noteNo)));
-  const uniqueAdded = addedJournals.filter(j => !existingNoteNos.has(Number(j.noteNo)));
+  const existingNoteNos = new Set(list.map(j => Number(j.noteNo || j.entryNo)));
+  const uniqueAdded = addedJournals.filter(j => !existingNoteNos.has(Number(j.noteNo || j.entryNo)));
   return [...uniqueAdded, ...list];
 }
 
@@ -1469,20 +1501,30 @@ async function getJournals(targetDb = 'Tarabot_Data_2026', options = {}) {
 async function getJournalSummary(targetDb = 'Tarabot_Data_2026', options = {}) {
   targetDb = sanitizeDatabaseName(targetDb);
   try {
+    let headCols = [];
+    try {
+      const pool = await getPool(targetDb);
+      headCols = await getTableColumns(pool, 'GeneralLedger_Head', targetDb);
+    } catch (e) {}
+
+    const colDate = resolveColumn(headCols, ['Note_Date', 'EntryDate', 'Entry_Date', 'Date', 'Doc_Date'], 'Note_Date');
+    const colDebit = resolveColumn(headCols, ['Note_Debit', 'TotalDebit', 'Total_Debit', 'Debit', 'Madeen'], 'Note_Debit');
+    const colCredit = resolveColumn(headCols, ['Note_Credit', 'TotalCredit', 'Total_Credit', 'Credit', 'Daeen'], 'Note_Credit');
+
     const conditions = [];
     if (options.startDate) {
-      conditions.push(`REPLACE(h.Note_Date, '/', '-') >= '${String(options.startDate).replace(/'/g, "''")}'`);
+      conditions.push(`REPLACE(CAST(h.[${colDate}] AS NVARCHAR(30)), '/', '-') >= '${String(options.startDate).replace(/'/g, "''")}'`);
     }
     if (options.endDate) {
-      conditions.push(`REPLACE(h.Note_Date, '/', '-') <= '${String(options.endDate).replace(/'/g, "''")}'`);
+      conditions.push(`REPLACE(CAST(h.[${colDate}] AS NVARCHAR(30)), '/', '-') <= '${String(options.endDate).replace(/'/g, "''")}'`);
     }
     const whereSql = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
     const sql = `
       SELECT 
         COUNT(*) AS totalCount,
-        ISNULL(SUM(h.Note_Debit), 0) AS totalDebit,
-        ISNULL(SUM(h.Note_Credit), 0) AS totalCredit
+        ISNULL(SUM(h.[${colDebit}]), 0) AS totalDebit,
+        ISNULL(SUM(h.[${colCredit}]), 0) AS totalCredit
       FROM [${targetDb}].dbo.GeneralLedger_Head h
       ${whereSql}
     `;
@@ -1495,6 +1537,9 @@ async function getJournalSummary(targetDb = 'Tarabot_Data_2026', options = {}) {
         totalCount,
         totalDebit,
         totalCredit,
+        count: totalCount,
+        sumDebit: totalDebit,
+        sumCredit: totalCredit,
         isBalanced: Math.abs(totalDebit - totalCredit) < 0.01
       };
     }
@@ -1510,6 +1555,9 @@ async function getJournalSummary(targetDb = 'Tarabot_Data_2026', options = {}) {
     totalCount: allJournals.length,
     totalDebit,
     totalCredit,
+    count: allJournals.length,
+    sumDebit: totalDebit,
+    sumCredit: totalCredit,
     isBalanced: Math.abs(totalDebit - totalCredit) < 0.01
   };
 }
@@ -3522,27 +3570,52 @@ app.post('/api/finance/cheques/add', (req, res) => {
   res.json(addCheque(req.body));
 });
 
-app.get('/api/finance/journals', async (req, res) => {
-  try {
-    const { startDate, endDate } = req.query;
-    const journals = await getJournals(req.targetDb, { startDate, endDate });
-    res.json(journals);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+const journalEndpoints = [
+  '/api/finance/journals',
+  '/api/journal-entries',
+  '/api/sql/general-journal',
+  '/api/finance/general-journal',
+  '/api/general-journal'
+];
+
+journalEndpoints.forEach(path => {
+  app.get(path, async (req, res) => {
+    try {
+      const { startDate, endDate, fromDate, toDate } = req.query;
+      const journals = await getJournals(req.targetDb, {
+        startDate: startDate || fromDate,
+        endDate: endDate || toDate
+      });
+      res.json(journals);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
 });
 
-app.get('/api/finance/journals/summary', async (req, res) => {
-  try {
-    const { startDate, endDate } = req.query;
-    const summary = await getJournalSummary(req.targetDb, { startDate, endDate });
-    res.json(summary);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+const journalSummaryEndpoints = [
+  '/api/finance/journals/summary',
+  '/api/journal-entries/summary',
+  '/api/sql/general-journal/summary',
+  '/api/finance/general-journal/summary'
+];
+
+journalSummaryEndpoints.forEach(path => {
+  app.get(path, async (req, res) => {
+    try {
+      const { startDate, endDate, fromDate, toDate } = req.query;
+      const summary = await getJournalSummary(req.targetDb, {
+        startDate: startDate || fromDate,
+        endDate: endDate || toDate
+      });
+      res.json(summary);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
 });
 
-app.get('/api/finance/journals/:noteNo/lines', async (req, res) => {
+app.get(['/api/finance/journals/:noteNo/lines', '/api/journal-entries/:noteNo/lines'], async (req, res) => {
   try {
     const lines = await getJournalLines(req.params.noteNo, req.targetDb);
     res.json(lines);
