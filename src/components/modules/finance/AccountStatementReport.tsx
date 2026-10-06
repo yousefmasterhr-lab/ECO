@@ -917,40 +917,48 @@ export const AccountStatementReport: React.FC = () => {
                   </tr>
 
                   {/* Transaction Rows */}
-                  {data.transactions.map((t, i) => (
-                    <tr key={i} className="border-b border-slate-200 hover:bg-slate-50/50">
-                      <td className="py-1 px-2 print:py-1 print:px-2 text-center align-middle whitespace-nowrap border-b border-slate-200 border-l border-slate-300 font-mono text-slate-900 text-xs print:text-[11px] leading-tight">
-                        {t.noteDate}
-                      </td>
-                      <td className="py-1 px-1 print:py-1 print:px-0.5 text-center align-middle whitespace-nowrap border-b border-slate-200 border-l border-slate-300 font-mono text-slate-900 text-xs print:text-[11px] leading-tight">
-                        #{t.noteNo}
-                      </td>
-                      <td className="px-1.5 py-2 print:py-1 print:px-1.5 text-center align-middle whitespace-nowrap overflow-visible border-b border-slate-200 border-l border-slate-300 text-slate-900 text-xs print:text-[10.5px] leading-tight">
-                        {t.voucherType}
-                      </td>
-                      <td className="py-1 px-2 print:py-1 print:px-2 text-center align-middle break-words leading-tight border-b border-slate-200 border-l border-slate-300 text-slate-900 text-xs print:text-[11px]">
-                        {t.description}
-                      </td>
-                      <td className="py-1 px-2 print:py-1 print:px-2 text-center align-middle whitespace-nowrap border-b border-slate-200 border-l border-slate-300 font-mono tabular-nums font-semibold text-blue-900 text-xs print:text-[11px] leading-tight" dir="ltr">
-                        {t.debit > 0 ? formatEGP(t.debit) : '-'}
-                      </td>
-                      <td className="py-1 px-2 print:py-1 print:px-2 text-center align-middle whitespace-nowrap border-b border-slate-200 border-l border-slate-300 font-mono tabular-nums font-semibold text-amber-900 text-xs print:text-[11px] leading-tight" dir="ltr">
-                        {t.credit > 0 ? formatEGP(t.credit) : '-'}
-                      </td>
-                      <td className={`py-1 px-2 print:py-1 print:px-2 text-center align-middle whitespace-nowrap overflow-visible border-b border-slate-200 font-mono tabular-nums text-xs print:text-[11px] leading-tight ${
-                        t.runningBalance < 0
-                          ? 'text-rose-600 font-semibold text-negative-balance'
-                          : 'font-bold text-slate-900'
-                      }`} dir="ltr">
-                        {t.runningBalance < 0
-                          ? `(${formatEGP(Math.abs(t.runningBalance))})`
-                          : formatEGP(t.runningBalance)}
-                      </td>
-                    </tr>
-                  ))}
+                  {data.transactions.map((t, i) => {
+                    const isTailRow = i >= data.transactions.length - 2;
+                    return (
+                      <tr
+                        key={i}
+                        className={`border-b border-slate-200 hover:bg-slate-50/50 ${
+                          isTailRow ? 'ledger-tail-row page-break-inside-avoid' : ''
+                        }`}
+                      >
+                        <td className="py-1 px-2 print:py-1 print:px-2 text-center align-middle whitespace-nowrap border-b border-slate-200 border-l border-slate-300 font-mono text-slate-900 text-xs print:text-[11px] leading-tight">
+                          {t.noteDate}
+                        </td>
+                        <td className="py-1 px-1 print:py-1 print:px-0.5 text-center align-middle whitespace-nowrap border-b border-slate-200 border-l border-slate-300 font-mono text-slate-900 text-xs print:text-[11px] leading-tight">
+                          #{t.noteNo}
+                        </td>
+                        <td className="px-1.5 py-2 print:py-1 print:px-1.5 text-center align-middle whitespace-nowrap overflow-visible border-b border-slate-200 border-l border-slate-300 text-slate-900 text-xs print:text-[10.5px] leading-tight">
+                          {t.voucherType}
+                        </td>
+                        <td className="py-1 px-2 print:py-1 print:px-2 text-center align-middle break-words leading-tight border-b border-slate-200 border-l border-slate-300 text-slate-900 text-xs print:text-[11px]">
+                          {t.description}
+                        </td>
+                        <td className="py-1 px-2 print:py-1 print:px-2 text-center align-middle whitespace-nowrap border-b border-slate-200 border-l border-slate-300 font-mono tabular-nums font-semibold text-blue-900 text-xs print:text-[11px] leading-tight" dir="ltr">
+                          {t.debit > 0 ? formatEGP(t.debit) : '-'}
+                        </td>
+                        <td className="py-1 px-2 print:py-1 print:px-2 text-center align-middle whitespace-nowrap border-b border-slate-200 border-l border-slate-300 font-mono tabular-nums font-semibold text-amber-900 text-xs print:text-[11px] leading-tight" dir="ltr">
+                          {t.credit > 0 ? formatEGP(t.credit) : '-'}
+                        </td>
+                        <td className={`py-1 px-2 print:py-1 print:px-2 text-center align-middle whitespace-nowrap overflow-visible border-b border-slate-200 font-mono tabular-nums text-xs print:text-[11px] leading-tight ${
+                          t.runningBalance < 0
+                            ? 'text-rose-600 font-semibold text-negative-balance'
+                            : 'font-bold text-slate-900'
+                        }`} dir="ltr">
+                          {t.runningBalance < 0
+                            ? `(${formatEGP(Math.abs(t.runningBalance))})`
+                            : formatEGP(t.runningBalance)}
+                        </td>
+                      </tr>
+                    );
+                  })}
 
                   {/* Grand Total Row - Renders strictly ONCE at the very end of data rows on the final page */}
-                  <tr className="border-t-2 border-b-2 border-slate-400 bg-slate-100 font-bold text-slate-900 page-break-inside-avoid print:bg-slate-100">
+                  <tr className="ledger-tail-row border-t-2 border-b-2 border-slate-400 bg-slate-100 font-bold text-slate-900 page-break-inside-avoid print:bg-slate-100">
                     <td colSpan={4} className="py-3 px-3 print:py-2.5 print:px-2 text-center align-middle border-t-2 border-b-2 border-slate-400 border-l border-slate-300 text-slate-950 font-extrabold text-sm md:text-base print:text-xs leading-tight rounded-br-xl">
                       الإجمالي العام والرصيد الختامي
                     </td>

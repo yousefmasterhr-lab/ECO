@@ -472,6 +472,39 @@ table[class*="border-separate"] {
     break-inside: avoid !important;
   }
 
+  .page-break-after-avoid,
+  .break-after-avoid {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  /* Anti-Orphan Layout Engine: Zero-Orphan Signatures Policy */
+  .ledger-final-section,
+  .ledger-signatures {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* Ensure the last 2 to 3 transaction rows cling to the totals */
+  tbody tr:nth-last-child(-n+3),
+  tr.ledger-tail-row {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    break-after: avoid !important;
+    page-break-after: avoid !important;
+  }
+
+  .ledger-curvy-frame {
+    break-after: avoid !important;
+    page-break-after: avoid !important;
+  }
+
+  /* Dynamic Elastic Density (Fit-to-Page Optimization) */
+  .print-ledger-container {
+    transform: scale(0.97);
+    transform-origin: top center;
+  }
+
   .print-page-number {
     position: fixed !important;
     bottom: 10mm !important;

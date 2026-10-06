@@ -478,6 +478,34 @@ Whenever a global directive or styling standard is issued (including typography,
       color: #64748b;
     }
     ```
+- **Zero-Orphan Financial Print Signatures Standard (معيار منع انفصال التوقيعات في صفحة مستقلة):**
+  - **Invariant 1 (حظر العزلة):** Signature boxes must NEVER be printed on an isolated blank page without associated transaction data rows.
+  - **Invariant 2 (الترابط الإلزامي للصفوف الأخيرة):** The terminal 2 to 3 data rows, grand total row, and approval matrix are bound together using `break-inside: avoid` and `page-break-after: avoid`:
+    ```css
+    /* Prevent the grand total and signature block from ever decoupling */
+    .ledger-final-section,
+    .ledger-signatures {
+      break-inside: avoid !important;
+      page-break-inside: avoid !important;
+    }
+    
+    /* Ensure the last 2-3 transaction rows cling to the totals */
+    tbody tr:nth-last-child(-n+3),
+    tr.ledger-tail-row {
+      break-inside: avoid !important;
+      page-break-inside: avoid !important;
+      break-after: avoid !important;
+      page-break-after: avoid !important;
+    }
+
+    .ledger-curvy-frame {
+      break-after: avoid !important;
+      page-break-after: avoid !important;
+    }
+    ```
+    If remaining space cannot accommodate both the rows and signatures, the browser automatically pushes the last 2-3 transactions along with the grand total and signatures to the next page, ensuring authentic transaction data always accompanies signatures.
+  - **Invariant 3 (الكثافة المرنة واستيعاب التجاوزات الطفيفة):** Elastic density scaling and tight print margins (`print:mt-1.5 print:pt-1`, `print:min-h-[90px]`, `.print-ledger-container { transform: scale(0.97); transform-origin: top center; }`) must prioritize absorbing the approval block into the preceding page before triggering a multi-row page split.
+
 
 
 

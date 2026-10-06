@@ -71,7 +71,7 @@ export const ReportPrintLayout: React.FC<ReportPrintLayoutProps> = ({
       }
     >
       {/* Printable Document Sheet */}
-      <div className="report-print-sheet print-container p-8 sm:p-10 space-y-6 text-slate-900 bg-white print:bg-white print:text-slate-900 print:p-0 print:overflow-visible font-sans w-full border border-slate-200 shadow-xl rounded-2xl print:border-none print:shadow-none print:rounded-none">
+      <div className="report-print-sheet print-container print-ledger-container p-8 sm:p-10 space-y-6 text-slate-900 bg-white print:bg-white print:text-slate-900 print:p-0 print:overflow-visible font-sans w-full border border-slate-200 shadow-xl rounded-2xl print:border-none print:shadow-none print:rounded-none">
         {/* Corporate Header */}
         <div className="flex items-center justify-between border-b-2 border-slate-800 print:border-black pb-4">
           <div className="space-y-1">
@@ -127,40 +127,40 @@ export const ReportPrintLayout: React.FC<ReportPrintLayoutProps> = ({
         </div>
 
         {/* Formal Audit Signatures Block */}
-        <div className="pt-3 mt-4 print:pt-2 print:mt-3 border-t border-slate-300 print:border-black page-break-inside-avoid break-inside-avoid">
-          <div className="grid grid-cols-3 gap-4 print:gap-3 text-center text-xs print:text-[10px]">
+        <div className="ledger-final-section ledger-signatures pt-3 mt-4 print:pt-1 print:mt-2 border-t border-slate-300 print:border-black page-break-inside-avoid break-inside-avoid">
+          <div className="grid grid-cols-3 gap-4 print:gap-2.5 text-center text-xs print:text-[10px]">
             {/* Box 1: المحاسب */}
-            <div className="py-4 px-3 print:py-3.5 print:px-2.5 rounded-xl border border-slate-300 print:border-black bg-slate-50 print:bg-white flex flex-col justify-between min-h-[110px] print:min-h-[105px]">
+            <div className="py-4 px-3 print:py-2.5 print:px-2 rounded-xl border border-slate-300 print:border-black bg-slate-50 print:bg-white flex flex-col justify-between min-h-[105px] print:min-h-[90px]">
               <div>
-                <span className="font-bold block text-sm text-slate-900 print:text-black">
+                <span className="font-bold block text-sm print:text-xs text-slate-900 print:text-black">
                   المحاسب
                 </span>
               </div>
-              <div className="mt-auto pt-4 text-center text-xs print:text-[10px] text-slate-700 print:text-black" dir="rtl">
+              <div className="mt-auto pt-3 print:pt-1.5 text-center text-xs print:text-[10px] text-slate-700 print:text-black" dir="rtl">
                 التاريخ: &nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; م
               </div>
             </div>
 
             {/* Box 2: المراجع */}
-            <div className="py-4 px-3 print:py-3.5 print:px-2.5 rounded-xl border border-slate-300 print:border-black bg-slate-50 print:bg-white flex flex-col justify-between min-h-[110px] print:min-h-[105px]">
+            <div className="py-4 px-3 print:py-2.5 print:px-2 rounded-xl border border-slate-300 print:border-black bg-slate-50 print:bg-white flex flex-col justify-between min-h-[105px] print:min-h-[90px]">
               <div>
-                <span className="font-bold block text-sm text-slate-900 print:text-black">
+                <span className="font-bold block text-sm print:text-xs text-slate-900 print:text-black">
                   المراجع
                 </span>
               </div>
-              <div className="mt-auto pt-4 text-center text-xs print:text-[10px] text-slate-700 print:text-black" dir="rtl">
+              <div className="mt-auto pt-3 print:pt-1.5 text-center text-xs print:text-[10px] text-slate-700 print:text-black" dir="rtl">
                 التاريخ: &nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; م
               </div>
             </div>
 
             {/* Box 3: يعتمد */}
-            <div className="py-4 px-3 print:py-3.5 print:px-2.5 rounded-xl border border-slate-300 print:border-black bg-slate-50 print:bg-white flex flex-col justify-between min-h-[110px] print:min-h-[105px]">
+            <div className="py-4 px-3 print:py-2.5 print:px-2 rounded-xl border border-slate-300 print:border-black bg-slate-50 print:bg-white flex flex-col justify-between min-h-[105px] print:min-h-[90px]">
               <div>
-                <span className="font-bold block text-sm text-slate-900 print:text-black">
+                <span className="font-bold block text-sm print:text-xs text-slate-900 print:text-black">
                   يعتمد
                 </span>
               </div>
-              <div className="mt-auto pt-4 text-center text-xs print:text-[10px] text-slate-700 print:text-black" dir="rtl">
+              <div className="mt-auto pt-3 print:pt-1.5 text-center text-xs print:text-[10px] text-slate-700 print:text-black" dir="rtl">
                 التاريخ: &nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; م
               </div>
             </div>
