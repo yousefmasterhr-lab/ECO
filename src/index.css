@@ -216,17 +216,20 @@ table, .tabular-nums, .font-mono, .font-inter, .num-western {
   color: #dc2626 !important;
 }
 
+.ledger-curvy-frame,
 .ledger-table-container {
   border: 1.5px solid #cbd5e1 !important;
   border-radius: 1rem !important;
   overflow: hidden !important;
 }
 
+.ledger-curvy-frame table,
 .ledger-table-container table,
 table.ledger-table,
-table {
-  border-left: 1.5px solid #cbd5e1 !important;
-  border-right: 1.5px solid #cbd5e1 !important;
+table.border-separate,
+table[class*="border-separate"] {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
 }
 
 .print-page-number {
@@ -355,7 +358,16 @@ table {
     max-height: none !important;
   }
 
-  /* 6. Multi-page tables pagination: repeating header, unbreakable rows, and border encapsulation */
+  /* 6. Multi-page tables pagination: repeating header, Curvy Frame & Border-Separate Invariant */
+  .ledger-curvy-frame {
+    border-radius: 14px !important;
+    overflow: hidden !important;
+    border: 1.5px solid #cbd5e1 !important;
+    box-shadow: none !important;
+    margin: 8px 0 !important;
+    box-sizing: border-box !important;
+  }
+
   .ledger-table-container {
     border: none !important;
     box-shadow: none !important;
@@ -371,18 +383,23 @@ table {
     max-width: 100% !important;
     table-layout: fixed !important;
     box-sizing: border-box !important;
+  }
+
+  .ledger-curvy-frame table,
+  table.ledger-table,
+  table.border-separate,
+  table[class*="border-separate"] {
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    border: none !important;
+  }
+
+  table.border-collapse,
+  table:not(.border-separate) {
     border-collapse: collapse !important;
     border-top: 1.5px solid #cbd5e1 !important;
     border-left: 1.5px solid #cbd5e1 !important;
     border-right: 1.5px solid #cbd5e1 !important;
-  }
-
-  table.border-separate,
-  table[class*="border-separate"],
-  table.border-collapse,
-  table:not(.border-separate) {
-    border-collapse: collapse !important;
-    border-spacing: 0 !important;
   }
 
   table th {

@@ -372,40 +372,63 @@ Whenever a global directive or styling standard is issued (including typography,
   - **Transaction Rows (`<tbody>`):** Efficiently compacted with `py-1 px-2` (`print:py-1 print:px-2`), font size `11px`, and `leading-tight` to preserve vertical print density.
   - **Grand Total Row (`<tfoot>` / Summary Row):** Prominently sized with `py-3 px-3` (`print:py-2.5 print:px-2`), `text-sm md:text-base font-extrabold text-slate-950`.
   - The negative ending balance `(428,000.00)` is styled in high-contrast red (`text-rose-600 text-negative-balance`) with `overflow-visible px-3 print:px-2.5` to ensure comfortable breathing room away from the rounded border line.
-- **Table Border Encapsulation & Prevention of Dangling Line Leaks (منع تسريب خطوط الإطارات وحصر الحدود في الجدول):**
-  - When tables split across multiple pages, outer wrapper `div` borders leak and extend downwards past the table into page break white space.
-  - In `@media print`, borders must be removed completely from outer container wrappers (`border: none !important; box-shadow: none !important;`) and bound directly to the `<table>` element and its constituent rows:
+- **Curvy Table Invariant & Frame (ثبات الأركان المنحنية وتفادي تصفير الانحناء بـ border-collapse):**
+  - Never use `border-collapse: collapse` when rounded table edges are required, as collapsed borders nullify CSS `border-radius`.
+  - Always wrap the table in an outer `.ledger-curvy-frame` container and pair with `border-separate border-spacing-0` on the table:
+    ```html
+    <div class="ledger-curvy-frame rounded-2xl border border-slate-300 overflow-hidden shadow-sm my-3">
+      <table class="w-full table-fixed border-separate border-spacing-0 ...">
+        ...
+      </table>
+    </div>
+    ```
+  - Apply corner radii to the outermost header and footer cells to guarantee seamless curved backgrounds:
+    - Top-Right header cell (in RTL): `rounded-tr-xl`
+    - Top-Left header cell (in RTL): `rounded-tl-xl`
+    - Bottom-Right total cell (in RTL): `rounded-br-xl`
+    - Bottom-Left total cell (in RTL): `rounded-bl-xl`
+  - In `@media print`, enforce strict curvature preservation:
     ```css
     @media print {
-      .ledger-table-container {
-        border: none !important;
+      .ledger-curvy-frame {
+        border-radius: 14px !important;
+        overflow: hidden !important;
+        border: 1.5px solid #cbd5e1 !important;
         box-shadow: none !important;
-        border-radius: 0 !important;
-        overflow: visible !important;
+        margin: 8px 0 !important;
       }
-      table {
-        border-collapse: collapse !important;
-        border-top: 1.5px solid #cbd5e1 !important;
-        border-left: 1.5px solid #cbd5e1 !important;
-        border-right: 1.5px solid #cbd5e1 !important;
+      .ledger-curvy-frame table,
+      table.border-separate {
+        border-collapse: separate !important;
+        border-spacing: 0 !important;
+        border: none !important;
       }
       tr {
         page-break-inside: avoid !important;
       }
     }
     ```
-  - Each row's bottom border (`border-b`) cleanly seals the table at each page break, and the final grand total row features a distinct closing bottom border (`border-b-2 border-slate-400`).
-- **Strict 100% Width & Table-Fixed Column Geometry (منع انقطاع الأعمدة والالتزام التام بعرض 100%):**
+- **Strict 100% Width & Document Type Safety Geometry (توزيع نسب الأعمدة وحماية عمود نوع السند 13%):**
   - Financial print tables must strictly occupy `width: 100% !important; max-width: 100% !important;` with `table-layout: fixed !important;`.
-  - Column widths must be locked using exact mathematical percentages totaling 100% across all 7 columns:
+  - The `نوع السند` column is strictly allocated **13%** (with `px-1.5 py-2 text-center text-xs whitespace-nowrap overflow-visible`) to accommodate multi-word labels like "رصيد أول المدة" without spilling into neighboring borders.
+  - Locked mathematical percentages totaling 100% across all 7 columns:
     1. `التاريخ` (Date): **11%** (compact, nowrap)
-    2. `رقم القيد` (Entry #): **9%** (compact, nowrap)
-    3. `نوع السند` (Type): **11%** (compact, nowrap)
+    2. `رقم القيد` (Entry #): **7%** (compact, nowrap)
+    3. `نوع السند` (Doc Type): **13%** (safely houses "رصيد أول المدة")
     4. `البيان` (Description): **36%** (flexible, `break-words leading-tight`)
     5. `مدين` (Debit): **11%** (compact, nowrap, tabular-nums)
     6. `دائن` (Credit): **11%** (compact, nowrap, tabular-nums)
     7. `الرصيد` (Balance): **11%** (compact, nowrap, tabular-nums, `overflow-visible px-2`)
-  - The `الرصيد` column is allocated **11%** with `overflow-visible px-2` to guarantee negative numbers like `(428,000.00)` never collide with the left border or get clipped.
+  - The `الرصيد` column is allocated **11%** with `overflow-visible px-2` to guarantee negative numbers like `(428,000.00)` never collide with the left border.
+- **KPI Container Padding & RTL Gutter Safety (حماية هوامش كروت المؤشرات ومنع اقتصاص الإطار الأيمن):**
+  - Metric summary card grids must include `px-1 py-1 w-full box-border overflow-visible` gutter margins to prevent outer card border clipping in RTL layouts:
+    ```html
+    <div class="w-full box-border px-1 py-1 overflow-visible mb-4 print:mb-2">
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 print:gap-2 overflow-visible w-full box-border ...">
+        ...
+      </div>
+    </div>
+    ```
 - **Spacious Signature Box Anatomy & Open Canvas (صناديق الاعتماد الموسعة والمساحة البيضاء المفتوحة للتوقيع):**
   - Official print layouts feature three spacious approval boxes (`المحاسب`, `المراجع`, `يعتمد`) with a prominent height (`min-h-[110px] print:min-h-[105px]`).
   - **No "التوقيع" Dots Line:** Completely remove dotted lines (`التوقيع: .....................`) to keep a clean, generous signing canvas for handwritten signatures and physical stamps.
