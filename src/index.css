@@ -11,29 +11,29 @@
 
 @layer base {
   :root {
-    /* "The Royal Olive & Warm Ivory" - Single Immutable Corporate Identity */
-    --bg-canvas: #0E1610;
-    --surface-card: #17231A;
-    --surface-hover: #1F2E23;
-    --brand-olive-primary: #F3EFE6;
-    --brand-olive-sidebar: #131E15;
-    --accent-amber: #EBB34D;
-    --accent-amber-hover: #F5C76D;
-    --text-primary: #F3EFE6;
-    --text-secondary: #8FA392;
-    --border-divider: #243628;
+    /* "The Royal Olive & Warm Ivory" - Light Mode */
+    --bg-canvas: #FBF9F5;              /* Soft warm ivory / natural paper finish */
+    --surface-card: #F3EFE6;           /* Rich alabaster cream surface */
+    --surface-hover: #EAE4D7;          /* Elevated hover cream */
+    --brand-olive-primary: #1C291E;    /* Deep Royal Olive (Sidebar & Headers) */
+    --brand-olive-sidebar: #243324;    /* Forest Olive */
+    --accent-amber: #D99B26;           /* Radiant Amber (CTAs & Key Alerts) */
+    --accent-amber-hover: #C58F38;     /* Mustard Amber */
+    --text-primary: #1A241C;           /* Charcoal with olive undertone */
+    --text-secondary: #5C665E;         /* Slate Olive */
+    --border-divider: #E0D9CB;         /* Warm beige border */
 
     /* Semantic Aliases */
-    --bg-base: #0E1610;
-    --bg-surface: #17231A;
-    --bg-hover: #1F2E23;
-    --bg-subtle: #1F2E23;
-    --border-subtle: #243628;
-    --border-color: #243628;
-    --text-muted: #8FA392;
-    --accent-primary: #EBB34D;
-    --accent-secondary: #F5C76D;
-    --accent-cta: #EBB34D;
+    --bg-base: #FBF9F5;
+    --bg-surface: #F3EFE6;
+    --bg-hover: #EAE4D7;
+    --bg-subtle: #EAE4D7;
+    --border-subtle: #E0D9CB;
+    --border-color: #E0D9CB;
+    --text-muted: #5C665E;
+    --accent-primary: #D99B26;
+    --accent-secondary: #C58F38;
+    --accent-cta: #D99B26;
   }
 
   .dark {

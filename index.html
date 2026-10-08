@@ -9,20 +9,22 @@
     <!-- PWA Web App Manifest -->
     <link rel="manifest" href="/manifest.json" />
     
-    <!-- Theme & Color Schemes: Locked to Nocturnal Olive -->
+    <!-- Theme & Color Schemes: Synchronized with Royal Olive & Warm Ivory -->
     <meta name="theme-color" content="#0E1610" />
-    <meta name="color-scheme" content="dark" />
+    <meta name="color-scheme" content="dark light" />
 
-    <!-- Single Corporate Brand Lockdown & Legacy Theme Storage Purge -->
+    <!-- Instant Theme Synchronization to Prevent Flash of Incorrect Mode -->
     <script>
       (function() {
         try {
-          localStorage.removeItem('tarabot_active_palette');
-          localStorage.removeItem('erp_ambient_luminescence');
-          localStorage.removeItem('theme');
-          document.documentElement.classList.add('dark');
-          document.documentElement.classList.remove('light');
-          document.documentElement.removeAttribute('data-theme');
+          var saved = localStorage.getItem('erp_portal_theme');
+          if (saved === 'light') {
+            document.documentElement.classList.remove('dark');
+            document.documentElement.classList.add('light');
+          } else {
+            document.documentElement.classList.add('dark');
+            document.documentElement.classList.remove('light');
+          }
         } catch (e) {}
       })();
     </script>

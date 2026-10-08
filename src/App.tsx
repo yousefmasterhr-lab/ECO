@@ -1,4 +1,5 @@
 import React from 'react';
+import { ThemeProvider } from './context/ThemeContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { TenantProvider } from './context/TenantContext';
 import { DatabaseProvider } from './services/federation/DatabaseContext';
@@ -13,7 +14,8 @@ import { ShellLayout } from './components/layout/ShellLayout';
 
 export const App: React.FC = () => {
   return (
-    <LanguageProvider>
+    <ThemeProvider>
+      <LanguageProvider>
       <TenantProvider>
         <DatabaseProvider>
           <NavigationProvider>
@@ -34,6 +36,7 @@ export const App: React.FC = () => {
         </DatabaseProvider>
       </TenantProvider>
     </LanguageProvider>
+  </ThemeProvider>
   );
 };
 

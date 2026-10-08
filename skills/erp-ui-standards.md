@@ -514,3 +514,38 @@ Whenever a global directive or styling standard is issued (including typography,
 - **Full Spectrum Auditability (إتاحة السجل المالي بالكامل):** All journal entries recorded in the SQL Server instance (e.g. sequence from Entry #61 up to Entry #285+) must be accessible via fluid frontend pagination ([25], [50], [100], [250], [عرض الكل (Show All)]) and global search. Searching for any voucher number (e.g., `211` or `٢١١`) must locate and display it immediately.
 - **Accurate Ledger Totals (حساب المؤشرات التراكمية على كامل البيانات):** Financial aggregates and KPIs—including Total Posted Vouchers (`إجمالي القيود المرحلة`), Total Debit Turnovers (`إجمالي الحركات المدينة`), Total Credit Turnovers (`إجمالي الحركات الدائنة`), and Double-Entry Balance Integrity (`اتزان الأستاذ العام = 0.00 ج.م`)—must always compute dynamically against the 100% complete dataset (`COUNT(*)`, `SUM(Debit)`, `SUM(Credit)`), never against an artificially sliced array.
 - **High-Volume Client-Side Scalability (استجابة فائقة السرعة 60 FPS):** Large transaction views (300+ to 1,000+ entries) must employ client-side windowing and fluid pagination with an option for "عرض الكل" (Show All), ensuring zero UI lag or DOM memory bloat. Sub-line breakdowns must load in batches or on-demand without exceeding SQL Server parameter limits.
+
+---
+
+## Rule 39: Dual-Theme Architecture & Icon-Only Toggle Standard (معيار الوضع المزدوج النهاري والليلي والأيقونة المجردة)
+
+- **Two Immutable Color Profiles (وضع نهاري وليلي حصراً):** The application strictly supports two harmonious corporate themes defined under "The Royal Olive & Warm Ivory" design system:
+  - **Light Mode (الوضع النهاري):**
+    - Canvas / Background: `#FBF9F5` (Soft warm ivory / natural paper finish)
+    - Surface Card: `#F3EFE6` (Rich alabaster cream surface)
+    - Surface Hover: `#EAE4D7` (Elevated hover cream)
+    - Primary Text: `#1A241C` (Charcoal with olive undertone)
+    - Secondary Text / Muted: `#5C665E` (Slate Olive)
+    - Border / Divider: `#E0D9CB` (Warm beige border)
+    - Brand Olive Primary: `#1C291E` (Deep Royal Olive)
+    - Accent Amber: `#D99B26` (Radiant Amber)
+  - **Dark Mode (الوضع الليلي):**
+    - Canvas / Background: `#0E1610` (Nocturnal Olive)
+    - Surface Card: `#17231A` (Dark Olive Slate)
+    - Surface Hover: `#1F2E23` (Elevated Olive Slate)
+    - Primary Text: `#F3EFE6` (Luminous text)
+    - Secondary Text / Muted: `#8FA392` (Sage Gray)
+    - Border / Divider: `#243628` (Muted dark border)
+    - Brand Olive Primary: `#F3EFE6` (Luminous Warm Ivory)
+    - Accent Amber: `#EBB34D` (Soft Glowing Amber)
+- **Icon-Only Header Toggle Mandate (حظر النصوص على زر التبديل والالتزام بالأيقونة المجردة):**
+  - The theme switcher mounted in the primary header (`Header.tsx`) must strictly be an icon button (`w-9 h-9 rounded-xl`).
+  - **Strict Ban on Text:** Writing literal text labels such as "وضع نهاري" or "وضع ليلي" inside the button is **strictly prohibited**.
+  - **Icon State:**
+    - In Dark Mode: Renders `<Sun className="w-4 h-4 text-[#EBB34D]" />` with subtle hover rotation.
+    - In Light Mode: Renders `<Moon className="w-4 h-4 text-[#1C291E]" />` with subtle hover rotation.
+  - **Accessibility:** Accessible `aria-label` and `title` tooltip attributes are preserved for screen readers and tooltips without polluting the visual layout.
+- **Strict Print Isolation Guarantee (عزل تام لمنظومة الطباعة @media print):**
+  - Toggling between Light and Dark modes must **NEVER** affect print rendering, paper backgrounds, or printable reports.
+  - All `@media print` rules enforce independent absolute high-contrast resets (`background: #ffffff !important`, `color: #0f172a !important`, borders `#cbd5e1 !important`) ensuring zero dark-mode leaks or color bleed during hardcopy printing or PDF generation.
+

@@ -227,3 +227,4 @@ Before committing or completing any modification:
 *This section dynamically records lessons, edge cases, and adjustments learned from user interactions.*
 
 - **2026-09-28 [Bootstrap Initializer]:** Generated consolidated project skill unifying Universal Core Invariants, Tarabot Accounting/FIDIC domain, "The Royal Olive & Warm Ivory" design system, and natural workplace Arabic UX standards.
+- **2026-10-08 [Rule 39 - Dual-Theme Architecture & Icon-Only Toggle]:** Re-established Dual-Theme system supporting Light Mode (`#FBF9F5` canvas, `#F3EFE6` card, `#1C291E` olive) and Dark Mode (`#0E1610` canvas, `#17231A` card, `#F3EFE6` text). Enforced icon-only toggle button in `Header.tsx` without text labels ("وضع نهاري"/"ليلي"), guaranteed zero leakage into `@media print` engine, and updated design system tokens.

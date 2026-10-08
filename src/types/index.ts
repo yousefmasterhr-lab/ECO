@@ -1,4 +1,5 @@
 export type Language = 'ar' | 'en';
+export type ThemeMode = 'dark' | 'light';
 export type ThemePresetId = 'royal-olive' | 'nordic-teal' | 'royal-indigo' | 'imperial-bordeaux';
 export type Theme = ThemePresetId | 'dark' | 'light';
 

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTenant } from '../../context/TenantContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useNavigation } from '../../context/NavigationContext';
+import { useTheme } from '../../context/ThemeContext';
 
 import {
   Building2,
@@ -12,7 +13,9 @@ import {
   Check,
   Menu,
   Shield,
-  X
+  X,
+  Sun,
+  Moon
 } from 'lucide-react';
 
 export const Header: React.FC = () => {
@@ -28,6 +31,7 @@ export const Header: React.FC = () => {
 
   const { isRtl, t } = useLanguage();
   const { currentUser, toggleMobileDrawer, setSearchModalOpen } = useNavigation();
+  const { isDark, toggleTheme } = useTheme();
 
   const [companyDropdownOpen, setCompanyDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -341,6 +345,27 @@ export const Header: React.FC = () => {
             aria-label={t('بحث', 'Search')}
           >
             <Search className="w-4 h-4" />
+          </button>
+
+          {/* Theme Mode Toggle (Icon Only) */}
+          <button
+            type="button"
+            onClick={toggleTheme}
+            aria-label={t(
+              isDark ? 'التحويل إلى الوضع النهاري' : 'التحويل إلى الوضع الليلي',
+              isDark ? 'Switch to light mode' : 'Switch to dark mode'
+            )}
+            title={t(
+              isDark ? 'التحويل إلى الوضع النهاري' : 'التحويل إلى الوضع الليلي',
+              isDark ? 'Switch to light mode' : 'Switch to dark mode'
+            )}
+            className="flex items-center justify-center w-9 h-9 rounded-xl text-[#1A241C] dark:text-[#F3EFE6] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23] border border-transparent hover:border-[#E0D9CB] dark:border-[#243628] transition-colors touch-target cursor-pointer print:hidden"
+          >
+            {isDark ? (
+              <Sun className="w-4 h-4 text-[#EBB34D] transition-transform duration-200 hover:rotate-45" />
+            ) : (
+              <Moon className="w-4 h-4 text-[#1C291E] transition-transform duration-200 hover:-rotate-12" />
+            )}
           </button>
 
           {/* Notification Bell */}

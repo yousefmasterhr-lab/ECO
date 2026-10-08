@@ -7,7 +7,7 @@ import { PWAInstallBanner } from '../common/PWAInstallBanner';
 
 export const ShellLayout: React.FC = () => {
   return (
-    <div className="h-screen w-screen overflow-hidden flex flex-col dark bg-[#0E1610] text-[#F3EFE6] transition-colors duration-200">
+    <div className="h-screen w-screen overflow-hidden flex flex-col bg-[#FBF9F5] text-[#1A241C] dark:bg-[#0E1610] dark:text-[#F3EFE6] transition-colors duration-200">
       {/* Top Executive Navigation Bar (Fixed) */}
       <Header />
 

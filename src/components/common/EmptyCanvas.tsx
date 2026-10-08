@@ -359,29 +359,29 @@ export const EmptyCanvas: React.FC = () => {
   return (
     <div className="w-full max-w-none space-y-7 animate-in fade-in duration-200">
       {/* 1. Welcome & Time Header (مرحباً، م. أحمد مصطفى) */}
-      <div className="relative overflow-hidden rounded-2xl border border-[#243628] bg-gradient-to-r from-[#17231A] via-[#17231A]/95 to-[#131E15] p-5 sm:p-7 shadow-lg">
+      <div className="relative overflow-hidden rounded-2xl border border-[#E0D9CB] dark:border-[#243628] bg-gradient-to-r from-[#F3EFE6] via-[#F3EFE6]/95 to-[#EAE4D7] dark:from-[#17231A] dark:via-[#17231A]/95 dark:to-[#131E15] p-5 sm:p-7 shadow-lg">
         {/* Subtle Ambient Luminescence Aura */}
-        <div className="absolute -top-16 -end-16 w-64 h-64 bg-[#EBB34D]/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-16 start-1/4 w-48 h-48 bg-[#1F2E23]/40 rounded-full blur-2xl pointer-events-none" />
+        <div className="absolute -top-16 -end-16 w-64 h-64 bg-[#D99B26]/10 dark:bg-[#EBB34D]/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-16 start-1/4 w-48 h-48 bg-[#EAE4D7]/40 dark:bg-[#1F2E23]/40 rounded-full blur-2xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="space-y-1.5">
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-[#EBB34D] animate-pulse" />
-              <span className="text-[11px] font-bold tracking-wider uppercase text-[#EBB34D]">
+              <span className="w-2 h-2 rounded-full bg-[#D99B26] dark:bg-[#EBB34D] animate-pulse" />
+              <span className="text-[11px] font-bold tracking-wider uppercase text-[#D99B26] dark:text-[#EBB34D]">
                 {t('بوابة الاستقبال والقيادة المركزية', 'Executive Command Launchpad')}
               </span>
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-black text-[#F3EFE6] tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-black text-[#1A241C] dark:text-[#F3EFE6] tracking-tight">
               {isRtl ? `مرحباً، ${currentUser.nameAr}` : `Welcome, ${currentUser.nameEn}`}
             </h1>
 
-            <div className="text-xs sm:text-sm text-[#8FA392] leading-relaxed flex items-center gap-2 flex-wrap pt-0.5">
+            <div className="text-xs sm:text-sm text-[#5C665E] dark:text-[#8FA392] leading-relaxed flex items-center gap-2 flex-wrap pt-0.5">
               <span>{t('لوحة القيادة المركزية • اختر القسم أو المنظومة لبدء العمل الميداني والمالي', 'Central Command Launchpad • Select a department to begin operations')}</span>
-              <span className="text-[#243628] hidden sm:inline">•</span>
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#0E1610]/80 border border-[#243628] text-[11px] font-medium text-[#8FA392]">
-                <Clock className="w-3 h-3 text-[#EBB34D]" />
+              <span className="text-[#E0D9CB] dark:text-[#243628] hidden sm:inline">•</span>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#FBF9F5]/90 dark:bg-[#0E1610]/80 border border-[#E0D9CB] dark:border-[#243628] text-[11px] font-medium text-[#5C665E] dark:text-[#8FA392]">
+                <Clock className="w-3 h-3 text-[#D99B26] dark:text-[#EBB34D]" />
                 <span>{formattedDate} • {formattedTime}</span>
               </span>
             </div>
@@ -389,15 +389,15 @@ export const EmptyCanvas: React.FC = () => {
 
           <div className="flex items-center gap-2.5 self-start lg:self-center shrink-0">
             {/* Active Company Tag Capsule */}
-            <div className="flex items-center gap-2.5 px-4 py-2 rounded-xl bg-[#0E1610]/90 border border-[#243628] text-xs font-bold text-[#F3EFE6] shadow-inner">
-              <div className="w-7 h-7 rounded-lg bg-[#EBB34D]/15 text-[#EBB34D] flex items-center justify-center shrink-0">
+            <div className="flex items-center gap-2.5 px-4 py-2 rounded-xl bg-[#FBF9F5]/90 dark:bg-[#0E1610]/90 border border-[#E0D9CB] dark:border-[#243628] text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6] shadow-xs">
+              <div className="w-7 h-7 rounded-lg bg-[#D99B26]/15 dark:bg-[#EBB34D]/15 text-[#D99B26] dark:text-[#EBB34D] flex items-center justify-center shrink-0">
                 <Building2 className="w-4 h-4" />
               </div>
               <div className="text-start leading-tight">
-                <span className="text-[10px] text-[#8FA392] block font-semibold">
+                <span className="text-[10px] text-[#5C665E] dark:text-[#8FA392] block font-semibold">
                   {t('نطاق العمل النشط', 'Active Entity Scope')}
                 </span>
-                <span className="text-xs font-bold text-[#F3EFE6] truncate max-w-[220px] block">
+                <span className="text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6] truncate max-w-[220px] block">
                   {isRtl ? selectionSummaryAr : selectionSummaryEn}
                 </span>
               </div>
@@ -409,20 +409,20 @@ export const EmptyCanvas: React.FC = () => {
       {/* 2. Department Cards Grid Header & Counter */}
       <div className="flex items-center justify-between pt-1">
         <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-[#EBB34D]/15 text-[#EBB34D] flex items-center justify-center">
+          <div className="w-7 h-7 rounded-lg bg-[#D99B26]/15 dark:bg-[#EBB34D]/15 text-[#D99B26] dark:text-[#EBB34D] flex items-center justify-center">
             <Sparkles className="w-4 h-4" />
           </div>
           <div>
-            <h2 className="text-sm font-bold text-[#F3EFE6] tracking-tight">
+            <h2 className="text-sm font-bold text-[#1A241C] dark:text-[#F3EFE6] tracking-tight">
               {t('منظومات وأقسام المنشأة', 'Enterprise Core Modules')}
             </h2>
-            <p className="text-[11px] text-[#8FA392]">
+            <p className="text-[11px] text-[#5C665E] dark:text-[#8FA392]">
               {t('منصات العمل المتكاملة والمربوطة بالدليل المحاسبي ومراكز التكلفة', 'Integrated operational suites linked to the central GL & cost centers')}
             </p>
           </div>
         </div>
 
-        <span className="px-3 py-1 rounded-full bg-[#17231A] border border-[#243628] text-xs font-bold font-mono text-[#EBB34D] shadow-2xs">
+        <span className="px-3 py-1 rounded-full bg-[#F3EFE6] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] text-xs font-bold font-mono text-[#D99B26] dark:text-[#EBB34D] shadow-2xs">
           {categories.length} {t('منظومات متصلة', 'Connected Suites')}
         </span>
       </div>
@@ -449,10 +449,10 @@ export const EmptyCanvas: React.FC = () => {
               whileHover={{ y: -5 }}
               transition={{ duration: 0.18, ease: 'easeOut' }}
               onClick={() => selectItem(cat.id, cat.subItems[0]?.id)}
-              className="group flex flex-col justify-between rounded-2xl bg-[#17231A]/90 backdrop-blur-md border border-[#243628] hover:border-[#EBB34D]/50 hover:shadow-[0_12px_32px_-8px_rgba(235,179,77,0.14)] p-5 relative overflow-hidden transition-all duration-300 cursor-pointer text-start"
+              className="group flex flex-col justify-between rounded-2xl bg-[#F3EFE6]/90 dark:bg-[#17231A]/90 backdrop-blur-md border border-[#E0D9CB] dark:border-[#243628] hover:border-[#D99B26]/50 dark:hover:border-[#EBB34D]/50 hover:shadow-[0_12px_32px_-8px_rgba(217,155,38,0.14)] dark:hover:shadow-[0_12px_32px_-8px_rgba(235,179,77,0.14)] p-5 relative overflow-hidden transition-all duration-300 cursor-pointer text-start"
             >
               {/* Subtle dynamic ambient glow on hover */}
-              <div className="absolute -top-12 -end-12 w-28 h-28 rounded-full bg-[#EBB34D]/0 group-hover:bg-[#EBB34D]/10 blur-xl transition-all duration-500 pointer-events-none" />
+              <div className="absolute -top-12 -end-12 w-28 h-28 rounded-full bg-[#D99B26]/0 dark:bg-[#EBB34D]/0 group-hover:bg-[#D99B26]/10 dark:group-hover:bg-[#EBB34D]/10 blur-xl transition-all duration-500 pointer-events-none" />
 
               <div>
                 {/* Top Bar of Card: Frosted Glass Icon + Badge + Interactive Arrow */}
@@ -484,7 +484,7 @@ export const EmptyCanvas: React.FC = () => {
                   </div>
 
                   {/* Corner Navigation Arrow */}
-                  <div className="w-8 h-8 rounded-xl bg-[#243628]/40 border border-[#243628] flex items-center justify-center text-[#8FA392] group-hover:text-[#EBB34D] group-hover:border-[#EBB34D]/40 group-hover:bg-[#EBB34D]/10 group-hover:scale-110 transition-all shrink-0">
+                  <div className="w-8 h-8 rounded-xl bg-[#EAE4D7]/60 dark:bg-[#243628]/40 border border-[#E0D9CB] dark:border-[#243628] flex items-center justify-center text-[#5C665E] dark:text-[#8FA392] group-hover:text-[#D99B26] dark:group-hover:text-[#EBB34D] group-hover:border-[#D99B26]/40 dark:group-hover:border-[#EBB34D]/40 group-hover:bg-[#D99B26]/10 dark:group-hover:bg-[#EBB34D]/10 group-hover:scale-110 transition-all shrink-0">
                     <ArrowUpRight
                       className={`w-4 h-4 transition-transform duration-200 ${
                         isRtl
@@ -496,18 +496,18 @@ export const EmptyCanvas: React.FC = () => {
                 </div>
 
                 {/* Card Body: Title & Concise Description */}
-                <h3 className="text-base font-black text-[#F3EFE6] group-hover:text-[#EBB34D] transition-colors tracking-tight leading-snug">
+                <h3 className="text-base font-black text-[#1A241C] dark:text-[#F3EFE6] group-hover:text-[#D99B26] dark:group-hover:text-[#EBB34D] transition-colors tracking-tight leading-snug">
                   {title}
                 </h3>
-                <p className="text-xs text-[#8FA392] line-clamp-1 leading-relaxed mt-1">
+                <p className="text-xs text-[#5C665E] dark:text-[#8FA392] line-clamp-1 leading-relaxed mt-1">
                   {description}
                 </p>
 
                 {/* Live Micro-KPIs Matrix (3-Column Embedded Panel) */}
-                <div className="mt-3.5 p-2.5 rounded-xl bg-[#0E1610]/80 border border-[#243628]/80 grid grid-cols-3 divide-x divide-x-reverse divide-[#243628]/60 text-center">
+                <div className="mt-3.5 p-2.5 rounded-xl bg-[#FBF9F5]/90 dark:bg-[#0E1610]/80 border border-[#E0D9CB]/80 dark:border-[#243628]/80 grid grid-cols-3 divide-x divide-x-reverse divide-[#E0D9CB]/60 dark:divide-[#243628]/60 text-center">
                   {kpis.map((kpi, idx) => (
                     <div key={idx} className="px-1 flex flex-col justify-center">
-                      <span className="text-[10px] text-[#8FA392] font-semibold truncate block">
+                      <span className="text-[10px] text-[#5C665E] dark:text-[#8FA392] font-semibold truncate block">
                         {kpi.label}
                       </span>
                       <span className={`text-[12px] font-bold font-mono truncate mt-0.5 ${kpi.color}`}>
@@ -519,12 +519,12 @@ export const EmptyCanvas: React.FC = () => {
               </div>
 
               {/* Card Footer: Total Services & Direct Action Trigger */}
-              <div className="mt-4 pt-3 border-t border-[#243628]/80 flex items-center justify-between text-xs">
-                <div className="flex items-center gap-1.5 text-[#8FA392]">
-                  <Sparkles className="w-3.5 h-3.5 text-[#EBB34D]" />
+              <div className="mt-4 pt-3 border-t border-[#E0D9CB]/80 dark:border-[#243628]/80 flex items-center justify-between text-xs">
+                <div className="flex items-center gap-1.5 text-[#5C665E] dark:text-[#8FA392]">
+                  <Sparkles className="w-3.5 h-3.5 text-[#D99B26] dark:text-[#EBB34D]" />
                   <span className="font-semibold">{cat.subItems.length} {isRtl ? 'خدمات' : 'Services'}</span>
                 </div>
-                <div className="flex items-center gap-1 text-xs font-bold text-[#EBB34D] group-hover:text-[#F5C76D] transition-colors">
+                <div className="flex items-center gap-1 text-xs font-bold text-[#D99B26] dark:text-[#EBB34D] group-hover:text-[#C58F38] dark:group-hover:text-[#F5C76D] transition-colors">
                   <span>{isRtl ? 'دخول القسم' : 'Access Suite'}</span>
                   <ChevronLeft
                     className={`w-3.5 h-3.5 transition-transform duration-200 ${

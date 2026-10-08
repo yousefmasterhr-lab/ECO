@@ -235,5 +235,7 @@ Before committing or completing any modification:
 - **2026-09-28 [Rule 15 - Color Palette Lockdown]:** Abolished electric cyan, neon teal, and unapproved saturated tones. Aligned all modal surfaces, action buttons, and compliance badges strictly to "The Royal Olive & Warm Ivory" design tokens (Amber Gold `#D99B26`, Dark Olive Slate `#17231A`, Subdued Emerald `#2A3F30`, Subdued Crimson `#3F2A2A`).
 - **2026-09-28 [Rule 16 - Universal Portal-Based Modal Standard]:** Modals, popovers, and lightboxes must NEVER be declared inline within local page layouts. All modals MUST use the centralized `<Modal>` primitive exported from `@erp/ui-system` mounted directly to `document.body` via React Portals with `z-[100]`. The backdrop must completely dim the full viewport, including all fixed headers and sidebars.
 - **2026-09-28 [Rule 17 - Strict Elimination of Ad-Hoc Neon Colors]:** Hardcoded `#00e5a3`, `#10b981`, and electric cyans are strictly forbidden on CTA buttons and primary cards. Primary CTA action buttons across all modals and pages must exclusively use Radiant Amber (`#D99B26` / `#EBB34D`) on Dark Olive text (`#0E1610`).
+- **2026-10-08 [Rule 39 - Dual-Theme Architecture & Icon-Only Toggle]:** Re-established Dual-Theme system supporting Light Mode (`#FBF9F5` canvas, `#F3EFE6` card, `#1C291E` olive) and Dark Mode (`#0E1610` canvas, `#17231A` card, `#F3EFE6` text). Enforced icon-only toggle button in `Header.tsx` without text labels ("وضع نهاري"/"ليلي"), guaranteed zero leakage into `@media print` engine, and updated design system tokens.
+
 
 
