@@ -418,24 +418,22 @@ export const Header: React.FC = () => {
             {/* User Profile Popover Dropdown */}
             {userDropdownOpen && (
               <div
-                className={`absolute top-full mt-2 w-80 sm:w-88 rounded-2xl border border-[#E0D9CB] dark:border-[#243628] bg-[#F3EFE6] dark:bg-[#17231A] shadow-2xl p-3 z-50 animate-in fade-in-50 zoom-in-95 duration-150 ${
-                  isRtl ? 'left-0 sm:left-auto sm:right-0 origin-top-left sm:origin-top-right' : 'right-0 sm:right-auto sm:left-0 origin-top-right sm:origin-top-left'
-                }`}
+                className="absolute top-full mt-2.5 w-80 sm:w-88 max-w-[calc(100vw-24px)] left-0 sm:left-4 origin-top-left rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 shadow-2xl p-3.5 z-50 animate-in fade-in-50 zoom-in-95 duration-150 backdrop-blur-xl text-start"
               >
                 {/* User Header Summary */}
-                <div className="p-3 rounded-xl bg-[#FBF9F5] dark:bg-[#0E1610] border border-[#E0D9CB] dark:border-[#243628] flex items-center gap-3">
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/90 dark:border-slate-700/60 flex items-center gap-3">
                   <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-[#1C291E] to-[#D99B26] text-white flex items-center justify-center font-black text-base shadow-sm shrink-0">
                     {currentUser.nameAr.charAt(0)}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <h4 className="text-xs font-black text-[#1A241C] dark:text-[#F3EFE6] truncate">
+                    <h4 className="text-xs font-black text-slate-900 dark:text-slate-100 truncate">
                       {isRtl ? currentUser.nameAr : currentUser.nameEn}
                     </h4>
-                    <p className="text-[11px] text-[#5C665E] dark:text-[#8FA392] truncate">
-                      {currentUser.email || 'user@hrsup.com'}
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                      {currentUser.email || 'admin@hrsup.com'}
                     </p>
                     <div className="mt-1 flex items-center gap-1.5 flex-wrap">
-                      <span className="px-2 py-0.5 rounded-md bg-[#D99B26]/15 text-[#D99B26] dark:text-[#EBB34D] text-[10px] font-bold border border-[#D99B26]/30">
+                      <span className="px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-400 text-[10px] font-bold border border-amber-500/25">
                         {isRtl ? currentUser.roleAr : currentUser.roleEn}
                       </span>
                     </div>
@@ -443,18 +441,18 @@ export const Header: React.FC = () => {
                 </div>
 
                 {/* Role Switcher Matrix for Rapid Enterprise Evaluation */}
-                <div className="mt-3 pt-2.5 border-t border-[#E0D9CB]/60 dark:border-[#243628]">
-                  <div className="px-1 pb-1.5 flex items-center justify-between text-[10.5px] font-bold text-[#5C665E] dark:text-[#8FA392]">
+                <div className="mt-3 pt-2.5 border-t border-slate-200 dark:border-slate-800">
+                  <div className="px-1 pb-2 flex items-center justify-between text-[11px] font-bold text-slate-600 dark:text-slate-400">
                     <span className="flex items-center gap-1.5">
-                      <KeyRound className="w-3 h-3 text-[#D99B26] dark:text-[#EBB34D]" />
+                      <KeyRound className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
                       <span>{t('محاكاة الأدوار والصلاحيات (RBAC)', 'Simulate RBAC Role')}</span>
                     </span>
-                    <span className="text-[9.5px] text-[#D99B26] dark:text-[#EBB34D] font-mono">
+                    <span className="text-[10px] text-amber-600 dark:text-amber-400 font-mono">
                       {seedUsers.length} {t('حسابات', 'Accounts')}
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-1.5 max-h-48 overflow-y-auto p-0.5">
+                  <div className="grid grid-cols-2 gap-2 max-h-52 overflow-y-auto p-0.5">
                     {seedUsers.map(acc => {
                       const isActive = user?.role === acc.user.role;
                       return (
@@ -464,19 +462,19 @@ export const Header: React.FC = () => {
                             switchUserRole(acc.user.role);
                             setUserDropdownOpen(false);
                           }}
-                          className={`p-2 rounded-xl text-start text-[11px] transition-all flex flex-col justify-between border ${
+                          className={`p-2.5 rounded-xl text-start text-xs transition-all flex flex-col justify-between border cursor-pointer ${
                             isActive
-                              ? 'bg-[#D99B26]/15 border-[#D99B26] text-[#1A241C] dark:text-[#F3EFE6] font-bold shadow-xs'
-                              : 'border-transparent text-[#5C665E] dark:text-[#8FA392] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23]'
+                              ? 'bg-amber-500/15 border-amber-500/80 text-amber-900 dark:text-amber-300 font-bold shadow-xs'
+                              : 'bg-slate-50/60 dark:bg-slate-800/40 border-slate-200/80 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
                           }`}
                         >
-                          <div className="flex items-center justify-between w-full">
+                          <div className="flex items-center justify-between w-full mb-1">
                             <span className="truncate font-bold">
                               {isRtl ? acc.user.roleLabelAr.split(' ')[0] : acc.user.role}
                             </span>
-                            {isActive && <Check className="w-3 h-3 text-[#D99B26] dark:text-[#EBB34D] shrink-0" />}
+                            {isActive && <Check className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />}
                           </div>
-                          <span className="text-[9.5px] opacity-75 truncate mt-0.5">
+                          <span className="text-[10px] opacity-75 truncate">
                             {isRtl ? acc.user.nameAr.split(' ')[1] || acc.user.nameAr : acc.user.nameEn}
                           </span>
                         </button>
@@ -486,13 +484,13 @@ export const Header: React.FC = () => {
                 </div>
 
                 {/* Sign Out Trigger */}
-                <div className="mt-3 pt-2.5 border-t border-[#E0D9CB]/60 dark:border-[#243628]">
+                <div className="mt-3 pt-2.5 border-t border-slate-200 dark:border-slate-800">
                   <button
                     onClick={() => {
                       setUserDropdownOpen(false);
                       logout();
                     }}
-                    className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-red-600 dark:text-red-400 hover:bg-red-500/10 active:scale-98 transition-colors text-xs font-bold cursor-pointer"
+                    className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 active:scale-98 transition-colors text-xs font-bold cursor-pointer"
                   >
                     <LogOut className="w-3.5 h-3.5" />
                     <span>{t('تسجيل الخروج من المنظومة', 'Sign Out')}</span>

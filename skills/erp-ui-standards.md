@@ -560,7 +560,57 @@ Whenever a global directive or styling standard is issued (including typography,
 
 ---
 
-## Rule 40: Dual-Theme Architecture & Icon-Only Toggle Standard (معيار الوضع المزدوج النهاري والليلي والأيقونة المجردة)
+## Rule 40: Multi-Department RBAC Taxonomy & Executive Authentication Transition Standards (معيار مصفوفة الصلاحيات متعددة الإدارات والتحول التنفيذي لتسجيل الدخول)
+
+- **Comprehensive 9-Department Enterprise RBAC Matrix (مصفوفة الصلاحيات الشاملة لكافة قطاعات المؤسسة):**
+  The platform extends beyond Financial Affairs to govern all corporate departments with tabbed/segmented navigation:
+  1. **الشؤون المالية (Financial Affairs):** Preserves all 58 granular permissions strictly piped to the local SQL financial bridge (`dbo.GeneralLedger`, `COA`, `Vouchers`, `Cheques`, `E-Invoicing`, `Tax`, `Audit`, `Reporting`).
+  2. **الموارد البشرية (HRMS):** ملفات الموظفين، عقود العمل، كشوف المرتبات، مسيرات الأجور، الإجازات، تقييم الأداء، الجزاءات وإنهاء الخدمة.
+  3. **المكتب الفني والمشاريع (Technical Office & Projects):** مستخلصات المالك، مستخلصات مقاولي الباطن، كشوف الحصر، أوامر التغيير (VOs)، الجداول الزمنية، تقارير الموقع اليومية.
+  4. **الشؤون القانونية (Legal Affairs):** متابعة القضايا، مراجعة العقود وتدقيقها، محاضر إثبات الحالة، الإنذارات والتوكيلات الرسمية.
+  5. **الصادر والوارد (Correspondence CTS):** قيد المراسلات الواردة، إصدار الخطابات الصادرة، التوجيه الإداري، الأرشفة الضوئية وسرية المستندات.
+  6. **التأمينات الاجتماعية (Social Insurance):** استمارات س1 وس2 وس6، سداد الاشتراكات الشهرية، فتح وإغلاق ملفات المقاولات والعمليات.
+  7. **استقطاب الكفاءات (ATS - Recruitment):** نشر الإعلانات الوظيفية، فحص السير الذاتية، جدولة المقابلات، عروض العمل (Job Offers).
+  8. **الاستقبال والزوار (Front Desk & Security):** سجل الزيارات، تصاريح الدخول، استلام الطرود والمستندات الورقية.
+  9. **الإدارة العليا والاستراتيجية (C-Suite Governance):** مؤشرات الأداء (KPIs)، مصفوفة المخاطر، الاعتمادات الاستراتيجية، إقفال الفترات.
+
+- **Header Profile Popover Geometric Anchoring & Surface Opacity (معيار قائمة الملف الشخصي في الهيدر):**
+  - **Left Edge Clamping:** The user profile dropdown in `Header.tsx` must be securely anchored with viewport safety clamps (`left-0 sm:left-4 origin-top-left max-w-[calc(100vw-24px)]`), guaranteeing it never overflows or bleeds outside the left browser window boundary on mobile or desktop viewports.
+  - **Eliminating Transparency Leak:** All dropdown surfaces must use solid, opaque executive materials (`bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 shadow-2xl backdrop-blur-xl`). Background elements (such as page cards or canvas texts) must NEVER bleed through or clash with dropdown menu options.
+  - **Refined Role-Switching Grid:** The quick-role switcher must use compact paddings, subtle borders, and harmonious active indicators (`bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold`) for an understated, executive finish.
+
+- **Corporate Enterprise Login Experience & Terminology Standards (`LuxuryLoginPage.tsx`):**
+  - **Strict Enterprise Tone:** All sci-fi, gaming, theatrical, or pseudo-cryptographic terminology is strictly purged.
+    - Submit CTA button: **`[تسجيل الدخول]`** (replacing `[دخول المنظومة المشفرة]`).
+    - Password field: **`كلمة المرور`** (removing `256-bit AES` and `المشفرة`).
+    - Username field: **`اسم المستخدم أو البريد الإلكتروني`**.
+    - Corporate identity banner: **`شركة ترابط للمقاولات والتجارة`** (Subtitle: `منظومة إدارة الموارد المؤسسية الذكية ECO`).
+    - Persistent session toggle: **`تذكرني على هذا الجهاز`** (removing `حماية السجلات النشطة`).
+    - Zero bottom clutter: No fake security hashes, faux IP trackers, or synthetic crypto strings.
+  - **Non-Destructive Error Handling:**
+    - On invalid credentials, prevent full-page reload (`e.preventDefault()`).
+    - Trigger a clean CSS shake animation (`animate-shake`) on the card container.
+    - Render an unmistakable corporate inline error alert beneath inputs:
+      `"بيانات الاعتماد غير صحيحة، يرجى التحقق من اسم المستخدم وكلمة المرور."` (`text-rose-400 bg-rose-950/40 border border-rose-800/60 rounded-xl p-3 text-xs`).
+    - Preserve entered username/password values so the user can correct typos without frustrating form resets.
+
+- **Cinematic Welcome Splash Transition (الانتقال التنفيذي الترحيبي بعد تسجيل الدخول):**
+  - On valid credential verification, gracefully animate the login card out (`transition-all duration-300 opacity-0 scale-95`).
+  - Render an executive, cinematic welcome splash screen over the stardust particle canvas for exactly 1.8 seconds:
+    - Glowing emerald/golden circular badge with an animated checkmark icon (`w-16 h-16 rounded-full bg-gradient-to-br from-emerald-500/20 to-amber-500/20 border border-emerald-500/40 shadow-xl`).
+    - High-contrast personalized typography: `مرحباً بك، {user.name}`.
+    - Subtitle with subtle loading spinner and pulse: `جاري تهيئة لوحة التحكم وصلاحيات {user.roleTitle}...`.
+  - Seamlessly route the user to the operational dashboard (`navigate('/')`) upon timer completion.
+
+- **Clean Production State & Real Audit Logging (نظافة بيئة الإنتاج وسجل العمليات الحقيقي):**
+  - **Zero Dummy Clutter:** Strip out random filler records, dummy mock users, and simulated test accounts. The system starts with the genuine root executive administrator:
+    `م. أحمد مصطفى` / `admin@hrsup.com` (National ID: `28501010102345`).
+  - **Fully Functional User Management Modals:** "إضافة مستخدم جديد" (Add User) and "تعديل الصلاحيات" (Edit User) modals must execute complete validation (Arabic Name, English Name, 10-14 digit National ID, Corporate Email, Username, Department, Role, Clearance Level, Password) with status toggles (`ACTIVE` / `SUSPENDED`). Root administrator account is permanently protected from deletion or suspension.
+  - **Dynamic Action-Driven Audit Trail:** Audit logs (`AuditLogsView.tsx`) must track REAL client interactions dynamically (`AUTH: LOGIN_SUCCESS`, `USER_MGMT: CREATE_USER`, `USER_MGMT: UPDATE_USER`, `RBAC: UPDATE_ROLE_PERMISSIONS`) with authentic timestamps, user names, role titles, and network identities instead of hardcoded strings.
+
+---
+
+## Rule 41: Dual-Theme Architecture & Icon-Only Toggle Standard (معيار الوضع المزدوج النهاري والليلي والأيقونة المجردة)
 
 - **Two Immutable Color Profiles (وضع نهاري وليلي حصراً):** The application strictly supports two harmonious corporate themes defined under "The Royal Olive & Warm Ivory" design system:
   - **Light Mode (الوضع النهاري):**
@@ -591,5 +641,6 @@ Whenever a global directive or styling standard is issued (including typography,
 - **Strict Print Isolation Guarantee (عزل تام لمنظومة الطباعة @media print):**
   - Toggling between Light and Dark modes must **NEVER** affect print rendering, paper backgrounds, or printable reports.
   - All `@media print` rules enforce independent absolute high-contrast resets (`background: #ffffff !important`, `color: #0f172a !important`, borders `#cbd5e1 !important`) ensuring zero dark-mode leaks or color bleed during hardcopy printing or PDF generation.
+
 
 

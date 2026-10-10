@@ -4,7 +4,10 @@ import {
   UserRole,
   PRECONFIGURED_SEED_USERS,
   ROLE_CONFIGURATIONS,
-  SeedAccount
+  SeedAccount,
+  ManagedUser,
+  AuditLogEntry,
+  INITIAL_ROOT_ADMIN
 } from '../types/auth';
 
 interface AuthContextType {
@@ -25,10 +28,20 @@ interface AuthContextType {
   currentPath: string;
   navigate: (path: string) => void;
   seedUsers: SeedAccount[];
+  managedUsers: ManagedUser[];
+  addManagedUser: (userData: Omit<ManagedUser, 'id' | 'createdAt'>) => ManagedUser;
+  updateManagedUser: (id: string, updates: Partial<ManagedUser>) => void;
+  deleteManagedUser: (id: string) => boolean;
+  auditLogs: AuditLogEntry[];
+  logAuditEvent: (
+    entry: Omit<AuditLogEntry, 'id' | 'timestamp' | 'actorName' | 'actorEmail' | 'actorRole'>
+  ) => void;
 }
 
 const STORAGE_KEY_AUTH = 'eco_auth_session';
 const STORAGE_KEY_REMEMBER = 'eco_auth_remember';
+const STORAGE_KEY_USERS = 'eco_managed_users';
+const STORAGE_KEY_AUDIT = 'eco_audit_logs';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -48,10 +61,96 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return '/';
   });
 
+  // 1. Managed Users State (Initialized with Root Administrator only, zero dummy mock clutter)
+  const [managedUsers, setManagedUsers] = useState<ManagedUser[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_USERS);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.warn('Failed to parse managed users from localStorage', e);
+    }
+    return [INITIAL_ROOT_ADMIN];
+  });
+
+  // 2. Real Dynamic Audit Log State
+  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_AUDIT);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) {
+      console.warn('Failed to parse audit logs from localStorage', e);
+    }
+    return [
+      {
+        id: 'log_boot_01',
+        timestamp: '2026-10-10 08:30:15',
+        actorName: 'م. أحمد مصطفى',
+        actorEmail: 'admin@hrsup.com',
+        actorRole: 'SUPER_ADMIN',
+        actionAr: 'تهيئة منظومة الأمان المركزي',
+        actionEn: 'Initialize Security Core',
+        category: 'SECURITY',
+        detailsAr: 'تأكيد الحساب الإداري الجذري وتفعيل بروتوكول حوكمة الصلاحيات (RBAC)',
+        detailsEn: 'Root administrator verified & RBAC multi-department matrix active',
+        status: 'SUCCESS',
+      },
+    ];
+  });
+
+  // Persist managed users changes
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(managedUsers));
+    } catch (e) {
+      console.error('Failed to save managed users to localStorage', e);
+    }
+  }, [managedUsers]);
+
+  // Persist audit logs changes
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY_AUDIT, JSON.stringify(auditLogs));
+    } catch (e) {
+      console.error('Failed to save audit logs to localStorage', e);
+    }
+  }, [auditLogs]);
+
+  // Dynamic audit event logger
+  const logAuditEvent = useCallback(
+    (
+      entry: Omit<AuditLogEntry, 'id' | 'timestamp' | 'actorName' | 'actorEmail' | 'actorRole'>
+    ) => {
+      const now = new Date();
+      const formattedTimestamp = now.toISOString().replace('T', ' ').substring(0, 19);
+      const newLog: AuditLogEntry = {
+        id: `log_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        timestamp: formattedTimestamp,
+        actorName: user ? user.nameAr : 'النظام المركزي (System)',
+        actorEmail: user ? user.email : 'system@hrsup.com',
+        actorRole: user ? user.role : 'SUPER_ADMIN',
+        actionAr: entry.actionAr,
+        actionEn: entry.actionEn,
+        category: entry.category,
+        detailsAr: entry.detailsAr,
+        detailsEn: entry.detailsEn,
+        ipAddress: entry.ipAddress || '10.0.4.12 (Internal VPN)',
+        status: entry.status,
+      };
+
+      setAuditLogs(prev => [newLog, ...prev.slice(0, 249)]); // Keep recent 250 records
+    },
+    [user]
+  );
+
   // Restore session on initial load
   useEffect(() => {
     try {
-      // Check localStorage first, then sessionStorage
       const storedLocal = localStorage.getItem(STORAGE_KEY_AUTH);
       const storedSession = sessionStorage.getItem(STORAGE_KEY_AUTH);
       const activeData = storedLocal || storedSession;
@@ -59,7 +158,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (activeData) {
         const parsed = JSON.parse(activeData) as AuthUser;
         if (parsed && parsed.id && parsed.role) {
-          // Re-sync allowedModuleIds with master configuration
           const config = ROLE_CONFIGURATIONS[parsed.role];
           setUser({
             ...parsed,
@@ -67,7 +165,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           });
         }
       } else {
-        // Default seed to C-Suite Admin if running in immediate preview mode
         const defaultAdmin = PRECONFIGURED_SEED_USERS[0].user;
         setUser(defaultAdmin);
         localStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify(defaultAdmin));
@@ -97,6 +194,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
+  // Authenticate against managed users and pre-configured seeds
   const login = useCallback(
     async (
       emailOrUsername: string,
@@ -105,38 +203,118 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     ): Promise<{ success: boolean; error?: string; user?: AuthUser }> => {
       setIsLoading(true);
 
-      // Simulate realistic ultra-fast cryptographic verification delay (450ms)
-      await new Promise(resolve => setTimeout(resolve, 450));
+      // Fast verification delay (350ms)
+      await new Promise(resolve => setTimeout(resolve, 350));
 
       const cleanInput = emailOrUsername.trim().toLowerCase();
-      const matchedAccount = PRECONFIGURED_SEED_USERS.find(
+
+      // Check managed users first
+      const foundInManaged = managedUsers.find(
+        u =>
+          u.email.toLowerCase() === cleanInput ||
+          u.username.toLowerCase() === cleanInput
+      );
+
+      // Check pre-configured seed accounts
+      const foundInSeed = PRECONFIGURED_SEED_USERS.find(
         acc =>
           acc.user.email.toLowerCase() === cleanInput ||
           acc.user.username.toLowerCase() === cleanInput
       );
 
-      if (!matchedAccount) {
-        setIsLoading(false);
-        return {
-          success: false,
-          error: 'بيانات الاعتماد غير صحيحة. يرجى التحقق من اسم المستخدم أو البريد المؤسسي.',
+      let authenticatedUser: AuthUser | null = null;
+
+      if (foundInManaged) {
+        if (foundInManaged.status === 'SUSPENDED') {
+          setIsLoading(false);
+          logAuditEvent({
+            actionAr: 'محاولة دخول بحساب معطل',
+            actionEn: 'Login Attempt to Suspended Account',
+            category: 'SECURITY',
+            detailsAr: `تم رفض محاولة تسجيل الدخول للحساب المعطل: ${foundInManaged.email}`,
+            detailsEn: `Blocked login attempt for suspended user ${foundInManaged.email}`,
+            status: 'FAILED',
+          });
+          return {
+            success: false,
+            error: 'هذا الحساب معطل حالياً من قبل الإدارة العليا. يرجى مراجعة المسؤول.',
+          };
+        }
+
+        if (foundInManaged.passwordHash !== password) {
+          setIsLoading(false);
+          logAuditEvent({
+            actionAr: 'فشل في التحقق من كلمة المرور',
+            actionEn: 'Failed Password Verification',
+            category: 'SECURITY',
+            detailsAr: `محاولة دخول فاشلة للمستخدم ${foundInManaged.email}`,
+            detailsEn: `Invalid password attempt for ${foundInManaged.email}`,
+            status: 'FAILED',
+          });
+          return {
+            success: false,
+            error: 'بيانات الاعتماد غير صحيحة، يرجى التحقق من اسم المستخدم وكلمة المرور.',
+          };
+        }
+
+        const config = ROLE_CONFIGURATIONS[foundInManaged.role];
+        authenticatedUser = {
+          id: foundInManaged.id,
+          email: foundInManaged.email,
+          username: foundInManaged.username,
+          nameAr: foundInManaged.nameAr,
+          nameEn: foundInManaged.nameEn,
+          role: foundInManaged.role,
+          roleLabelAr: foundInManaged.roleLabelAr,
+          roleLabelEn: foundInManaged.roleLabelEn,
+          departmentAr: foundInManaged.departmentAr,
+          departmentEn: foundInManaged.departmentEn,
+          clearanceLevel: foundInManaged.clearanceLevel,
+          clearanceNameAr: foundInManaged.clearanceNameAr,
+          clearanceNameEn: foundInManaged.clearanceNameEn,
+          allowedModuleIds: config?.allowedModuleIds || [],
+          lastLogin: new Date().toISOString().replace('T', ' ').substring(0, 16),
+        };
+      } else if (foundInSeed) {
+        if (foundInSeed.passwordHash !== password) {
+          setIsLoading(false);
+          logAuditEvent({
+            actionAr: 'فشل في التحقق من كلمة المرور',
+            actionEn: 'Failed Password Verification',
+            category: 'SECURITY',
+            detailsAr: `محاولة دخول فاشلة للمستخدم ${foundInSeed.user.email}`,
+            detailsEn: `Invalid password attempt for ${foundInSeed.user.email}`,
+            status: 'FAILED',
+          });
+          return {
+            success: false,
+            error: 'بيانات الاعتماد غير صحيحة، يرجى التحقق من اسم المستخدم وكلمة المرور.',
+          };
+        }
+
+        authenticatedUser = {
+          ...foundInSeed.user,
+          lastLogin: new Date().toISOString().replace('T', ' ').substring(0, 16),
         };
       }
 
-      if (matchedAccount.passwordHash !== password) {
+      if (!authenticatedUser) {
         setIsLoading(false);
+        logAuditEvent({
+          actionAr: 'محاولة دخول باسم مستخدم غير مسجل',
+          actionEn: 'Unknown User Login Attempt',
+          category: 'SECURITY',
+          detailsAr: `محاولة تسجيل دخول لبريد غير مسجل: ${cleanInput}`,
+          detailsEn: `Failed login attempt for unknown credential ${cleanInput}`,
+          status: 'FAILED',
+        });
         return {
           success: false,
-          error: 'كلمة المرور غير متطابقة. يرجى إعادة المحاولة.',
+          error: 'بيانات الاعتماد غير صحيحة، يرجى التحقق من اسم المستخدم وكلمة المرور.',
         };
       }
 
       const isRemember = rememberOption !== undefined ? rememberOption : rememberMe;
-      const authenticatedUser: AuthUser = {
-        ...matchedAccount.user,
-        lastLogin: new Date().toISOString().replace('T', ' ').substring(0, 16),
-      };
-
       setUser(authenticatedUser);
       setRememberMe(isRemember);
       localStorage.setItem(STORAGE_KEY_REMEMBER, String(isRemember));
@@ -149,19 +327,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.removeItem(STORAGE_KEY_AUTH);
       }
 
+      // Record successful login in audit log
+      logAuditEvent({
+        actionAr: 'تسجيل دخول ناجح',
+        actionEn: 'Successful Authentication',
+        category: 'AUTH',
+        detailsAr: `تم تسجيل دخول ${authenticatedUser.nameAr} (${authenticatedUser.roleLabelAr}) بنجاح`,
+        detailsEn: `Authenticated session initiated for ${authenticatedUser.nameEn}`,
+        status: 'SUCCESS',
+      });
+
       setIsLoading(false);
-      navigate('/');
       return { success: true, user: authenticatedUser };
     },
-    [rememberMe, navigate]
+    [rememberMe, managedUsers, logAuditEvent]
   );
 
   const logout = useCallback(() => {
+    if (user) {
+      logAuditEvent({
+        actionAr: 'تسجيل خروج من المنظومة',
+        actionEn: 'Session Terminated',
+        category: 'AUTH',
+        detailsAr: `قام المستخدم ${user.nameAr} بتسجيل الخروج من المنظومة`,
+        detailsEn: `User ${user.nameEn} signed out`,
+        status: 'SUCCESS',
+      });
+    }
     setUser(null);
     localStorage.removeItem(STORAGE_KEY_AUTH);
     sessionStorage.removeItem(STORAGE_KEY_AUTH);
     navigate('/login');
-  }, [navigate]);
+  }, [user, logAuditEvent, navigate]);
 
   const switchUserRole = useCallback(
     (role: UserRole) => {
@@ -177,9 +374,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } else {
           sessionStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify(updated));
         }
+
+        logAuditEvent({
+          actionAr: 'محاكاة دور وصلاحيات',
+          actionEn: 'Simulated Role Switch',
+          category: 'RBAC',
+          detailsAr: `تم التبديل التجريبي إلى دور: ${updated.roleLabelAr}`,
+          detailsEn: `Simulated role changed to ${updated.role}`,
+          status: 'SUCCESS',
+        });
       }
     },
-    [rememberMe]
+    [rememberMe, logAuditEvent]
   );
 
   const checkModuleAccess = useCallback(
@@ -202,6 +408,79 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     [user]
   );
 
+  // User Management Actions
+  const addManagedUser = useCallback(
+    (userData: Omit<ManagedUser, 'id' | 'createdAt'>): ManagedUser => {
+      const newUser: ManagedUser = {
+        ...userData,
+        id: `usr_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        createdAt: new Date().toISOString().split('T')[0],
+      };
+
+      setManagedUsers(prev => [newUser, ...prev]);
+
+      logAuditEvent({
+        actionAr: 'إضافة مستخدم جديد',
+        actionEn: 'Create New User Account',
+        category: 'USER_MGMT',
+        detailsAr: `تم إنشاء حساب مستخدم جديد: ${newUser.nameAr} (${newUser.roleLabelAr} - ${newUser.departmentAr})`,
+        detailsEn: `Created user account for ${newUser.nameEn} (${newUser.role})`,
+        status: 'SUCCESS',
+      });
+
+      return newUser;
+    },
+    [logAuditEvent]
+  );
+
+  const updateManagedUser = useCallback(
+    (id: string, updates: Partial<ManagedUser>) => {
+      setManagedUsers(prev =>
+        prev.map(u => {
+          if (u.id === id) {
+            const updated = { ...u, ...updates };
+            logAuditEvent({
+              actionAr: 'تعديل بيانات وصلاحيات مستخدم',
+              actionEn: 'Update User Profile & Permissions',
+              category: 'USER_MGMT',
+              detailsAr: `تم تحديث بيانات المستخدم ${updated.nameAr} (${updated.roleLabelAr})`,
+              detailsEn: `Updated credentials and role for ${updated.nameEn}`,
+              status: 'SUCCESS',
+            });
+            return updated;
+          }
+          return u;
+        })
+      );
+    },
+    [logAuditEvent]
+  );
+
+  const deleteManagedUser = useCallback(
+    (id: string): boolean => {
+      // Disallow deleting root admin
+      if (id === INITIAL_ROOT_ADMIN.id || id === 'usr_root_csuite') {
+        return false;
+      }
+
+      const target = managedUsers.find(u => u.id === id);
+      if (target) {
+        setManagedUsers(prev => prev.filter(u => u.id !== id));
+        logAuditEvent({
+          actionAr: 'حذف حساب مستخدم',
+          actionEn: 'Delete User Account',
+          category: 'USER_MGMT',
+          detailsAr: `تم حذف حساب المستخدم: ${target.nameAr} (${target.email})`,
+          detailsEn: `Deleted account for ${target.nameEn}`,
+          status: 'WARNING',
+        });
+        return true;
+      }
+      return false;
+    },
+    [managedUsers, logAuditEvent]
+  );
+
   return (
     <AuthContext.Provider
       value={{
@@ -218,6 +497,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         currentPath,
         navigate,
         seedUsers: PRECONFIGURED_SEED_USERS,
+        managedUsers,
+        addManagedUser,
+        updateManagedUser,
+        deleteManagedUser,
+        auditLogs,
+        logAuditEvent,
       }}
     >
       {children}
@@ -233,5 +518,4 @@ export const useAuth = (): AuthContextType => {
   return context;
 };
 
-// Extensible alias requested in specifications: useAuthStore
 export const useAuthStore = useAuth;

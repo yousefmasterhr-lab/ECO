@@ -322,3 +322,65 @@ export const PRECONFIGURED_SEED_USERS: SeedAccount[] = [
     passwordHash: 'security123',
   },
 ];
+
+export interface ManagedUser {
+  id: string;
+  nameAr: string;
+  nameEn: string;
+  nationalId: string;
+  email: string;
+  username: string;
+  departmentAr: string;
+  departmentEn: string;
+  departmentId: string;
+  role: UserRole;
+  roleLabelAr: string;
+  roleLabelEn: string;
+  clearanceLevel: 1 | 2 | 3 | 4;
+  clearanceNameAr: string;
+  clearanceNameEn: string;
+  status: 'ACTIVE' | 'SUSPENDED';
+  passwordHash: string;
+  createdAt: string;
+  lastLogin?: string;
+  customPermissions?: string[];
+}
+
+export interface AuditLogEntry {
+  id: string;
+  timestamp: string;
+  actorName: string;
+  actorEmail: string;
+  actorRole: string;
+  actionAr: string;
+  actionEn: string;
+  category: 'AUTH' | 'USER_MGMT' | 'RBAC' | 'SECURITY';
+  detailsAr: string;
+  detailsEn: string;
+  ipAddress?: string;
+  status: 'SUCCESS' | 'WARNING' | 'FAILED';
+}
+
+export const INITIAL_ROOT_ADMIN: ManagedUser = {
+  id: 'usr_root_csuite',
+  nameAr: 'م. أحمد مصطفى',
+  nameEn: 'Eng. Ahmed Mostafa',
+  nationalId: '28501010102345',
+  email: 'admin@hrsup.com',
+  username: 'admin',
+  departmentAr: 'الإدارة العليا والاستراتيجية',
+  departmentEn: 'Executive Management & Strategy',
+  departmentId: 'executive',
+  role: 'SUPER_ADMIN',
+  roleLabelAr: 'الرئيس التنفيذي للعمليات (COO)',
+  roleLabelEn: 'Chief Operating Officer (COO)',
+  clearanceLevel: 4,
+  clearanceNameAr: 'المستوى 4 - إدارة عليا',
+  clearanceNameEn: 'Level 4 - C-Suite Governance',
+  status: 'ACTIVE',
+  passwordHash: 'admin123',
+  createdAt: '2026-01-01',
+  lastLogin: '2026-10-10 08:30',
+  customPermissions: [],
+};
+
