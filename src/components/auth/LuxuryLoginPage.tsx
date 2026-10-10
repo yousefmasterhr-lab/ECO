@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth, useNavigate } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import {
+  Mail,
+  Lock,
   Eye,
   EyeOff,
   CheckCircle2,
@@ -169,7 +171,7 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
   return (
     <div
       dir={isRtl ? 'rtl' : 'ltr'}
-      className="relative min-h-screen w-full flex items-center justify-center p-4 sm:p-6 overflow-hidden bg-slate-950 text-white select-none font-sans"
+      className="relative min-h-screen w-full flex items-center justify-center p-4 sm:p-6 overflow-hidden bg-[#0b0f19] text-[#F3EFE6] select-none font-sans"
     >
       {/* 1. Dynamic Interactive Particle Canvas */}
       <canvas
@@ -194,7 +196,7 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
       {/* 4. Bulletproof Conditional Rendering: Welcome Screen vs Login Form */}
       {welcomeUser ? (
         /* Dedicated Cinematic Welcome Stage (Active for 2.5 Seconds) */
-        <div className="relative z-20 flex flex-col items-center justify-center p-8 sm:p-10 text-center max-w-md w-full mx-auto rounded-3xl bg-slate-900/90 border border-amber-500/40 shadow-[0_0_60px_-10px_rgba(217,155,38,0.35)] backdrop-blur-2xl animate-fade-in">
+        <div className="relative z-20 flex flex-col items-center justify-center p-8 sm:p-10 text-center max-w-md w-full mx-auto rounded-3xl bg-slate-900/80 border border-amber-500/30 shadow-[0_0_50px_-10px_rgba(217,155,38,0.25)] backdrop-blur-2xl animate-fade-in">
           {/* Stage 1: Radiant Crest */}
           <div className="relative mb-6">
             <div className="w-20 h-20 rounded-full border-2 border-amber-400 bg-amber-500/10 flex items-center justify-center shadow-[0_0_35px_rgba(217,155,38,0.6)] animate-pulse">
@@ -225,7 +227,7 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
         </div>
       ) : (
         /* Glassmorphic Executive Login Card */
-        <div className={`relative z-20 w-full max-w-md p-8 sm:p-10 rounded-3xl bg-slate-900/90 backdrop-blur-2xl border border-amber-500/40 shadow-[0_0_60px_-10px_rgba(217,155,38,0.35)] mx-auto transition-all duration-300 ${shakeCard ? 'animate-shake border-red-500/60 shadow-red-500/10' : ''}`}>
+        <div className={`relative z-20 w-full max-w-md p-8 sm:p-10 rounded-3xl bg-slate-900/80 backdrop-blur-2xl border border-amber-500/30 shadow-[0_0_50px_-10px_rgba(217,155,38,0.25)] mx-auto transition-all duration-300 ${shakeCard ? 'animate-shake border-red-500/60 shadow-red-500/10' : ''}`}>
           {/* Brand Header */}
           <div className="flex flex-col items-center mb-6">
             <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mb-3 shadow-[0_0_20px_rgba(217,155,38,0.2)]">
@@ -237,22 +239,39 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
 
           {/* Form with Explicit Visible Styling */}
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Username / Corporate Email Field */}
             <div>
-              <label className="block text-xs font-bold text-slate-200 mb-1.5 text-right">اسم المستخدم أو البريد الإلكتروني</label>
-              <input
-                type="text"
-                dir="ltr"
-                required
-                value={emailOrUsername}
-                onChange={(e) => setEmailOrUsername(e.target.value)}
-                placeholder="admin@hrsup.com"
-                className="w-full px-4 py-3 rounded-xl bg-slate-950/80 border border-slate-700 focus:border-amber-400 focus:ring-1 focus:ring-amber-400 text-white placeholder-slate-500 text-sm focus:outline-none transition-all"
-              />
+              <label className="block text-xs font-bold text-slate-200 mb-1.5 text-right">
+                {t('اسم المستخدم أو البريد الإلكتروني', 'Username or Corporate Email')}
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 right-3.5 flex items-center pointer-events-none text-slate-400">
+                  <Mail className="w-5 h-5" />
+                </div>
+                <input
+                  type="text"
+                  dir="ltr"
+                  required
+                  value={emailOrUsername}
+                  onChange={(e) => setEmailOrUsername(e.target.value)}
+                  placeholder="admin@hrsup.com"
+                  className="w-full pr-11 pl-4 py-3 rounded-xl bg-slate-950/70 border border-slate-700/80 focus:border-amber-400 focus:ring-1 focus:ring-amber-400/40 text-white placeholder-slate-500 text-sm focus:outline-none transition-all"
+                />
+              </div>
             </div>
 
+            {/* Password Field with Dual Icons */}
             <div>
-              <label className="block text-xs font-bold text-slate-200 mb-1.5 text-right">كلمة المرور</label>
+              <label className="block text-xs font-bold text-slate-200 mb-1.5 text-right">
+                {t('كلمة المرور', 'Password')}
+              </label>
               <div className="relative">
+                {/* Right Icon: Lock indicator */}
+                <div className="absolute inset-y-0 right-3.5 flex items-center pointer-events-none text-slate-400">
+                  <Lock className="w-5 h-5" />
+                </div>
+
+                {/* Input Field: Ample padding on both sides to prevent text overlap */}
                 <input
                   type={showPassword ? 'text' : 'password'}
                   dir="ltr"
@@ -260,15 +279,17 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full px-4 py-3 rounded-xl bg-slate-950/80 border border-slate-700 focus:border-amber-400 focus:ring-1 focus:ring-amber-400 text-white placeholder-slate-500 text-sm focus:outline-none transition-all pe-11"
+                  className="w-full pr-11 pl-11 py-3 rounded-xl bg-slate-950/70 border border-slate-700/80 focus:border-amber-400 focus:ring-1 focus:ring-amber-400/40 text-white placeholder-slate-500 text-sm focus:outline-none transition-all"
                 />
+
+                {/* Left Icon: Interactive Eye Toggle Button */}
                 <button
                   type="button"
-                  onClick={() => setShowPassword(prev => !prev)}
-                  className="absolute inset-y-0 end-0 pe-3.5 flex items-center text-slate-400 hover:text-amber-400 transition-colors cursor-pointer"
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 left-3.5 flex items-center text-slate-400 hover:text-amber-400 transition-colors cursor-pointer focus:outline-none"
+                  title={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
             </div>
