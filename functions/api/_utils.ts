@@ -108,12 +108,14 @@ export function handleOptions(): Response {
 }
 
 // SHA-256 hash using native Web Crypto
-export async function sha256Hex(message: string): Promise<string> {
-  const msgUint8 = new TextEncoder().encode(message);
+export async function hashPassword(password: string): Promise<string> {
+  const msgUint8 = new TextEncoder().encode(password);
   const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
+
+export const sha256Hex = hashPassword;
 
 // Generate JWT token using HMAC-SHA256
 const DEFAULT_JWT_SECRET = 'eco-erp-system-cloudflare-edge-secret-2026';

@@ -330,6 +330,18 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
               </div>
             </div>
 
+            {/* 401 Error Alert - Visibly beneath input fields with shake animation */}
+            {errorMessage && (
+              <div
+                key={shakeCard ? 'shake-active' : 'shake-idle'}
+                role="alert"
+                className="text-rose-200 bg-rose-950/80 border border-rose-500/70 rounded-xl p-3 text-xs font-semibold my-1 animate-shake shadow-lg shadow-rose-950/50 flex items-center gap-2.5"
+              >
+                <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+                <span className="leading-relaxed flex-1">{errorMessage}</span>
+              </div>
+            )}
+
             {/* Remember Me Toggle */}
             <div className="flex items-center justify-between py-1 px-1">
               <label className="flex items-center gap-2.5 cursor-pointer text-xs font-medium text-zinc-300">
@@ -348,14 +360,6 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
                 <span>{t('تذكرني على هذا الجهاز', 'Remember me on this device')}</span>
               </label>
             </div>
-
-            {/* Bad Credentials Error Banner */}
-            {errorMessage && (
-              <div className="text-rose-400 bg-rose-950/60 border border-rose-800/80 rounded-xl p-3 text-xs font-medium my-3 animate-shake flex items-center gap-2.5">
-                <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
-                <span className="leading-relaxed flex-1">{errorMessage}</span>
-              </div>
-            )}
 
             {/* Submit Action Button */}
             <div className="pt-2">

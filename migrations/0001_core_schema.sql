@@ -81,7 +81,7 @@ INSERT OR REPLACE INTO users (
     'م. أحمد مصطفى',
     'admin',
     'admin@hrsup.com',
-    'a36aef5a11c4073fbe60314fc9df530a9d5f986533594d1f5190742ff9e0e408', -- SHA-256 for Admin@2026
+    '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', -- SHA-256 for admin123
     'SUPER_ADMIN',
     'الإدارة العليا والاستراتيجية',
     4,
