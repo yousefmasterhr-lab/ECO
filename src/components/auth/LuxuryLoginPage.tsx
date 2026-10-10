@@ -231,7 +231,7 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
       ) : (
         /* Glassmorphic Executive Login Card */
         <div
-          className={`relative z-10 w-full max-w-md p-8 rounded-3xl backdrop-blur-xl bg-slate-900/85 border border-amber-500/30 shadow-[0_0_40px_-10px_rgba(217,155,38,0.25)] transition-all duration-300 ${
+          className={`relative z-20 w-full max-w-md p-8 rounded-3xl bg-slate-900/90 backdrop-blur-2xl border border-amber-500/30 shadow-[0_0_50px_-10px_rgba(217,155,38,0.3)] transition-all duration-300 ${
             shakeCard ? 'animate-shake border-red-500/60 shadow-red-500/10' : 'hover:border-amber-500/40'
           }`}
         >
@@ -266,10 +266,10 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
               </div>
             </div>
 
-            <h1 className="text-lg sm:text-xl font-black tracking-tight text-[#F3EFE6] leading-snug">
+            <h1 className="text-2xl font-bold text-white mb-1">
               {isRtl ? 'شركة ترابط للمقاولات والتجارة' : 'Tarabot Contracting & Trading'}
             </h1>
-            <div className="flex items-center justify-center gap-1.5 mt-1 text-xs font-semibold text-amber-400/90 tracking-wide">
+            <div className="text-xs text-amber-400 font-semibold mb-6 flex items-center justify-center gap-1.5">
               <span>{t('منظومة إدارة الموارد المؤسسية الذكية ECO', 'ECO Enterprise Platform')}</span>
             </div>
           </div>
@@ -278,7 +278,7 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
           <form onSubmit={handleSubmit} action="#" method="POST" noValidate className="space-y-4">
             {/* Username / Corporate Email Field */}
             <div className="space-y-1.5 text-start">
-              <label className="text-xs font-bold text-zinc-300 block ps-1">
+              <label className="text-xs font-medium text-slate-300 mb-1.5 block ps-1">
                 {t('اسم المستخدم أو البريد الإلكتروني', 'Username or Corporate Email')}
               </label>
               <div className="relative group">
@@ -293,7 +293,7 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
                   disabled={isVerifying}
                   dir="ltr"
                   placeholder="name@hrsup.com"
-                  className="w-full ps-10 pe-4 py-3 rounded-xl bg-slate-950/70 border border-slate-700/80 focus:border-amber-400 focus:ring-1 focus:ring-amber-400 text-slate-100 placeholder-slate-500 text-sm focus:outline-none transition-all disabled:opacity-50"
+                  className="w-full ps-10 pe-4 py-3 rounded-xl bg-slate-950/80 border border-slate-700/80 focus:border-amber-400 text-white placeholder-slate-500 text-sm focus:outline-none transition-all disabled:opacity-50"
                 />
               </div>
             </div>
@@ -301,7 +301,7 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
             {/* Password Field with Toggle */}
             <div className="space-y-1.5 text-start">
               <div className="flex items-center justify-between ps-1 pe-1">
-                <label className="text-xs font-bold text-zinc-300">
+                <label className="text-xs font-medium text-slate-300 mb-1.5 block">
                   {t('كلمة المرور', 'Password')}
                 </label>
               </div>
@@ -317,7 +317,7 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
                   disabled={isVerifying}
                   dir="ltr"
                   placeholder="••••••••••••"
-                  className="w-full ps-10 pe-11 py-3 rounded-xl bg-slate-950/70 border border-slate-700/80 focus:border-amber-400 focus:ring-1 focus:ring-amber-400 text-slate-100 placeholder-slate-500 text-sm focus:outline-none transition-all disabled:opacity-50"
+                  className="w-full ps-10 pe-11 py-3 rounded-xl bg-slate-950/80 border border-slate-700/80 focus:border-amber-400 text-white placeholder-slate-500 text-sm focus:outline-none transition-all disabled:opacity-50"
                 />
                 <button
                   type="button"
@@ -335,7 +335,7 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
               <div
                 key={shakeCard ? 'shake-active' : 'shake-idle'}
                 role="alert"
-                className="text-rose-200 bg-rose-950/80 border border-rose-500/70 rounded-xl p-3 text-xs font-semibold my-1 animate-shake shadow-lg shadow-rose-950/50 flex items-center gap-2.5"
+                className="p-3 my-3 rounded-xl bg-rose-950/70 border border-rose-600/80 text-rose-200 text-xs font-semibold animate-shake flex items-center gap-2.5"
               >
                 <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
                 <span className="leading-relaxed flex-1">{errorMessage}</span>
@@ -344,7 +344,7 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
 
             {/* Remember Me Toggle */}
             <div className="flex items-center justify-between py-1 px-1">
-              <label className="flex items-center gap-2.5 cursor-pointer text-xs font-medium text-zinc-300">
+              <label className="flex items-center gap-2.5 cursor-pointer text-xs font-medium text-slate-300">
                 <div
                   onClick={() => setRememberMe(!rememberMe)}
                   className={`relative w-9 h-5 rounded-full transition-colors duration-200 cursor-pointer ${
@@ -366,7 +366,7 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
               <button
                 type="submit"
                 disabled={isVerifying}
-                className="relative w-full py-3.5 px-6 rounded-xl font-bold text-sm text-slate-950 shadow-lg shadow-amber-500/25 overflow-hidden cursor-pointer transition-all duration-200 active:scale-[0.98] disabled:opacity-90 disabled:cursor-wait bg-gradient-to-r from-amber-500 via-amber-600 to-amber-500 hover:from-amber-400 hover:to-amber-500"
+                className="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-extrabold text-sm shadow-lg shadow-amber-500/25 relative overflow-hidden cursor-pointer transition-all duration-200 active:scale-[0.98] disabled:opacity-90 disabled:cursor-wait"
               >
                 <div className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/40 to-transparent skew-x-12 animate-shimmer pointer-events-none" />
 

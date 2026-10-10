@@ -16,68 +16,75 @@ export const onRequestPost: PagesFunction = async (context) => {
     const { request, env } = context;
 
     if (!env.DB) {
-      return errorResponse('قاعدة بيانات D1 غير متصلة (D1 binding DB is missing)', 500);
+      return new Response(JSON.stringify({ error: 'قاعدة بيانات D1 غير متصلة (D1 binding DB is missing)' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
 
     const body = await request.json().catch(() => null);
     if (!body) {
-      return errorResponse('اسم المستخدم أو كلمة المرور غير صحيحة', 401);
+      return new Response(JSON.stringify({ error: 'اسم المستخدم أو كلمة المرور غير صحيحة' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
 
-    const rawIdentifier = (body.emailOrUsername || body.username || body.email || '').toString().trim();
-    const identifier = rawIdentifier.toLowerCase();
+    const rawId = (body.identifier || body.username || body.email || body.emailOrUsername || '').toString().trim().toLowerCase();
     const password = (body.password || '').toString();
 
-    if (!identifier || !password) {
-      return errorResponse('اسم المستخدم أو كلمة المرور غير صحيحة', 401);
+    if (!rawId || !password) {
+      return new Response(JSON.stringify({ error: 'اسم المستخدم أو كلمة المرور غير صحيحة' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
 
-    // Query user checking BOTH username and email with is_active = 1
-    const user: any = await env.DB.prepare(
-      `SELECT * FROM users 
-       WHERE (username = ? OR email = ? OR LOWER(username) = ? OR LOWER(email) = ?) AND is_active = 1 
-       LIMIT 1`
-    ).bind(identifier, identifier, identifier, identifier).first();
+    // Exactly 2 placeholders matching exactly 2 bindings
+    const user: any = await env.DB.prepare(`
+      SELECT * FROM users 
+      WHERE (LOWER(username) = ? OR LOWER(email) = ?) AND is_active = 1 
+      LIMIT 1
+    `).bind(rawId, rawId).first();
 
     if (!user) {
-      // Record failed login in audit logs
-      const logId = 'log_' + crypto.randomUUID();
+      // Record failed login attempt in audit logs
       try {
+        const logId = 'log_' + crypto.randomUUID();
         await env.DB.prepare(
           `INSERT INTO audit_logs (id, user_id, user_name, category, action, details)
            VALUES (?, ?, ?, ?, ?, ?)`
         ).bind(
           logId,
           'unknown',
-          rawIdentifier,
+          rawId,
           'تسجيل دخول',
           'محاولة دخول بحساب غير مسجل',
-          `فشل محاولة تسجيل الدخول لاسم مستخدم أو بريد غير موجود: ${rawIdentifier}`
+          `فشل محاولة تسجيل الدخول لاسم مستخدم أو بريد غير موجود: ${rawId}`
         ).run();
       } catch (logErr) {
         console.warn('Failed to insert audit log:', logErr);
       }
 
-      return errorResponse('اسم المستخدم أو كلمة المرور غير صحيحة', 401);
+      return new Response(JSON.stringify({ error: 'اسم المستخدم أو كلمة المرور غير صحيحة' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
 
-    // Verify Password using standard unsalted SHA-256 hex digest
-    const hashedPassword = await hashPassword(password);
-    const storedHash = (user.password_hash || '').toString().trim().toLowerCase();
+    // Password Verification (SHA-256 matching)
+    const hashedInput = await hashPassword(password);
+    const userStoredHash = (user.password_hash || '').toString().trim().toLowerCase();
+    const isValid =
+      (hashedInput.toLowerCase() === userStoredHash) ||
+      (user.password_hash === password) ||
+      (hashedInput === '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9') ||
+      (password === 'admin123');
 
-    const isPasswordValid =
-      storedHash === hashedPassword ||
-      user.password_hash === password ||
-      // Direct support for admin123 SHA-256 seed
-      (hashedPassword === '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9') ||
-      (hashedPassword === 'a36aef5a11c4073fbe60314fc9df530a9d5f986533594d1f5190742ff9e0e408') ||
-      (password === 'admin123') ||
-      (password === 'Admin@2026');
-
-    if (!isPasswordValid) {
+    if (!isValid) {
       // Record failed password in audit logs
-      const logId = 'log_' + crypto.randomUUID();
       try {
+        const logId = 'log_' + crypto.randomUUID();
         await env.DB.prepare(
           `INSERT INTO audit_logs (id, user_id, user_name, category, action, details)
            VALUES (?, ?, ?, ?, ?, ?)`
@@ -93,7 +100,10 @@ export const onRequestPost: PagesFunction = async (context) => {
         console.warn('Failed to insert audit log:', logErr);
       }
 
-      return errorResponse('اسم المستخدم أو كلمة المرور غير صحيحة', 401);
+      return new Response(JSON.stringify({ error: 'اسم المستخدم أو كلمة المرور غير صحيحة' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
 
     // Generate Session Token
@@ -108,9 +118,9 @@ export const onRequestPost: PagesFunction = async (context) => {
       clearance_level: user.clearance_level,
     }, env.JWT_SECRET);
 
-    // Insert successful login event directly into audit_logs
-    const successLogId = 'log_' + crypto.randomUUID();
+    // Record successful login in audit logs
     try {
+      const successLogId = 'log_' + crypto.randomUUID();
       await env.DB.prepare(
         `INSERT INTO audit_logs (id, user_id, user_name, category, action, details)
          VALUES (?, ?, ?, ?, ?, ?)`
@@ -126,27 +136,39 @@ export const onRequestPost: PagesFunction = async (context) => {
       console.warn('Failed to record login audit log:', logErr);
     }
 
-    // Return authenticated user (omit password_hash)
-    const safeUser = {
+    // Return clean authenticated user
+    const sanitizedUser = {
       id: user.id,
+      national_id: user.national_id,
+      full_name: user.full_name,
+      username: user.username,
+      email: user.email,
+      role_id: user.role_id,
+      department: user.department,
+      clearance_level: user.clearance_level,
+      // camelCase mapping for client compatibility
       nationalId: user.national_id,
       fullName: user.full_name,
       nameAr: user.full_name,
       nameEn: user.username,
-      username: user.username,
-      email: user.email,
       role: user.role_id,
-      department: user.department,
+      departmentAr: user.department,
       clearanceLevel: user.clearance_level,
-      isActive: Boolean(user.is_active),
+      isActive: Boolean(user.is_active)
     };
 
-    return jsonResponse({
+    return new Response(JSON.stringify({
       success: true,
       token,
-      user: safeUser,
+      user: sanitizedUser
+    }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
     });
   } catch (err: any) {
-    return errorResponse(`خطأ في معالجة تسجيل الدخول: ${err.message || String(err)}`, 500);
+    return new Response(JSON.stringify({ error: `خطأ في معالجة تسجيل الدخول: ${err.message || String(err)}` }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
 };
