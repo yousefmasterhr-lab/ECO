@@ -29,6 +29,11 @@ export interface UserProfile {
   clearanceNameAr: string;
   clearanceNameEn: string;
   avatarUrl?: string;
+  role?: string;
+  email?: string;
+  departmentAr?: string;
+  departmentEn?: string;
+  allowedModuleIds?: string[];
 }
 
 export interface NavSubItem {

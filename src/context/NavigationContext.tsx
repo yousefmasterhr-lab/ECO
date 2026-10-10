@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { DepartmentNavCategory, UserProfile } from '../types';
+import { useAuth } from './AuthContext';
 
 export const CURRENT_USER: UserProfile = {
   id: 'usr_csuite_01',
@@ -250,6 +251,38 @@ interface NavigationContextType {
 const NavigationContext = createContext<NavigationContextType | undefined>(undefined);
 
 export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user, checkModuleAccess } = useAuth();
+
+  const currentUser: UserProfile = useMemo(() => {
+    if (user) {
+      return {
+        id: user.id,
+        nameAr: user.nameAr,
+        nameEn: user.nameEn,
+        roleAr: user.roleLabelAr,
+        roleEn: user.roleLabelEn,
+        clearanceLevel: user.clearanceLevel,
+        clearanceNameAr: user.clearanceNameAr,
+        clearanceNameEn: user.clearanceNameEn,
+        avatarUrl: user.avatarUrl,
+        role: user.role,
+        email: user.email,
+        departmentAr: user.departmentAr,
+        departmentEn: user.departmentEn,
+        allowedModuleIds: user.allowedModuleIds,
+      };
+    }
+    return CURRENT_USER;
+  }, [user]);
+
+  // Dynamically filter categories based on logged-in user permissions
+  const categories = useMemo(() => {
+    if (!user || user.role === 'SUPER_ADMIN') {
+      return DEPARTMENT_CATEGORIES;
+    }
+    return DEPARTMENT_CATEGORIES.filter(cat => checkModuleAccess(cat.id));
+  }, [user, checkModuleAccess]);
+
   const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
     return localStorage.getItem('erp_portal_sidebar_collapsed') === 'true';
   });
@@ -258,6 +291,16 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [activeSubItemId, setActiveSubItemId] = useState<string | null>(null);
   const [expandedCategories, setExpandedCategories] = useState<string[]>(['executive']);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
+
+  // If role changes and activeCategoryId is not allowed, reset to overview
+  useEffect(() => {
+    if (activeCategoryId && activeCategoryId !== 'unauthorized') {
+      if (!checkModuleAccess(activeCategoryId)) {
+        setActiveCategoryId(null);
+        setActiveSubItemId(null);
+      }
+    }
+  }, [user, activeCategoryId, checkModuleAccess]);
 
   useEffect(() => {
     localStorage.setItem('erp_portal_sidebar_collapsed', String(isCollapsed));
@@ -294,7 +337,17 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   };
 
   const selectItem = (catId: string, subId?: string) => {
-    setActiveCategoryId(catId);
+    if (catId && catId !== '') {
+      if (!checkModuleAccess(catId)) {
+        // Intercepted by RBAC Route Guard
+        setActiveCategoryId('unauthorized');
+        setActiveSubItemId(null);
+        if (isMobileOpen) setIsMobileOpen(false);
+        return;
+      }
+    }
+
+    setActiveCategoryId(catId || null);
     setActiveSubItemId(subId || null);
     if (catId && !expandedCategories.includes(catId)) {
       setExpandedCategories(prev => [...prev, catId]);
@@ -307,8 +360,8 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   return (
     <NavigationContext.Provider
       value={{
-        categories: DEPARTMENT_CATEGORIES,
-        currentUser: CURRENT_USER,
+        categories,
+        currentUser,
         isCollapsed,
         toggleSidebar,
         isMobileOpen,

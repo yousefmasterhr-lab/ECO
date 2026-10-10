@@ -4,6 +4,7 @@ import { useTenant } from '../../context/TenantContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useNavigation } from '../../context/NavigationContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
 
 import {
   Building2,
@@ -15,7 +16,9 @@ import {
   Shield,
   X,
   Sun,
-  Moon
+  Moon,
+  LogOut,
+  KeyRound
 } from 'lucide-react';
 
 export const Header: React.FC = () => {
@@ -32,15 +35,22 @@ export const Header: React.FC = () => {
   const { isRtl, t } = useLanguage();
   const { currentUser, toggleMobileDrawer, setSearchModalOpen } = useNavigation();
   const { isDark, toggleTheme } = useTheme();
+  const { user, logout, switchUserRole, seedUsers } = useAuth();
 
   const [companyDropdownOpen, setCompanyDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown on click outside
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const userDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdowns on click outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setCompanyDropdownOpen(false);
+      }
+      if (userDropdownRef.current && !userDropdownRef.current.contains(event.target as Node)) {
+        setUserDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -379,20 +389,117 @@ export const Header: React.FC = () => {
 
           <div className="h-6 w-px bg-[#E0D9CB] dark:bg-[#243628] mx-0.5" />
 
-          {/* User Profile Pill */}
-          <div className="flex items-center gap-2 ps-1 pe-2 py-1 rounded-xl bg-[#F3EFE6] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628]">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-[#1C291E] to-[#D99B26] flex items-center justify-center text-[#FBF9F5] text-xs font-black shadow-xs shrink-0">
-              {currentUser.nameAr.charAt(0)}
-            </div>
-            <div className="hidden sm:block text-start leading-tight">
-              <div className="text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6] truncate max-w-[120px]">
-                {isRtl ? currentUser.nameAr : currentUser.nameEn}
+          {/* Interactive User Profile Pill & Dropdown */}
+          <div className="relative" ref={userDropdownRef}>
+            <button
+              onClick={() => setUserDropdownOpen(prev => !prev)}
+              className="flex items-center gap-2 ps-1 pe-2.5 py-1 rounded-xl bg-[#F3EFE6] dark:bg-[#17231A] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23] border border-[#E0D9CB] dark:border-[#243628] transition-all cursor-pointer shadow-xs touch-target"
+              title={t('ملف المستخدم والصلاحيات', 'User Profile & Permissions')}
+            >
+              <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-[#1C291E] to-[#D99B26] flex items-center justify-center text-[#FBF9F5] text-xs font-black shadow-xs shrink-0">
+                {currentUser.nameAr.charAt(0)}
               </div>
-              <div className="flex items-center gap-1 text-[10px] font-semibold text-[#D99B26] dark:text-[#EBB34D]">
-                <Shield className="w-3 h-3" />
-                <span>{isRtl ? currentUser.clearanceNameAr : currentUser.clearanceNameEn}</span>
+              <div className="hidden sm:block text-start leading-tight">
+                <div className="text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6] truncate max-w-[130px]">
+                  {isRtl ? currentUser.nameAr : currentUser.nameEn}
+                </div>
+                <div className="flex items-center gap-1 text-[10px] font-semibold text-[#D99B26] dark:text-[#EBB34D]">
+                  <Shield className="w-3 h-3 shrink-0" />
+                  <span className="truncate max-w-[110px]">{isRtl ? currentUser.clearanceNameAr : currentUser.clearanceNameEn}</span>
+                </div>
               </div>
-            </div>
+              <ChevronDown
+                className={`w-3.5 h-3.5 text-[#5C665E] dark:text-[#8FA392] shrink-0 transition-transform duration-200 ${
+                  userDropdownOpen ? 'rotate-180' : ''
+                }`}
+              />
+            </button>
+
+            {/* User Profile Popover Dropdown */}
+            {userDropdownOpen && (
+              <div
+                className={`absolute top-full mt-2 w-80 sm:w-88 rounded-2xl border border-[#E0D9CB] dark:border-[#243628] bg-[#F3EFE6] dark:bg-[#17231A] shadow-2xl p-3 z-50 animate-in fade-in-50 zoom-in-95 duration-150 ${
+                  isRtl ? 'left-0 sm:left-auto sm:right-0 origin-top-left sm:origin-top-right' : 'right-0 sm:right-auto sm:left-0 origin-top-right sm:origin-top-left'
+                }`}
+              >
+                {/* User Header Summary */}
+                <div className="p-3 rounded-xl bg-[#FBF9F5] dark:bg-[#0E1610] border border-[#E0D9CB] dark:border-[#243628] flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-[#1C291E] to-[#D99B26] text-white flex items-center justify-center font-black text-base shadow-sm shrink-0">
+                    {currentUser.nameAr.charAt(0)}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h4 className="text-xs font-black text-[#1A241C] dark:text-[#F3EFE6] truncate">
+                      {isRtl ? currentUser.nameAr : currentUser.nameEn}
+                    </h4>
+                    <p className="text-[11px] text-[#5C665E] dark:text-[#8FA392] truncate">
+                      {currentUser.email || 'user@hrsup.com'}
+                    </p>
+                    <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+                      <span className="px-2 py-0.5 rounded-md bg-[#D99B26]/15 text-[#D99B26] dark:text-[#EBB34D] text-[10px] font-bold border border-[#D99B26]/30">
+                        {isRtl ? currentUser.roleAr : currentUser.roleEn}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Role Switcher Matrix for Rapid Enterprise Evaluation */}
+                <div className="mt-3 pt-2.5 border-t border-[#E0D9CB]/60 dark:border-[#243628]">
+                  <div className="px-1 pb-1.5 flex items-center justify-between text-[10.5px] font-bold text-[#5C665E] dark:text-[#8FA392]">
+                    <span className="flex items-center gap-1.5">
+                      <KeyRound className="w-3 h-3 text-[#D99B26] dark:text-[#EBB34D]" />
+                      <span>{t('محاكاة الأدوار والصلاحيات (RBAC)', 'Simulate RBAC Role')}</span>
+                    </span>
+                    <span className="text-[9.5px] text-[#D99B26] dark:text-[#EBB34D] font-mono">
+                      {seedUsers.length} {t('حسابات', 'Accounts')}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-1.5 max-h-48 overflow-y-auto p-0.5">
+                    {seedUsers.map(acc => {
+                      const isActive = user?.role === acc.user.role;
+                      return (
+                        <button
+                          key={acc.user.id}
+                          onClick={() => {
+                            switchUserRole(acc.user.role);
+                            setUserDropdownOpen(false);
+                          }}
+                          className={`p-2 rounded-xl text-start text-[11px] transition-all flex flex-col justify-between border ${
+                            isActive
+                              ? 'bg-[#D99B26]/15 border-[#D99B26] text-[#1A241C] dark:text-[#F3EFE6] font-bold shadow-xs'
+                              : 'border-transparent text-[#5C665E] dark:text-[#8FA392] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23]'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between w-full">
+                            <span className="truncate font-bold">
+                              {isRtl ? acc.user.roleLabelAr.split(' ')[0] : acc.user.role}
+                            </span>
+                            {isActive && <Check className="w-3 h-3 text-[#D99B26] dark:text-[#EBB34D] shrink-0" />}
+                          </div>
+                          <span className="text-[9.5px] opacity-75 truncate mt-0.5">
+                            {isRtl ? acc.user.nameAr.split(' ')[1] || acc.user.nameAr : acc.user.nameEn}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Sign Out Trigger */}
+                <div className="mt-3 pt-2.5 border-t border-[#E0D9CB]/60 dark:border-[#243628]">
+                  <button
+                    onClick={() => {
+                      setUserDropdownOpen(false);
+                      logout();
+                    }}
+                    className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-red-600 dark:text-red-400 hover:bg-red-500/10 active:scale-98 transition-colors text-xs font-bold cursor-pointer"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span>{t('تسجيل الخروج من المنظومة', 'Sign Out')}</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

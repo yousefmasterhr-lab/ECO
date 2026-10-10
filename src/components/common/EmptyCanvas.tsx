@@ -10,6 +10,7 @@ import { ReceptionModule } from '../modules/reception/ReceptionModule';
 import { FinancialAffairsModule } from '../modules/finance/FinancialAffairsModule';
 import { HRModule } from '../modules/hr/HRModule';
 import { SettingsModule } from '../modules/settings/SettingsModule';
+import { UnauthorizedView } from './UnauthorizedView';
 import { useReception } from '../../context/ReceptionContext';
 import { useFinancial } from '../../context/FinancialContext';
 import { useHR } from '../../context/HRContext';
@@ -168,6 +169,10 @@ export const EmptyCanvas: React.FC = () => {
     const formattedHours = hours % 12 || 12;
     return `${formattedHours}:${minutes} ${period}`;
   }, [currentDateTime, isRtl]);
+
+  if (activeCategoryId === 'unauthorized') {
+    return <UnauthorizedView />;
+  }
 
   const activeCategory = categories.find(c => c.id === activeCategoryId);
   const activeSubItem = activeCategory?.subItems.find(s => s.id === activeSubItemId);

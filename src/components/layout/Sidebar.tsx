@@ -2,6 +2,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigation } from '../../context/NavigationContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { useAuth } from '../../context/AuthContext';
 import { SidebarItem } from './SidebarItem';
 import {
   ChevronLeft,
@@ -9,11 +10,13 @@ import {
   X,
   Compass,
   Sparkles,
-  LayoutGrid
+  LayoutGrid,
+  Shield
 } from 'lucide-react';
 
 export const Sidebar: React.FC = () => {
   const { isRtl, t } = useLanguage();
+  const { user } = useAuth();
   const {
     categories,
     isCollapsed,
@@ -107,16 +110,29 @@ export const Sidebar: React.FC = () => {
           </div>
         </button>
 
-        {/* Enterprise System Version indicator (When expanded) */}
+        {/* Enterprise System Version & Active Role indicators (When expanded) */}
         {!isCollapsed && (
-          <div className="px-3 py-2 rounded-xl bg-[#F3EFE6] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] flex items-center justify-between text-[10.5px] text-[#5C665E] dark:text-[#8FA392] font-medium">
-            <span className="flex items-center gap-1.5">
-              <Sparkles className="w-3 h-3 text-[#D99B26] dark:text-[#EBB34D]" />
-              <span>ERP Shell v2.0-Core</span>
-            </span>
-            <span className="px-1.5 py-0.5 bg-[#D99B26]/15 text-[#D99B26] dark:text-[#EBB34D] rounded-sm font-semibold text-[9.5px]">
-              {t('متصل', 'READY')}
-            </span>
+          <div className="space-y-1.5">
+            {user && (
+              <div className="px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-between text-[10.5px] text-amber-700 dark:text-amber-400 font-bold">
+                <span className="flex items-center gap-1.5 truncate">
+                  <Shield className="w-3 h-3 shrink-0" />
+                  <span className="truncate">{isRtl ? user.roleLabelAr : user.roleLabelEn}</span>
+                </span>
+                <span className="px-1.5 py-0.5 bg-amber-500/20 rounded font-mono text-[9.5px] shrink-0">
+                  L{user.clearanceLevel}
+                </span>
+              </div>
+            )}
+            <div className="px-3 py-1.5 rounded-xl bg-[#F3EFE6] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] flex items-center justify-between text-[10px] text-[#5C665E] dark:text-[#8FA392] font-medium">
+              <span className="flex items-center gap-1.5">
+                <Sparkles className="w-3 h-3 text-[#D99B26] dark:text-[#EBB34D]" />
+                <span>ECO Enterprise Shell</span>
+              </span>
+              <span className="px-1.5 py-0.5 bg-[#D99B26]/15 text-[#D99B26] dark:text-[#EBB34D] rounded-sm font-semibold text-[9px]">
+                {t('متصل', 'ACTIVE')}
+              </span>
+            </div>
           </div>
         )}
       </div>

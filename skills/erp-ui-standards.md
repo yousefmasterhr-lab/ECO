@@ -517,7 +517,50 @@ Whenever a global directive or styling standard is issued (including typography,
 
 ---
 
-## Rule 39: Dual-Theme Architecture & Icon-Only Toggle Standard (معيار الوضع المزدوج النهاري والليلي والأيقونة المجردة)
+---
+
+## Rule 39: Enterprise RBAC, Session Persistence & Cinematic Gateway Standards (معيار إدارة الصلاحيات المؤسسية وبوابة الدخول السينمائية)
+
+- **Absolute Financial Bridge Decoupling Invariant (حظر المساس بالربط المالي المحلي):**
+  - The local SQL Server financial bridge (`server/sqlBridge.cjs`), database catalogs (`MK_Khalil_Db_2026`, `Tarabot_Data_2026`), general ledger vouchers, journals, and chart of accounts must remain strictly decoupled, isolated, and untouched by user authentication layers.
+  - The authentication, session persistence, and RBAC matrix operate in a dedicated, decoupled auth domain (`src/context/AuthContext.tsx`, `src/types/auth.ts`). Edge or cloud user identity stores must never alter the local SQL connection strings, circuit breaker states, or financial ledger procedures.
+
+- **Role-Based Access Control (RBAC) Hierarchy & Domain Matrix:**
+  The platform strictly enforces role-based clearance levels:
+  1. **`SUPER_ADMIN` (C-Suite / الإدارة العليا - Level 4):**
+     - Full platform governance across all 12 modules (`executive`, `companies`, `finance`, `hr`, `engineering`, `cts`, `legal`, `insurance`, `ats`, `decrees`, `reception`, `settings`).
+  2. **`FINANCE_OFFICER` (الشؤون المالية - Level 3):**
+     - Dedicated access to General Ledger, Treasury, Vouchers, Cheques, E-Invoicing (ZATCA), Cost Centers, and Financial Reports piped through the local SQL bridge (`finance`, `companies`, `decrees`). Restricted from HRMS, Reception, Legal, and System settings.
+  3. **`HR_MANAGER` / `HR_SPECIALIST` (الموارد البشرية - Level 3/2):**
+     - Dedicated access to Employee Dossiers, Standard Payroll, Attendance, Leaves, Advances, ATS Recruitment, and Social Insurance (`hr`, `ats`, `insurance`, `companies`, `decrees`).
+  4. **`PROJECTS_ENGINEER` (المكتب الفني - Level 3):**
+     - Access to Engineering Project Registry, Milestones, Payment Certificates (IPC), and Subcontractor Contracts (`engineering`, `companies`, `decrees`).
+  5. **`LEGAL_COUNSEL` (الشؤون القانونية - Level 3):**
+     - Access to Commercial Contracts Hub, Litigation & Disputes, Powers of Attorney, and Legal Advisory Notes (`legal`, `companies`, `decrees`).
+  6. **`RECEPTION_SECURITY` (الاستقبال والزوار - Level 2):**
+     - Access to Digital Visitor Check-In, Meeting Room Bookings, Temporary Contractor Passes, and CTS Correspondence (`reception`, `cts`, `decrees`).
+
+- **Dynamic Navigation & Route Guard Standards:**
+  - **Sidebar Auto-Filtering:** The vertical accordion navigation (`Sidebar.tsx`) dynamically reflects only the categories authorized for the active user's clearance level. Unauthorized menu items are completely hidden from the DOM.
+  - **Executive Launchpad Filtering:** The module card grid in `EmptyCanvas.tsx` displays only authorized operational suites, ensuring a distraction-free operational workspace.
+  - **Zero Unauthorized Infiltration (Route Guards):** Any manual URL manipulation or navigation attempt targeting an unauthorized module is intercepted immediately and rendered via the dedicated `<UnauthorizedView />` gateway with clear audit messaging.
+
+- **Luxury Cinematic Authentication Gateway Standards (`/login`):**
+  - **Visuals & Ambient Motion:**
+    - Dark luxury canvas (`#080E0A`) with animated luminous mesh gradients, radial amber (`#D99B26`) and emerald (`#059669`) glowing orbs.
+    - Interactive particle canvas with subtle floating golden stardust and depth blur.
+    - Glassmorphic card styling strictly matching `backdrop-blur-2xl bg-slate-900/80 border border-amber-500/20 shadow-2xl rounded-3xl p-8 max-w-md w-full`.
+    - High-resolution company insignia for `شركة ترابط للمقاولات والتجارة` & `ECO Enterprise Platform`.
+  - **Micro-Interactions & Form Controls:**
+    - Floating inputs with amber focus glow and morphing visibility icons.
+    - Haptic-style "Remember Me" toggle switch.
+    - Golden gradient action button with continuous shimmer effect and real-time biometric radar scanning animation (`Scanning Biometric Token...`).
+    - Informative toast error animations with shake physics on invalid credentials.
+    - Verified corporate seed switcher for instant executive testing.
+
+---
+
+## Rule 40: Dual-Theme Architecture & Icon-Only Toggle Standard (معيار الوضع المزدوج النهاري والليلي والأيقونة المجردة)
 
 - **Two Immutable Color Profiles (وضع نهاري وليلي حصراً):** The application strictly supports two harmonious corporate themes defined under "The Royal Olive & Warm Ivory" design system:
   - **Light Mode (الوضع النهاري):**
@@ -548,4 +591,5 @@ Whenever a global directive or styling standard is issued (including typography,
 - **Strict Print Isolation Guarantee (عزل تام لمنظومة الطباعة @media print):**
   - Toggling between Light and Dark modes must **NEVER** affect print rendering, paper backgrounds, or printable reports.
   - All `@media print` rules enforce independent absolute high-contrast resets (`background: #ffffff !important`, `color: #0f172a !important`, borders `#cbd5e1 !important`) ensuring zero dark-mode leaks or color bleed during hardcopy printing or PDF generation.
+
 
