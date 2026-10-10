@@ -658,6 +658,13 @@ Whenever a global directive or styling standard is issued (including typography,
   - Toggling between Light and Dark modes must **NEVER** affect print rendering, paper backgrounds, or printable reports.
   - All `@media print` rules enforce independent absolute high-contrast resets (`background: #ffffff !important`, `color: #0f172a !important`, borders `#cbd5e1 !important`) ensuring zero dark-mode leaks or color bleed during hardcopy printing or PDF generation.
 
+---
 
+## Rule 42: Cinematic Gateway Transitions & Staged Authentication Hand-off
 
-
+- **No Abrupt Jumps:** Authentication gateways must never instantaneously jump to dashboard roots; they must execute a 4–5 second choreographed welcome cinematic honoring the authenticated user's identity.
+- **Surface Translucency Standard:** Gateway cards must utilize true glassmorphism (`backdrop-blur-2xl bg-slate-950/70 border-amber-500/25`) to preserve ambient background depth.
+- **Multi-Stage Immersion:**
+  1. **Stage 1 (Icon & Emblem):** A pulsing, glowing golden ring containing an animated emerald/amber checkmark with radiant glow (`animate-pulse shadow-[0_0_40px_rgba(217,155,38,0.5)]`).
+  2. **Stage 2 (Personalized Typography):** Sub-badge (`أهلاً بك مجدداً في منظومة ترابط`), user name with luxury amber shimmer, and dynamic clearance/role subtitle.
+  3. **Stage 3 (Cinematic 5-Second Progress Arc/Bar):** Smooth golden-emerald progress bar filling over 4.5 seconds before clean SPA hand-off to the dashboard.

@@ -30,7 +30,8 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
   const [isVerifying, setIsVerifying] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [shakeCard, setShakeCard] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
+  const [isWelcomeActive, setIsWelcomeActive] = useState(false);
+  const [progressStarted, setProgressStarted] = useState(false);
   const [authenticatedUser, setAuthenticatedUser] = useState<{
     name: string;
     roleTitle: string;
@@ -131,7 +132,7 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (isVerifying || isSuccess) return;
+    if (isVerifying || isWelcomeActive) return;
 
     setErrorMessage(null);
     setIsVerifying(true);
@@ -154,11 +155,15 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
           name: displayName,
           roleTitle: roleTitle,
         });
-        setIsSuccess(true);
+
+        // Trigger cinematic welcome dissolution and 4.8-second immersive sequence
+        setIsWelcomeActive(true);
+        setTimeout(() => setProgressStarted(true), 50);
+
         setTimeout(() => {
           navigate('/');
           if (onSuccess) onSuccess();
-        }, 2000);
+        }, 4800);
       }
     } catch {
       setErrorMessage('اسم المستخدم أو كلمة المرور غير صحيحة');
@@ -196,8 +201,8 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
 
       {/* 4. Luxury Glassmorphic Login Card */}
       <div
-        className={`relative z-10 bg-[#0c1322]/80 backdrop-blur-2xl border border-amber-500/30 shadow-[0_0_50px_-12px_rgba(217,155,38,0.25)] rounded-3xl p-8 max-w-md w-full transition-all duration-300 ${
-          isSuccess ? 'opacity-0 pointer-events-none scale-95' : 'opacity-100 scale-100'
+        className={`relative z-10 w-full max-w-md p-8 rounded-3xl backdrop-blur-2xl bg-slate-950/70 border border-amber-500/25 shadow-[0_0_60px_-15px_rgba(217,155,38,0.25)] transition-all duration-700 ${
+          isWelcomeActive ? 'opacity-0 scale-95 pointer-events-none' : 'opacity-100 scale-100'
         } ${
           shakeCard ? 'animate-shake border-red-500/60 shadow-red-500/10' : 'hover:border-amber-500/40'
         }`}
@@ -257,10 +262,10 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
                 value={emailOrUsername}
                 onChange={e => setEmailOrUsername(e.target.value)}
                 required
-                disabled={isVerifying || isSuccess}
+                disabled={isVerifying || isWelcomeActive}
                 dir="ltr"
                 placeholder="name@hrsup.com"
-                className="w-full ps-10 pe-4 py-3 rounded-xl bg-slate-900/60 border border-slate-700/80 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 text-slate-100 text-sm focus:outline-none transition-all placeholder:text-zinc-500 disabled:opacity-50"
+                className="w-full ps-10 pe-4 py-3 rounded-xl bg-slate-900/60 border border-slate-700/70 focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 text-slate-100 placeholder-slate-500 text-sm focus:outline-none transition-all disabled:opacity-50"
               />
             </div>
           </div>
@@ -281,10 +286,10 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 required
-                disabled={isVerifying || isSuccess}
+                disabled={isVerifying || isWelcomeActive}
                 dir="ltr"
                 placeholder="••••••••••••"
-                className="w-full ps-10 pe-11 py-3 rounded-xl bg-slate-900/60 border border-slate-700/80 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 text-slate-100 text-sm focus:outline-none transition-all placeholder:text-zinc-500 disabled:opacity-50"
+                className="w-full ps-10 pe-11 py-3 rounded-xl bg-slate-900/60 border border-slate-700/70 focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 text-slate-100 placeholder-slate-500 text-sm focus:outline-none transition-all disabled:opacity-50"
               />
               <button
                 type="button"
@@ -337,8 +342,8 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
           <div className="pt-2">
             <button
               type="submit"
-              disabled={isVerifying || isSuccess}
-              className="relative w-full py-3.5 px-6 rounded-xl font-bold text-sm text-slate-950 shadow-lg shadow-amber-500/20 overflow-hidden cursor-pointer transition-all duration-200 active:scale-[0.98] disabled:opacity-90 disabled:cursor-wait bg-gradient-to-r from-amber-500 via-amber-600 to-amber-500 hover:from-amber-400 hover:to-amber-500"
+              disabled={isVerifying || isWelcomeActive}
+              className="relative w-full py-3.5 px-6 rounded-xl font-bold text-sm text-slate-950 shadow-lg shadow-amber-500/25 overflow-hidden cursor-pointer transition-all duration-200 active:scale-[0.98] disabled:opacity-90 disabled:cursor-wait bg-gradient-to-r from-amber-500 via-amber-600 to-amber-500 hover:from-amber-400 hover:to-amber-500"
             >
               <div className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/40 to-transparent skew-x-12 animate-shimmer pointer-events-none" />
 
@@ -358,14 +363,40 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
         </form>
       </div>
 
-      {/* 5. Welcome Screen Overlay (Post-Login Transition) */}
-      {isSuccess && authenticatedUser && (
-        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950/70 backdrop-blur-md animate-fade-in text-center p-6">
-          <div className="w-20 h-20 rounded-full border-2 border-amber-500/80 bg-amber-500/10 flex items-center justify-center mb-6 animate-pulse">
-            <CheckCircle2 className="w-10 h-10 text-amber-400" />
+      {/* 5. Full-Screen Cinematic Welcome Transition (4.5–5s Immersion over Live Animated Canvas) */}
+      {isWelcomeActive && authenticatedUser && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950/70 backdrop-blur-md animate-fade-in text-center p-6 select-none">
+          {/* Stage 1: Icon & Glowing Ring */}
+          <div className="relative mb-6">
+            <div className="absolute inset-0 rounded-full bg-amber-500/20 blur-2xl animate-pulse" />
+            <div className="relative w-20 h-20 rounded-full border-2 border-amber-500/80 bg-amber-500/10 flex items-center justify-center animate-pulse shadow-[0_0_40px_rgba(217,155,38,0.5)]">
+              <CheckCircle2 className="w-10 h-10 text-amber-400" />
+            </div>
           </div>
-          <h2 className="text-3xl font-extrabold text-amber-400 mb-2">مرحباً بك، {authenticatedUser.name}</h2>
-          <p className="text-slate-300 text-sm">جاري تهيئة لوحة التحكم وصلاحيات {authenticatedUser.roleTitle}...</p>
+
+          {/* Stage 2: Personalized Typography */}
+          <span className="text-amber-400/90 text-xs tracking-wider font-semibold mb-2 block">
+            {isRtl ? 'أهلاً بك مجدداً في منظومة ترابط' : 'Welcome back to Tarabot Platform'}
+          </span>
+
+          <h1 className="text-3xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-amber-200 animate-shimmer mb-3">
+            {authenticatedUser.name}
+          </h1>
+
+          <p className="text-slate-300 text-sm font-medium">
+            {isRtl
+              ? `جاري تهيئة لوحة التحكم وصلاحيات ${authenticatedUser.roleTitle}...`
+              : `Initializing executive dashboard and permissions for ${authenticatedUser.roleTitle}...`}
+          </p>
+
+          {/* Stage 3: Cinematic 5-Second Progress Arc/Bar */}
+          <div className="w-56 h-1 bg-slate-800 rounded-full mt-6 overflow-hidden mx-auto border border-amber-500/20">
+            <div
+              className={`h-full bg-gradient-to-r from-amber-500 to-emerald-400 rounded-full transition-all duration-[4500ms] ease-out animate-progress-fill ${
+                progressStarted ? 'w-full' : 'w-0'
+              }`}
+            />
+          </div>
         </div>
       )}
     </div>
