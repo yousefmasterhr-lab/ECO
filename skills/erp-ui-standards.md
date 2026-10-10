@@ -660,11 +660,12 @@ Whenever a global directive or styling standard is issued (including typography,
 
 ---
 
-## Rule 42: Cinematic Gateway Transitions & Staged Authentication Hand-off
+## Rule 42: Cinematic Gateway Transitions & Responsive 2.5s Hand-off
 
-- **No Abrupt Jumps:** Authentication gateways must never instantaneously jump to dashboard roots; they must execute a 4–5 second choreographed welcome cinematic honoring the authenticated user's identity.
-- **Surface Translucency Standard:** Gateway cards must utilize true glassmorphism (`backdrop-blur-2xl bg-slate-950/70 border-amber-500/25`) to preserve ambient background depth.
+- **Duration Cap:** Hand-off animation must never exceed 2.5 seconds to prevent user perception of system unresponsiveness.
+- **Structural Unmounting:** Gateway welcome screens must utilize conditional unmounting (`welcomeUser ? <WelcomeView/> : <LoginForm/>`) to guarantee rendering reliability without CSS opacity collisions.
+- **Surface Translucency Standard:** Gateway cards must utilize true glassmorphism (`backdrop-blur-xl bg-slate-900/85 border-amber-500/30`) to preserve ambient background depth.
 - **Multi-Stage Immersion:**
-  1. **Stage 1 (Icon & Emblem):** A pulsing, glowing golden ring containing an animated emerald/amber checkmark with radiant glow (`animate-pulse shadow-[0_0_40px_rgba(217,155,38,0.5)]`).
-  2. **Stage 2 (Personalized Typography):** Sub-badge (`أهلاً بك مجدداً في منظومة ترابط`), user name with luxury amber shimmer, and dynamic clearance/role subtitle.
-  3. **Stage 3 (Cinematic 5-Second Progress Arc/Bar):** Smooth golden-emerald progress bar filling over 4.5 seconds before clean SPA hand-off to the dashboard.
+  1. **Stage 1 (Radiant Crest):** A pulsing, glowing golden ring containing an animated checkmark with radiant glow (`animate-pulse shadow-[0_0_35px_rgba(217,155,38,0.6)]`).
+  2. **Stage 2 (Personalized Typography):** Sub-badge (`أهلاً بك مجدداً في منظومة ترابط`), user name with luxury heading, and dynamic clearance/role subtitle.
+  3. **Stage 3 (Cinematic 2.5s Glowing Progress Arc):** Smooth golden-emerald progress bar filling over 2.4 seconds before clean SPA hand-off to the dashboard at 2500ms.
