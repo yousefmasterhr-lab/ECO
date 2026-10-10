@@ -165,9 +165,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           });
         }
       } else {
-        const defaultAdmin = PRECONFIGURED_SEED_USERS[0].user;
-        setUser(defaultAdmin);
-        localStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify(defaultAdmin));
+        setUser(null);
+        if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+          window.history.replaceState({}, '', '/login');
+          setCurrentPath('/login');
+        }
       }
     } catch (e) {
       console.warn('Failed to parse active auth session', e);
@@ -519,3 +521,8 @@ export const useAuth = (): AuthContextType => {
 };
 
 export const useAuthStore = useAuth;
+
+export const useNavigate = () => {
+  const { navigate } = useAuth();
+  return navigate;
+};

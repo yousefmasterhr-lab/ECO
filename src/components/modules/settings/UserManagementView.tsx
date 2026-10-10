@@ -332,7 +332,7 @@ export const UserManagementView: React.FC = () => {
                   </div>
                   <div className="flex items-center justify-between text-[11px]">
                     <span className="text-[#5C665E] dark:text-[#8FA392]">{t('مستوى الصلاحية:', 'Clearance:')}</span>
-                    <span className="inline-flex items-center gap-1 font-mono font-bold text-slate-700 dark:text-slate-300">
+                    <span className="inline-flex items-center gap-1 font-mono font-bold text-[#1A241C] dark:text-[#F3EFE6]">
                       <Shield className="w-3 h-3 text-[#D99B26] dark:text-[#EBB34D]" />
                       <span>Level {u.clearanceLevel}</span>
                     </span>
@@ -373,26 +373,26 @@ export const UserManagementView: React.FC = () => {
 
       {/* 4. Functional Add / Edit User Modal */}
       {modalMode !== 'NONE' && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="relative w-full max-w-lg rounded-3xl bg-slate-900 border border-slate-700 shadow-2xl p-6 sm:p-7 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-150">
+          <div className="relative w-full max-w-lg rounded-3xl bg-[#FBF9F5] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] shadow-2xl p-6 sm:p-7 max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
-            <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-5">
+            <div className="flex items-center justify-between pb-4 border-b border-[#E0D9CB] dark:border-[#243628] mb-5">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-amber-500/15 text-[#EBB34D] flex items-center justify-center">
+                <div className="w-9 h-9 rounded-xl bg-amber-500/15 text-[#D99B26] dark:text-[#EBB34D] flex items-center justify-center">
                   <UserPlus className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-black text-slate-100">
+                  <h3 className="text-sm font-black text-[#1A241C] dark:text-[#F3EFE6]">
                     {modalMode === 'ADD' ? t('إضافة مستخدم جديد', 'Add User') : t('تعديل بيانات المستخدم', 'Edit User')}
                   </h3>
-                  <span className="text-[11px] text-slate-400">
+                  <span className="text-[11px] text-[#5C665E] dark:text-[#8FA392]">
                     {t('إدارة حساب وصلاحيات المستخدم.', 'Manage user account and permissions.')}
                   </span>
                 </div>
               </div>
               <button
                 onClick={() => setModalMode('NONE')}
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors cursor-pointer"
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-[#5C665E] dark:text-[#8FA392] hover:text-[#1A241C] dark:hover:text-[#F3EFE6] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23] transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -400,13 +400,13 @@ export const UserManagementView: React.FC = () => {
 
             {/* Error / Success Banners */}
             {formError && (
-              <div className="mb-4 p-3 rounded-xl text-rose-400 bg-rose-950/40 border border-rose-800/60 text-xs flex items-center gap-2">
+              <div className="mb-4 p-3 rounded-xl text-rose-600 dark:text-rose-400 bg-rose-500/10 border border-rose-500/20 text-xs flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>{formError}</span>
               </div>
             )}
             {formSuccess && (
-              <div className="mb-4 p-3 rounded-xl text-emerald-400 bg-emerald-950/40 border border-emerald-800/60 text-xs flex items-center gap-2">
+              <div className="mb-4 p-3 rounded-xl text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 text-xs flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 shrink-0" />
                 <span>{formSuccess}</span>
               </div>
@@ -416,7 +416,7 @@ export const UserManagementView: React.FC = () => {
             <form onSubmit={handleSubmit} className="space-y-4 text-start">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div>
-                  <label className="text-xs font-bold text-slate-300 block mb-1">
+                  <label className="text-xs font-bold text-[#1A241C] dark:text-[#E0D9CB] block mb-1">
                     {t('الاسم بالكامل (عربي) *', 'Full Name (Arabic) *')}
                   </label>
                   <input
@@ -425,12 +425,12 @@ export const UserManagementView: React.FC = () => {
                     onChange={e => setNameAr(e.target.value)}
                     required
                     placeholder="م. إبراهيم خليل"
-                    className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-slate-900/90 border border-slate-700 focus:border-amber-500 text-slate-100 focus:outline-none transition-colors"
+                    className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-[#F3EFE6] dark:bg-[#121B14] border border-[#E0D9CB] dark:border-[#243628] focus:border-amber-500 focus:ring-1 focus:ring-amber-500 text-[#1A241C] dark:text-[#F3EFE6] focus:outline-none transition-colors"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-slate-300 block mb-1">
+                  <label className="text-xs font-bold text-[#1A241C] dark:text-[#E0D9CB] block mb-1">
                     {t('الاسم بالكامل (إنجليزي) *', 'Full Name (English) *')}
                   </label>
                   <input
@@ -440,13 +440,13 @@ export const UserManagementView: React.FC = () => {
                     required
                     dir="ltr"
                     placeholder="Eng. Ibrahim Khalil"
-                    className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-slate-900/90 border border-slate-700 focus:border-amber-500 text-slate-100 focus:outline-none transition-colors"
+                    className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-[#F3EFE6] dark:bg-[#121B14] border border-[#E0D9CB] dark:border-[#243628] focus:border-amber-500 focus:ring-1 focus:ring-amber-500 text-[#1A241C] dark:text-[#F3EFE6] focus:outline-none transition-colors"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-300 block mb-1">
+                <label className="text-xs font-bold text-[#1A241C] dark:text-[#E0D9CB] block mb-1">
                   {t('الرقم القومي *', 'National ID *')}
                 </label>
                 <input
@@ -456,13 +456,13 @@ export const UserManagementView: React.FC = () => {
                   required
                   dir="ltr"
                   placeholder="28501010102345"
-                  className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-slate-900/90 border border-slate-700 focus:border-amber-500 text-slate-100 focus:outline-none transition-colors font-mono"
+                  className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-[#F3EFE6] dark:bg-[#121B14] border border-[#E0D9CB] dark:border-[#243628] focus:border-amber-500 focus:ring-1 focus:ring-amber-500 text-[#1A241C] dark:text-[#F3EFE6] focus:outline-none transition-colors font-mono"
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div>
-                  <label className="text-xs font-bold text-slate-300 block mb-1">
+                  <label className="text-xs font-bold text-[#1A241C] dark:text-[#E0D9CB] block mb-1">
                     {t('البريد الإلكتروني *', 'Email *')}
                   </label>
                   <input
@@ -472,12 +472,12 @@ export const UserManagementView: React.FC = () => {
                     required
                     dir="ltr"
                     placeholder="khalil@hrsup.com"
-                    className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-slate-900/90 border border-slate-700 focus:border-amber-500 text-slate-100 focus:outline-none transition-colors"
+                    className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-[#F3EFE6] dark:bg-[#121B14] border border-[#E0D9CB] dark:border-[#243628] focus:border-amber-500 focus:ring-1 focus:ring-amber-500 text-[#1A241C] dark:text-[#F3EFE6] focus:outline-none transition-colors"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-slate-300 block mb-1">
+                  <label className="text-xs font-bold text-[#1A241C] dark:text-[#E0D9CB] block mb-1">
                     {t('اسم المستخدم *', 'Username *')}
                   </label>
                   <input
@@ -487,24 +487,24 @@ export const UserManagementView: React.FC = () => {
                     required
                     dir="ltr"
                     placeholder="khalil"
-                    className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-slate-900/90 border border-slate-700 focus:border-amber-500 text-slate-100 focus:outline-none transition-colors"
+                    className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-[#F3EFE6] dark:bg-[#121B14] border border-[#E0D9CB] dark:border-[#243628] focus:border-amber-500 focus:ring-1 focus:ring-amber-500 text-[#1A241C] dark:text-[#F3EFE6] focus:outline-none transition-colors"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div>
-                  <label className="text-xs font-bold text-slate-300 block mb-1">
+                  <label className="text-xs font-bold text-[#1A241C] dark:text-[#E0D9CB] block mb-1">
                     {t('القسم / الإدارة *', 'Department *')}
                   </label>
                   <select
                     value={departmentId}
                     onChange={e => setDepartmentId(e.target.value)}
                     dir="rtl"
-                    className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-slate-900/90 border border-slate-700 focus:border-amber-500 text-slate-100 focus:outline-none transition-colors"
+                    className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-[#F3EFE6] dark:bg-[#121B14] border border-[#E0D9CB] dark:border-[#243628] focus:border-amber-500 focus:ring-1 focus:ring-amber-500 text-[#1A241C] dark:text-[#F3EFE6] focus:outline-none transition-colors"
                   >
                     {DEPARTMENTS.map(d => (
-                      <option key={d.id} value={d.id} className="bg-slate-900 text-slate-100">
+                      <option key={d.id} value={d.id} className="bg-[#F3EFE6] dark:bg-[#17231A] text-[#1A241C] dark:text-[#F3EFE6]">
                         {isRtl ? d.nameAr : d.nameEn}
                       </option>
                     ))}
@@ -512,45 +512,45 @@ export const UserManagementView: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-slate-300 block mb-1">
+                  <label className="text-xs font-bold text-[#1A241C] dark:text-[#E0D9CB] block mb-1">
                     {t('الدور الوظيفي *', 'Job Role *')}
                   </label>
                   <select
                     value={role}
                     onChange={e => setRole(e.target.value as UserRole)}
                     dir="rtl"
-                    className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-slate-900/90 border border-slate-700 focus:border-amber-500 text-slate-100 focus:outline-none transition-colors"
+                    className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-[#F3EFE6] dark:bg-[#121B14] border border-[#E0D9CB] dark:border-[#243628] focus:border-amber-500 focus:ring-1 focus:ring-amber-500 text-[#1A241C] dark:text-[#F3EFE6] focus:outline-none transition-colors"
                   >
-                    <option value="SUPER_ADMIN" className="bg-slate-900 text-slate-100">{t('الرئيس التنفيذي (C-Suite)', 'Chief Executive (C-Suite)')}</option>
-                    <option value="FINANCE_OFFICER" className="bg-slate-900 text-slate-100">{t('المدير المالي (CFO)', 'Chief Financial Officer (Finance)')}</option>
-                    <option value="HR_MANAGER" className="bg-slate-900 text-slate-100">{t('مدير الموارد البشرية (HR)', 'HR Director')}</option>
-                    <option value="PROJECTS_ENGINEER" className="bg-slate-900 text-slate-100">{t('مدير المكتب الفني والمشاريع', 'Technical Office Director')}</option>
-                    <option value="LEGAL_COUNSEL" className="bg-slate-900 text-slate-100">{t('المستشار القانوني العام', 'General Legal Counsel')}</option>
-                    <option value="RECEPTION_SECURITY" className="bg-slate-900 text-slate-100">{t('مسؤول الاستقبال والأمن', 'Front Desk & Security')}</option>
+                    <option value="SUPER_ADMIN" className="bg-[#F3EFE6] dark:bg-[#17231A] text-[#1A241C] dark:text-[#F3EFE6]">{t('الرئيس التنفيذي (C-Suite)', 'Chief Executive (C-Suite)')}</option>
+                    <option value="FINANCE_OFFICER" className="bg-[#F3EFE6] dark:bg-[#17231A] text-[#1A241C] dark:text-[#F3EFE6]">{t('المدير المالي (CFO)', 'Chief Financial Officer (Finance)')}</option>
+                    <option value="HR_MANAGER" className="bg-[#F3EFE6] dark:bg-[#17231A] text-[#1A241C] dark:text-[#F3EFE6]">{t('مدير الموارد البشرية (HR)', 'HR Director')}</option>
+                    <option value="PROJECTS_ENGINEER" className="bg-[#F3EFE6] dark:bg-[#17231A] text-[#1A241C] dark:text-[#F3EFE6]">{t('مدير المكتب الفني والمشاريع', 'Technical Office Director')}</option>
+                    <option value="LEGAL_COUNSEL" className="bg-[#F3EFE6] dark:bg-[#17231A] text-[#1A241C] dark:text-[#F3EFE6]">{t('المستشار القانوني العام', 'General Legal Counsel')}</option>
+                    <option value="RECEPTION_SECURITY" className="bg-[#F3EFE6] dark:bg-[#17231A] text-[#1A241C] dark:text-[#F3EFE6]">{t('مسؤول الاستقبال والأمن', 'Front Desk & Security')}</option>
                   </select>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div>
-                  <label className="text-xs font-bold text-slate-300 block mb-1">
+                  <label className="text-xs font-bold text-[#1A241C] dark:text-[#E0D9CB] block mb-1">
                     {t('مستوى الصلاحية *', 'Permission Level *')}
                   </label>
                   <select
                     value={clearanceLevel}
                     onChange={e => setClearanceLevel(Number(e.target.value) as 1 | 2 | 3 | 4)}
                     dir="rtl"
-                    className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-slate-900/90 border border-slate-700 focus:border-amber-500 text-slate-100 focus:outline-none transition-colors"
+                    className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-[#F3EFE6] dark:bg-[#121B14] border border-[#E0D9CB] dark:border-[#243628] focus:border-amber-500 focus:ring-1 focus:ring-amber-500 text-[#1A241C] dark:text-[#F3EFE6] focus:outline-none transition-colors"
                   >
-                    <option value={4} className="bg-slate-900 text-slate-100">{t('المستوى 4 - إدارة عليا (Governance)', 'Level 4 - C-Suite Governance')}</option>
-                    <option value={3} className="bg-slate-900 text-slate-100">{t('المستوى 3 - إدارة تنفيذية (Executive)', 'Level 3 - Executive')}</option>
-                    <option value={2} className="bg-slate-900 text-slate-100">{t('المستوى 2 - إشرافي (Supervisory)', 'Level 2 - Supervisory')}</option>
-                    <option value={1} className="bg-slate-900 text-slate-100">{t('المستوى 1 - تشغيلي (Operational)', 'Level 1 - Operational')}</option>
+                    <option value={4} className="bg-[#F3EFE6] dark:bg-[#17231A] text-[#1A241C] dark:text-[#F3EFE6]">{t('المستوى 4 - إدارة عليا (Governance)', 'Level 4 - C-Suite Governance')}</option>
+                    <option value={3} className="bg-[#F3EFE6] dark:bg-[#17231A] text-[#1A241C] dark:text-[#F3EFE6]">{t('المستوى 3 - إدارة تنفيذية (Executive)', 'Level 3 - Executive')}</option>
+                    <option value={2} className="bg-[#F3EFE6] dark:bg-[#17231A] text-[#1A241C] dark:text-[#F3EFE6]">{t('المستوى 2 - إشرافي (Supervisory)', 'Level 2 - Supervisory')}</option>
+                    <option value={1} className="bg-[#F3EFE6] dark:bg-[#17231A] text-[#1A241C] dark:text-[#F3EFE6]">{t('المستوى 1 - تشغيلي (Operational)', 'Level 1 - Operational')}</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-slate-300 block mb-1">
+                  <label className="text-xs font-bold text-[#1A241C] dark:text-[#E0D9CB] block mb-1">
                     {t('كلمة المرور *', 'Password *')}
                   </label>
                   <div className="relative">
@@ -561,12 +561,12 @@ export const UserManagementView: React.FC = () => {
                       required
                       dir="ltr"
                       placeholder="••••••••••••"
-                      className="w-full ps-3.5 pe-10 py-2.5 rounded-xl text-xs bg-slate-900/90 border border-slate-700 focus:border-amber-500 text-slate-100 focus:outline-none transition-colors"
+                      className="w-full ps-3.5 pe-10 py-2.5 rounded-xl text-xs bg-[#F3EFE6] dark:bg-[#121B14] border border-[#E0D9CB] dark:border-[#243628] focus:border-amber-500 focus:ring-1 focus:ring-amber-500 text-[#1A241C] dark:text-[#F3EFE6] focus:outline-none transition-colors"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute inset-y-0 end-0 pe-3 flex items-center text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
+                      className="absolute inset-y-0 end-0 pe-3 flex items-center text-[#5C665E] dark:text-[#8FA392] hover:text-[#D99B26] dark:hover:text-[#EBB34D] transition-colors cursor-pointer"
                     >
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
@@ -575,17 +575,17 @@ export const UserManagementView: React.FC = () => {
               </div>
 
               {/* Submit / Cancel Buttons */}
-              <div className="pt-4 border-t border-slate-800 flex items-center justify-end gap-2.5">
+              <div className="pt-4 border-t border-[#E0D9CB] dark:border-[#243628] flex items-center justify-end gap-2.5">
                 <button
                   type="button"
                   onClick={() => setModalMode('NONE')}
-                  className="px-4 py-2.5 rounded-xl text-xs font-bold border border-slate-700 hover:bg-slate-800 text-slate-300 transition-colors cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl text-xs font-bold border border-[#E0D9CB] dark:border-[#243628] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23] text-[#5C665E] dark:text-[#8FA392] transition-colors cursor-pointer"
                 >
                   {t('إلغاء', 'Cancel')}
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 shadow-md hover:shadow-amber-500/20 active:scale-95 transition-all cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-amber-500 via-amber-600 to-amber-500 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold shadow-md shadow-amber-500/20 active:scale-95 transition-all cursor-pointer"
                 >
                   {modalMode === 'ADD' ? t('حفظ المستخدم', 'Save User') : t('حفظ التعديلات', 'Save Changes')}
                 </button>
