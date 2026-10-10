@@ -161,16 +161,16 @@ export const RBACView: React.FC = () => {
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-base sm:text-lg font-black text-[#1A241C] dark:text-[#F3EFE6] tracking-tight">
-                {t('مصفوفة الصلاحيات والحوكمة الشاملة (Enterprise RBAC)', 'Multi-Department RBAC Matrix')}
+                {t('مصفوفة الصلاحيات (RBAC)', 'Multi-Department RBAC Matrix')}
               </h2>
               <span className="px-2 py-0.5 rounded-full bg-amber-500/15 text-[#D99B26] dark:text-[#EBB34D] text-[10px] font-bold border border-amber-500/30">
-                {t('9 قطاعات مؤسسية', '9 Corporate Suites')}
+                {t('9 قطاعات', '9 Departments')}
               </span>
             </div>
             <p className="text-xs text-[#5C665E] dark:text-[#8FA392] mt-0.5">
               {t(
-                'ضبط وتدقيق صلاحيات الوصول الدقيقة عبر كافة قطاعات المنظومة وعزل الربط المالي المحلي.',
-                'Granular permission governance across all enterprise suites with strict financial isolation.'
+                'ضبط وتعيين صلاحيات الوصول عبر كافة قطاعات الشركة.',
+                'Manage access permissions across all company departments.'
               )}
             </p>
           </div>

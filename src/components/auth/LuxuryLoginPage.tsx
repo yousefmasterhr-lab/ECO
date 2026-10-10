@@ -12,7 +12,6 @@ import {
   AlertTriangle,
   ArrowRight,
   ArrowLeft,
-  KeyRound,
   CheckCircle2,
   Loader2
 } from 'lucide-react';
@@ -23,15 +22,14 @@ interface LuxuryLoginPageProps {
 
 export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) => {
   const { isRtl, t } = useLanguage();
-  const { login, rememberMe, setRememberMe, seedUsers, navigate } = useAuth();
+  const { login, rememberMe, setRememberMe, navigate } = useAuth();
 
   const [emailOrUsername, setEmailOrUsername] = useState('admin@hrsup.com');
-  const [password, setPassword] = useState('admin123');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [shakeCard, setShakeCard] = useState(false);
-  const [activePresetIndex, setActivePresetIndex] = useState(0);
   const [welcomeUser, setWelcomeUser] = useState<AuthUser | null>(null);
 
   // Background Canvas for Interactive Floating Stardust & Ambient Gold Particles
@@ -126,16 +124,6 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
     };
   }, []);
 
-  const handleQuickSeedSelect = (index: number) => {
-    setActivePresetIndex(index);
-    const selected = seedUsers[index];
-    if (selected) {
-      setEmailOrUsername(selected.user.email);
-      setPassword(selected.passwordHash);
-      setErrorMessage(null);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isVerifying || welcomeUser) return;
@@ -154,12 +142,12 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
         setShakeCard(true);
         setTimeout(() => setShakeCard(false), 500);
       } else {
-        // Trigger cinematic welcome splash transition for 1.8 seconds
+        // Trigger cinematic welcome splash transition for 1.5 seconds
         setWelcomeUser(result.user);
         setTimeout(() => {
           navigate('/');
           if (onSuccess) onSuccess();
-        }, 1800);
+        }, 1500);
       }
     } catch {
       setErrorMessage(
@@ -239,14 +227,12 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
               <motion.div
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4, duration: 0.4 }}
+                transition={{ delay: 0.35, duration: 0.4 }}
                 className="flex items-center justify-center gap-2 text-xs text-amber-400 font-medium"
               >
                 <Loader2 className="w-3.5 h-3.5 text-amber-400 animate-spin" />
                 <span>
-                  {isRtl
-                    ? `جاري تهيئة لوحة التحكم وصلاحيات ${welcomeUser.roleLabelAr}...`
-                    : `Initializing workspace & ${welcomeUser.roleLabelEn} clearance...`}
+                  {isRtl ? 'جاري فتح لوحة التحكم...' : 'Opening dashboard...'}
                 </span>
               </motion.div>
             </div>
@@ -427,52 +413,6 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
                 </button>
               </div>
             </form>
-
-            {/* Corporate Pre-configured Accounts (Rapid Reviewer Testing Hub) */}
-            <div className="mt-6 pt-5 border-t border-slate-800/80">
-              <div className="flex items-center justify-between text-[11px] font-bold text-zinc-400 mb-2.5 px-0.5">
-                <span className="flex items-center gap-1.5">
-                  <KeyRound className="w-3.5 h-3.5 text-amber-400" />
-                  <span>{t('حسابات تجريبية مهيأة للاختبار الفوري', 'Verified Seed Accounts')}</span>
-                </span>
-                <span className="text-[10px] text-amber-400/80 font-mono">RBAC Matrix</span>
-              </div>
-
-              <div className="grid grid-cols-3 gap-1.5">
-                {seedUsers.slice(0, 3).map((seed, idx) => {
-                  const isSelected = activePresetIndex === idx;
-                  return (
-                    <button
-                      key={seed.user.id}
-                      type="button"
-                      onClick={() => handleQuickSeedSelect(idx)}
-                      className={`p-2 rounded-xl text-center text-[10.5px] transition-all flex flex-col items-center justify-center gap-1 border cursor-pointer ${
-                        isSelected
-                          ? 'bg-amber-500/15 border-amber-500/60 text-amber-300 font-bold shadow-xs'
-                          : 'bg-slate-950/40 border-slate-800 text-zinc-400 hover:text-zinc-200 hover:border-slate-700'
-                      }`}
-                    >
-                      <span className="font-bold truncate w-full block">
-                        {idx === 0
-                          ? 'C-Suite (Admin)'
-                          : idx === 1
-                          ? 'Finance (CFO)'
-                          : 'HR (Director)'}
-                      </span>
-                      <span className="text-[9px] opacity-75 font-mono">
-                        {seed.passwordHash}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              <p className="text-[10.5px] text-zinc-500 text-center mt-3">
-                {isRtl
-                  ? 'انقر على أي حساب لتعبئة بيانات الاعتماد واختبار صلاحيات RBAC فورياً.'
-                  : 'Click any seed to fill credentials and inspect role-based access.'}
-              </p>
-            </div>
           </motion.div>
         )}
       </AnimatePresence>

@@ -223,10 +223,10 @@ export const DEPARTMENT_CATEGORIES: DepartmentNavCategory[] = [
     badgeAr: 'نظام',
     badgeEn: 'System',
     subItems: [
-      { id: 'set_rbac', titleAr: 'إدارة الصلاحيات والأدوار (RBAC)', titleEn: 'Roles & Permissions (RBAC)' },
-      { id: 'set_users', titleAr: 'إدارة المستخدمين وحسابات الوصول', titleEn: 'User Management' },
-      { id: 'set_audit', titleAr: 'سجل العمليات والأمان', titleEn: 'Audit Logs & Security' },
-      { id: 'set_integrations', titleAr: 'مركز إدارة وتكامل قواعد البيانات (SQL Hub)', titleEn: 'Database Federation Hub (SQL)' },
+      { id: 'set_rbac', titleAr: 'مصفوفة الصلاحيات (RBAC)', titleEn: 'Roles & Permissions (RBAC)' },
+      { id: 'set_users', titleAr: 'إدارة المستخدمين', titleEn: 'User Management' },
+      { id: 'set_audit', titleAr: 'سجل العمليات', titleEn: 'Audit Log' },
+      { id: 'set_integrations', titleAr: 'ربط وتكامل قواعد البيانات (SQL Hub)', titleEn: 'Database Federation Hub (SQL)' },
     ],
   },
 ];

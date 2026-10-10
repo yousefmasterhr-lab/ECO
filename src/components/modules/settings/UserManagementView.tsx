@@ -102,12 +102,12 @@ export const UserManagementView: React.FC = () => {
     }
 
     if (!nationalId.trim() || nationalId.length < 10 || !/^\d+$/.test(nationalId.trim())) {
-      setFormError(t('الرقم القومي / رقم الهوية يجب أن يتكون من 10 إلى 14 رقماً صحيحاً.', 'National ID must be between 10 to 14 digits.'));
+      setFormError(t('الرقم القومي يجب أن يتكون من 10 إلى 14 رقماً.', 'National ID must be between 10 to 14 digits.'));
       return;
     }
 
     if (!email.trim() || !email.includes('@')) {
-      setFormError(t('يرجى إدخال بريد إلكتروني مؤسسي صحيح.', 'Please enter a valid corporate email.'));
+      setFormError(t('يرجى إدخال بريد إلكتروني صحيح.', 'Please enter a valid corporate email.'));
       return;
     }
 
@@ -150,7 +150,7 @@ export const UserManagementView: React.FC = () => {
         passwordHash: password,
       });
 
-      setFormSuccess(t('تم إنشاء حساب المستخدم بنجاح وتوثيقه بسجل الأمان.', 'User created and verified in audit log!'));
+      setFormSuccess(t('تم حفظ المستخدم بنجاح.', 'User saved successfully!'));
       setTimeout(() => {
         setModalMode('NONE');
         resetForm();
@@ -222,16 +222,16 @@ export const UserManagementView: React.FC = () => {
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-base sm:text-lg font-black text-[#1A241C] dark:text-[#F3EFE6] tracking-tight">
-                {t('إدارة حسابات المستخدمين وحوكمة الوصول', 'Enterprise User Management')}
+                {t('إدارة المستخدمين', 'User Management')}
               </h2>
               <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold border border-emerald-500/30">
-                {t('حسابات حقيقية مؤكدة', 'Verified Directory')}
+                {t('حسابات نشطة', 'Active Accounts')}
               </span>
             </div>
             <p className="text-xs text-[#5C665E] dark:text-[#8FA392] mt-0.5">
               {t(
-                'إدارة الهويات الرقمية، الصلاحيات الإدارية، وربط الموظفين بالأدوار المؤسسية دون سجلات وهمية.',
-                'Manage real corporate accounts, assign RBAC clearances, and audit system credentials.'
+                'إدارة حسابات وصلاحيات المستخدمين والربط بالأدوار الوظيفية.',
+                'Manage user accounts, roles, and permissions.'
               )}
             </p>
           </div>
@@ -325,20 +325,20 @@ export const UserManagementView: React.FC = () => {
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-[11px]">
-                    <span className="text-[#5C665E] dark:text-[#8FA392]">{t('الدور المؤسسي:', 'Role:')}</span>
+                    <span className="text-[#5C665E] dark:text-[#8FA392]">{t('الدور الوظيفي:', 'Role:')}</span>
                     <span className="font-bold text-[#D99B26] dark:text-[#EBB34D]">
                       {isRtl ? u.roleLabelAr : u.roleLabelEn}
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-[11px]">
-                    <span className="text-[#5C665E] dark:text-[#8FA392]">{t('مستوى التصريح:', 'Clearance:')}</span>
+                    <span className="text-[#5C665E] dark:text-[#8FA392]">{t('مستوى الصلاحية:', 'Clearance:')}</span>
                     <span className="inline-flex items-center gap-1 font-mono font-bold text-slate-700 dark:text-slate-300">
                       <Shield className="w-3 h-3 text-[#D99B26] dark:text-[#EBB34D]" />
                       <span>Level {u.clearanceLevel}</span>
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-[11px]">
-                    <span className="text-[#5C665E] dark:text-[#8FA392]">{t('الرقم القومي / الهوية:', 'National ID:')}</span>
+                    <span className="text-[#5C665E] dark:text-[#8FA392]">{t('الرقم القومي:', 'National ID:')}</span>
                     <span className="font-mono text-[#5C665E] dark:text-[#8FA392]">
                       {u.nationalId || '28501010102345'}
                     </span>
@@ -373,26 +373,26 @@ export const UserManagementView: React.FC = () => {
 
       {/* 4. Functional Add / Edit User Modal */}
       {modalMode !== 'NONE' && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="relative w-full max-w-lg rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl p-6 sm:p-7 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="relative w-full max-w-lg rounded-3xl bg-slate-900 border border-slate-700 shadow-2xl p-6 sm:p-7 max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
-            <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800 mb-5">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-5">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-amber-500/15 text-[#D99B26] dark:text-[#EBB34D] flex items-center justify-center">
+                <div className="w-9 h-9 rounded-xl bg-amber-500/15 text-[#EBB34D] flex items-center justify-center">
                   <UserPlus className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-black text-slate-900 dark:text-slate-100">
-                    {modalMode === 'ADD' ? t('إضافة مستخدم جديد للمنظومة', 'Add Real Corporate User') : t('تعديل بيانات وصلاحيات المستخدم', 'Edit User Credentials')}
+                  <h3 className="text-sm font-black text-slate-100">
+                    {modalMode === 'ADD' ? t('إضافة مستخدم جديد', 'Add User') : t('تعديل بيانات المستخدم', 'Edit User')}
                   </h3>
-                  <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                    {t('التحقق الشامل من الهوية الوطنية والصلاحيات الإدارية', 'Enterprise identity validation & clearance governance')}
+                  <span className="text-[11px] text-slate-400">
+                    {t('إدارة حساب وصلاحيات المستخدم.', 'Manage user account and permissions.')}
                   </span>
                 </div>
               </div>
               <button
                 onClick={() => setModalMode('NONE')}
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -400,13 +400,13 @@ export const UserManagementView: React.FC = () => {
 
             {/* Error / Success Banners */}
             {formError && (
-              <div className="mb-4 p-3 rounded-xl text-rose-500 bg-rose-950/30 border border-rose-800/50 text-xs flex items-center gap-2">
+              <div className="mb-4 p-3 rounded-xl text-rose-400 bg-rose-950/40 border border-rose-800/60 text-xs flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>{formError}</span>
               </div>
             )}
             {formSuccess && (
-              <div className="mb-4 p-3 rounded-xl text-emerald-500 bg-emerald-950/30 border border-emerald-800/50 text-xs flex items-center gap-2">
+              <div className="mb-4 p-3 rounded-xl text-emerald-400 bg-emerald-950/40 border border-emerald-800/60 text-xs flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 shrink-0" />
                 <span>{formSuccess}</span>
               </div>
@@ -416,7 +416,7 @@ export const UserManagementView: React.FC = () => {
             <form onSubmit={handleSubmit} className="space-y-4 text-start">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div>
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                  <label className="text-xs font-bold text-slate-300 block mb-1">
                     {t('الاسم بالكامل (عربي) *', 'Full Name (Arabic) *')}
                   </label>
                   <input
@@ -425,12 +425,12 @@ export const UserManagementView: React.FC = () => {
                     onChange={e => setNameAr(e.target.value)}
                     required
                     placeholder="م. إبراهيم خليل"
-                    className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-amber-500"
+                    className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-slate-900/90 border border-slate-700 focus:border-amber-500 text-slate-100 focus:outline-none transition-colors"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                  <label className="text-xs font-bold text-slate-300 block mb-1">
                     {t('الاسم بالكامل (إنجليزي) *', 'Full Name (English) *')}
                   </label>
                   <input
@@ -440,14 +440,14 @@ export const UserManagementView: React.FC = () => {
                     required
                     dir="ltr"
                     placeholder="Eng. Ibrahim Khalil"
-                    className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-amber-500"
+                    className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-slate-900/90 border border-slate-700 focus:border-amber-500 text-slate-100 focus:outline-none transition-colors"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                  {t('الرقم القومي / رقم الهوية الوطنية (10 - 14 رقماً) *', 'National ID / Iqama (10-14 digits) *')}
+                <label className="text-xs font-bold text-slate-300 block mb-1">
+                  {t('الرقم القومي *', 'National ID *')}
                 </label>
                 <input
                   type="text"
@@ -456,14 +456,14 @@ export const UserManagementView: React.FC = () => {
                   required
                   dir="ltr"
                   placeholder="28501010102345"
-                  className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-amber-500 font-mono"
+                  className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-slate-900/90 border border-slate-700 focus:border-amber-500 text-slate-100 focus:outline-none transition-colors font-mono"
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div>
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                    {t('البريد الإلكتروني المؤسسي *', 'Corporate Email *')}
+                  <label className="text-xs font-bold text-slate-300 block mb-1">
+                    {t('البريد الإلكتروني *', 'Email *')}
                   </label>
                   <input
                     type="email"
@@ -472,13 +472,13 @@ export const UserManagementView: React.FC = () => {
                     required
                     dir="ltr"
                     placeholder="khalil@hrsup.com"
-                    className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-amber-500"
+                    className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-slate-900/90 border border-slate-700 focus:border-amber-500 text-slate-100 focus:outline-none transition-colors"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                    {t('اسم المستخدم للولوج *', 'Login Username *')}
+                  <label className="text-xs font-bold text-slate-300 block mb-1">
+                    {t('اسم المستخدم *', 'Username *')}
                   </label>
                   <input
                     type="text"
@@ -487,23 +487,24 @@ export const UserManagementView: React.FC = () => {
                     required
                     dir="ltr"
                     placeholder="khalil"
-                    className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-amber-500"
+                    className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-slate-900/90 border border-slate-700 focus:border-amber-500 text-slate-100 focus:outline-none transition-colors"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div>
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                  <label className="text-xs font-bold text-slate-300 block mb-1">
                     {t('القسم / الإدارة *', 'Department *')}
                   </label>
                   <select
                     value={departmentId}
                     onChange={e => setDepartmentId(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-amber-500"
+                    dir="rtl"
+                    className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-slate-900/90 border border-slate-700 focus:border-amber-500 text-slate-100 focus:outline-none transition-colors"
                   >
                     {DEPARTMENTS.map(d => (
-                      <option key={d.id} value={d.id}>
+                      <option key={d.id} value={d.id} className="bg-slate-900 text-slate-100">
                         {isRtl ? d.nameAr : d.nameEn}
                       </option>
                     ))}
@@ -511,43 +512,45 @@ export const UserManagementView: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                    {t('الدور المؤسسي (RBAC) *', 'Corporate Role (RBAC) *')}
+                  <label className="text-xs font-bold text-slate-300 block mb-1">
+                    {t('الدور الوظيفي *', 'Job Role *')}
                   </label>
                   <select
                     value={role}
                     onChange={e => setRole(e.target.value as UserRole)}
-                    className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-amber-500"
+                    dir="rtl"
+                    className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-slate-900/90 border border-slate-700 focus:border-amber-500 text-slate-100 focus:outline-none transition-colors"
                   >
-                    <option value="SUPER_ADMIN">{t('الرئيس التنفيذي (C-Suite)', 'Chief Operating Officer (C-Suite)')}</option>
-                    <option value="FINANCE_OFFICER">{t('المدير المالي التنفيذي (CFO)', 'Chief Financial Officer (Finance)')}</option>
-                    <option value="HR_MANAGER">{t('مدير الموارد البشرية (HR Director)', 'HR Director')}</option>
-                    <option value="PROJECTS_ENGINEER">{t('مدير المكتب الفني والمشاريع', 'Technical Office Director')}</option>
-                    <option value="LEGAL_COUNSEL">{t('المستشار القانوني العام', 'General Legal Counsel')}</option>
-                    <option value="RECEPTION_SECURITY">{t('مسؤول الاستقبال والأمن', 'Front Desk & Security')}</option>
+                    <option value="SUPER_ADMIN" className="bg-slate-900 text-slate-100">{t('الرئيس التنفيذي (C-Suite)', 'Chief Executive (C-Suite)')}</option>
+                    <option value="FINANCE_OFFICER" className="bg-slate-900 text-slate-100">{t('المدير المالي (CFO)', 'Chief Financial Officer (Finance)')}</option>
+                    <option value="HR_MANAGER" className="bg-slate-900 text-slate-100">{t('مدير الموارد البشرية (HR)', 'HR Director')}</option>
+                    <option value="PROJECTS_ENGINEER" className="bg-slate-900 text-slate-100">{t('مدير المكتب الفني والمشاريع', 'Technical Office Director')}</option>
+                    <option value="LEGAL_COUNSEL" className="bg-slate-900 text-slate-100">{t('المستشار القانوني العام', 'General Legal Counsel')}</option>
+                    <option value="RECEPTION_SECURITY" className="bg-slate-900 text-slate-100">{t('مسؤول الاستقبال والأمن', 'Front Desk & Security')}</option>
                   </select>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div>
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                    {t('مستوى التصريح الأمني *', 'Clearance Level *')}
+                  <label className="text-xs font-bold text-slate-300 block mb-1">
+                    {t('مستوى الصلاحية *', 'Permission Level *')}
                   </label>
                   <select
                     value={clearanceLevel}
                     onChange={e => setClearanceLevel(Number(e.target.value) as 1 | 2 | 3 | 4)}
-                    className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-amber-500"
+                    dir="rtl"
+                    className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-slate-900/90 border border-slate-700 focus:border-amber-500 text-slate-100 focus:outline-none transition-colors"
                   >
-                    <option value={4}>{t('المستوى 4 - إدارة عليا (Governance)', 'Level 4 - C-Suite Governance')}</option>
-                    <option value={3}>{t('المستوى 3 - إدارة تنفيذية (Executive)', 'Level 3 - Executive')}</option>
-                    <option value={2}>{t('المستوى 2 - إشرافي وميداني (Supervisory)', 'Level 2 - Supervisory')}</option>
-                    <option value={1}>{t('المستوى 1 - تشغيلي مقيد (Operational)', 'Level 1 - Operational')}</option>
+                    <option value={4} className="bg-slate-900 text-slate-100">{t('المستوى 4 - إدارة عليا (Governance)', 'Level 4 - C-Suite Governance')}</option>
+                    <option value={3} className="bg-slate-900 text-slate-100">{t('المستوى 3 - إدارة تنفيذية (Executive)', 'Level 3 - Executive')}</option>
+                    <option value={2} className="bg-slate-900 text-slate-100">{t('المستوى 2 - إشرافي (Supervisory)', 'Level 2 - Supervisory')}</option>
+                    <option value={1} className="bg-slate-900 text-slate-100">{t('المستوى 1 - تشغيلي (Operational)', 'Level 1 - Operational')}</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                  <label className="text-xs font-bold text-slate-300 block mb-1">
                     {t('كلمة المرور *', 'Password *')}
                   </label>
                   <div className="relative">
@@ -558,12 +561,12 @@ export const UserManagementView: React.FC = () => {
                       required
                       dir="ltr"
                       placeholder="••••••••••••"
-                      className="w-full ps-3 pe-9 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-amber-500"
+                      className="w-full ps-3.5 pe-10 py-2.5 rounded-xl text-xs bg-slate-900/90 border border-slate-700 focus:border-amber-500 text-slate-100 focus:outline-none transition-colors"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute inset-y-0 end-0 pe-2.5 flex items-center text-slate-400 hover:text-slate-600"
+                      className="absolute inset-y-0 end-0 pe-3 flex items-center text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
                     >
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
@@ -572,19 +575,19 @@ export const UserManagementView: React.FC = () => {
               </div>
 
               {/* Submit / Cancel Buttons */}
-              <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end gap-2.5">
+              <div className="pt-4 border-t border-slate-800 flex items-center justify-end gap-2.5">
                 <button
                   type="button"
                   onClick={() => setModalMode('NONE')}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  className="px-4 py-2.5 rounded-xl text-xs font-bold border border-slate-700 hover:bg-slate-800 text-slate-300 transition-colors cursor-pointer"
                 >
                   {t('إلغاء', 'Cancel')}
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl text-xs font-bold bg-[#1C291E] dark:bg-[#EBB34D] text-[#F3EFE6] dark:text-[#0E1610] shadow-md hover:opacity-90 active:scale-95"
+                  className="px-5 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 shadow-md hover:shadow-amber-500/20 active:scale-95 transition-all cursor-pointer"
                 >
-                  {modalMode === 'ADD' ? t('إنشاء وتثبيت الحساب', 'Create User Account') : t('حفظ التعديلات', 'Save Changes')}
+                  {modalMode === 'ADD' ? t('حفظ المستخدم', 'Save User') : t('حفظ التعديلات', 'Save Changes')}
                 </button>
               </div>
             </form>

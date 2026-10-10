@@ -43,23 +43,28 @@ export const AuditLogsView: React.FC = () => {
     }
   };
 
-  const getCategoryBadge = (category: string) => {
+  const getCategoryBadge = (category: string, actionAr?: string) => {
     switch (category) {
-      case 'AUTH':
-        return { labelAr: 'تسجيل دخول/خروج', labelEn: 'Auth', color: 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/25' };
+      case 'AUTH': {
+        const isLogout = actionAr?.includes('خروج');
+        if (isLogout) {
+          return { labelAr: 'تسجيل خروج', labelEn: 'Sign Out', color: 'bg-slate-500/10 text-slate-700 dark:text-slate-400 border-slate-500/25' };
+        }
+        return { labelAr: 'تسجيل دخول', labelEn: 'Sign In', color: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/25' };
+      }
       case 'USER_MGMT':
-        return { labelAr: 'إدارة المستخدمين', labelEn: 'User Mgmt', color: 'bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-500/25' };
+        return { labelAr: 'حسابات المستخدمين', labelEn: 'User Accounts', color: 'bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-500/25' };
       case 'RBAC':
-        return { labelAr: 'حوكمة الصلاحيات', labelEn: 'RBAC', color: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/25' };
+        return { labelAr: 'تعديل الصلاحيات', labelEn: 'Permissions', color: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/25' };
       case 'SECURITY':
       default:
-        return { labelAr: 'الأمان المركزي', labelEn: 'Security', color: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/25' };
+        return { labelAr: 'إعدادات النظام', labelEn: 'System Settings', color: 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/25' };
     }
   };
 
   return (
     <div className="w-full space-y-6 animate-in fade-in duration-200">
-      {/* 1. Header with Live Event Counter */}
+      {/* 1. Header with Event Counter */}
       <div className="rounded-2xl border border-[#E0D9CB] dark:border-[#243628] bg-[#FBF9F5] dark:bg-[#121B14] p-5 sm:p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-2xl bg-amber-500/15 text-[#D99B26] dark:text-[#EBB34D] border border-amber-500/30 flex items-center justify-center shrink-0">
@@ -68,14 +73,13 @@ export const AuditLogsView: React.FC = () => {
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-base sm:text-lg font-black text-[#1A241C] dark:text-[#F3EFE6] tracking-tight">
-                {t('سجل العمليات والأمان المؤسسي الحي (Live Audit Trail)', 'Enterprise Live Audit Trail')}
+                {t('سجل العمليات', 'Audit Log')}
               </h2>
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
             </div>
             <p className="text-xs text-[#5C665E] dark:text-[#8FA392] mt-0.5">
               {t(
-                'توثيق ديناميكي مشفر لكافة عمليات الدخول وتعديل الصلاحيات وإنشاء الحسابات في الزمن الحقيقي.',
-                'Real-time cryptographic audit trail tracking logins, permission modifications, and user creation.'
+                'سجل متابعة حركات المستخدمين وعمليات الدخول وتعديل الصلاحيات.',
+                'User activity, login, and permissions audit log.'
               )}
             </p>
           </div>
@@ -83,7 +87,7 @@ export const AuditLogsView: React.FC = () => {
 
         <div className="flex items-center gap-2 text-xs font-mono font-bold text-[#5C665E] dark:text-[#8FA392]">
           <span className="px-3 py-1.5 rounded-xl bg-[#F3EFE6] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628]">
-            {filteredLogs.length} {t('سجلات موثقة', 'Audit Records')}
+            {filteredLogs.length} {t('سجلات', 'Records')}
           </span>
         </div>
       </div>
@@ -94,10 +98,10 @@ export const AuditLogsView: React.FC = () => {
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
           {[
             { id: 'ALL', labelAr: 'كافة العمليات', labelEn: 'All Events' },
-            { id: 'AUTH', labelAr: 'الدخول والجلسات', labelEn: 'Auth & Sessions' },
+            { id: 'AUTH', labelAr: 'تسجيل الدخول', labelEn: 'Login' },
             { id: 'USER_MGMT', labelAr: 'حسابات المستخدمين', labelEn: 'User Accounts' },
-            { id: 'RBAC', labelAr: 'مصفوفة الصلاحيات', labelEn: 'RBAC Matrix' },
-            { id: 'SECURITY', labelAr: 'أمان النظام', labelEn: 'Security Core' },
+            { id: 'RBAC', labelAr: 'تعديل الصلاحيات', labelEn: 'Permissions' },
+            { id: 'SECURITY', labelAr: 'إعدادات النظام', labelEn: 'System Settings' },
           ].map(tab => (
             <button
               key={tab.id}
@@ -135,7 +139,7 @@ export const AuditLogsView: React.FC = () => {
             </div>
           ) : (
             filteredLogs.map(log => {
-              const catBadge = getCategoryBadge(log.category);
+              const catBadge = getCategoryBadge(log.category, log.actionAr);
 
               return (
                 <div

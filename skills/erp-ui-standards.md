@@ -608,9 +608,25 @@ Whenever a global directive or styling standard is issued (including typography,
   - **Fully Functional User Management Modals:** "إضافة مستخدم جديد" (Add User) and "تعديل الصلاحيات" (Edit User) modals must execute complete validation (Arabic Name, English Name, 10-14 digit National ID, Corporate Email, Username, Department, Role, Clearance Level, Password) with status toggles (`ACTIVE` / `SUSPENDED`). Root administrator account is permanently protected from deletion or suspension.
   - **Dynamic Action-Driven Audit Trail:** Audit logs (`AuditLogsView.tsx`) must track REAL client interactions dynamically (`AUTH: LOGIN_SUCCESS`, `USER_MGMT: CREATE_USER`, `USER_MGMT: UPDATE_USER`, `RBAC: UPDATE_ROLE_PERMISSIONS`) with authentic timestamps, user names, role titles, and network identities instead of hardcoded strings.
 
+## Rule 41: Absolute Prohibition of Melodramatic & Pseudo-Technical Jargon (حظر المصطلحات المسرحية والتقنية الزائفة والالتزام باللغة المؤسسية الصريحة)
+
+- **Strict Policy (سياسة الحظر الصارم للمصطلحات المتكلفة والخيالية):** Under NO circumstances may the system use theatrical, sci-fi, or inflated vocabulary. All UI copy, labels, headers, badges, and log descriptions MUST use plain, natural, and standard Arabic corporate accounting terminology.
+- **Permanent Mapping Invariants (Enforce Everywhere عبر كافة الواجهات والحقول والسجلات):**
+  - ❌ `سجل العمليات والأمان المؤسسي الحي (Live Audit Trail)` ➡️ ✅ `سجل العمليات`
+  - ❌ `توثيق ديناميكي مشفر لكافة عمليات الدخول وتعديل الصلاحيات في الزمن الحقيقي` ➡️ ✅ `سجل متابعة حركات المستخدمين وتسجيل الدخول وتعديل الصلاحيات.`
+  - ❌ `حوكمة الصلاحيات` / `بروتوكول حوكمة الصلاحيات` ➡️ ✅ `تعديل الصلاحيات` أو `الصلاحيات`
+  - ❌ `الأمان المركزي` / `تهيئة منظومة الأمان المركزي` ➡️ ✅ `إعدادات النظام`
+  - ❌ `تأكيد الحساب الإداري الجذري وتفعيل بروتوكول حوكمة الصلاحيات (RBAC)` ➡️ ✅ `إنشاء حساب الإدارة وتفعيل الصلاحيات`
+  - ❌ `اسم المستخدم للولوج` ➡️ ✅ `اسم المستخدم`
+  - ❌ `إنشاء وتثبيت الحساب` ➡️ ✅ `حفظ المستخدم` أو `إضافة مستخدم`
+  - ❌ `دخول المنظومة المشفرة` ➡️ ✅ `تسجيل الدخول`
+  - ❌ `حماية السجلات النشطة` / `256-bit AES` ➡️ Delete completely (حذف تام).
+  - ❌ `تسجيل الخروج من المنظومة` ➡️ ✅ `تسجيل الخروج`
+  - ❌ `الرقم القومي / رقم الهوية الوطنية (10 - 14 رقماً)` ➡️ ✅ `الرقم القومي`
+
 ---
 
-## Rule 41: Dual-Theme Architecture & Icon-Only Toggle Standard (معيار الوضع المزدوج النهاري والليلي والأيقونة المجردة)
+## Rule 42: Dual-Theme Architecture & Icon-Only Toggle Standard (معيار الوضع المزدوج النهاري والليلي والأيقونة المجردة)
 
 - **Two Immutable Color Profiles (وضع نهاري وليلي حصراً):** The application strictly supports two harmonious corporate themes defined under "The Royal Olive & Warm Ivory" design system:
   - **Light Mode (الوضع النهاري):**
@@ -641,6 +657,7 @@ Whenever a global directive or styling standard is issued (including typography,
 - **Strict Print Isolation Guarantee (عزل تام لمنظومة الطباعة @media print):**
   - Toggling between Light and Dark modes must **NEVER** affect print rendering, paper backgrounds, or printable reports.
   - All `@media print` rules enforce independent absolute high-contrast resets (`background: #ffffff !important`, `color: #0f172a !important`, borders `#cbd5e1 !important`) ensuring zero dark-mode leaks or color bleed during hardcopy printing or PDF generation.
+
 
 
 

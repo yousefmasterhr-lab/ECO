@@ -49,7 +49,7 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({ activeSubItemId 
           }`}
         >
           <ShieldCheck className="w-3.5 h-3.5" />
-          <span>{t('مصفوفة الصلاحيات الشاملة (RBAC)', 'Multi-Department RBAC Matrix')}</span>
+          <span>{t('مصفوفة الصلاحيات (RBAC)', 'Permissions Matrix')}</span>
         </button>
 
         <button
@@ -61,7 +61,7 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({ activeSubItemId 
           }`}
         >
           <Users className="w-3.5 h-3.5" />
-          <span>{t('إدارة المستخدمين النشطة', 'User Management')}</span>
+          <span>{t('إدارة المستخدمين', 'User Management')}</span>
         </button>
 
         <button
@@ -73,7 +73,7 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({ activeSubItemId 
           }`}
         >
           <ScrollText className="w-3.5 h-3.5" />
-          <span>{t('سجل العمليات والأمان', 'Audit Trail & Logs')}</span>
+          <span>{t('سجل العمليات', 'Audit Log')}</span>
         </button>
 
         <button

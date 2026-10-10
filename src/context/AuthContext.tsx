@@ -93,11 +93,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         actorName: 'م. أحمد مصطفى',
         actorEmail: 'admin@hrsup.com',
         actorRole: 'SUPER_ADMIN',
-        actionAr: 'تهيئة منظومة الأمان المركزي',
-        actionEn: 'Initialize Security Core',
+        actionAr: 'إعدادات النظام',
+        actionEn: 'System Settings',
         category: 'SECURITY',
-        detailsAr: 'تأكيد الحساب الإداري الجذري وتفعيل بروتوكول حوكمة الصلاحيات (RBAC)',
-        detailsEn: 'Root administrator verified & RBAC multi-department matrix active',
+        detailsAr: 'إنشاء حساب الإدارة وتفعيل الصلاحيات',
+        detailsEn: 'Admin account created and permissions enabled',
         status: 'SUCCESS',
       },
     ];
@@ -346,10 +346,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = useCallback(() => {
     if (user) {
       logAuditEvent({
-        actionAr: 'تسجيل خروج من المنظومة',
-        actionEn: 'Session Terminated',
+        actionAr: 'تسجيل خروج',
+        actionEn: 'Sign Out',
         category: 'AUTH',
-        detailsAr: `قام المستخدم ${user.nameAr} بتسجيل الخروج من المنظومة`,
+        detailsAr: `قام المستخدم ${user.nameAr} بتسجيل الخروج`,
         detailsEn: `User ${user.nameEn} signed out`,
         status: 'SUCCESS',
       });
@@ -376,11 +376,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
 
         logAuditEvent({
-          actionAr: 'محاكاة دور وصلاحيات',
-          actionEn: 'Simulated Role Switch',
+          actionAr: 'تبديل الدور الوظيفي',
+          actionEn: 'Switch User Role',
           category: 'RBAC',
-          detailsAr: `تم التبديل التجريبي إلى دور: ${updated.roleLabelAr}`,
-          detailsEn: `Simulated role changed to ${updated.role}`,
+          detailsAr: `تم التبديل إلى دور: ${updated.roleLabelAr}`,
+          detailsEn: `Role switched to ${updated.role}`,
           status: 'SUCCESS',
         });
       }

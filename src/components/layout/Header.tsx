@@ -418,36 +418,36 @@ export const Header: React.FC = () => {
             {/* User Profile Popover Dropdown */}
             {userDropdownOpen && (
               <div
-                className="absolute top-full mt-2.5 w-80 sm:w-88 max-w-[calc(100vw-24px)] left-0 sm:left-4 origin-top-left rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 shadow-2xl p-3.5 z-50 animate-in fade-in-50 zoom-in-95 duration-150 backdrop-blur-xl text-start"
+                className="absolute top-full mt-2.5 w-80 sm:w-88 max-w-[calc(100vw-16px)] left-2 sm:left-4 origin-top-left rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl p-3.5 z-50 animate-in fade-in-50 zoom-in-95 duration-150 text-start"
               >
                 {/* User Header Summary */}
-                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/90 dark:border-slate-700/60 flex items-center gap-3">
+                <div className="p-3 rounded-xl bg-slate-800/80 border border-slate-700 flex items-center gap-3">
                   <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-[#1C291E] to-[#D99B26] text-white flex items-center justify-center font-black text-base shadow-sm shrink-0">
                     {currentUser.nameAr.charAt(0)}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <h4 className="text-xs font-black text-slate-900 dark:text-slate-100 truncate">
+                    <h4 className="text-xs font-black text-slate-100 truncate">
                       {isRtl ? currentUser.nameAr : currentUser.nameEn}
                     </h4>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                    <p className="text-[11px] text-slate-400 truncate">
                       {currentUser.email || 'admin@hrsup.com'}
                     </p>
                     <div className="mt-1 flex items-center gap-1.5 flex-wrap">
-                      <span className="px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-400 text-[10px] font-bold border border-amber-500/25">
+                      <span className="px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-400 text-[10px] font-bold border border-amber-500/30">
                         {isRtl ? currentUser.roleAr : currentUser.roleEn}
                       </span>
                     </div>
                   </div>
                 </div>
 
-                {/* Role Switcher Matrix for Rapid Enterprise Evaluation */}
-                <div className="mt-3 pt-2.5 border-t border-slate-200 dark:border-slate-800">
-                  <div className="px-1 pb-2 flex items-center justify-between text-[11px] font-bold text-slate-600 dark:text-slate-400">
+                {/* Role Switcher Grid */}
+                <div className="mt-3 pt-2.5 border-t border-slate-800">
+                  <div className="px-1 pb-2 flex items-center justify-between text-[11px] font-bold text-slate-400">
                     <span className="flex items-center gap-1.5">
-                      <KeyRound className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
-                      <span>{t('محاكاة الأدوار والصلاحيات (RBAC)', 'Simulate RBAC Role')}</span>
+                      <KeyRound className="w-3.5 h-3.5 text-amber-400" />
+                      <span>{t('الأدوار والصلاحيات', 'Roles & Permissions')}</span>
                     </span>
-                    <span className="text-[10px] text-amber-600 dark:text-amber-400 font-mono">
+                    <span className="text-[10px] text-amber-400 font-mono">
                       {seedUsers.length} {t('حسابات', 'Accounts')}
                     </span>
                   </div>
@@ -464,15 +464,15 @@ export const Header: React.FC = () => {
                           }}
                           className={`p-2.5 rounded-xl text-start text-xs transition-all flex flex-col justify-between border cursor-pointer ${
                             isActive
-                              ? 'bg-amber-500/15 border-amber-500/80 text-amber-900 dark:text-amber-300 font-bold shadow-xs'
-                              : 'bg-slate-50/60 dark:bg-slate-800/40 border-slate-200/80 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+                              ? 'bg-amber-500/15 border-amber-500/80 text-amber-300 font-bold shadow-xs'
+                              : 'bg-slate-800/50 border-slate-700/80 text-slate-300 hover:text-white hover:bg-slate-800'
                           }`}
                         >
                           <div className="flex items-center justify-between w-full mb-1">
                             <span className="truncate font-bold">
                               {isRtl ? acc.user.roleLabelAr.split(' ')[0] : acc.user.role}
                             </span>
-                            {isActive && <Check className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />}
+                            {isActive && <Check className="w-3.5 h-3.5 text-amber-400 shrink-0" />}
                           </div>
                           <span className="text-[10px] opacity-75 truncate">
                             {isRtl ? acc.user.nameAr.split(' ')[1] || acc.user.nameAr : acc.user.nameEn}
@@ -484,16 +484,16 @@ export const Header: React.FC = () => {
                 </div>
 
                 {/* Sign Out Trigger */}
-                <div className="mt-3 pt-2.5 border-t border-slate-200 dark:border-slate-800">
+                <div className="mt-3 pt-2.5 border-t border-slate-800">
                   <button
                     onClick={() => {
                       setUserDropdownOpen(false);
                       logout();
                     }}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 active:scale-98 transition-colors text-xs font-bold cursor-pointer"
+                    className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-rose-400 hover:bg-rose-500/10 active:scale-98 transition-colors text-xs font-bold cursor-pointer"
                   >
                     <LogOut className="w-3.5 h-3.5" />
-                    <span>{t('تسجيل الخروج من المنظومة', 'Sign Out')}</span>
+                    <span>{t('تسجيل الخروج', 'Sign Out')}</span>
                   </button>
                 </div>
               </div>
