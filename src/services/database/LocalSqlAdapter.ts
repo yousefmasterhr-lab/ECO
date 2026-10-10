@@ -45,6 +45,7 @@ import localFallbackPurchases from '../../data/tarabot_purchases.json';
 import localFallbackDimensions from '../../data/tarabot_dimensions.json';
 import localFallbackContracts from '../../data/tarabot_contracts.json';
 import localFallbackExtracts from '../../data/tarabot_extracts.json';
+import { getApiBaseUrl } from '../apiClient';
 
 export class LocalSqlAdapter implements IFinancialRepository {
   public readonly mode: RepositoryMode = 'LOCAL';
@@ -60,10 +61,27 @@ export class LocalSqlAdapter implements IFinancialRepository {
     }
   }
 
+  private getTargetUrl(path: string): string {
+    const baseUrl = getApiBaseUrl();
+    const cleanPath = path.startsWith('/') ? path : `/${path}`;
+    return `${baseUrl}${cleanPath}`;
+  }
+
+  async getStatus(): Promise<ConnectionStatusInfo> {
+    return this.getConnectionStatus();
+  }
+
   async getConnectionStatus(): Promise<ConnectionStatusInfo> {
     const activeDb = this.getActiveDb();
+    const targetUrl = this.getTargetUrl('/api/finance/status');
     try {
-      const res = await fetch('/api/finance/status');
+      const res = await fetch(targetUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'X-Database-Context': activeDb
+        }
+      });
       if (res.ok) {
         const data = await res.json();
         const status: ConnectionStatusInfo = {
@@ -71,7 +89,7 @@ export class LocalSqlAdapter implements IFinancialRepository {
           mode: 'LOCAL',
           engine: data.engine || `Microsoft SQL Server Express (${activeDb})`,
           serverName: data.serverName || 'Accounts-Server\\sqlexpress',
-          databaseName: data.databaseName || activeDb,
+          databaseName: data.database || data.databaseName || activeDb,
           totalAccounts: Number(data.totalAccounts) || (activeDb === 'MKH_Tarabot_Data_2026' ? 208 : activeDb === 'Tarabot_Data_2026' ? 482 : 330),
           timestamp: data.timestamp || new Date().toISOString(),
           latencyMs: Number(data.latencyMs) || 12,
@@ -80,13 +98,13 @@ export class LocalSqlAdapter implements IFinancialRepository {
         return status;
       }
     } catch (err: any) {
-      console.warn('[LocalSqlAdapter] Status API call failed, using fallback info:', err.message);
+      console.warn('[LocalSqlAdapter] جاري إعادة الاتصال بجسر البيانات المالي... (/api/finance/status:', err?.message || 'Failed to fetch', ')');
     }
 
     return {
-      connected: true,
+      connected: false,
       mode: 'LOCAL',
-      engine: `Microsoft SQL Server Express (${activeDb})`,
+      engine: `Microsoft SQL Server Express (${activeDb}) [جاري إعادة الاتصال بجسر البيانات المالي...]`,
       serverName: 'Accounts-Server\\sqlexpress',
       databaseName: activeDb,
       totalAccounts: activeDb === 'MKH_Tarabot_Data_2026' ? 208 : activeDb === 'Tarabot_Data_2026' ? 482 : 330,
@@ -374,14 +392,21 @@ export class LocalSqlAdapter implements IFinancialRepository {
   }
 
   async getJournals(): Promise<JournalEntryItem[]> {
+    const targetUrl = this.getTargetUrl('/api/finance/journals');
     try {
-      const res = await fetch('/api/finance/journals');
+      const res = await fetch(targetUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'X-Database-Context': this.getActiveDb()
+        }
+      });
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) return data;
       }
     } catch (err: any) {
-      console.warn('[LocalSqlAdapter] getJournals API error:', err.message);
+      console.warn('[LocalSqlAdapter] جاري إعادة الاتصال بجسر البيانات المالي... (/api/finance/journals:', err?.message || 'Failed to fetch', ')');
     }
     return [];
   }

@@ -8,23 +8,27 @@ const sql = require('mssql');
 
 const app = express();
 
-app.use((req, res, next) => {
-  const allowedOrigins = ['https://eco.hrsup.com', 'http://localhost:5173', 'http://localhost:3000'];
-  const origin = req.headers.origin;
-  if (origin && allowedOrigins.includes(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  } else {
-    res.setHeader('Access-Control-Allow-Origin', origin || '*');
-  }
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, X-Database-Context, Accept');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
-  next();
-});
+const allowedOrigins = [
+  'https://eco.hrsup.com',
+  'http://localhost:5173',
+  'http://localhost:3000'
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, curl, postman) or matching origins
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(null, true); // Permissive during bridge sync
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Database-Context', 'Accept']
+}));
+
+app.options(/.*/, cors());
 
 app.use(express.json());
 
@@ -253,7 +257,7 @@ function wrapPoolResult(poolInstance, activeMode) {
   };
 }
 
-async function getDatabasePool(dbName = 'Tarabot_Data_2026') {
+async function getDatabasePool(dbName = process.env.DB_NAME || 'MK_Khalil_Db_2026') {
   const normalizedDb = sanitizeDatabaseName(dbName).trim();
   const { mode, config } = await resolveOptimalConfig();
   const poolKey = `${mode}:${normalizedDb}`;
@@ -3328,6 +3332,27 @@ async function getMultiYearBalanceBridge() {
 // 3. Operational Endpoints
 // ============================================================================
 
+// 0. Primary Financial Bridge Status & Health
+app.get(['/api/finance/status', '/api/status', '/status'], async (req, res) => {
+  try {
+    const targetDb = req.query.db || req.headers['x-database-context'] || process.env.DB_NAME || 'MK_Khalil_Db_2026';
+    const pool = await getPool(targetDb);
+    const result = await pool.request().query('SELECT 1 AS isAlive');
+    res.json({
+      status: 'online',
+      connected: true,
+      database: targetDb || process.env.DB_NAME || 'MK_Khalil_Db_2026',
+      timestamp: new Date().toISOString()
+    });
+  } catch (err) {
+    res.status(500).json({
+      status: 'error',
+      connected: false,
+      error: err.message
+    });
+  }
+});
+
 // A. Dynamic Fleet Auto-Discovery (Populates frontend dropdown dynamically)
 app.get('/api/system/databases', async (req, res) => {
   try {
@@ -3588,27 +3613,48 @@ app.post('/api/finance/cheques/add', (req, res) => {
   res.json(addCheque(req.body));
 });
 
-const journalEndpoints = [
-  '/api/finance/journals',
-  '/api/journal-entries',
-  '/api/sql/general-journal',
-  '/api/finance/general-journal',
-  '/api/general-journal'
-];
-
-journalEndpoints.forEach(path => {
-  app.get(path, async (req, res) => {
+app.get(['/api/finance/journals', '/api/journal-entries', '/api/sql/general-journal', '/api/finance/general-journal', '/api/general-journal'], async (req, res) => {
+  try {
+    const targetDb = req.query.db || req.headers['x-database-context'] || process.env.DB_NAME || 'MK_Khalil_Db_2026';
+    const pool = await getPool(targetDb);
+    // Fetch General Ledger Journals from MK_Khalil_Db_2026
+    let result;
     try {
-      const { startDate, endDate, fromDate, toDate } = req.query;
-      const journals = await getJournals(req.targetDb, {
-        startDate: startDate || fromDate,
-        endDate: endDate || toDate
-      });
-      res.json(journals);
-    } catch (err) {
-      res.status(500).json({ error: err.message });
+      const query = `
+        SELECT TOP 250 
+          h.Journal_ID AS id,
+          h.Journal_No AS journalNo,
+          h.Journal_Date AS date,
+          h.Journal_Notes AS notes,
+          ISNULL(h.Total_Debit, 0) AS totalDebit,
+          ISNULL(h.Total_Credit, 0) AS totalCredit,
+          h.Is_Posted AS isPosted
+        FROM dbo.GeneralLedger_Head h
+        ORDER BY h.Journal_Date DESC, h.Journal_ID DESC
+      `;
+      result = await pool.request().query(query);
+    } catch (schemaErr) {
+      // Resilient fallback for databases utilizing Note_No / Description / Note_Debit columns (e.g. MK_Khalil_Db_2026)
+      const fallbackQuery = `
+        SELECT TOP 250 
+          h.Note_No AS id,
+          h.Note_No AS journalNo,
+          h.Note_Date AS date,
+          h.Description AS notes,
+          ISNULL(h.Note_Debit, 0) AS totalDebit,
+          ISNULL(h.Note_Credit, 0) AS totalCredit,
+          1 AS isPosted
+        FROM dbo.GeneralLedger_Head h
+        ORDER BY h.Note_Date DESC, h.Note_No DESC
+      `;
+      result = await pool.request().query(fallbackQuery);
     }
-  });
+    res.json(result.recordset || []);
+  } catch (err) {
+    console.error('[SQL Bridge Error] /api/finance/journals:', err.message);
+    // Return valid JSON with 500 status so client adapter receives structured error
+    res.status(500).json({ error: 'Failed to fetch journals', details: err.message });
+  }
 });
 
 const journalSummaryEndpoints = [

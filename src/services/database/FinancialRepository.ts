@@ -35,6 +35,7 @@ import {
 export interface IFinancialRepository {
   readonly mode: RepositoryMode;
   getConnectionStatus(): Promise<ConnectionStatusInfo>;
+  getStatus?(): Promise<ConnectionStatusInfo>;
   getAccounts(forceRefresh?: boolean): Promise<AccountNode[]>;
   getCostCenters(forceRefresh?: boolean): Promise<CostCenterItem[]>;
   getFinancialSummary(): Promise<FinancialSummary>;
