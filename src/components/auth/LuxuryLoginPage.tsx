@@ -2,16 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth, useNavigate } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import {
-  Mail,
-  Lock,
   Eye,
   EyeOff,
-  Sparkles,
-  AlertTriangle,
-  ArrowRight,
-  ArrowLeft,
   CheckCircle2,
-  Loader2
+  Loader2,
+  Building2
 } from 'lucide-react';
 
 interface LuxuryLoginPageProps {
@@ -174,7 +169,7 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
   return (
     <div
       dir={isRtl ? 'rtl' : 'ltr'}
-      className="relative min-h-screen w-full flex items-center justify-center p-4 sm:p-6 overflow-hidden bg-[#080E0A] text-[#F3EFE6] select-none font-sans"
+      className="relative min-h-screen w-full flex items-center justify-center p-4 sm:p-6 overflow-hidden bg-slate-950 text-white select-none font-sans"
     >
       {/* 1. Dynamic Interactive Particle Canvas */}
       <canvas
@@ -230,99 +225,47 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
         </div>
       ) : (
         /* Glassmorphic Executive Login Card */
-        <div
-          className={`relative z-20 w-full max-w-md p-8 rounded-3xl bg-slate-900/90 backdrop-blur-2xl border border-amber-500/30 shadow-[0_0_50px_-10px_rgba(217,155,38,0.3)] transition-all duration-300 ${
-            shakeCard ? 'animate-shake border-red-500/60 shadow-red-500/10' : 'hover:border-amber-500/40'
-          }`}
-        >
-          {/* Subtle Top Card Glowing Highlight Strip */}
-          <div className="absolute top-0 inset-x-8 h-px bg-gradient-to-r from-transparent via-amber-400/50 to-transparent" />
-
-          {/* Company Branding & Official Insignia */}
-          <div className="text-center mb-6">
-            <div className="relative inline-flex items-center justify-center mb-3 group">
-              {/* Ambient Aura behind emblem */}
-              <div className="absolute inset-0 bg-gradient-to-tr from-amber-500/30 to-emerald-500/20 rounded-2xl blur-md group-hover:blur-lg transition-all" />
-
-              <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-b from-[#17231A] to-[#0E1610] border border-amber-500/30 flex items-center justify-center shadow-xl shadow-black/60">
-                <svg
-                  className="w-9 h-9 text-amber-400 transition-transform duration-500 group-hover:scale-105"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7" />
-                  <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
-                  <path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4" />
-                  <path d="M2 7h20" />
-                </svg>
-              </div>
-
-              <div className="absolute -top-1 -end-1 w-5 h-5 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-300 flex items-center justify-center">
-                <Sparkles className="w-2.5 h-2.5" />
-              </div>
+        <div className={`relative z-20 w-full max-w-md p-8 sm:p-10 rounded-3xl bg-slate-900/90 backdrop-blur-2xl border border-amber-500/40 shadow-[0_0_60px_-10px_rgba(217,155,38,0.35)] mx-auto transition-all duration-300 ${shakeCard ? 'animate-shake border-red-500/60 shadow-red-500/10' : ''}`}>
+          {/* Brand Header */}
+          <div className="flex flex-col items-center mb-6">
+            <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mb-3 shadow-[0_0_20px_rgba(217,155,38,0.2)]">
+              <Building2 className="w-8 h-8 text-amber-400" />
             </div>
-
-            <h1 className="text-2xl font-bold text-white mb-1">
-              {isRtl ? 'شركة ترابط للمقاولات والتجارة' : 'Tarabot Contracting & Trading'}
-            </h1>
-            <div className="text-xs text-amber-400 font-semibold mb-6 flex items-center justify-center gap-1.5">
-              <span>{t('منظومة إدارة الموارد المؤسسية الذكية ECO', 'ECO Enterprise Platform')}</span>
-            </div>
+            <h2 className="text-2xl font-black text-white text-center tracking-tight">شركة ترابط للمقاولات والتجارة</h2>
+            <p className="text-xs font-semibold text-amber-400 text-center mt-1">منظومة إدارة الموارد المؤسسية الذكية ECO</p>
           </div>
 
-          {/* Authentication Form */}
-          <form onSubmit={handleSubmit} action="#" method="POST" noValidate className="space-y-4">
-            {/* Username / Corporate Email Field */}
-            <div className="space-y-1.5 text-start">
-              <label className="text-xs font-medium text-slate-300 mb-1.5 block ps-1">
-                {t('اسم المستخدم أو البريد الإلكتروني', 'Username or Corporate Email')}
-              </label>
-              <div className="relative group">
-                <div className="absolute inset-y-0 start-0 ps-3.5 flex items-center pointer-events-none text-zinc-400 group-focus-within:text-amber-400 transition-colors">
-                  <Mail className="w-4 h-4" />
-                </div>
-                <input
-                  type="text"
-                  value={emailOrUsername}
-                  onChange={e => setEmailOrUsername(e.target.value)}
-                  required
-                  disabled={isVerifying}
-                  dir="ltr"
-                  placeholder="name@hrsup.com"
-                  className="w-full ps-10 pe-4 py-3 rounded-xl bg-slate-950/80 border border-slate-700/80 focus:border-amber-400 text-white placeholder-slate-500 text-sm focus:outline-none transition-all disabled:opacity-50"
-                />
-              </div>
+          {/* Form with Explicit Visible Styling */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-200 mb-1.5 text-right">اسم المستخدم أو البريد الإلكتروني</label>
+              <input
+                type="text"
+                dir="ltr"
+                required
+                value={emailOrUsername}
+                onChange={(e) => setEmailOrUsername(e.target.value)}
+                placeholder="admin@hrsup.com"
+                className="w-full px-4 py-3 rounded-xl bg-slate-950/80 border border-slate-700 focus:border-amber-400 focus:ring-1 focus:ring-amber-400 text-white placeholder-slate-500 text-sm focus:outline-none transition-all"
+              />
             </div>
 
-            {/* Password Field with Toggle */}
-            <div className="space-y-1.5 text-start">
-              <div className="flex items-center justify-between ps-1 pe-1">
-                <label className="text-xs font-medium text-slate-300 mb-1.5 block">
-                  {t('كلمة المرور', 'Password')}
-                </label>
-              </div>
-              <div className="relative group">
-                <div className="absolute inset-y-0 start-0 ps-3.5 flex items-center pointer-events-none text-zinc-400 group-focus-within:text-amber-400 transition-colors">
-                  <Lock className="w-4 h-4" />
-                </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-200 mb-1.5 text-right">كلمة المرور</label>
+              <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  required
-                  disabled={isVerifying}
                   dir="ltr"
-                  placeholder="••••••••••••"
-                  className="w-full ps-10 pe-11 py-3 rounded-xl bg-slate-950/80 border border-slate-700/80 focus:border-amber-400 text-white placeholder-slate-500 text-sm focus:outline-none transition-all disabled:opacity-50"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full px-4 py-3 rounded-xl bg-slate-950/80 border border-slate-700 focus:border-amber-400 focus:ring-1 focus:ring-amber-400 text-white placeholder-slate-500 text-sm focus:outline-none transition-all pe-11"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(prev => !prev)}
-                  className="absolute inset-y-0 end-0 pe-3.5 flex items-center text-zinc-400 hover:text-amber-400 transition-colors cursor-pointer"
+                  className="absolute inset-y-0 end-0 pe-3.5 flex items-center text-slate-400 hover:text-amber-400 transition-colors cursor-pointer"
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -330,59 +273,38 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
               </div>
             </div>
 
-            {/* 401 Error Alert - Visibly beneath input fields with shake animation */}
             {errorMessage && (
-              <div
-                key={shakeCard ? 'shake-active' : 'shake-idle'}
-                role="alert"
-                className="p-3 my-3 rounded-xl bg-rose-950/70 border border-rose-600/80 text-rose-200 text-xs font-semibold animate-shake flex items-center gap-2.5"
-              >
-                <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
-                <span className="leading-relaxed flex-1">{errorMessage}</span>
+              <div className="p-3 rounded-xl bg-rose-950/80 border border-rose-600/80 text-rose-200 text-xs font-bold text-center animate-shake">
+                {errorMessage}
               </div>
             )}
 
-            {/* Remember Me Toggle */}
-            <div className="flex items-center justify-between py-1 px-1">
-              <label className="flex items-center gap-2.5 cursor-pointer text-xs font-medium text-slate-300">
-                <div
-                  onClick={() => setRememberMe(!rememberMe)}
-                  className={`relative w-9 h-5 rounded-full transition-colors duration-200 cursor-pointer ${
-                    rememberMe ? 'bg-amber-500' : 'bg-slate-700'
-                  }`}
-                >
-                  <div
-                    className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-md transform transition-transform duration-200 ${
-                      rememberMe ? (isRtl ? '-translate-x-4' : 'translate-x-4') : 'translate-x-0.5'
-                    }`}
-                  />
-                </div>
+            <div className="flex items-center justify-between py-1">
+              <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-slate-300">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="w-4 h-4 rounded bg-slate-950 border-slate-700 text-amber-500 focus:ring-amber-400 cursor-pointer"
+                />
                 <span>{t('تذكرني على هذا الجهاز', 'Remember me on this device')}</span>
               </label>
             </div>
 
-            {/* Submit Action Button */}
-            <div className="pt-2">
-              <button
-                type="submit"
-                disabled={isVerifying}
-                className="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-extrabold text-sm shadow-lg shadow-amber-500/25 relative overflow-hidden cursor-pointer transition-all duration-200 active:scale-[0.98] disabled:opacity-90 disabled:cursor-wait"
-              >
-                <div className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/40 to-transparent skew-x-12 animate-shimmer pointer-events-none" />
-
-                {isVerifying ? (
-                  <div className="relative flex items-center justify-center gap-2.5 z-10">
-                    <Loader2 className="w-4 h-4 text-slate-950 animate-spin" />
-                    <span>{t('جاري التحقق من البيانات...', 'Verifying Credentials...')}</span>
-                  </div>
-                ) : (
-                  <div className="relative flex items-center justify-center gap-2 z-10">
-                    <span>{t('تسجيل الدخول', 'Sign In')}</span>
-                    {isRtl ? <ArrowLeft className="w-4 h-4" /> : <ArrowRight className="w-4 h-4" />}
-                  </div>
-                )}
-              </button>
-            </div>
+            <button
+              type="submit"
+              disabled={isVerifying}
+              className="w-full py-3.5 mt-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-sm shadow-lg shadow-amber-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+            >
+              {isVerifying ? (
+                <div className="flex items-center justify-center gap-2">
+                  <Loader2 className="w-4 h-4 text-slate-950 animate-spin" />
+                  <span>{t('جاري التحقق...', 'Verifying...')}</span>
+                </div>
+              ) : (
+                <span>{t('تسجيل الدخول', 'Sign In')}</span>
+              )}
+            </button>
           </form>
         </div>
       )}
