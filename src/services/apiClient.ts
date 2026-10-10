@@ -93,6 +93,22 @@ export const isCloudflareEdgeRoute = (endpoint: string): boolean => {
 };
 
 /**
+ * Determines whether the user is actively authenticated and not on public/login routes
+ */
+export const isUserAuthenticated = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  const path = window.location.pathname.toLowerCase();
+  if (path.includes('/login')) return false;
+  try {
+    const session = localStorage.getItem('eco_auth_session') || sessionStorage.getItem('eco_auth_session');
+    const token = localStorage.getItem('eco_session_token') || sessionStorage.getItem('eco_session_token') || localStorage.getItem('token');
+    return Boolean(session || token);
+  } catch {
+    return false;
+  }
+};
+
+/**
  * Universal Central API Client Interceptor
  * Injects X-Database-Context and Accept headers into every request
  * Provides resilient retry logic for transient tunnel reconnects (502/503/504)
@@ -121,6 +137,25 @@ export async function apiRequest<T = any>(
 
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   const isEdge = isCloudflareEdgeRoute(cleanEndpoint);
+
+  // Guard Financial & System Queries: Do NOT ping https://datatest.hrsup.com while on /login or unauthenticated
+  if (!isEdge && !isUserAuthenticated()) {
+    return Promise.resolve({
+      connected: false,
+      isFailSafe: true,
+      data: [],
+      accounts: [],
+      costCenters: [],
+      databases: [],
+      vouchers: [],
+      cheques: [],
+      journals: [],
+      items: [],
+      clients: [],
+      suppliers: [],
+    } as unknown as T);
+  }
+
   const targetUrl = endpoint.startsWith('http')
     ? endpoint
     : isEdge
@@ -185,6 +220,21 @@ export function setupFetchInterceptor(): void {
     if (urlString.startsWith('/api') || urlString.startsWith('api/')) {
       const cleanUrl = urlString.startsWith('/') ? urlString : `/${urlString}`;
       const isEdge = isCloudflareEdgeRoute(cleanUrl);
+
+      // Guard Financial & System Queries: Do NOT ping https://datatest.hrsup.com while on /login or unauthenticated
+      if (!isEdge && !isUserAuthenticated()) {
+        return new Response(JSON.stringify({
+          success: true,
+          data: [],
+          unauthenticated: true,
+          isFailSafe: true,
+          connected: false,
+        }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
       const baseUrl = getApiBaseUrl();
       urlString = isEdge ? cleanUrl : (baseUrl ? `${baseUrl}${cleanUrl}` : cleanUrl);
 
@@ -227,6 +277,20 @@ export function setupFetchInterceptor(): void {
         }
       }
     } else if (urlString.includes('/api/')) {
+      const isEdge = isCloudflareEdgeRoute(urlString);
+      if (!isEdge && !isUserAuthenticated()) {
+        return new Response(JSON.stringify({
+          success: true,
+          data: [],
+          unauthenticated: true,
+          isFailSafe: true,
+          connected: false,
+        }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
       // If absolute URL to an API endpoint
       const headers = new Headers(
         init?.headers || (typeof input === 'object' && 'headers' in input ? (input as any).headers : undefined)

@@ -38,6 +38,16 @@ export const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, []);
 
   const refresh = useCallback(async () => {
+    if (typeof window !== 'undefined') {
+      const isLogin = window.location.pathname.includes('/login');
+      const token = localStorage.getItem('token') || localStorage.getItem('erp_auth_token') || sessionStorage.getItem('token');
+      const session = localStorage.getItem('eco_session');
+      if (isLogin || (!token && !session)) {
+        setIsLoading(false);
+        return;
+      }
+    }
+
     setIsLoading(true);
     try {
       const [fleetRes, healthRes] = await Promise.all([
@@ -61,6 +71,15 @@ export const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, []);
 
   const pingConnection = useCallback(async (): Promise<number> => {
+    if (typeof window !== 'undefined') {
+      const isLogin = window.location.pathname.includes('/login');
+      const token = localStorage.getItem('token') || localStorage.getItem('erp_auth_token') || sessionStorage.getItem('token');
+      const session = localStorage.getItem('eco_session');
+      if (isLogin || (!token && !session)) {
+        return 0;
+      }
+    }
+
     try {
       const h = await federationService.fetchConnectionHealth();
       setHealth(h);

@@ -144,6 +144,18 @@ export const FinancialProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, []);
 
   const loadData = useCallback(async (force = false) => {
+    // Ensure queries only execute when a user is actively authenticated
+    if (typeof window !== 'undefined') {
+      const isLogin = window.location.pathname.includes('/login');
+      const session = localStorage.getItem('eco_auth_session') || sessionStorage.getItem('eco_auth_session');
+      const token = localStorage.getItem('eco_session_token') || sessionStorage.getItem('token');
+      if (isLogin || (!session && !token)) {
+        setIsLoading(false);
+        setIsSyncing(false);
+        return;
+      }
+    }
+
     try {
       if (force) {
         setIsSyncing(true);
@@ -223,6 +235,16 @@ export const FinancialProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, [mode, activeDatabase]);
 
   useEffect(() => {
+    // Ensure queries only execute when a user is actively authenticated
+    if (typeof window !== 'undefined' && window.location.pathname.includes('/login')) {
+      setIsLoading(false);
+      return;
+    }
+    const session = localStorage.getItem('eco_auth_session') || sessionStorage.getItem('eco_auth_session');
+    if (!session) {
+      setIsLoading(false);
+      return;
+    }
     loadData(true);
   }, [loadData, activeDatabase]);
 

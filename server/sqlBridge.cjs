@@ -7,7 +7,25 @@ const cors = require('cors');
 const sql = require('mssql');
 
 const app = express();
-app.use(cors());
+
+app.use((req, res, next) => {
+  const allowedOrigins = ['https://eco.hrsup.com', 'http://localhost:5173', 'http://localhost:3000'];
+  const origin = req.headers.origin;
+  if (origin && allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', origin || '*');
+  }
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, X-Database-Context, Accept');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
+
 app.use(express.json());
 
 const DB_HOST = process.env.DB_SERVER || process.env.MSSQL_HOST || '100.76.198.119';

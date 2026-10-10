@@ -34,6 +34,27 @@ class FederationService {
   }
 
   async fetchDatabaseFleet(): Promise<DatabaseFleetResponse> {
+    if (typeof window !== 'undefined') {
+      const isLogin = window.location.pathname.includes('/login');
+      const session = localStorage.getItem('eco_auth_session') || sessionStorage.getItem('eco_auth_session');
+      const token = localStorage.getItem('eco_session_token') || sessionStorage.getItem('token');
+      if (isLogin || (!session && !token)) {
+        return {
+          connected: false,
+          isFailSafe: true,
+          host: '100.76.198.119',
+          port: 1433,
+          portProxyTarget: '192.168.1.50:49748',
+          engine: 'Microsoft SQL Server 2008 R2 (Disconnected)',
+          activePoolsCount: 0,
+          latencyMs: 0,
+          totalDatabases: 0,
+          databases: [],
+          error: 'Unauthenticated or public route'
+        };
+      }
+    }
+
     try {
       const res = await fetch('/api/system/databases', {
         headers: this.getHeaders()
@@ -61,6 +82,28 @@ class FederationService {
   }
 
   async fetchConnectionHealth(): Promise<ConnectionHealthStatus> {
+    if (typeof window !== 'undefined') {
+      const isLogin = window.location.pathname.includes('/login');
+      const session = localStorage.getItem('eco_auth_session') || sessionStorage.getItem('eco_auth_session');
+      const token = localStorage.getItem('eco_session_token') || sessionStorage.getItem('token');
+      if (isLogin || (!session && !token)) {
+        return {
+          connected: false,
+          isFailSafe: true,
+          host: '100.76.198.119',
+          port: 1433,
+          portProxyTarget: '192.168.1.50:49748',
+          serverName: 'Accounts-Server\\sqlexpress',
+          version: 'Microsoft SQL Server 2008 (Disconnected)',
+          activeDatabase: this.getActiveContext(),
+          activePoolsCount: 0,
+          latencyMs: 0,
+          error: 'Unauthenticated or public route',
+          timestamp: new Date().toISOString()
+        };
+      }
+    }
+
     try {
       const res = await fetch('/api/system/health', {
         headers: this.getHeaders()

@@ -14,6 +14,26 @@ import { ToastProvider } from './components/common/Toast';
 import { ShellLayout } from './components/layout/ShellLayout';
 import { LuxuryLoginPage } from './components/auth/LuxuryLoginPage';
 
+const AuthenticatedApp: React.FC = () => {
+  return (
+    <TenantProvider>
+      <DatabaseProvider>
+        <NavigationProvider>
+          <FinancialProvider>
+            <ContractorProvider>
+              <ReceptionProvider>
+                <HRProvider>
+                  <ShellLayout />
+                </HRProvider>
+              </ReceptionProvider>
+            </ContractorProvider>
+          </FinancialProvider>
+        </NavigationProvider>
+      </DatabaseProvider>
+    </TenantProvider>
+  );
+};
+
 const AppContent: React.FC = () => {
   const { isAuthenticated, isLoading, currentPath } = useAuth();
 
@@ -35,7 +55,7 @@ const AppContent: React.FC = () => {
     return <LuxuryLoginPage />;
   }
 
-  return <ShellLayout />;
+  return <AuthenticatedApp />;
 };
 
 export const App: React.FC = () => {
@@ -43,25 +63,11 @@ export const App: React.FC = () => {
     <ThemeProvider>
       <LanguageProvider>
         <AuthProvider>
-          <TenantProvider>
-            <DatabaseProvider>
-              <NavigationProvider>
-                <FinancialProvider>
-                  <ContractorProvider>
-                    <ReceptionProvider>
-                      <HRProvider>
-                        <PWAProvider>
-                          <ToastProvider>
-                            <AppContent />
-                          </ToastProvider>
-                        </PWAProvider>
-                      </HRProvider>
-                    </ReceptionProvider>
-                  </ContractorProvider>
-                </FinancialProvider>
-              </NavigationProvider>
-            </DatabaseProvider>
-          </TenantProvider>
+          <PWAProvider>
+            <ToastProvider>
+              <AppContent />
+            </ToastProvider>
+          </PWAProvider>
         </AuthProvider>
       </LanguageProvider>
     </ThemeProvider>
