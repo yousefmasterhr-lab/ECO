@@ -669,3 +669,27 @@ Whenever a global directive or styling standard is issued (including typography,
   1. **Stage 1 (Radiant Crest):** A pulsing, glowing golden ring containing an animated checkmark with radiant glow (`animate-pulse shadow-[0_0_35px_rgba(217,155,38,0.6)]`).
   2. **Stage 2 (Personalized Typography):** Sub-badge (`أهلاً بك مجدداً في منظومة ترابط`), user name with luxury heading, and dynamic clearance/role subtitle.
   3. **Stage 3 (Cinematic 2.5s Glowing Progress Arc):** Smooth golden-emerald progress bar filling over 2.4 seconds before clean SPA hand-off to the dashboard at 2500ms.
+
+---
+
+## Rule 43: Hybrid Cloud Architecture Standards (Edge D1/R2 + Local Financial SQL Bridge)
+
+- **Strict Infrastructure Segregation (الفصل المعماري الصارم بين السحابة والربط المالي المحلي):**
+  - **Edge Core Cloud Layer (طبقة الحافة السحابية المركزية):**
+    - **Cloudflare D1 SQL Database (`eco-core-db` / ID: `d3db06c8-f790-45b3-8289-999240e158ee` / Binding: `DB`):**
+      - Manages platform authentication, user profiles, RBAC clearance matrix, and live corporate audit logs (`audit_logs`).
+      - Permanent Root Administrator: `admin@hrsup.com` (`م. أحمد مصطفى` / National ID: `29001010100000` / `SUPER_ADMIN` / Level 4).
+    - **Cloudflare R2 Object Storage Vault (`eco-documents-vault` / Binding: `DOCS_VAULT`):**
+      - Houses all departmental files, employee records, engineering IPCs, legal contracts, and administrative attachments.
+      - Backed by the relational metadata ledger `department_documents` in D1 for auditability and rapid querying.
+    - **Serverless Edge Endpoints (`/api/auth/*`, `/api/users*`, `/api/audit-logs*`, `/api/storage/*`):**
+      - Executed directly at the edge via Cloudflare Pages Functions (`functions/api/`).
+      - Remains on the current Pages origin (`eco.hrsup.com`) with zero round-trips to the local bridge.
+  - **Local Financial SQL Server Bridge (`server/sqlBridge.cjs` - Strict Invariant):**
+    - **Absolute Isolation:** Under NO circumstances may `server/sqlBridge.cjs` or the local SQL Server endpoints be modified, merged, or exposed to edge non-financial data.
+    - **Dedicated Gateway (`https://datatest.hrsup.com` / `localhost:5000`):**
+      - Strictly reserved for financial accounting, general ledger, chart of accounts, vouchers (سندات الصرف والقبض), journal entries, and financial balance sheets (`MK_Khalil_Db_2026`).
+      - Intercepted and routed exclusively through `apiClient.ts` based on route categorization (`!isCloudflareEdgeRoute(endpoint)`).
+- **Client Resilience & Offline Continuity (استمرارية العمل والتحمل دون انقطاع):**
+  - Client services (`d1Client.ts`, `documentVaultService.ts`, `AuthContext.tsx`) maintain automatic fallback mechanisms ensuring developer workflows and offline environments operate gracefully without disruption.
+

@@ -362,10 +362,10 @@ export interface AuditLogEntry {
 }
 
 export const INITIAL_ROOT_ADMIN: ManagedUser = {
-  id: 'usr_root_csuite',
+  id: 'usr_root_csuite_01',
   nameAr: 'م. أحمد مصطفى',
   nameEn: 'Eng. Ahmed Mostafa',
-  nationalId: '28501010102345',
+  nationalId: '29001010100000',
   email: 'admin@hrsup.com',
   username: 'admin',
   departmentAr: 'الإدارة العليا والاستراتيجية',

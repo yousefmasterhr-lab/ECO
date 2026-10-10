@@ -9,6 +9,7 @@ import {
   AuditLogEntry,
   INITIAL_ROOT_ADMIN
 } from '../types/auth';
+import { d1Client, clearSessionToken, setSessionToken } from '../services/d1Client';
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -121,6 +122,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [auditLogs]);
 
+  // Sync with Cloudflare D1 Edge database
+  useEffect(() => {
+    d1Client.fetchUsers().then(liveUsers => {
+      if (liveUsers && liveUsers.length > 0) {
+        setManagedUsers(liveUsers);
+      }
+    }).catch(() => {});
+
+    d1Client.fetchAuditLogs().then(liveLogs => {
+      if (liveLogs && liveLogs.length > 0) {
+        setAuditLogs(liveLogs);
+      }
+    }).catch(() => {});
+  }, []);
+
   // Dynamic audit event logger
   const logAuditEvent = useCallback(
     (
@@ -144,6 +160,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
 
       setAuditLogs(prev => [newLog, ...prev.slice(0, 249)]); // Keep recent 250 records
+
+      // Persist to Cloudflare D1 asynchronously
+      d1Client.insertAuditLog({
+        id: newLog.id,
+        user_id: user ? user.id : 'system',
+        user_name: newLog.actorName,
+        category: newLog.category,
+        actionAr: newLog.actionAr,
+        detailsAr: newLog.detailsAr,
+      }).catch(() => {});
     },
     [user]
   );
@@ -205,10 +231,60 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     ): Promise<{ success: boolean; error?: string; user?: AuthUser }> => {
       setIsLoading(true);
 
-      // Fast verification delay (350ms)
-      await new Promise(resolve => setTimeout(resolve, 350));
-
       const cleanInput = emailOrUsername.trim().toLowerCase();
+
+      // 1. Attempt Cloudflare D1 Edge Authentication
+      try {
+        const edgeRes = await d1Client.login(cleanInput, password);
+        if (edgeRes.success && edgeRes.user) {
+          const config = ROLE_CONFIGURATIONS[edgeRes.user.role as UserRole];
+          const authenticatedUser: AuthUser = {
+            id: edgeRes.user.id,
+            email: edgeRes.user.email,
+            username: edgeRes.user.username,
+            nameAr: edgeRes.user.nameAr || (edgeRes.user as any).fullName || edgeRes.user.nameEn,
+            nameEn: edgeRes.user.nameEn || edgeRes.user.username,
+            role: (edgeRes.user.role as UserRole) || 'SUPER_ADMIN',
+            roleLabelAr: config?.titleAr || edgeRes.user.role,
+            roleLabelEn: config?.titleEn || edgeRes.user.role,
+            departmentAr: edgeRes.user.departmentAr || (edgeRes.user as any).department || 'الإدارة العليا',
+            departmentEn: edgeRes.user.departmentEn || (edgeRes.user as any).department || 'Executive Management',
+            clearanceLevel: (edgeRes.user.clearanceLevel as 1 | 2 | 3 | 4) || 4,
+            clearanceNameAr: config?.clearanceNameAr || 'المستوى 4 - إدارة عليا',
+            clearanceNameEn: config?.clearanceNameEn || 'Level 4 - C-Suite Governance',
+            allowedModuleIds: config?.allowedModuleIds || [],
+            lastLogin: new Date().toISOString().replace('T', ' ').substring(0, 16),
+          };
+
+          const isRemember = rememberOption !== undefined ? rememberOption : rememberMe;
+          setUser(authenticatedUser);
+          setRememberMe(isRemember);
+          localStorage.setItem(STORAGE_KEY_REMEMBER, String(isRemember));
+
+          if (isRemember) {
+            localStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify(authenticatedUser));
+            sessionStorage.removeItem(STORAGE_KEY_AUTH);
+          } else {
+            sessionStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify(authenticatedUser));
+            localStorage.removeItem(STORAGE_KEY_AUTH);
+          }
+
+          if (edgeRes.token) {
+            setSessionToken(edgeRes.token, isRemember);
+          }
+
+          setIsLoading(false);
+          return { success: true, user: authenticatedUser };
+        } else if (edgeRes.error && !edgeRes.error.includes('خطأ في الاتصال') && !edgeRes.error.includes('fetch')) {
+          setIsLoading(false);
+          return { success: false, error: edgeRes.error };
+        }
+      } catch {
+        // Fallback to local evaluation
+      }
+
+      // Fast verification delay for local fallback (350ms)
+      await new Promise(resolve => setTimeout(resolve, 350));
 
       // Check managed users first
       const foundInManaged = managedUsers.find(
@@ -357,6 +433,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
     }
     setUser(null);
+    clearSessionToken();
     localStorage.removeItem(STORAGE_KEY_AUTH);
     sessionStorage.removeItem(STORAGE_KEY_AUTH);
     navigate('/login');
@@ -410,7 +487,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     [user]
   );
 
-  // User Management Actions
+  // User Management Actions (Synced with Cloudflare D1)
   const addManagedUser = useCallback(
     (userData: Omit<ManagedUser, 'id' | 'createdAt'>): ManagedUser => {
       const newUser: ManagedUser = {
@@ -420,6 +497,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
 
       setManagedUsers(prev => [newUser, ...prev]);
+
+      // Async sync to Cloudflare D1
+      d1Client.createUser({
+        ...newUser,
+        password: newUser.passwordHash,
+      }).catch(e => console.warn('D1 user creation sync error:', e));
 
       logAuditEvent({
         actionAr: 'إضافة مستخدم جديد',
@@ -441,6 +524,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         prev.map(u => {
           if (u.id === id) {
             const updated = { ...u, ...updates };
+
+            // Async sync to Cloudflare D1
+            d1Client.updateUser(id, updates).catch(e => console.warn('D1 user update sync error:', e));
+
             logAuditEvent({
               actionAr: 'تعديل بيانات وصلاحيات مستخدم',
               actionEn: 'Update User Profile & Permissions',
@@ -461,13 +548,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const deleteManagedUser = useCallback(
     (id: string): boolean => {
       // Disallow deleting root admin
-      if (id === INITIAL_ROOT_ADMIN.id || id === 'usr_root_csuite') {
+      if (id === INITIAL_ROOT_ADMIN.id || id === 'usr_root_csuite_01' || id === 'usr_root_csuite') {
         return false;
       }
 
       const target = managedUsers.find(u => u.id === id);
       if (target) {
         setManagedUsers(prev => prev.filter(u => u.id !== id));
+
+        // Async sync to Cloudflare D1
+        d1Client.deleteUser(id).catch(e => console.warn('D1 user delete sync error:', e));
+
         logAuditEvent({
           actionAr: 'حذف حساب مستخدم',
           actionEn: 'Delete User Account',

@@ -78,6 +78,21 @@ export const setApiBaseUrl = (url: string): void => {
 };
 
 /**
+ * Edge Cloudflare D1 & R2 Routing Predicate
+ * Governs Core Authentication, RBAC Users, Audit Trails, and Document Vault
+ * These routes run at Cloudflare Edge and must remain strictly decoupled from the local SQL Server bridge.
+ */
+export const isCloudflareEdgeRoute = (endpoint: string): boolean => {
+  const clean = endpoint.toLowerCase().replace(/^\/+/, '');
+  return (
+    clean.startsWith('api/auth') ||
+    clean.startsWith('api/users') ||
+    clean.startsWith('api/audit-logs') ||
+    clean.startsWith('api/storage')
+  );
+};
+
+/**
  * Universal Central API Client Interceptor
  * Injects X-Database-Context and Accept headers into every request
  * Provides resilient retry logic for transient tunnel reconnects (502/503/504)
@@ -97,8 +112,20 @@ export async function apiRequest<T = any>(
     ...(options.headers as Record<string, string>),
   };
 
+  const token = typeof window !== 'undefined'
+    ? localStorage.getItem('eco_session_token') || sessionStorage.getItem('eco_session_token')
+    : null;
+  if (token && !headers['Authorization']) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-  const targetUrl = endpoint.startsWith('http') ? endpoint : `${baseUrl}${cleanEndpoint}`;
+  const isEdge = isCloudflareEdgeRoute(cleanEndpoint);
+  const targetUrl = endpoint.startsWith('http')
+    ? endpoint
+    : isEdge
+    ? cleanEndpoint
+    : `${baseUrl}${cleanEndpoint}`;
 
   try {
     const response = await fetch(targetUrl, {
@@ -125,7 +152,7 @@ export async function apiRequest<T = any>(
     }
 
     // If targetUrl is not localhost and failed, and user is local dev, fallback gracefully to localhost
-    if (!endpoint.startsWith('http') && typeof window !== 'undefined') {
+    if (!endpoint.startsWith('http') && !isEdge && typeof window !== 'undefined') {
       const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
       if (isLocalHost && !targetUrl.includes('localhost:5000')) {
         const fallbackResponse = await fetch(`http://localhost:5000${cleanEndpoint}`, {
@@ -156,9 +183,10 @@ export function setupFetchInterceptor(): void {
 
     // Check if this is an API call
     if (urlString.startsWith('/api') || urlString.startsWith('api/')) {
-      const baseUrl = getApiBaseUrl();
       const cleanUrl = urlString.startsWith('/') ? urlString : `/${urlString}`;
-      urlString = baseUrl ? `${baseUrl}${cleanUrl}` : cleanUrl;
+      const isEdge = isCloudflareEdgeRoute(cleanUrl);
+      const baseUrl = getApiBaseUrl();
+      urlString = isEdge ? cleanUrl : (baseUrl ? `${baseUrl}${cleanUrl}` : cleanUrl);
 
       const headers = new Headers(
         init?.headers || (typeof input === 'object' && 'headers' in input ? (input as any).headers : undefined)
@@ -169,6 +197,11 @@ export function setupFetchInterceptor(): void {
       }
       if (!headers.has('Accept')) {
         headers.set('Accept', 'application/json');
+      }
+
+      const sessionToken = localStorage.getItem('eco_session_token') || sessionStorage.getItem('eco_session_token');
+      if (sessionToken && !headers.has('Authorization')) {
+        headers.set('Authorization', `Bearer ${sessionToken}`);
       }
 
       init = {

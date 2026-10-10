@@ -183,13 +183,13 @@ export const UserManagementView: React.FC = () => {
   };
 
   const handleToggleStatus = (u: ManagedUser) => {
-    if (u.id === 'usr_root_csuite') return;
+    if (u.id === 'usr_root_csuite' || u.id === 'usr_root_csuite_01' || u.role === 'SUPER_ADMIN') return;
     const nextStatus = u.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE';
     updateManagedUser(u.id, { status: nextStatus });
   };
 
   const handleDelete = (id: string) => {
-    if (id === 'usr_root_csuite') {
+    if (id === 'usr_root_csuite' || id === 'usr_root_csuite_01') {
       alert(t('لا يمكن حذف الحساب الإداري الجذري للنظام (Root Administrator).', 'Cannot delete root administrator.'));
       return;
     }
