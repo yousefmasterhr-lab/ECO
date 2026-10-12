@@ -31,6 +31,20 @@ function sqlServerBridgePlugin() {
     name: 'sql-server-bridge-plugin',
     configureServer(server: any) {
       server.middlewares.use(async (req: any, res: any, next: any) => {
+        const origin = req.headers.origin || '*';
+        res.setHeader('Access-Control-Allow-Origin', origin);
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+        const requestedHeaders = req.headers['access-control-request-headers'] || '*';
+        res.setHeader('Access-Control-Allow-Headers', requestedHeaders);
+        res.setHeader('Access-Control-Allow-Credentials', 'true');
+        res.setHeader('Access-Control-Max-Age', '86400');
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 200;
+          res.end();
+          return;
+        }
+
         const url = req.url?.split('?')[0];
         const targetDb = (req.headers['x-database-context'] as string) || (req.url.includes('databaseContext=') ? new URL(req.url, 'http://localhost').searchParams.get('databaseContext') : null) || 'Tarabot_Data_2026';
 

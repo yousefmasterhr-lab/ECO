@@ -19,27 +19,24 @@ const sql = require('mssql');
 
 const app = express();
 
-const allowedOrigins = [
-  'https://eco.hrsup.com',
-  'http://localhost:5173',
-  'http://localhost:3000'
-];
+// Robust Reflective CORS Middleware
+app.use((req, res, next) => {
+  const origin = req.headers.origin || '*';
+  res.setHeader('Access-Control-Allow-Origin', origin);
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  
+  // Dynamically mirror requested headers or allow all
+  const requestedHeaders = req.headers['access-control-request-headers'] || '*';
+  res.setHeader('Access-Control-Allow-Headers', requestedHeaders);
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Max-Age', '86400'); // Cache preflight for 24h
 
-app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (mobile apps, curl, postman) or matching origins
-    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(null, true); // Permissive during bridge sync
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Database-Context', 'Accept']
-}));
-
-app.options(/.*/, cors());
+  // Immediately respond to preflight OPTIONS requests with 200 OK
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  next();
+});
 
 app.use(express.json());
 
@@ -3945,8 +3942,8 @@ app.get('/api/finance/reports/cfo-metrics', async (req, res) => {
 // Live Database Auto-Discovery Route from SQL Server (sys.databases)
 app.all('/api/system/databases', async (req, res) => {
   try {
-    const host = req.query.host || req.body?.host;
-    const port = req.query.port || req.body?.port;
+    const host = req.headers['x-sql-server-host'] || req.query.host || req.body?.host;
+    const port = req.headers['x-sql-server-port'] || req.query.port || req.body?.port;
     const pool = await getPool(host ? { server: host, port } : null);
 
     // Query real user databases from sys.databases
