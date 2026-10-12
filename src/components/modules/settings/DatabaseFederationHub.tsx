@@ -68,6 +68,12 @@ export const DatabaseFederationHub: React.FC = () => {
   // Dynamic SQL Discovery & Database Synchronization state
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const [discoveredDatabases, setDiscoveredDatabases] = useState<any[]>([]);
+  const [syncDiagnosticError, setSyncDiagnosticError] = useState<{
+    message: string;
+    targetUrl: string;
+    isTunnelOffline: boolean;
+    localBridgeAvailable: boolean;
+  } | null>(null);
 
   // Safe Query Console state
   const [consoleDb, setConsoleDb] = useState<string>(activeDatabase || 'Tarabot_Data_2026');
@@ -78,35 +84,60 @@ export const DatabaseFederationHub: React.FC = () => {
   const [isExecutingQuery, setIsExecutingQuery] = useState(false);
   const [queryError, setQueryError] = useState<string | null>(null);
 
-  // Unified Live SQL Database Synchronization Function
-  const handleSyncDatabases = async () => {
+  // Unified Live SQL Database Synchronization Function with Diagnostic Resilience
+  const handleSyncDatabases = async (forceLocal = false) => {
     setIsSyncing(true);
+    setSyncDiagnosticError(null);
     try {
-      const gatewayUrl = (bridgeUrlInput || getApiBaseUrl() || '').trim();
-      const targetUrl = gatewayUrl.replace(/\/+$/, '');
+      const activeGateway = forceLocal ? 'http://localhost:5000' : (bridgeUrlInput || getApiBaseUrl() || '').trim();
+      const targetUrl = activeGateway.replace(/\/+$/, '');
       const queryParam = `host=${encodeURIComponent(sqlHost.trim())}&port=${encodeURIComponent(sqlPort.trim())}`;
       const url = targetUrl ? `${targetUrl}/api/system/databases?${queryParam}` : `/api/system/databases?${queryParam}`;
 
-      let res = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'X-Sql-Server-Host': sqlHost.trim(),
-          'X-Sql-Server-Port': sqlPort.trim()
-        }
-      });
-
-      // Fallback gracefully to localhost if remote gateway returns non-200 while in local dev
-      if (!res.ok && typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-        res = await fetch(`/api/system/databases?${queryParam}`, {
+      let res: Response | null = null;
+      try {
+        res = await fetch(url, {
           method: 'GET',
-          headers: { 'Accept': 'application/json' }
+          headers: {
+            'Accept': 'application/json',
+            'X-Sql-Server-Host': sqlHost.trim(),
+            'X-Sql-Server-Port': sqlPort.trim()
+          }
         });
+      } catch (fetchErr: any) {
+        console.warn('[SQL Hub] Primary gateway fetch failed:', fetchErr.message);
+
+        // Probe local bridge on localhost:5000
+        let isLocalAlive = false;
+        try {
+          const localCheck = await fetch('http://localhost:5000/api/system/health', { method: 'GET' });
+          isLocalAlive = localCheck.ok;
+        } catch (_) {}
+
+        setSyncDiagnosticError({
+          message: fetchErr.message || 'Failed to fetch',
+          targetUrl: targetUrl || window.location.origin,
+          isTunnelOffline: targetUrl.includes('hrsup.com') || targetUrl.includes('cloudflare'),
+          localBridgeAvailable: isLocalAlive
+        });
+
+        toast.error(
+          isLocalAlive
+            ? t('تعذر الاتصال بالبوابة الخارجية (النفق متوقف). السيرفر المحلي متاح على localhost:5000!', 'Gateway unreachable. Local bridge is active on localhost:5000!')
+            : t(`تعذر فحص القواعد: سيرفر الربط المحلي غير متصل أو النفق متوقف`, `Failed to scan databases: Local bridge is offline or tunnel stopped`)
+        );
+        return;
+      }
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${res.status}: فشل في استرجاع القواعد`);
       }
 
       const data = await res.json();
       if (data.success && Array.isArray(data.databases)) {
         setDiscoveredDatabases(data.databases);
+        setSyncDiagnosticError(null);
         toast.success(`تم اكتشاف ومزامنة ${data.databases.length} قاعدة بيانات حقيقية بنجاح`);
       } else {
         throw new Error(data.error || 'فشل في استرجاع القواعد');
@@ -360,7 +391,7 @@ export const DatabaseFederationHub: React.FC = () => {
 
             {/* Refresh and Sync Databases */}
             <button
-              onClick={handleSyncDatabases}
+              onClick={() => handleSyncDatabases(false)}
               disabled={isSyncing}
               className="flex items-center gap-2 px-3.5 py-2 text-xs font-bold rounded-xl border border-[#243628] bg-[#17231A] hover:bg-[#1F2E23] text-[#F3EFE6] transition-all cursor-pointer shadow-xs disabled:opacity-50"
               title={t('تحديث ومزامنة القواعد الحية من خادم SQL Server', 'Sync & Refresh Databases from SQL Server')}
@@ -638,6 +669,72 @@ export const DatabaseFederationHub: React.FC = () => {
       {/* =================================================================== */}
       {hubTab === 'databases' && (
         <div className="space-y-4">
+          {/* Detailed Diagnostic Guidance Alert on Fetch Failure */}
+          {syncDiagnosticError && (
+            <div className="p-4 rounded-2xl border border-[#5A2E2E] bg-[#221010] text-[#F3EFE6] space-y-3 animate-in fade-in duration-200 shadow-lg">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-[#3A1818] text-[#F5A3A3] border border-[#5A2E2E] flex items-center justify-center shrink-0">
+                    <AlertTriangle className="w-4 h-4 text-red-400" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#3A1818] text-[#F5A3A3] border border-[#5A2E2E]">
+                        {t('سيرفر الربط المحلي غير متصل أو النفق متوقف', 'Local Bridge Disconnected or Tunnel Stopped')}
+                      </span>
+                      <span className="text-xs font-bold text-[#F3EFE6]">
+                        {syncDiagnosticError.isTunnelOffline ? t('بوابة Cloudflare Tunnel غير مستجيبة', 'Cloudflare Tunnel Gateway Unreachable') : t('فشل الاتصال بالبوابة', 'Gateway Connection Failure')}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-[#A3928F] mt-0.5">
+                      {t(
+                        `تعذر الوصول إلى البوابة (${syncDiagnosticError.targetUrl}). سبب الخطأ: ${syncDiagnosticError.message}`,
+                        `Could not reach gateway (${syncDiagnosticError.targetUrl}). Error: ${syncDiagnosticError.message}`
+                      )}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  {syncDiagnosticError.localBridgeAvailable ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setBridgeUrlInput('http://localhost:5000');
+                        setApiBaseUrl('http://localhost:5000');
+                        handleSyncDatabases(true);
+                      }}
+                      className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#EBB34D] text-[#0E1610] text-xs font-black shadow hover:bg-[#D99B26] transition-all cursor-pointer"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      <span>{t('فحص مباشر عبر localhost:5000', 'Direct Sync via localhost:5000')}</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleSyncDatabases(false)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#5C431D] bg-[#2A1F0E] text-[#EBB34D] text-xs font-bold hover:bg-[#3D2D14] transition-all cursor-pointer"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      <span>{t('إعادة المحاولة', 'Retry')}</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="text-[11px] text-[#8FA392] bg-[#121B14] p-2.5 rounded-xl border border-[#243628] flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <Info className="w-3.5 h-3.5 text-[#EBB34D] shrink-0" />
+                  <span>
+                    {syncDiagnosticError.localBridgeAvailable
+                      ? t('تم التحقق: خادم الربط المحلي شغال ومستجيب على http://localhost:5000. اضغط الزر أعلاه للتحويل المباشر دون الحاجة لنفق Cloudflare.', 'Verified: Local bridge is active on http://localhost:5000. Click above to switch directly without Cloudflare tunnel.')
+                      : t('لتشغيل الربط: شغل node server/sqlBridge.cjs، وللربط الخارجي شغل نفق cloudflared tunnel run eco-data-bridge.', 'To activate bridge: run `node server/sqlBridge.cjs`, or run `cloudflared tunnel run eco-data-bridge` for remote tunnel.')}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Filter Bar: Search + Category Dropdown */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-[#121B14] p-3 rounded-xl border border-[#243628]">
             <div className="relative flex-1 w-full">
@@ -690,7 +787,7 @@ export const DatabaseFederationHub: React.FC = () => {
               </div>
               <div className="flex items-center justify-center gap-3 pt-2">
                 <button
-                  onClick={handleSyncDatabases}
+                  onClick={() => handleSyncDatabases(false)}
                   disabled={isSyncing}
                   className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#EBB34D] text-[#0E1610] text-xs font-black shadow-md hover:bg-[#D99B26] transition-all cursor-pointer disabled:opacity-50"
                 >

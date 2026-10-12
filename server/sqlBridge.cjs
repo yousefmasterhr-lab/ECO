@@ -1,3 +1,14 @@
+process.on('uncaughtException', (err) => {
+  console.error('[CRITICAL] Uncaught Exception:', err.stack || err);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[CRITICAL] Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+// Keep Event Loop Running even if background tasks or timers are idle
+setInterval(() => {}, 1000 * 60 * 60);
+
 const { execFile } = require('child_process');
 const path = require('path');
 const fs = require('fs');
@@ -4040,12 +4051,13 @@ app.get('/api/system/federation/multi-year-balance', async (req, res) => {
 const PORT = process.env.PORT || 5000;
 let serverInstance = null;
 try {
-  serverInstance = app.listen(PORT, () => {
-    console.log(`[SQL Bridge] Running on port ${PORT} | Mode: ${circuitState.activeMode === 'LOCAL' ? 'LOCAL (Offline)' : 'REMOTE (Tailscale)'}`);
+  serverInstance = app.listen(PORT, '0.0.0.0', () => {
+    console.log(`[SQL Bridge] Running on port ${PORT} (0.0.0.0:${PORT}) | Mode: ${circuitState.activeMode === 'LOCAL' ? 'LOCAL (Offline)' : 'REMOTE (Tailscale)'}`);
   });
   serverInstance.on('error', (err) => {
     if (err.code === 'EADDRINUSE') {
-      console.log(`[SQL Bridge] Port ${PORT} already active/bound.`);
+      console.warn(`[SQL Bridge] Warning: Port ${PORT} is already in use by another active process.`);
+      console.warn(`[SQL Bridge] The bridge is actively serving requests on port ${PORT}.`);
     } else {
       console.error('[SQL Bridge Server Error]:', err.message);
     }
