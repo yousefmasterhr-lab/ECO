@@ -3,7 +3,7 @@ import { useDatabase } from '../../../services/federation/DatabaseContext';
 import { useLanguage } from '../../../context/LanguageContext';
 import { federationService } from '../../../services/federation/federationService';
 import { getApiBaseUrl, setApiBaseUrl } from '../../../services/apiClient';
-import { FederatedQueryResult } from '../../../services/federation/types';
+import { FederatedQueryResult, DatabaseFleetItem, DatabaseCategory } from '../../../services/federation/types';
 import {
   Database,
   RefreshCw,
@@ -21,6 +21,7 @@ import {
   Save,
   SlidersHorizontal
 } from 'lucide-react';
+import { toast } from '../../common/Toast';
 import {
   getNetworkConfigSync,
   fetchNetworkConfig,
@@ -64,6 +65,10 @@ export const DatabaseFederationHub: React.FC = () => {
   const [isPinging, setIsPinging] = useState(false);
   const [lastPingTime, setLastPingTime] = useState<number | null>(null);
 
+  // Dynamic SQL Discovery & Database Synchronization state
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
+  const [discoveredDatabases, setDiscoveredDatabases] = useState<any[]>([]);
+
   // Safe Query Console state
   const [consoleDb, setConsoleDb] = useState<string>(activeDatabase || 'Tarabot_Data_2026');
   const [sqlQuery, setSqlQuery] = useState<string>(
@@ -72,6 +77,47 @@ export const DatabaseFederationHub: React.FC = () => {
   const [queryResult, setQueryResult] = useState<FederatedQueryResult | null>(null);
   const [isExecutingQuery, setIsExecutingQuery] = useState(false);
   const [queryError, setQueryError] = useState<string | null>(null);
+
+  // Unified Live SQL Database Synchronization Function
+  const handleSyncDatabases = async () => {
+    setIsSyncing(true);
+    try {
+      const gatewayUrl = (bridgeUrlInput || getApiBaseUrl() || '').trim();
+      const targetUrl = gatewayUrl.replace(/\/+$/, '');
+      const queryParam = `host=${encodeURIComponent(sqlHost.trim())}&port=${encodeURIComponent(sqlPort.trim())}`;
+      const url = targetUrl ? `${targetUrl}/api/system/databases?${queryParam}` : `/api/system/databases?${queryParam}`;
+
+      let res = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'X-Sql-Server-Host': sqlHost.trim(),
+          'X-Sql-Server-Port': sqlPort.trim()
+        }
+      });
+
+      // Fallback gracefully to localhost if remote gateway returns non-200 while in local dev
+      if (!res.ok && typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+        res = await fetch(`/api/system/databases?${queryParam}`, {
+          method: 'GET',
+          headers: { 'Accept': 'application/json' }
+        });
+      }
+
+      const data = await res.json();
+      if (data.success && Array.isArray(data.databases)) {
+        setDiscoveredDatabases(data.databases);
+        toast.success(`تم اكتشاف ومزامنة ${data.databases.length} قاعدة بيانات حقيقية بنجاح`);
+      } else {
+        throw new Error(data.error || 'فشل في استرجاع القواعد');
+      }
+    } catch (err: any) {
+      console.error('Sync failed:', err);
+      toast.error(`تعذر فحص القواعد: ${err.message}`);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   // Sync settings from Cloudflare D1 or local backend on load
   useEffect(() => {
@@ -104,6 +150,7 @@ export const DatabaseFederationHub: React.FC = () => {
       setSaveSuccessMessage(t('تم حفظ إعدادات الاتصال وتطبيقها فورياً بنجاح!', 'Connection settings saved & applied dynamically!'));
       setTimeout(() => setSaveSuccessMessage(null), 4000);
       await refresh();
+      await handleSyncDatabases();
       await handlePing();
     } catch (err: any) {
       console.error('Failed to save network configuration:', err);
@@ -159,24 +206,79 @@ export const DatabaseFederationHub: React.FC = () => {
     }
   }, [activeDatabase]);
 
+  // Auto-sync databases on mount
+  useEffect(() => {
+    handleSyncDatabases();
+  }, []);
+
+  // Map discovered SQL Server databases or fallback to context fleet
+  const effectiveDatabases = useMemo<DatabaseFleetItem[]>(() => {
+    if (discoveredDatabases.length > 0) {
+      return discoveredDatabases.map(d => {
+        const name = String(d.databaseName || d.name || d.id || '');
+        const rawCat = String(d.category || '').toLowerCase();
+        let category: DatabaseCategory = 'primary';
+        if (rawCat.includes('payroll') || rawCat.includes('hr') || rawCat.includes('salary')) {
+          category = 'specialized_payroll';
+        } else if (rawCat.includes('archive')) {
+          category = 'archives';
+        } else if (rawCat.includes('project') || rawCat.includes('engineer')) {
+          category = 'engineering_archive';
+        } else if (rawCat.includes('partner')) {
+          category = 'partners';
+        } else if (rawCat.includes('sandbox') || rawCat.includes('test')) {
+          category = 'sandbox';
+        } else {
+          category = 'primary';
+        }
+
+        const isOnline = d.state === 0 || d.state === 'ONLINE' || d.status === 'ONLINE' || !String(d.state || d.status || '').toUpperCase().includes('OFFLINE');
+        const isPrimary = Boolean(d.isPrimary || category === 'primary' || name.includes('2026') || name.includes('MK_Khalil'));
+
+        return {
+          name: name,
+          displayNameAr: d.displayNameAr || name,
+          displayNameEn: d.displayNameEn || name,
+          category: category,
+          categoryNameAr: d.categoryNameAr || (category === 'specialized_payroll' ? 'الرواتب والأجور' : category === 'archives' ? 'أرشيف محاسبي' : 'المنظومة النشطة'),
+          categoryNameEn: d.categoryNameEn || (category === 'specialized_payroll' ? 'Payroll' : category === 'archives' ? 'Archives' : 'Active'),
+          categoryIcon: 'Database',
+          isPrimary: isPrimary,
+          createDate: String(d.createdDate || d.createDate || d.create_date || new Date().toISOString().split('T')[0]),
+          status: isOnline ? 'ONLINE' : 'OFFLINE',
+          sizeMb: Number(d.sizeMb) || (d.tableCount ? Math.round(d.tableCount * 3.5) : 32),
+          descriptionAr: d.descriptionAr || `قاعدة بيانات SQL Server حقيقية (${d.category || 'Active'}) - ${d.tableCount || 0} جداول مسجلة`,
+        };
+      });
+    }
+    return databases;
+  }, [discoveredDatabases, databases]);
+
   // Filtered databases (Dynamically discovered only)
   const filteredDatabases = useMemo(() => {
-    let list = databases;
+    let list = effectiveDatabases;
     if (selectedCategory !== 'ALL') {
-      list = list.filter(d => d.category === selectedCategory);
+      list = list.filter(d => {
+        const cat = (d.category || '').toLowerCase();
+        const sel = selectedCategory.toLowerCase();
+        if (sel === 'primary' || sel === 'active') return cat === 'active' || cat === 'primary';
+        if (sel === 'archives' || sel === 'archive') return cat === 'archive' || cat === 'archives';
+        if (sel === 'specialized_payroll' || sel === 'payroll') return cat === 'payroll' || cat === 'specialized_payroll';
+        return cat === sel;
+      });
     }
     if (dbSearch.trim()) {
       const term = dbSearch.toLowerCase();
       list = list.filter(
         d =>
-          d.name.toLowerCase().includes(term) ||
-          d.displayNameAr.toLowerCase().includes(term) ||
-          d.displayNameEn.toLowerCase().includes(term) ||
-          d.descriptionAr.toLowerCase().includes(term)
+          (d.name && d.name.toLowerCase().includes(term)) ||
+          (d.displayNameAr && d.displayNameAr.toLowerCase().includes(term)) ||
+          (d.displayNameEn && d.displayNameEn.toLowerCase().includes(term)) ||
+          (d.descriptionAr && d.descriptionAr.toLowerCase().includes(term))
       );
     }
     return list;
-  }, [databases, selectedCategory, dbSearch]);
+  }, [effectiveDatabases, selectedCategory, dbSearch]);
 
   const categoryFilters = [
     { id: 'ALL', labelAr: 'كافة القواعد (الكل)', labelEn: 'All Databases' },
@@ -258,12 +360,13 @@ export const DatabaseFederationHub: React.FC = () => {
 
             {/* Refresh and Sync Databases */}
             <button
-              onClick={() => refresh()}
-              disabled={isContextLoading}
-              className="flex items-center gap-2 px-3.5 py-2 text-xs font-bold rounded-xl border border-[#243628] bg-[#17231A] hover:bg-[#1F2E23] text-[#F3EFE6] transition-all cursor-pointer shadow-xs"
+              onClick={handleSyncDatabases}
+              disabled={isSyncing}
+              className="flex items-center gap-2 px-3.5 py-2 text-xs font-bold rounded-xl border border-[#243628] bg-[#17231A] hover:bg-[#1F2E23] text-[#F3EFE6] transition-all cursor-pointer shadow-xs disabled:opacity-50"
+              title={t('تحديث ومزامنة القواعد الحية من خادم SQL Server', 'Sync & Refresh Databases from SQL Server')}
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${isContextLoading ? 'animate-spin text-[#EBB34D]' : ''}`} />
-              <span>{t('تحديث ومزامنة القواعد', 'Sync & Refresh Databases')}</span>
+              <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin text-[#EBB34D]' : ''}`} />
+              <span>{isSyncing ? t('جاري المزامنة...', 'Syncing...') : t('تحديث ومزامنة القواعد', 'Sync & Refresh Databases')}</span>
             </button>
           </div>
         </div>
@@ -514,7 +617,7 @@ export const DatabaseFederationHub: React.FC = () => {
           }`}
         >
           <Database className="w-3.5 h-3.5" />
-          <span>{t(`قواعد البيانات المتصلة (${databases.length})`, `Connected Databases (${databases.length})`)}</span>
+          <span>{t(`قواعد البيانات المتصلة (${effectiveDatabases.length})`, `Connected Databases (${effectiveDatabases.length})`)}</span>
         </button>
 
         <button
@@ -587,12 +690,12 @@ export const DatabaseFederationHub: React.FC = () => {
               </div>
               <div className="flex items-center justify-center gap-3 pt-2">
                 <button
-                  onClick={() => refresh()}
-                  disabled={isContextLoading}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#EBB34D] text-[#0E1610] text-xs font-black shadow-md hover:bg-[#D99B26] transition-all cursor-pointer"
+                  onClick={handleSyncDatabases}
+                  disabled={isSyncing}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#EBB34D] text-[#0E1610] text-xs font-black shadow-md hover:bg-[#D99B26] transition-all cursor-pointer disabled:opacity-50"
                 >
-                  <RefreshCw className={`w-4 h-4 ${isContextLoading ? 'animate-spin' : ''}`} />
-                  <span>{t('فحص ومزامنة القواعد الحية', 'Scan & Sync Live Databases')}</span>
+                  <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
+                  <span>{isSyncing ? t('جاري الفحص المباشر...', 'Scanning...') : t('فحص ومزامنة القواعد الحية', 'Scan & Sync Live Databases')}</span>
                 </button>
               </div>
             </div>

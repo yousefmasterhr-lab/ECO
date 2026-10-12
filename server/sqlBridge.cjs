@@ -32,10 +32,67 @@ app.options(/.*/, cors());
 
 app.use(express.json());
 
-let DB_HOST = process.env.DB_SERVER || process.env.MSSQL_HOST || '100.76.198.119';
-let DB_PORT = parseInt(process.env.DB_PORT || process.env.MSSQL_PORT || '1433', 10);
-let DB_USER = process.env.DB_USER || process.env.MSSQL_USER || 'sa';
-let DB_PASSWORD = process.env.DB_PASSWORD || process.env.MSSQL_PASSWORD || 'sa123456789';
+let activeConfig = {
+  server: process.env.DB_SERVER || '100.68.121.85',
+  port: parseInt(process.env.DB_PORT || '1433', 10),
+  user: process.env.DB_USER || 'sa',
+  password: process.env.DB_PASSWORD || process.env.MSSQL_PASSWORD || 'sa123456789',
+  database: process.env.DB_NAME || 'MK_Khalil_Db_2026',
+  options: {
+    encrypt: false,
+    trustServerCertificate: true,
+    connectTimeout: 15000,
+    requestTimeout: 30000
+  }
+};
+
+let currentPool = null;
+
+async function getPool(overrideConfig = null) {
+  if (overrideConfig) {
+    if (typeof overrideConfig === 'string') {
+      const targetDb = overrideConfig;
+      if (activeConfig.database !== targetDb) {
+        if (currentPool) {
+          try { await currentPool.close(); } catch (_) {}
+          currentPool = null;
+        }
+        activeConfig.database = targetDb;
+      }
+    } else if (typeof overrideConfig === 'object') {
+      const newServer = overrideConfig.server || overrideConfig.host;
+      const newPort = overrideConfig.port ? parseInt(overrideConfig.port, 10) : activeConfig.port;
+      const newDb = overrideConfig.database || overrideConfig.db;
+
+      const needsRebuild = 
+        (newServer && activeConfig.server !== newServer) || 
+        (newPort && activeConfig.port !== newPort) ||
+        (newDb && activeConfig.database !== newDb);
+
+      if (needsRebuild) {
+        console.log(`[SQL Bridge] Reconnecting to new host: ${newServer || activeConfig.server}:${newPort || activeConfig.port}`);
+        if (currentPool) {
+          try { await currentPool.close(); } catch (_) {}
+          currentPool = null;
+        }
+        if (newServer) activeConfig.server = newServer;
+        if (newPort) activeConfig.port = newPort;
+        if (newDb) activeConfig.database = newDb;
+      }
+    }
+  }
+
+  if (!currentPool) {
+    currentPool = await new sql.ConnectionPool(activeConfig).connect();
+    console.log(`[SQL Bridge] Connected successfully to SQL Server at ${activeConfig.server}:${activeConfig.port}`);
+  }
+  return currentPool;
+}
+
+let DB_HOST = activeConfig.server;
+let DB_PORT = activeConfig.port;
+let DB_USER = activeConfig.user;
+let DB_PASSWORD = activeConfig.password;
 let PORTPROXY_TARGET = process.env.PORTPROXY_TARGET || '192.168.1.50:49748';
 
 function getConfig() {
@@ -388,7 +445,7 @@ async function getDatabasePool(dbName = process.env.DB_NAME || 'MK_Khalil_Db_202
 }
 
 // Backward-compatible alias
-const getPool = getDatabasePool;
+// (getPool is defined as standalone dynamic pool function above)
 
 // Universal Context Middleware (Extract target DB from Header or Query Param)
 app.use((req, res, next) => {
@@ -3431,71 +3488,54 @@ app.get(['/api/finance/status', '/api/status', '/status'], async (req, res) => {
   }
 });
 
-// A. Dynamic Fleet Auto-Discovery (Populates frontend dropdown dynamically)
-app.get('/api/system/databases', async (req, res) => {
+// Implement Database Discovery Route (GET & POST & ALL /api/system/databases)
+app.all('/api/system/databases', async (req, res) => {
   try {
-    const { pool, mode } = await getDatabasePool('master');
+    const host = req.query.host || req.body?.host || req.headers['x-sql-server-host'];
+    const port = req.query.port || req.body?.port || req.headers['x-sql-server-port'];
+    const pool = await getPool(host ? { server: host, port } : null);
+
+    // Query real user databases from sys.databases
     const query = `
       SELECT 
-        name AS db_name,
-        create_date,
-        state_desc AS status
-      FROM sys.databases
-      WHERE name NOT IN ('master', 'model', 'msdb', 'tempdb', 'ReportServer$SQLEXPRESS', 'ReportServer$SQLEXPRESSTempDB')
-      ORDER BY 
+        d.name AS id,
+        d.name AS databaseName,
+        d.create_date AS createdDate,
+        d.state_desc AS state,
         CASE 
-          WHEN name LIKE 'Tarabot_Data_2026%' THEN 1
-          WHEN name LIKE 'SL_Salary%' THEN 2
-          WHEN name LIKE 'Old_Projects%' THEN 3
-          ELSE 4 
-        END, name;
+          WHEN d.name LIKE '%2026%' OR d.name LIKE '%Active%' THEN 'Active'
+          WHEN d.name LIKE '%Payroll%' OR d.name LIKE '%HR%' THEN 'Payroll'
+          ELSE 'Archive'
+        END AS category,
+        (SELECT COUNT(*) FROM sys.tables) AS tableCount
+      FROM sys.databases d
+      WHERE d.database_id > 4 -- Skip system DBs (master, tempdb, model, msdb)
+        AND d.state = 0
+      ORDER BY d.name ASC;
     `;
     const result = await pool.request().query(query);
-    const fleet = (result.recordset || []).map(row => {
-      const dbName = row.db_name || row.name;
-      const reg = DB_REGISTRY[dbName] || {};
-      return {
-        name: dbName,
-        db_name: dbName,
-        create_date: row.create_date,
-        createDate: row.create_date,
-        status: row.status || 'ONLINE',
-        displayNameAr: reg.displayNameAr || dbName,
-        displayNameEn: reg.displayNameEn || dbName,
-        category: reg.category || 'partners',
-        categoryNameAr: reg.categoryNameAr || 'قواعد أخرى',
-        categoryNameEn: reg.categoryNameEn || 'Other Databases',
-        categoryIcon: reg.categoryIcon || 'Database',
-        isPrimary: reg.isPrimary || (dbName === 'Tarabot_Data_2026'),
-        sizeMb: reg.sizeMb || 45.0,
-        descriptionAr: reg.descriptionAr || ''
-      };
-    });
+    console.log(`[SQL Bridge] Discovered ${result.recordset.length} databases.`);
 
-    const activeMode = mode === 'REMOTE' ? 'REMOTE' : 'LOCAL_FALLBACK';
+    const databases = (result.recordset || []).map(d => ({
+      ...d,
+      name: d.databaseName || d.id,
+      displayNameAr: d.databaseName || d.id,
+      displayNameEn: d.databaseName || d.id,
+      createDate: d.createdDate,
+      status: d.state || 'ONLINE',
+      category: d.category || 'Active'
+    }));
+
     res.json({
-      active_mode: activeMode,
-      target_db: req.targetDb || 'Tarabot_Data_2026',
-      latency_status: 'healthy',
-      environment: activeMode,
-      total: fleet.length,
-      databases: fleet,
+      success: true,
+      databases,
+      server: activeConfig.server,
+      total: databases.length,
+      timestamp: new Date().toISOString()
     });
   } catch (err) {
-    try {
-      const fallbackFleet = await getDatabaseFleet();
-      const activeMode = circuitState.activeMode === 'REMOTE' ? 'REMOTE' : 'LOCAL_FALLBACK';
-      res.json({
-        active_mode: activeMode,
-        target_db: req.targetDb || 'Tarabot_Data_2026',
-        latency_status: 'healthy',
-        environment: activeMode,
-        total: fallbackFleet.databases?.length || 0,
-        databases: fallbackFleet.databases || [],
-      });
-    } catch {
-      res.status(500).json({ error: err.message });
-    }
+    console.error('[SQL Bridge Error] /api/system/databases:', err.message);
+    res.status(500).json({ success: false, error: err.message, databases: [] });
   }
 });
 
@@ -3891,6 +3931,46 @@ app.get('/api/finance/reports/cfo-metrics', async (req, res) => {
   }
 });
 
+// Live Database Auto-Discovery Route from SQL Server (sys.databases)
+app.all('/api/system/databases', async (req, res) => {
+  try {
+    const host = req.query.host || req.body?.host;
+    const port = req.query.port || req.body?.port;
+    const pool = await getPool(host ? { server: host, port } : null);
+
+    // Query real user databases from sys.databases
+    const query = `
+      SELECT 
+        d.name AS id,
+        d.name AS databaseName,
+        d.create_date AS createdDate,
+        d.state_desc AS state,
+        CASE 
+          WHEN d.name LIKE '%2026%' OR d.name LIKE '%Active%' THEN 'Active'
+          WHEN d.name LIKE '%Payroll%' OR d.name LIKE '%HR%' THEN 'Payroll'
+          ELSE 'Archive'
+        END AS category,
+        (SELECT COUNT(*) FROM sys.tables) AS tableCount
+      FROM sys.databases d
+      WHERE d.database_id > 4 -- Skip system DBs (master, tempdb, model, msdb)
+        AND d.state = 0
+      ORDER BY d.name ASC;
+    `;
+    const result = await pool.request().query(query);
+    console.log(`[SQL Bridge] Discovered ${result.recordset.length} databases.`);
+
+    res.json({
+      success: true,
+      databases: result.recordset,
+      server: activeConfig.server,
+      timestamp: new Date().toISOString()
+    });
+  } catch (err) {
+    console.error('[SQL Bridge Error] /api/system/databases:', err.message);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 app.get(['/api/system/config', '/api/system/settings'], (req, res) => {
   res.json({
     success: true,
@@ -4026,7 +4106,9 @@ module.exports = {
   resolveOptimalConfig,
   probeRemoteHost,
   updateConfig,
-  getConfig
+  getConfig,
+  getPool,
+  activeConfig
 };
 
 

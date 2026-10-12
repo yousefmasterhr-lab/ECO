@@ -666,22 +666,59 @@ function sqlServerBridgePlugin() {
         // Database & SQL Federation Hub API Endpoints
         // =================================================================
 
-        // 30. Database Fleet Discovery
+        // 30. Database Fleet Discovery (Live sys.databases with dynamic host & port)
         if (url === '/api/system/databases') {
           try {
             const bridge = getBridge();
-            const fleet = await bridge.getDatabaseFleet();
+            let host = req.headers['x-sql-server-host'] as string;
+            let port = req.headers['x-sql-server-port'] as string;
+
+            if (req.url?.includes('?')) {
+              try {
+                const searchParams = new URL(req.url, 'http://localhost').searchParams;
+                if (searchParams.get('host')) host = searchParams.get('host')!;
+                if (searchParams.get('port')) port = searchParams.get('port')!;
+              } catch (_) {}
+            }
+
+            if (req.method === 'POST') {
+              try {
+                const body = await parseBody(req);
+                if (body?.host) host = body.host;
+                if (body?.port) port = body.port;
+              } catch (_) {}
+            }
+
+            const pool = await bridge.getPool(host ? { server: host, port } : null);
+            const query = `
+              SELECT 
+                d.name AS id,
+                d.name AS databaseName,
+                d.create_date AS createdDate,
+                d.state_desc AS state,
+                CASE 
+                  WHEN d.name LIKE '%2026%' OR d.name LIKE '%Active%' THEN 'Active'
+                  WHEN d.name LIKE '%Payroll%' OR d.name LIKE '%HR%' THEN 'Payroll'
+                  ELSE 'Archive'
+                END AS category,
+                (SELECT COUNT(*) FROM sys.tables) AS tableCount
+              FROM sys.databases d
+              WHERE d.database_id > 4 -- Skip system DBs (master, tempdb, model, msdb)
+                AND d.state = 0
+              ORDER BY d.name ASC;
+            `;
+            const result = await pool.request().query(query);
             res.setHeader('Content-Type', 'application/json');
             res.end(JSON.stringify({
-              ...fleet,
-              active_mode: fleet.active_mode || (fleet.isFailSafe ? 'LOCAL_FALLBACK' : 'REMOTE'),
-              target_db: targetDb,
-              latency_status: fleet.latency_status || 'healthy'
+              success: true,
+              databases: result.recordset,
+              server: bridge.activeConfig?.server || host,
+              timestamp: new Date().toISOString()
             }));
           } catch (err: any) {
             res.statusCode = 500;
             res.setHeader('Content-Type', 'application/json');
-            res.end(JSON.stringify({ error: err.message }));
+            res.end(JSON.stringify({ success: false, error: err.message }));
           }
           return;
         }

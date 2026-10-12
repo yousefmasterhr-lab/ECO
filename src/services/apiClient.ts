@@ -97,6 +97,20 @@ export const isCloudflareEdgeRoute = (endpoint: string): boolean => {
 };
 
 /**
+ * SQL Federation Hub & System Diagnostics Route Predicate
+ * Diagnostic routes like /api/system/databases, /api/system/health, and /api/status
+ * must be allowed to probe connectivity and discover databases directly.
+ */
+export const isSystemHubRoute = (endpoint: string): boolean => {
+  const clean = endpoint.toLowerCase().replace(/^\/+/, '');
+  return (
+    clean.startsWith('api/system') ||
+    clean.startsWith('api/status') ||
+    clean.startsWith('api/health')
+  );
+};
+
+/**
  * Determines whether the user is actively authenticated and not on public/login routes
  */
 export const isUserAuthenticated = (): boolean => {
@@ -146,8 +160,8 @@ export async function apiRequest<T = any>(
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   const isEdge = isCloudflareEdgeRoute(cleanEndpoint);
 
-  // Guard Financial & System Queries: Do NOT ping https://datatest.hrsup.com while on /login or unauthenticated
-  if (!isEdge && !isUserAuthenticated()) {
+  // Guard Financial & System Queries: Do NOT ping https://datatest.hrsup.com while on /login or unauthenticated (unless it's an edge or system hub route)
+  if (!isEdge && !isSystemHubRoute(cleanEndpoint) && !isUserAuthenticated()) {
     return Promise.resolve({
       connected: false,
       isFailSafe: true,
@@ -229,8 +243,8 @@ export function setupFetchInterceptor(): void {
       const cleanUrl = urlString.startsWith('/') ? urlString : `/${urlString}`;
       const isEdge = isCloudflareEdgeRoute(cleanUrl);
 
-      // Guard Financial & System Queries: Do NOT ping https://datatest.hrsup.com while on /login or unauthenticated
-      if (!isEdge && !isUserAuthenticated()) {
+      // Guard Financial & System Queries: Do NOT ping https://datatest.hrsup.com while on /login or unauthenticated (unless it's an edge or system hub route)
+      if (!isEdge && !isSystemHubRoute(cleanUrl) && !isUserAuthenticated()) {
         return new Response(JSON.stringify({
           success: true,
           data: [],
@@ -296,7 +310,7 @@ export function setupFetchInterceptor(): void {
       }
     } else if (urlString.includes('/api/')) {
       const isEdge = isCloudflareEdgeRoute(urlString);
-      if (!isEdge && !isUserAuthenticated()) {
+      if (!isEdge && !isSystemHubRoute(urlString) && !isUserAuthenticated()) {
         return new Response(JSON.stringify({
           success: true,
           data: [],
