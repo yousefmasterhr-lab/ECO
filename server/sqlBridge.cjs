@@ -32,10 +32,88 @@ app.options(/.*/, cors());
 
 app.use(express.json());
 
-const DB_HOST = process.env.DB_SERVER || process.env.MSSQL_HOST || '100.76.198.119';
-const DB_PORT = parseInt(process.env.DB_PORT || process.env.MSSQL_PORT || '1433', 10);
-const DB_USER = process.env.DB_USER || process.env.MSSQL_USER || 'sa';
-const DB_PASSWORD = process.env.DB_PASSWORD || process.env.MSSQL_PASSWORD || 'sa123456789';
+let DB_HOST = process.env.DB_SERVER || process.env.MSSQL_HOST || '100.76.198.119';
+let DB_PORT = parseInt(process.env.DB_PORT || process.env.MSSQL_PORT || '1433', 10);
+let DB_USER = process.env.DB_USER || process.env.MSSQL_USER || 'sa';
+let DB_PASSWORD = process.env.DB_PASSWORD || process.env.MSSQL_PASSWORD || 'sa123456789';
+let PORTPROXY_TARGET = process.env.PORTPROXY_TARGET || '192.168.1.50:49748';
+
+function getConfig() {
+  return {
+    sql_server_host: DB_HOST,
+    sql_server_port: DB_PORT,
+    local_portproxy_target: PORTPROXY_TARGET,
+    host: DB_HOST,
+    port: DB_PORT,
+    portProxyTarget: PORTPROXY_TARGET,
+    active_mode: circuitState ? circuitState.activeMode : 'REMOTE',
+    is_remote_healthy: circuitState ? circuitState.isRemoteHealthy : false
+  };
+}
+
+function updateConfig(newConfig = {}) {
+  const host = newConfig.host || newConfig.sql_server_host || newConfig.server;
+  const port = newConfig.port || newConfig.sql_server_port;
+  const portProxy = newConfig.portProxyTarget || newConfig.local_portproxy_target || newConfig.portproxy_target;
+  const user = newConfig.user || newConfig.sql_server_user;
+  const password = newConfig.password || newConfig.sql_server_password;
+
+  let changed = false;
+
+  if (host && String(host).trim() && String(host).trim() !== DB_HOST) {
+    DB_HOST = String(host).trim();
+    if (typeof remoteConfig !== 'undefined') remoteConfig.server = DB_HOST;
+    changed = true;
+  }
+  if (port && !isNaN(parseInt(port, 10)) && parseInt(port, 10) !== DB_PORT) {
+    DB_PORT = parseInt(port, 10);
+    if (typeof remoteConfig !== 'undefined') remoteConfig.port = DB_PORT;
+    changed = true;
+  }
+  if (portProxy && String(portProxy).trim() && String(portProxy).trim() !== PORTPROXY_TARGET) {
+    PORTPROXY_TARGET = String(portProxy).trim();
+    changed = true;
+  }
+  if (user && String(user).trim() && String(user).trim() !== DB_USER) {
+    DB_USER = String(user).trim();
+    if (typeof remoteConfig !== 'undefined') remoteConfig.user = DB_USER;
+    changed = true;
+  }
+  if (password && String(password).trim() && String(password).trim() !== DB_PASSWORD) {
+    DB_PASSWORD = String(password).trim();
+    if (typeof remoteConfig !== 'undefined') remoteConfig.password = DB_PASSWORD;
+    changed = true;
+  }
+
+  if (changed) {
+    console.log(`[SQL Bridge] Dynamic Configuration Applied: Server=${DB_HOST}:${DB_PORT}, PortProxy=${PORTPROXY_TARGET}`);
+    if (typeof circuitState !== 'undefined') {
+      circuitState.lastProbeTime = 0;
+      circuitState.isRemoteHealthy = false;
+    }
+    if (typeof connectionPools !== 'undefined') {
+      for (const [key, p] of connectionPools.entries()) {
+        if (key.startsWith('REMOTE:')) {
+          try { if (p.close) p.close(); } catch (_) {}
+          connectionPools.delete(key);
+        }
+      }
+    }
+  }
+
+  return getConfig();
+}
+
+// Intercept incoming connection overrides from headers and query parameters dynamically
+app.use((req, res, next) => {
+  const host = req.query.host || req.query.sql_server_host || req.headers['x-sql-server-host'];
+  const port = req.query.port || req.query.sql_server_port || req.headers['x-sql-server-port'];
+  const portProxy = req.query.portProxyTarget || req.query.local_portproxy_target || req.headers['x-local-portproxy-target'];
+  if (host || port || portProxy) {
+    updateConfig({ host, port, portProxyTarget: portProxy });
+  }
+  next();
+});
 
 // ============================================================================
 // 1. Proactive Fast Socket Probe & Circuit Breaker Architecture
@@ -127,7 +205,7 @@ async function resolveOptimalConfig() {
 
   // Perform quick health check probe
   circuitState.lastProbeTime = now;
-  const isHealthy = await probeRemoteHost('100.76.198.119', 1433, 1500);
+  const isHealthy = await probeRemoteHost(DB_HOST, DB_PORT, 1500);
   circuitState.isRemoteHealthy = isHealthy;
   circuitState.activeMode = isHealthy ? 'REMOTE' : 'LOCAL';
 
@@ -3035,9 +3113,9 @@ async function getDatabaseFleet() {
       target_db: 'master',
       latency_status: 'healthy',
       environment: isRemote ? 'REMOTE' : 'LOCAL_FALLBACK',
-      host: isRemote ? '100.76.198.119' : 'localhost',
-      port: 1433,
-      portProxyTarget: '192.168.1.50:49748',
+      host: isRemote ? DB_HOST : 'localhost',
+      port: DB_PORT,
+      portProxyTarget: PORTPROXY_TARGET,
       engine: isRemote ? 'Microsoft SQL Server 2008 (RTM) - Express Edition' : 'Local SQL Server Express (Shared Memory / Named Pipes)',
       activePoolsCount: connectionPools.size,
       latencyMs,
@@ -3056,9 +3134,9 @@ async function getDatabaseFleet() {
       latency_status: 'error',
       environment: 'LOCAL_FALLBACK',
       error: err.message,
-      host: 'localhost',
-      port: 1433,
-      portProxyTarget: '192.168.1.50:49748',
+      host: DB_HOST,
+      port: DB_PORT,
+      portProxyTarget: PORTPROXY_TARGET,
       engine: 'Microsoft SQL Server (Not Connected)',
       activePoolsCount: 0,
       latencyMs: 0,
@@ -3085,9 +3163,9 @@ async function getFederationHealth() {
       active_mode: isRemote ? 'REMOTE' : 'LOCAL_FALLBACK',
       target_db: 'master',
       latency_status: 'healthy',
-      host: isRemote ? '100.76.198.119' : 'localhost',
-      port: 1433,
-      portProxyTarget: '192.168.1.50:49748',
+      host: isRemote ? DB_HOST : 'localhost',
+      port: DB_PORT,
+      portProxyTarget: PORTPROXY_TARGET,
       serverName: row.serverName || (isRemote ? 'Accounts-Server\\sqlexpress' : 'localhost\\SQLEXPRESS'),
       version: row.version || 'SQL Server 2008',
       activeDatabase: row.activeDb || 'master',
@@ -3103,9 +3181,9 @@ async function getFederationHealth() {
       target_db: 'master',
       latency_status: 'fallback',
       error: err.message,
-      host: 'localhost',
-      port: 1433,
-      portProxyTarget: '192.168.1.50:49748',
+      host: DB_HOST,
+      port: DB_PORT,
+      portProxyTarget: PORTPROXY_TARGET,
       serverName: 'localhost\\SQLEXPRESS',
       version: 'Microsoft SQL Server 2008 (Offline / Fallback)',
       activeDatabase: 'Tarabot_Data_2026',
@@ -3813,6 +3891,27 @@ app.get('/api/finance/reports/cfo-metrics', async (req, res) => {
   }
 });
 
+app.get(['/api/system/config', '/api/system/settings'], (req, res) => {
+  res.json({
+    success: true,
+    settings: getConfig(),
+    ...getConfig()
+  });
+});
+
+app.post(['/api/system/config', '/api/system/settings'], (req, res) => {
+  try {
+    const updated = updateConfig(req.body);
+    res.json({
+      success: true,
+      settings: updated,
+      ...updated
+    });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
 app.get('/api/system/health', async (req, res) => {
   try {
     const health = await getFederationHealth();
@@ -3925,7 +4024,9 @@ module.exports = {
   getMultiYearBalanceBridge,
   circuitState,
   resolveOptimalConfig,
-  probeRemoteHost
+  probeRemoteHost,
+  updateConfig,
+  getConfig
 };
 
 

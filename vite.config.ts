@@ -686,10 +686,38 @@ function sqlServerBridgePlugin() {
           return;
         }
 
-        // 31. Federation Connection Health & Latency Ping
+        // 31. Dynamic System & Network Configuration
+        if (url === '/api/system/config' || url === '/api/system/settings') {
+          try {
+            const bridge = getBridge();
+            if (req.method === 'POST') {
+              const body = await parseBody(req);
+              const updated = bridge.updateConfig(body);
+              res.setHeader('Content-Type', 'application/json');
+              res.end(JSON.stringify({ success: true, settings: updated, ...updated }));
+            } else {
+              const config = bridge.getConfig();
+              res.setHeader('Content-Type', 'application/json');
+              res.end(JSON.stringify({ success: true, settings: config, ...config }));
+            }
+          } catch (err: any) {
+            res.statusCode = 400;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ error: err.message }));
+          }
+          return;
+        }
+
+        // 31b. Federation Connection Health & Latency Ping
         if (url === '/api/system/health') {
           try {
             const bridge = getBridge();
+            const hostHeader = (req.headers['x-sql-server-host'] as string) || (req.url.includes('host=') ? new URL(req.url, 'http://localhost').searchParams.get('host') : null);
+            const portHeader = (req.headers['x-sql-server-port'] as string) || (req.url.includes('port=') ? new URL(req.url, 'http://localhost').searchParams.get('port') : null);
+            const portProxyHeader = (req.headers['x-local-portproxy-target'] as string) || (req.url.includes('portProxyTarget=') ? new URL(req.url, 'http://localhost').searchParams.get('portProxyTarget') : null);
+            if (hostHeader || portHeader || portProxyHeader) {
+              bridge.updateConfig({ host: hostHeader, port: portHeader, portProxyTarget: portProxyHeader });
+            }
             const health = await bridge.getFederationHealth();
             res.setHeader('Content-Type', 'application/json');
             res.end(JSON.stringify(health));

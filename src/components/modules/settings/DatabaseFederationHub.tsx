@@ -16,8 +16,16 @@ import {
   FileCode2,
   Globe,
   Link,
-  Info
+  Info,
+  Server,
+  Save,
+  SlidersHorizontal
 } from 'lucide-react';
+import {
+  getNetworkConfigSync,
+  fetchNetworkConfig,
+  saveNetworkConfig,
+} from '../../../services/settings/networkConfigService';
 
 export const DatabaseFederationHub: React.FC = () => {
   const { isRtl, t } = useLanguage();
@@ -44,6 +52,14 @@ export const DatabaseFederationHub: React.FC = () => {
   const [isSavingUrl, setIsSavingUrl] = useState<boolean>(false);
   const [showTunnelHelp, setShowTunnelHelp] = useState<boolean>(false);
 
+  // Dynamic SQL Server & Network configuration state
+  const [sqlHost, setSqlHost] = useState<string>(() => getNetworkConfigSync().sql_server_host);
+  const [sqlPort, setSqlPort] = useState<string>(() => String(getNetworkConfigSync().sql_server_port));
+  const [portProxyTarget, setPortProxyTarget] = useState<string>(() => getNetworkConfigSync().local_portproxy_target);
+  const [isConfigEditing, setIsConfigEditing] = useState<boolean>(true);
+  const [isSavingConfig, setIsSavingConfig] = useState<boolean>(false);
+  const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
+
   // Ping test state
   const [isPinging, setIsPinging] = useState(false);
   const [lastPingTime, setLastPingTime] = useState<number | null>(null);
@@ -57,12 +73,60 @@ export const DatabaseFederationHub: React.FC = () => {
   const [isExecutingQuery, setIsExecutingQuery] = useState(false);
   const [queryError, setQueryError] = useState<string | null>(null);
 
+  // Sync settings from Cloudflare D1 or local backend on load
+  useEffect(() => {
+    fetchNetworkConfig().then(cfg => {
+      if (cfg) {
+        setSqlHost(cfg.sql_server_host);
+        setSqlPort(String(cfg.sql_server_port));
+        setPortProxyTarget(cfg.local_portproxy_target);
+        if (cfg.gateway_url) {
+          setBridgeUrlInput(cfg.gateway_url);
+        }
+      }
+    });
+  }, []);
+
+  // Save Network Settings to Cloudflare D1, localStorage, and SQL Bridge
+  const handleSaveNetworkSettings = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setIsSavingConfig(true);
+    setSaveSuccessMessage(null);
+    try {
+      const portNumber = parseInt(sqlPort, 10) || 1433;
+      await saveNetworkConfig({
+        sql_server_host: sqlHost.trim(),
+        sql_server_port: portNumber,
+        local_portproxy_target: portProxyTarget.trim(),
+        gateway_url: bridgeUrlInput.trim(),
+      });
+      setApiBaseUrl(bridgeUrlInput.trim());
+      setSaveSuccessMessage(t('تم حفظ إعدادات الاتصال وتطبيقها فورياً بنجاح!', 'Connection settings saved & applied dynamically!'));
+      setTimeout(() => setSaveSuccessMessage(null), 4000);
+      await refresh();
+      await handlePing();
+    } catch (err: any) {
+      console.error('Failed to save network configuration:', err);
+    } finally {
+      setIsSavingConfig(false);
+    }
+  };
+
   // Ping Handler
   const handlePing = async () => {
     setIsPinging(true);
-    const latency = await pingConnection();
-    setLastPingTime(latency);
-    setIsPinging(false);
+    try {
+      await saveNetworkConfig({
+        sql_server_host: sqlHost.trim(),
+        sql_server_port: parseInt(sqlPort, 10) || 1433,
+        local_portproxy_target: portProxyTarget.trim(),
+        gateway_url: bridgeUrlInput.trim(),
+      });
+      const latency = await pingConnection();
+      setLastPingTime(latency);
+    } finally {
+      setIsPinging(false);
+    }
   };
 
   // Save Bridge URL & Refresh
@@ -70,8 +134,7 @@ export const DatabaseFederationHub: React.FC = () => {
     if (e) e.preventDefault();
     setIsSavingUrl(true);
     try {
-      setApiBaseUrl(bridgeUrlInput.trim());
-      await refresh();
+      await handleSaveNetworkSettings();
     } finally {
       setIsSavingUrl(false);
     }
@@ -149,8 +212,36 @@ export const DatabaseFederationHub: React.FC = () => {
             </div>
           </div>
 
-          {/* Quick Actions & Ping */}
+          {/* Quick Actions & Dynamic Configuration Bar */}
           <div className="flex items-center gap-2.5 flex-wrap">
+            {/* Save Configuration Action Button */}
+            <button
+              type="button"
+              onClick={handleSaveNetworkSettings}
+              disabled={isSavingConfig || isContextLoading}
+              className="flex items-center gap-2 px-3.5 py-2 text-xs font-bold rounded-xl border border-[#5C431D] bg-[#2A1F0E] hover:bg-[#3D2D14] text-[#EBB34D] transition-all cursor-pointer shadow-xs disabled:opacity-50"
+              title={t('حفظ إعدادات الاتصال إلى D1 والتطبيق فورياً', 'Save Network Config to D1 & Apply Immediately')}
+            >
+              <Save className={`w-3.5 h-3.5 ${isSavingConfig ? 'animate-spin' : ''}`} />
+              <span>{isSavingConfig ? t('جاري الحفظ...', 'Saving...') : t('حفظ إعدادات الاتصال', 'Save Configuration')}</span>
+            </button>
+
+            {/* Toggle Inline Edit / Display Mode */}
+            <button
+              type="button"
+              onClick={() => setIsConfigEditing(prev => !prev)}
+              className={`flex items-center gap-2 px-3 py-2 text-xs font-bold rounded-xl border transition-all cursor-pointer shadow-xs ${
+                isConfigEditing
+                  ? 'border-[#3E5C46] bg-[#17231A] text-[#A3CFAC] hover:bg-[#1F2E23]'
+                  : 'border-[#243628] bg-[#121B14] text-[#8FA392] hover:text-[#F3EFE6]'
+              }`}
+              title={t('التبديل بين التعديل المباشر ونمط العرض', 'Toggle between inline editing and display view')}
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5" />
+              <span>{isConfigEditing ? t('نمط التعديل النشط', 'Editing Mode') : t('تعديل الإعدادات', 'Edit Settings')}</span>
+            </button>
+
+            {/* Ping Tunnel Button */}
             <button
               onClick={handlePing}
               disabled={isPinging}
@@ -165,6 +256,7 @@ export const DatabaseFederationHub: React.FC = () => {
               )}
             </button>
 
+            {/* Refresh and Sync Databases */}
             <button
               onClick={() => refresh()}
               disabled={isContextLoading}
@@ -176,8 +268,138 @@ export const DatabaseFederationHub: React.FC = () => {
           </div>
         </div>
 
+        {/* Dynamic Save Notification Banner */}
+        {saveSuccessMessage && (
+          <div className="flex items-center gap-2.5 p-3 rounded-xl bg-[#0E1610] border border-[#3E5C46] text-[#A3CFAC] text-xs font-bold shadow-md animate-in fade-in duration-150">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span>{saveSuccessMessage}</span>
+          </div>
+        )}
+
+        {/* =================================================================== */}
+        {/* Dynamic Editable Network Configuration Cards (High-Contrast Luxury Dark) */}
+        {/* =================================================================== */}
+        <div className="pt-4 border-t border-[#243628] grid grid-cols-1 md:grid-cols-2 gap-3.5">
+          {/* 1. خادم SQL Server (Tailscale Node) */}
+          <div className="p-3.5 rounded-xl bg-[#0E1610] border border-[#243628] hover:border-[#5C431D] focus-within:border-[#EBB34D] transition-all shadow-sm space-y-2.5">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-[#2A1F0E] text-[#EBB34D] border border-[#5C431D] flex items-center justify-center">
+                  <Server className="w-3.5 h-3.5" />
+                </div>
+                <div>
+                  <span className="text-xs font-bold text-[#F3EFE6] block">
+                    {t('خادم SQL Server (Tailscale Node)', 'SQL Server (Tailscale Node)')}
+                  </span>
+                  <span className="text-[10px] text-[#8FA392]">
+                    {t('عنوان IP أو الدومين عبر نفق Tailscale', 'IP address or domain across Tailscale mesh')}
+                  </span>
+                </div>
+              </div>
+              <span className="font-mono text-[10px] px-2 py-0.5 rounded-md bg-[#17231A] text-[#EBB34D] border border-[#5C431D]">
+                MS SQL: {health?.port || sqlPort}
+              </span>
+            </div>
+
+            {isConfigEditing ? (
+              <div className="grid grid-cols-3 gap-2 pt-1">
+                <div className="col-span-2 space-y-1">
+                  <label className="text-[10px] font-medium text-[#8FA392] block">
+                    {t('العنوان / Host (Tailscale IP)', 'Host / Tailscale IP')}
+                  </label>
+                  <input
+                    type="text"
+                    dir="ltr"
+                    value={sqlHost}
+                    onChange={e => setSqlHost(e.target.value)}
+                    placeholder="100.76.198.119"
+                    className="w-full bg-[#17231A] border border-[#243628] rounded-lg px-2.5 py-1.5 text-xs text-[#EBB34D] placeholder-[#5C431D] focus:outline-hidden focus:border-[#EBB34D] font-mono font-bold"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-medium text-[#8FA392] block">
+                    {t('المنفذ / Port', 'Port')}
+                  </label>
+                  <input
+                    type="text"
+                    dir="ltr"
+                    value={sqlPort}
+                    onChange={e => setSqlPort(e.target.value)}
+                    placeholder="1433"
+                    className="w-full bg-[#17231A] border border-[#243628] rounded-lg px-2.5 py-1.5 text-xs text-[#EBB34D] placeholder-[#5C431D] focus:outline-hidden focus:border-[#EBB34D] font-mono font-bold text-center"
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between p-2.5 rounded-lg bg-[#17231A] border border-[#243628] mt-1">
+                <span className="font-mono text-xs font-bold text-[#EBB34D]" dir="ltr">
+                  {sqlHost}:{sqlPort}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setIsConfigEditing(true)}
+                  className="text-[10px] text-[#8FA392] hover:text-[#EBB34D] underline cursor-pointer"
+                >
+                  {t('تعديل الإعدادات', 'Edit')}
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* 2. الهدف المحلي (PortProxy Target) */}
+          <div className="p-3.5 rounded-xl bg-[#0E1610] border border-[#243628] hover:border-[#3E5C46] focus-within:border-[#A3CFAC] transition-all shadow-sm space-y-2.5">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-[#17231A] text-[#A3CFAC] border border-[#3E5C46] flex items-center justify-center">
+                  <ArrowRightLeft className="w-3.5 h-3.5" />
+                </div>
+                <div>
+                  <span className="text-xs font-bold text-[#F3EFE6] block">
+                    {t('الهدف المحلي (PortProxy Target)', 'Local PortProxy Target')}
+                  </span>
+                  <span className="text-[10px] text-[#8FA392]">
+                    {t('عنوان الخادم المحلي مع البورت الموجه', 'Internal host & portproxy forwarded destination')}
+                  </span>
+                </div>
+              </div>
+              <span className="font-mono text-[10px] px-2 py-0.5 rounded-md bg-[#17231A] text-[#A3CFAC] border border-[#3E5C46]">
+                PortProxy Forward
+              </span>
+            </div>
+
+            {isConfigEditing ? (
+              <div className="space-y-1 pt-1">
+                <label className="text-[10px] font-medium text-[#8FA392] block">
+                  {t('عنوان وبورت الهدف المحلي (Host:Port)', 'Local Host:Port Destination')}
+                </label>
+                <input
+                  type="text"
+                  dir="ltr"
+                  value={portProxyTarget}
+                  onChange={e => setPortProxyTarget(e.target.value)}
+                  placeholder="192.168.1.50:49748"
+                  className="w-full bg-[#17231A] border border-[#243628] rounded-lg px-2.5 py-1.5 text-xs text-[#F3EFE6] placeholder-[#3E5C46] focus:outline-hidden focus:border-[#A3CFAC] font-mono font-bold"
+                />
+              </div>
+            ) : (
+              <div className="flex items-center justify-between p-2.5 rounded-lg bg-[#17231A] border border-[#243628] mt-1">
+                <span className="font-mono text-xs font-bold text-[#F3EFE6]" dir="ltr">
+                  {portProxyTarget}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setIsConfigEditing(true)}
+                  className="text-[10px] text-[#8FA392] hover:text-[#A3CFAC] underline cursor-pointer"
+                >
+                  {t('تعديل الإعدادات', 'Edit')}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Real-time Health Metrics Strip */}
-        <div className="pt-4 border-t border-[#243628] grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3 text-xs">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
           <div className="p-2.5 rounded-xl bg-[#17231A] border border-[#243628]">
             <span className="text-[10px] text-[#8FA392] block">{t('حالة النفق / الاتصال', 'Tunnel Status')}</span>
             <div className="flex items-center gap-1.5 mt-1 font-bold">
@@ -186,20 +408,6 @@ export const DatabaseFederationHub: React.FC = () => {
                 {isFailSafe ? t('محاكاة آمنة (Fail-Safe)', 'Safe Mode') : t('متصل (Tailscale)', 'Online Bridge')}
               </span>
             </div>
-          </div>
-
-          <div className="p-2.5 rounded-xl bg-[#17231A] border border-[#243628]">
-            <span className="text-[10px] text-[#8FA392] block">{t('خادم SQL Server', 'SQL Server Host')}</span>
-            <span className="font-mono font-bold text-[#EBB34D] mt-1 block truncate">
-              {health?.host || '100.76.198.119'}:{health?.port || 1433}
-            </span>
-          </div>
-
-          <div className="p-2.5 rounded-xl bg-[#17231A] border border-[#243628]">
-            <span className="text-[10px] text-[#8FA392] block">{t('الهدف المحلي (PortProxy)', 'Local PortProxy')}</span>
-            <span className="font-mono font-bold text-[#F3EFE6] mt-1 block truncate">
-              192.168.1.50:49748
-            </span>
           </div>
 
           <div className="p-2.5 rounded-xl bg-[#17231A] border border-[#243628]">
@@ -257,11 +465,11 @@ export const DatabaseFederationHub: React.FC = () => {
             <div className="flex items-center gap-2 shrink-0">
               <button
                 type="submit"
-                disabled={isSavingUrl || isContextLoading}
+                disabled={isSavingUrl || isSavingConfig || isContextLoading}
                 className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#EBB34D] hover:bg-[#D99B26] text-[#0E1610] text-xs font-black transition-all cursor-pointer shadow-xs disabled:opacity-50"
               >
-                <Link className={`w-3.5 h-3.5 ${isSavingUrl ? 'animate-spin' : ''}`} />
-                <span>{isSavingUrl ? t('جاري الحفظ والمزامنة...', 'Saving & Syncing...') : t('حفظ واختبار المزامنة', 'Save & Sync')}</span>
+                <Link className={`w-3.5 h-3.5 ${isSavingUrl || isSavingConfig ? 'animate-spin' : ''}`} />
+                <span>{isSavingUrl || isSavingConfig ? t('جاري الحفظ والمزامنة...', 'Saving & Syncing...') : t('حفظ واختبار المزامنة', 'Save & Sync')}</span>
               </button>
             </div>
           </form>

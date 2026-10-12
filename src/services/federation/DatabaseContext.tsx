@@ -97,6 +97,16 @@ export const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   useEffect(() => {
     refresh();
+
+    const handleConfigChange = () => {
+      refresh();
+    };
+    if (typeof window !== 'undefined') {
+      window.addEventListener('eco-network-config-changed', handleConfigChange);
+      return () => {
+        window.removeEventListener('eco-network-config-changed', handleConfigChange);
+      };
+    }
   }, [refresh]);
 
   const activeDatabaseMeta = useMemo(() => {

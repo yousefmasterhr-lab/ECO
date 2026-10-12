@@ -82,7 +82,7 @@ export type PagesFunction<TEnv = Env> = (
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Database-Context',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Database-Context, X-Sql-Server-Host, X-Sql-Server-Port, X-Local-Portproxy-Target',
 };
 
 export function jsonResponse(data: unknown, status = 200, extraHeaders: Record<string, string> = {}): Response {

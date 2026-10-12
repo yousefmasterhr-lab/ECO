@@ -7,6 +7,8 @@ import {
   MultiYearBalanceData
 } from './types';
 
+import { getNetworkConfigSync } from '../settings/networkConfigService';
+
 class FederationService {
   private activeContextDb: string = 'Tarabot_Data_2026';
 
@@ -27,13 +29,18 @@ class FederationService {
   }
 
   private getHeaders(): HeadersInit {
+    const netConfig = getNetworkConfigSync();
     return {
       'Content-Type': 'application/json',
-      'X-Database-Context': this.getActiveContext()
+      'X-Database-Context': this.getActiveContext(),
+      'X-Sql-Server-Host': netConfig.sql_server_host,
+      'X-Sql-Server-Port': String(netConfig.sql_server_port),
+      'X-Local-Portproxy-Target': netConfig.local_portproxy_target
     };
   }
 
   async fetchDatabaseFleet(): Promise<DatabaseFleetResponse> {
+    const netConfig = getNetworkConfigSync();
     if (typeof window !== 'undefined') {
       const isLogin = window.location.pathname.includes('/login');
       const session = localStorage.getItem('eco_auth_session') || sessionStorage.getItem('eco_auth_session');
@@ -42,9 +49,9 @@ class FederationService {
         return {
           connected: false,
           isFailSafe: true,
-          host: '100.76.198.119',
-          port: 1433,
-          portProxyTarget: '192.168.1.50:49748',
+          host: netConfig.sql_server_host,
+          port: netConfig.sql_server_port,
+          portProxyTarget: netConfig.local_portproxy_target,
           engine: 'Microsoft SQL Server 2008 R2 (Disconnected)',
           activePoolsCount: 0,
           latencyMs: 0,
@@ -56,7 +63,12 @@ class FederationService {
     }
 
     try {
-      const res = await fetch('/api/system/databases', {
+      const q = new URLSearchParams({
+        host: netConfig.sql_server_host,
+        port: String(netConfig.sql_server_port),
+        portProxyTarget: netConfig.local_portproxy_target
+      });
+      const res = await fetch(`/api/system/databases?${q.toString()}`, {
         headers: this.getHeaders()
       });
       if (!res.ok) {
@@ -68,9 +80,9 @@ class FederationService {
       return {
         connected: false,
         isFailSafe: true,
-        host: '100.76.198.119',
-        port: 1433,
-        portProxyTarget: '192.168.1.50:49748',
+        host: netConfig.sql_server_host,
+        port: netConfig.sql_server_port,
+        portProxyTarget: netConfig.local_portproxy_target,
         engine: 'Microsoft SQL Server 2008 R2 (Disconnected)',
         activePoolsCount: 0,
         latencyMs: 0,
@@ -82,6 +94,7 @@ class FederationService {
   }
 
   async fetchConnectionHealth(): Promise<ConnectionHealthStatus> {
+    const netConfig = getNetworkConfigSync();
     if (typeof window !== 'undefined') {
       const isLogin = window.location.pathname.includes('/login');
       const session = localStorage.getItem('eco_auth_session') || sessionStorage.getItem('eco_auth_session');
@@ -90,9 +103,9 @@ class FederationService {
         return {
           connected: false,
           isFailSafe: true,
-          host: '100.76.198.119',
-          port: 1433,
-          portProxyTarget: '192.168.1.50:49748',
+          host: netConfig.sql_server_host,
+          port: netConfig.sql_server_port,
+          portProxyTarget: netConfig.local_portproxy_target,
           serverName: 'Accounts-Server\\sqlexpress',
           version: 'Microsoft SQL Server 2008 (Disconnected)',
           activeDatabase: this.getActiveContext(),
@@ -105,7 +118,12 @@ class FederationService {
     }
 
     try {
-      const res = await fetch('/api/system/health', {
+      const q = new URLSearchParams({
+        host: netConfig.sql_server_host,
+        port: String(netConfig.sql_server_port),
+        portProxyTarget: netConfig.local_portproxy_target
+      });
+      const res = await fetch(`/api/system/health?${q.toString()}`, {
         headers: this.getHeaders()
       });
       if (!res.ok) {
@@ -116,9 +134,9 @@ class FederationService {
       return {
         connected: false,
         isFailSafe: true,
-        host: '100.76.198.119',
-        port: 1433,
-        portProxyTarget: '192.168.1.50:49748',
+        host: netConfig.sql_server_host,
+        port: netConfig.sql_server_port,
+        portProxyTarget: netConfig.local_portproxy_target,
         serverName: 'Accounts-Server\\sqlexpress',
         version: 'Microsoft SQL Server 2008 (Fallback)',
         activeDatabase: this.getActiveContext(),

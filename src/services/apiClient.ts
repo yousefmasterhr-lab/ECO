@@ -5,6 +5,8 @@
  * Default Production Gateway: https://datatest.hrsup.com (Cloudflare Tunnel: eco-data-bridge)
  */
 
+import { getNetworkConfigSync } from './settings/networkConfigService';
+
 export const PRODUCTION_DEFAULT_GATEWAY = 'https://datatest.hrsup.com';
 export const LOCAL_DEV_DEFAULT_GATEWAY = 'http://localhost:5000';
 
@@ -88,7 +90,9 @@ export const isCloudflareEdgeRoute = (endpoint: string): boolean => {
     clean.startsWith('api/auth') ||
     clean.startsWith('api/users') ||
     clean.startsWith('api/audit-logs') ||
-    clean.startsWith('api/storage')
+    clean.startsWith('api/storage') ||
+    clean.startsWith('api/system/settings') ||
+    clean.startsWith('api/settings')
   );
 };
 
@@ -121,10 +125,14 @@ export async function apiRequest<T = any>(
   const activeDatabase = getActiveDatabaseContext();
   const baseUrl = getApiBaseUrl();
 
+  const netConfig = getNetworkConfigSync();
   const headers: Record<string, string> = {
     'Accept': 'application/json',
     'Content-Type': 'application/json',
     'X-Database-Context': activeDatabase,
+    'X-Sql-Server-Host': netConfig.sql_server_host,
+    'X-Sql-Server-Port': String(netConfig.sql_server_port),
+    'X-Local-Portproxy-Target': netConfig.local_portproxy_target,
     ...(options.headers as Record<string, string>),
   };
 
@@ -242,8 +250,18 @@ export function setupFetchInterceptor(): void {
         init?.headers || (typeof input === 'object' && 'headers' in input ? (input as any).headers : undefined)
       );
 
+      const netConfig = getNetworkConfigSync();
       if (!headers.has('X-Database-Context')) {
         headers.set('X-Database-Context', activeDb);
+      }
+      if (!headers.has('X-Sql-Server-Host')) {
+        headers.set('X-Sql-Server-Host', netConfig.sql_server_host);
+      }
+      if (!headers.has('X-Sql-Server-Port')) {
+        headers.set('X-Sql-Server-Port', String(netConfig.sql_server_port));
+      }
+      if (!headers.has('X-Local-Portproxy-Target')) {
+        headers.set('X-Local-Portproxy-Target', netConfig.local_portproxy_target);
       }
       if (!headers.has('Accept')) {
         headers.set('Accept', 'application/json');
@@ -295,8 +313,18 @@ export function setupFetchInterceptor(): void {
       const headers = new Headers(
         init?.headers || (typeof input === 'object' && 'headers' in input ? (input as any).headers : undefined)
       );
+      const netConfig = getNetworkConfigSync();
       if (!headers.has('X-Database-Context')) {
         headers.set('X-Database-Context', activeDb);
+      }
+      if (!headers.has('X-Sql-Server-Host')) {
+        headers.set('X-Sql-Server-Host', netConfig.sql_server_host);
+      }
+      if (!headers.has('X-Sql-Server-Port')) {
+        headers.set('X-Sql-Server-Port', String(netConfig.sql_server_port));
+      }
+      if (!headers.has('X-Local-Portproxy-Target')) {
+        headers.set('X-Local-Portproxy-Target', netConfig.local_portproxy_target);
       }
       if (!headers.has('Accept')) {
         headers.set('Accept', 'application/json');
