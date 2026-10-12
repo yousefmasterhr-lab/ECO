@@ -118,18 +118,24 @@ export const GeneralJournal: React.FC = () => {
       return;
     }
 
-    // Fetch lines on demand
+    // Fetch lines on demand from /api/finance/journals/:id/details
     setLoadingLines(prev => ({ ...prev, [id]: true }));
     try {
-      const res = await fetch(`/api/finance/journals/${noteNo}/lines`);
+      const cleanId = String(id).replace(/^JV-/, '').trim();
+      const queryId = noteNo || cleanId;
+      let res = await fetch(`/api/finance/journals/${queryId}/details`);
+      if (!res.ok) {
+        res = await fetch(`/api/finance/journals/${queryId}/lines`);
+      }
       if (res.ok) {
         const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
-          setLoadedLines(prev => ({ ...prev, [id]: data }));
+        const lines = Array.isArray(data) ? data : (data.lines || []);
+        if (Array.isArray(lines) && lines.length > 0) {
+          setLoadedLines(prev => ({ ...prev, [id]: lines }));
         }
       }
     } catch (err) {
-      console.warn(`[GeneralJournal] Failed to load lines for Note #${noteNo}:`, err);
+      console.warn(`[GeneralJournal] Failed to load lines for Note #${noteNo || id}:`, err);
     } finally {
       setLoadingLines(prev => ({ ...prev, [id]: false }));
     }
@@ -521,62 +527,60 @@ export const GeneralJournal: React.FC = () => {
                                           </td>
                                         </tr>
                                       ) : activeLines.length > 0 ? (
-                                        activeLines.map((l, idx) => (
-                                          <tr key={idx} className="hover:bg-[#F3EFE6]/20 dark:hover:bg-[#17231A]/20">
-                                            <td className="py-2 px-3 font-inter text-[#5C665E] tabular-nums">{toWesternDigits(l.sr || idx + 1)}</td>
-                                            <td className="py-2 px-3 font-inter font-bold text-[#D99B26] dark:text-[#EBB34D] tabular-nums">{toWesternDigits(l.level5Id)}</td>
-                                            <td className="py-2 px-3 font-semibold text-[#1A241C] dark:text-[#F3EFE6]">
-                                              {l.level5NameAr}
-                                            </td>
-                                            <td className="py-2 px-3 text-end font-inter font-bold text-[#A3CFAC] tabular-nums">
-                                              {l.debit > 0 ? formatCurrency(l.debit, false) : '-'}
-                                            </td>
-                                            <td className="py-2 px-3 text-end font-inter font-bold text-[#EFA3A3] tabular-nums">
-                                              {l.credit > 0 ? formatCurrency(l.credit, false) : '-'}
-                                            </td>
-                                            <td className="py-2 px-3 text-[#5C665E] dark:text-[#8FA392]">
-                                              {l.costcenterNameAr || '-'}
-                                            </td>
-                                            <td className="py-2 px-3 text-[#5C665E] dark:text-[#8FA392]">
-                                              {l.description || journal.description}
-                                            </td>
-                                          </tr>
-                                        ))
+                                        activeLines.map((l: any, idx) => {
+                                          const lineNum = l.lineNo ?? l.sr ?? idx + 1;
+                                          const acctCode = l.accountCode ?? l.level5Id ?? '-';
+                                          const acctName = l.accountName ?? l.level5NameAr ?? t('حساب غير محدد', 'Unspecified Account');
+                                          const debitVal = Number(l.debit ?? 0);
+                                          const creditVal = Number(l.credit ?? 0);
+                                          const ccName = l.costCenterName || l.costcenterNameAr || (l.costCenterCode && l.costCenterCode !== '0' ? l.costCenterCode : '');
+                                          const memo = l.lineNotes || l.description || journal.description;
+
+                                          return (
+                                            <tr key={idx} className="hover:bg-[#F3EFE6]/20 dark:hover:bg-[#17231A]/20">
+                                              <td className="py-2 px-3 font-inter text-[#5C665E] dark:text-[#8FA392] tabular-nums font-bold">
+                                                {toWesternDigits(lineNum)}
+                                              </td>
+                                              <td className="py-2 px-3 font-inter font-bold text-[#D99B26] dark:text-[#EBB34D] tabular-nums">
+                                                {toWesternDigits(acctCode)}
+                                              </td>
+                                              <td className="py-2 px-3 font-semibold text-[#1A241C] dark:text-[#F3EFE6]">
+                                                <div className="flex flex-wrap items-center gap-1.5">
+                                                  <span>{acctName}</span>
+                                                  {l.analysisName && l.analysisName !== 'حســاب عـــــام' && (
+                                                    <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-[#193220] text-[#A3CFAC] border border-[#2E5A36] font-normal">
+                                                      {l.analysisName}
+                                                    </span>
+                                                  )}
+                                                </div>
+                                              </td>
+                                              <td className="py-2 px-3 text-end font-inter font-bold text-[#A3CFAC] tabular-nums">
+                                                {debitVal > 0 ? formatCurrency(debitVal, false) : '-'}
+                                              </td>
+                                              <td className="py-2 px-3 text-end font-inter font-bold text-[#EFA3A3] tabular-nums">
+                                                {creditVal > 0 ? formatCurrency(creditVal, false) : '-'}
+                                              </td>
+                                              <td className="py-2 px-3 text-[#5C665E] dark:text-[#8FA392]">
+                                                {ccName ? (
+                                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#17231A] text-[#A3CFAC] border border-[#243628] font-medium text-[11px]">
+                                                    {ccName}
+                                                  </span>
+                                                ) : (
+                                                  <span className="text-[#5C665E] dark:text-[#8FA392] text-[11px]">-</span>
+                                                )}
+                                              </td>
+                                              <td className="py-2 px-3 text-[#5C665E] dark:text-[#8FA392] text-xs">
+                                                {memo}
+                                              </td>
+                                            </tr>
+                                          );
+                                        })
                                       ) : (
-                                        /* Verified double-entry balanced lines reflecting the header debit and credit totals with the exact description */
-                                        <>
-                                          <tr className="hover:bg-[#F3EFE6]/20 dark:hover:bg-[#17231A]/20">
-                                            <td className="py-2 px-3 font-inter text-[#5C665E] tabular-nums">1</td>
-                                            <td className="py-2 px-3 font-inter font-bold text-[#D99B26] dark:text-[#EBB34D] tabular-nums">1201001</td>
-                                            <td className="py-2 px-3 font-semibold text-[#1A241C] dark:text-[#F3EFE6]">
-                                              {t('حساب الخزينة / الجانب المدين', 'Debit Side Account')}
-                                            </td>
-                                            <td className="py-2 px-3 text-end font-inter font-bold text-[#A3CFAC] tabular-nums">
-                                              {formatCurrency(journal.debitTotal, false)}
-                                            </td>
-                                            <td className="py-2 px-3 text-end font-inter text-[#5C665E]">-</td>
-                                            <td className="py-2 px-3 text-[#5C665E]">-</td>
-                                            <td className="py-2 px-3 text-[#5C665E]">{journal.description}</td>
-                                          </tr>
-                                          <tr className="hover:bg-[#F3EFE6]/20 dark:hover:bg-[#17231A]/20">
-                                            <td className="py-2 px-3 font-inter text-[#5C665E] tabular-nums">2</td>
-                                            <td className="py-2 px-3 font-inter font-bold text-[#D99B26] dark:text-[#EBB34D] tabular-nums">4101001</td>
-                                            <td className="py-2 px-3 font-semibold text-[#1A241C] dark:text-[#F3EFE6]">
-                                              {t('حساب الإيرادات / الجانب الدائن', 'Credit Side Account')}
-                                            </td>
-                                            <td className="py-2 px-3 text-end font-inter text-[#5C665E]">-</td>
-                                            <td className="py-2 px-3 text-end font-inter font-bold text-[#EFA3A3] tabular-nums">
-                                              {formatCurrency(journal.creditTotal, false)}
-                                            </td>
-                                            <td className="py-2 px-3 text-[#5C665E]">-</td>
-                                            <td className="py-2 px-3 text-[#5C665E]">{journal.description}</td>
-                                          </tr>
-                                          <tr>
-                                            <td colSpan={7} className="py-2 px-3 bg-[#F3EFE6]/30 dark:bg-[#17231A]/30 text-center text-[11px] text-[#5C665E] dark:text-[#8FA392]">
-                                              {t('تم توثيق طرفي القيد المحاسبي المتزن بناءً على التوثيق المحاسبي لرأس القيد بقاعدة البيانات', 'Double-entry balanced posting documented at journal voucher header')}
-                                            </td>
-                                          </tr>
-                                        </>
+                                        <tr>
+                                          <td colSpan={7} className="py-6 text-center text-xs text-[#5C665E] dark:text-[#8FA392]">
+                                            {t('لا توجد بنود تفصيلية مسجلة لهذا القيد في قاعدة البيانات.', 'No line items recorded for this voucher in database.')}
+                                          </td>
+                                        </tr>
                                       )}
                                     </tbody>
                                   </table>

@@ -457,7 +457,7 @@ async function getDatabasePool(dbName = process.env.DB_NAME || 'MK_Khalil_Db_202
 
 // Universal Context Middleware (Extract target DB from Header or Query Param)
 app.use((req, res, next) => {
-  req.targetDb = req.headers['x-database-context'] || req.query.db || req.query.databaseContext || 'Tarabot_Data_2026';
+  req.targetDb = req.headers['x-database-context'] || req.query.db || req.query.databaseContext || process.env.DB_NAME || 'MK_Khalil_Db_2026';
   next();
 });
 
@@ -1730,7 +1730,7 @@ async function getJournalSummary(targetDb = 'Tarabot_Data_2026', options = {}) {
 /**
  * Retrieve individual journal lines by Note_No (On-Demand Fetching)
  */
-async function getJournalLines(noteNo, targetDb = 'Tarabot_Data_2026') {
+async function getJournalLines(noteNo, targetDb = process.env.DB_NAME || 'MK_Khalil_Db_2026') {
   targetDb = sanitizeDatabaseName(targetDb);
   const nNo = Number(noteNo);
   if (!nNo) return [];
@@ -1744,14 +1744,22 @@ async function getJournalLines(noteNo, targetDb = 'Tarabot_Data_2026') {
   try {
     const linesSql = `
       SELECT 
-        Note_No AS noteNo,
-        SR AS sr,
-        CAST(Level5_ID AS NVARCHAR(50)) AS level5Id,
-        Level5_Name_A AS level5NameAr,
-        ISNULL(Debit, 0) AS debit,
-        ISNULL(Credit, 0) AS credit,
-        Description AS description,
-        Costcenter_Name_A AS costcenterNameAr
+        Note_No AS [noteNo],
+        SR AS [sr],
+        SR AS [lineNo],
+        CAST(Level5_ID AS NVARCHAR(50)) AS [level5Id],
+        CAST(Level5_ID AS NVARCHAR(50)) AS [accountCode],
+        COALESCE(Level5_Name_A, Level4_Name_A, N'حساب غير محدد') AS [level5NameAr],
+        COALESCE(Level5_Name_A, Level4_Name_A, N'حساب غير محدد') AS [accountName],
+        ISNULL(Debit, 0) AS [debit],
+        ISNULL(Credit, 0) AS [credit],
+        CAST(ISNULL(Costcenter_ID, 0) AS NVARCHAR(50)) AS [costcenterId],
+        CAST(ISNULL(Costcenter_ID, 0) AS NVARCHAR(50)) AS [costCenterCode],
+        COALESCE(Costcenter_Name_A, '') AS [costcenterNameAr],
+        COALESCE(Costcenter_Name_A, '') AS [costCenterName],
+        COALESCE(Analysis_Name_A, '') AS [analysisName],
+        COALESCE(Description, '') AS [description],
+        COALESCE(Description, '') AS [lineNotes]
       FROM [${targetDb}].dbo.GeneralLedger_Details_View
       WHERE Note_No = ${nNo}
       ORDER BY SR ASC
@@ -1760,12 +1768,20 @@ async function getJournalLines(noteNo, targetDb = 'Tarabot_Data_2026') {
     if (rows && rows.length > 0) {
       return rows.map((l, idx) => ({
         sr: Number(l.sr ?? l.SR ?? idx + 1),
-        level5Id: String(l.level5Id ?? l.Level5_ID ?? '').trim(),
-        level5NameAr: l.level5NameAr ?? l.Level5_Name_A ?? '',
+        lineNo: Number(l.lineNo ?? l.sr ?? idx + 1),
+        level5Id: String(l.level5Id ?? l.Level5_ID ?? l.accountCode ?? '').trim(),
+        accountCode: String(l.accountCode ?? l.level5Id ?? '').trim(),
+        level5NameAr: l.level5NameAr ?? l.Level5_Name_A ?? l.accountName ?? '',
+        accountName: l.accountName ?? l.level5NameAr ?? '',
         debit: Number(l.debit ?? l.Debit ?? 0),
         credit: Number(l.credit ?? l.Credit ?? 0),
-        description: l.description ?? l.Description ?? '',
-        costcenterNameAr: l.costcenterNameAr ?? l.Costcenter_Name_A ?? ''
+        costcenterId: String(l.costcenterId ?? l.costCenterCode ?? '0'),
+        costCenterCode: String(l.costCenterCode ?? l.costcenterId ?? '0'),
+        costcenterNameAr: l.costcenterNameAr ?? l.Costcenter_Name_A ?? l.costCenterName ?? '',
+        costCenterName: l.costCenterName ?? l.costcenterNameAr ?? '',
+        analysisName: l.analysisName ?? l.Analysis_Name_A ?? '',
+        description: l.description ?? l.Description ?? l.lineNotes ?? '',
+        lineNotes: l.lineNotes ?? l.description ?? ''
       }));
     }
   } catch (err) {
@@ -3843,6 +3859,102 @@ journalSummaryEndpoints.forEach(path => {
       res.status(500).json({ error: err.message });
     }
   });
+});
+
+// GET /api/finance/journals/:id/details
+const journalDetailRoutes = [
+  '/api/finance/journals/:id/details',
+  '/api/journal-entries/:id/details',
+  '/api/sql/general-journal/:id/details'
+];
+
+app.get(journalDetailRoutes, async (req, res) => {
+  try {
+    const rawId = req.params.id;
+    const cleanId = String(rawId).replace(/^JV-/, '').trim();
+    const journalId = parseInt(cleanId, 10) || cleanId;
+    const targetDb = req.query.db || req.headers['x-database-context'] || req.targetDb || process.env.DB_NAME || 'MK_Khalil_Db_2026';
+    const sanitized = sanitizeDatabaseName(targetDb);
+    const pool = await getPool(targetDb);
+
+    let lines = [];
+
+    // 1. Query real line items joined with account names and cost centers from GeneralLedger_Details_View
+    try {
+      const viewQuery = `
+        SELECT 
+          SR AS [lineNo],
+          SR AS [id],
+          CAST(Level5_ID AS NVARCHAR(50)) AS [accountCode],
+          COALESCE(Level5_Name_A, Level4_Name_A, N'حساب غير محدد') AS [accountName],
+          ISNULL(Debit, 0) AS [debit],
+          ISNULL(Credit, 0) AS [credit],
+          CAST(ISNULL(Costcenter_ID, 0) AS NVARCHAR(50)) AS [costCenterCode],
+          COALESCE(Costcenter_Name_A, '') AS [costCenterName],
+          COALESCE(Analysis_Name_A, '') AS [analysisName],
+          COALESCE(Description, '') AS [lineNotes]
+        FROM [${sanitized}].dbo.[GeneralLedger_Details_View]
+        WHERE Note_No = @jId
+        ORDER BY SR ASC;
+      `;
+      const request = pool.request();
+      request.input('jId', journalId);
+      const result = await request.query(viewQuery);
+      if (result.recordset && result.recordset.length > 0) {
+        lines = result.recordset;
+      }
+    } catch (viewErr) {
+      console.warn(`[SQL Bridge] Details view query failed on [${targetDb}]: ${viewErr.message}`);
+    }
+
+    // 2. Direct join query for schemas with GeneralLedger_Details + Chart_Of_Accounts / Cost_Centers
+    if (lines.length === 0) {
+      try {
+        const joinQuery = `
+          SELECT 
+            COALESCE(d.Detail_ID, d.SR) AS [id],
+            COALESCE(d.Journal_ID, d.Note_No) AS [journalId],
+            COALESCE(d.Line_No, d.SR) AS [lineNo],
+            COALESCE(d.Account_Code, CAST(d.Level5_ID AS NVARCHAR(50))) AS [accountCode],
+            COALESCE(a.Account_Name, d.Account_Name, N'حساب غير محدد') AS [accountName],
+            ISNULL(d.Debit, 0) AS [debit],
+            ISNULL(Credit, 0) AS [credit],
+            COALESCE(d.CostCenter_Code, CAST(d.Costcenter_ID AS NVARCHAR(50)), '') AS [costCenterCode],
+            COALESCE(c.CostCenter_Name, d.CostCenter_Name, '') AS [costCenterName],
+            COALESCE(d.Detail_Notes, d.Notes, d.Description, '') AS [lineNotes]
+          FROM [${sanitized}].dbo.GeneralLedger_Details d
+          LEFT JOIN [${sanitized}].dbo.Chart_Of_Accounts a 
+            ON RTRIM(LTRIM(d.Account_Code)) = RTRIM(LTRIM(a.Account_Code))
+          LEFT JOIN [${sanitized}].dbo.Cost_Centers c 
+            ON RTRIM(LTRIM(d.CostCenter_Code)) = RTRIM(LTRIM(c.CostCenter_Code))
+          WHERE d.Journal_ID = @jId OR d.Journal_No = @jId OR d.Note_No = @jId
+          ORDER BY 3 ASC;
+        `;
+        const request = pool.request();
+        request.input('jId', journalId);
+        const result = await request.query(joinQuery);
+        if (result.recordset && result.recordset.length > 0) {
+          lines = result.recordset;
+        }
+      } catch (tableErr) {
+        console.warn(`[SQL Bridge] Details direct join failed: ${tableErr.message}`);
+      }
+    }
+
+    // 3. Fallback to getJournalLines
+    if (lines.length === 0) {
+      lines = await getJournalLines(journalId, targetDb);
+    }
+
+    res.json({
+      success: true,
+      journalId: rawId,
+      lines: lines || []
+    });
+  } catch (err) {
+    console.error(`[SQL Bridge Error] /api/finance/journals/${req.params.id}/details:`, err.message);
+    res.status(500).json({ success: false, error: err.message, lines: [] });
+  }
 });
 
 app.get(['/api/finance/journals/:noteNo/lines', '/api/journal-entries/:noteNo/lines'], async (req, res) => {

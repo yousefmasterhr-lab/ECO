@@ -413,10 +413,19 @@ export class LocalSqlAdapter implements IFinancialRepository {
 
   async getJournalLines(noteNo: number): Promise<JournalLineItem[]> {
     try {
-      const res = await fetch(`/api/finance/journals/${noteNo}/lines`);
+      const cleanId = String(noteNo).replace(/^JV-/, '').trim();
+      let res = await fetch(`/api/finance/journals/${cleanId}/details`, {
+        headers: { 'X-Database-Context': this.getActiveDb() }
+      });
+      if (!res.ok) {
+        res = await fetch(`/api/finance/journals/${cleanId}/lines`, {
+          headers: { 'X-Database-Context': this.getActiveDb() }
+        });
+      }
       if (res.ok) {
         const data = await res.json();
-        if (Array.isArray(data)) return data;
+        const lines = Array.isArray(data) ? data : (data.lines || []);
+        if (Array.isArray(lines)) return lines;
       }
     } catch (err: any) {
       console.warn(`[LocalSqlAdapter] getJournalLines API error for Note #${noteNo}:`, err.message);

@@ -186,13 +186,20 @@ export interface ChequePayload {
 
 export interface JournalLineItem {
   sr: number;
+  lineNo?: number;
   level5Id: string;
+  accountCode?: string;
   level5NameAr: string;
+  accountName?: string;
   debit: number;
   credit: number;
   costcenterId?: string;
+  costCenterCode?: string;
   costcenterNameAr?: string;
+  costCenterName?: string;
+  analysisName?: string;
   description: string;
+  lineNotes?: string;
 }
 
 export interface JournalEntryItem {
