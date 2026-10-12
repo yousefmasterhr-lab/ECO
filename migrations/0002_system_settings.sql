@@ -14,7 +14,7 @@ CREATE INDEX IF NOT EXISTS idx_system_settings_key ON system_settings(key);
 
 -- Seed Initial Default Network Configuration
 INSERT OR IGNORE INTO system_settings (key, value) VALUES
-    ('sql_server_host', '100.76.198.119'),
+    ('sql_server_host', '100.68.121.85'),
     ('sql_server_port', '1433'),
     ('local_portproxy_target', '192.168.1.50:49748'),
     ('gateway_url', 'https://datatest.hrsup.com');

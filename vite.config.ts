@@ -711,22 +711,43 @@ function sqlServerBridgePlugin() {
                 d.create_date AS createdDate,
                 d.state_desc AS state,
                 CASE 
+                  WHEN d.name LIKE '%Salary%' OR d.name LIKE '%HR%' THEN 'Payroll'
                   WHEN d.name LIKE '%2026%' OR d.name LIKE '%Active%' THEN 'Active'
-                  WHEN d.name LIKE '%Payroll%' OR d.name LIKE '%HR%' THEN 'Payroll'
                   ELSE 'Archive'
                 END AS category,
-                (SELECT COUNT(*) FROM sys.tables) AS tableCount
+                -- Real size in MB from sys.master_files
+                ISNULL((
+                  SELECT CAST(SUM(CAST(mf.size AS BIGINT)) * 8 / 1024 AS INT)
+                  FROM sys.master_files mf 
+                  WHERE mf.database_id = d.database_id
+                ), 0) AS sizeMB,
+                -- Live status check
+                DATABASEPROPERTYEX(d.name, 'Status') AS dbStatus
               FROM sys.databases d
               WHERE d.database_id > 4 -- Skip system DBs (master, tempdb, model, msdb)
                 AND d.state = 0
               ORDER BY d.name ASC;
             `;
             const result = await pool.request().query(query);
+            const databases = (result.recordset || []).map((d: any) => ({
+              ...d,
+              name: d.databaseName || d.id,
+              displayNameAr: d.databaseName || d.id,
+              displayNameEn: d.databaseName || d.id,
+              createDate: d.createdDate,
+              status: d.dbStatus || d.state || 'ONLINE',
+              state: d.state || 'ONLINE',
+              category: d.category || 'Active',
+              sizeMB: Number(d.sizeMB || 0),
+              sizeMb: Number(d.sizeMB || 0),
+              dbStatus: d.dbStatus || 'ONLINE'
+            }));
             res.setHeader('Content-Type', 'application/json');
             res.end(JSON.stringify({
               success: true,
-              databases: result.recordset,
+              databases,
               server: bridge.activeConfig?.server || host,
+              total: databases.length,
               timestamp: new Date().toISOString()
             }));
           } catch (err: any) {

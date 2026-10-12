@@ -14,7 +14,7 @@ export const onRequestGet: PagesFunction = async (context) => {
 
   // Fallback defaults
   const defaults = {
-    sql_server_host: '100.76.198.119',
+    sql_server_host: '100.68.121.85',
     sql_server_port: 1433,
     local_portproxy_target: '192.168.1.50:49748',
     gateway_url: 'https://datatest.hrsup.com',
@@ -82,7 +82,7 @@ export const onRequestPost: PagesFunction = async (context) => {
   const gateway = body.gateway_url || body.gatewayUrl;
 
   const resolved = {
-    sql_server_host: host ? String(host).trim() : '100.76.198.119',
+    sql_server_host: host ? String(host).trim() : '100.68.121.85',
     sql_server_port: parseInt(String(port || 1433), 10) || 1433,
     local_portproxy_target: portProxy ? String(portProxy).trim() : '192.168.1.50:49748',
     gateway_url: gateway ? String(gateway).trim() : 'https://datatest.hrsup.com',

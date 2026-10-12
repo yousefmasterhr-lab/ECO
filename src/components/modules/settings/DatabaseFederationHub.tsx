@@ -54,7 +54,9 @@ export const DatabaseFederationHub: React.FC = () => {
   const [showTunnelHelp, setShowTunnelHelp] = useState<boolean>(false);
 
   // Dynamic SQL Server & Network configuration state
-  const [sqlHost, setSqlHost] = useState<string>(() => getNetworkConfigSync().sql_server_host);
+  const [sqlHost, setSqlHost] = useState<string>(() => {
+    return localStorage.getItem('eco_sql_host') || '100.68.121.85';
+  });
   const [sqlPort, setSqlPort] = useState<string>(() => String(getNetworkConfigSync().sql_server_port));
   const [portProxyTarget, setPortProxyTarget] = useState<string>(() => getNetworkConfigSync().local_portproxy_target);
   const [isConfigEditing, setIsConfigEditing] = useState<boolean>(true);
@@ -154,9 +156,12 @@ export const DatabaseFederationHub: React.FC = () => {
   useEffect(() => {
     fetchNetworkConfig().then(cfg => {
       if (cfg) {
-        setSqlHost(cfg.sql_server_host);
-        setSqlPort(String(cfg.sql_server_port));
-        setPortProxyTarget(cfg.local_portproxy_target);
+        const storedHost = localStorage.getItem('eco_sql_host');
+        if (!storedHost) {
+          setSqlHost(cfg.sql_server_host || '100.68.121.85');
+        }
+        setSqlPort(String(cfg.sql_server_port || 1433));
+        setPortProxyTarget(cfg.local_portproxy_target || '192.168.1.50:49748');
         if (cfg.gateway_url) {
           setBridgeUrlInput(cfg.gateway_url);
         }
@@ -170,6 +175,7 @@ export const DatabaseFederationHub: React.FC = () => {
     setIsSavingConfig(true);
     setSaveSuccessMessage(null);
     try {
+      localStorage.setItem('eco_sql_host', sqlHost.trim());
       const portNumber = parseInt(sqlPort, 10) || 1433;
       await saveNetworkConfig({
         sql_server_host: sqlHost.trim(),
@@ -266,6 +272,7 @@ export const DatabaseFederationHub: React.FC = () => {
         const isOnline = d.state === 0 || d.state === 'ONLINE' || d.status === 'ONLINE' || !String(d.state || d.status || '').toUpperCase().includes('OFFLINE');
         const isPrimary = Boolean(d.isPrimary || category === 'primary' || name.includes('2026') || name.includes('MK_Khalil'));
 
+        const realSize = Number(d.sizeMB ?? d.sizeMb ?? 0);
         return {
           name: name,
           displayNameAr: d.displayNameAr || name,
@@ -277,8 +284,9 @@ export const DatabaseFederationHub: React.FC = () => {
           isPrimary: isPrimary,
           createDate: String(d.createdDate || d.createDate || d.create_date || new Date().toISOString().split('T')[0]),
           status: isOnline ? 'ONLINE' : 'OFFLINE',
-          sizeMb: Number(d.sizeMb) || (d.tableCount ? Math.round(d.tableCount * 3.5) : 32),
-          descriptionAr: d.descriptionAr || `قاعدة بيانات SQL Server حقيقية (${d.category || 'Active'}) - ${d.tableCount || 0} جداول مسجلة`,
+          sizeMb: realSize,
+          sizeMB: realSize,
+          descriptionAr: d.descriptionAr || `قاعدة بيانات مسجلة في SQL Server (${d.category || 'Active'}) - الحالة: ${d.dbStatus || d.state || 'ONLINE'}`,
         };
       });
     }
@@ -445,8 +453,12 @@ export const DatabaseFederationHub: React.FC = () => {
                     type="text"
                     dir="ltr"
                     value={sqlHost}
-                    onChange={e => setSqlHost(e.target.value)}
-                    placeholder="100.76.198.119"
+                    onChange={e => {
+                      const val = e.target.value;
+                      setSqlHost(val);
+                      localStorage.setItem('eco_sql_host', val.trim());
+                    }}
+                    placeholder="100.68.121.85"
                     className="w-full bg-[#17231A] border border-[#243628] rounded-lg px-2.5 py-1.5 text-xs text-[#EBB34D] placeholder-[#5C431D] focus:outline-hidden focus:border-[#EBB34D] font-mono font-bold"
                   />
                 </div>
@@ -857,7 +869,9 @@ export const DatabaseFederationHub: React.FC = () => {
                       <div className="grid grid-cols-2 gap-2 text-[11px] font-mono">
                         <div className="p-1.5 rounded-lg bg-[#17231A] border border-[#243628] text-center">
                           <span className="text-[9px] text-[#8FA392] block">الحجم التخزيني:</span>
-                          <span className="font-bold text-[#EBB34D]">{db.sizeMb} MB</span>
+                          <span className="font-bold text-[#EBB34D]">
+                            {db.sizeMB ? `${db.sizeMB} MB` : (db.sizeMb ? `${db.sizeMb} MB` : 'غير محدد')}
+                          </span>
                         </div>
 
                         <div className="p-1.5 rounded-lg bg-[#17231A] border border-[#243628] text-center">

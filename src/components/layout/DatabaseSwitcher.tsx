@@ -205,7 +205,7 @@ export const DatabaseSwitcher: React.FC = () => {
                   {isRemote ? 'Accounts-Server\\sqlexpress' : 'localhost\\SQLEXPRESS (طوارئ)'}
                 </span>
                 <span className="text-[10px] font-mono text-[#8FA392]">
-                  {isRemote ? `${health?.host || '100.76.198.119'}:1433` : 'Local IPC / Named Pipes'}
+                  {isRemote ? `${health?.host || '100.68.121.85'}:1433` : 'Local IPC / Named Pipes'}
                 </span>
               </div>
             </div>

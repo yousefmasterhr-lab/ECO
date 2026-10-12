@@ -18,6 +18,7 @@ export interface DatabaseFleetItem {
   createDate: string;
   status: string;
   sizeMb: number;
+  sizeMB?: number;
   descriptionAr: string;
 }
 

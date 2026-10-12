@@ -17,7 +17,7 @@ export interface NetworkConfig {
 }
 
 export const DEFAULT_NETWORK_CONFIG: NetworkConfig = {
-  sql_server_host: '100.76.198.119',
+  sql_server_host: '100.68.121.85',
   sql_server_port: 1433,
   local_portproxy_target: '192.168.1.50:49748',
   gateway_url: 'https://datatest.hrsup.com',
@@ -25,6 +25,7 @@ export const DEFAULT_NETWORK_CONFIG: NetworkConfig = {
 
 export const NETWORK_STORAGE_KEYS = {
   HOST: 'eco_sql_server_host',
+  LEGACY_HOST: 'eco_sql_host',
   PORT: 'eco_sql_server_port',
   PORTPROXY: 'eco_local_portproxy_target',
   GATEWAY: 'eco_api_base_url',
@@ -41,9 +42,11 @@ export function getNetworkConfigSync(): NetworkConfig {
 
   if (typeof window !== 'undefined') {
     try {
-      const storedHost = localStorage.getItem(NETWORK_STORAGE_KEYS.HOST);
+      const storedHost = localStorage.getItem('eco_sql_host') || localStorage.getItem(NETWORK_STORAGE_KEYS.HOST);
       if (storedHost && storedHost.trim()) {
-        host = storedHost.trim();
+        const trimmed = storedHost.trim();
+        // Purge deprecated IP if present
+        host = trimmed === '100.76.198.119' ? '100.68.121.85' : trimmed;
       }
 
       const storedPort = localStorage.getItem(NETWORK_STORAGE_KEYS.PORT);
@@ -85,8 +88,12 @@ export async function fetchNetworkConfig(): Promise<NetworkConfig> {
       const data = await res.json();
       const settings = data.settings || data;
       if (settings && (settings.sql_server_host || settings.host)) {
+        let remoteHost = settings.sql_server_host || settings.host || current.sql_server_host;
+        if (remoteHost === '100.76.198.119') remoteHost = '100.68.121.85';
+        const localOverride = typeof window !== 'undefined' ? localStorage.getItem('eco_sql_host') : null;
+
         const remoteConfig: NetworkConfig = {
-          sql_server_host: settings.sql_server_host || settings.host || current.sql_server_host,
+          sql_server_host: localOverride || remoteHost,
           sql_server_port: Number(settings.sql_server_port || settings.port) || current.sql_server_port,
           local_portproxy_target: settings.local_portproxy_target || settings.portProxyTarget || current.local_portproxy_target,
           gateway_url: settings.gateway_url || settings.gatewayUrl || current.gateway_url,
@@ -106,8 +113,11 @@ export async function fetchNetworkConfig(): Promise<NetworkConfig> {
  */
 export function saveNetworkConfigSync(config: Partial<NetworkConfig>): NetworkConfig {
   const existing = getNetworkConfigSync();
+  let hostVal = (config.sql_server_host ?? existing.sql_server_host).trim();
+  if (hostVal === '100.76.198.119') hostVal = '100.68.121.85';
+
   const updated: NetworkConfig = {
-    sql_server_host: (config.sql_server_host ?? existing.sql_server_host).trim(),
+    sql_server_host: hostVal,
     sql_server_port: Number(config.sql_server_port ?? existing.sql_server_port) || 1433,
     local_portproxy_target: (config.local_portproxy_target ?? existing.local_portproxy_target).trim(),
     gateway_url: (config.gateway_url ?? existing.gateway_url).trim().replace(/\/+$/, ''),
@@ -115,6 +125,7 @@ export function saveNetworkConfigSync(config: Partial<NetworkConfig>): NetworkCo
 
   if (typeof window !== 'undefined') {
     try {
+      localStorage.setItem('eco_sql_host', updated.sql_server_host);
       localStorage.setItem(NETWORK_STORAGE_KEYS.HOST, updated.sql_server_host);
       localStorage.setItem(NETWORK_STORAGE_KEYS.PORT, String(updated.sql_server_port));
       localStorage.setItem(NETWORK_STORAGE_KEYS.PORTPROXY, updated.local_portproxy_target);

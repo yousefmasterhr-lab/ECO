@@ -2991,7 +2991,7 @@ async function getCfoMetrics(targetDb = 'Tarabot_Data_2026') {
 
 // =========================================================================
 // SQL SERVER 2008 R2 MULTI-DATABASE FEDERATION & TAILSCALE PORTPROXY ENGINE
-// Host: 100.76.198.119:1433 -> 192.168.1.50:49748
+// Host: 100.68.121.85:1433 -> 192.168.1.50:49748
 // =========================================================================
 
 // Multi-Database Federation Registry & Services (Uses centralized pool manager)
@@ -3503,7 +3503,7 @@ app.all('/api/system/databases', async (req, res) => {
     const port = req.query.port || req.body?.port || req.headers['x-sql-server-port'];
     const pool = await getPool(host ? { server: host, port } : null);
 
-    // Query real user databases from sys.databases
+    // Query real user databases and real sizes from SQL Server system catalogs
     const query = `
       SELECT 
         d.name AS id,
@@ -3511,18 +3511,25 @@ app.all('/api/system/databases', async (req, res) => {
         d.create_date AS createdDate,
         d.state_desc AS state,
         CASE 
+          WHEN d.name LIKE '%Salary%' OR d.name LIKE '%HR%' THEN 'Payroll'
           WHEN d.name LIKE '%2026%' OR d.name LIKE '%Active%' THEN 'Active'
-          WHEN d.name LIKE '%Payroll%' OR d.name LIKE '%HR%' THEN 'Payroll'
           ELSE 'Archive'
         END AS category,
-        (SELECT COUNT(*) FROM sys.tables) AS tableCount
+        -- Real size in MB from sys.master_files
+        ISNULL((
+          SELECT CAST(SUM(CAST(mf.size AS BIGINT)) * 8 / 1024 AS INT)
+          FROM sys.master_files mf 
+          WHERE mf.database_id = d.database_id
+        ), 0) AS sizeMB,
+        -- Live status check
+        DATABASEPROPERTYEX(d.name, 'Status') AS dbStatus
       FROM sys.databases d
       WHERE d.database_id > 4 -- Skip system DBs (master, tempdb, model, msdb)
         AND d.state = 0
       ORDER BY d.name ASC;
     `;
     const result = await pool.request().query(query);
-    console.log(`[SQL Bridge] Discovered ${result.recordset.length} databases.`);
+    console.log(`[SQL Bridge] Discovered ${result.recordset.length} databases with real sizes.`);
 
     const databases = (result.recordset || []).map(d => ({
       ...d,
@@ -3530,8 +3537,12 @@ app.all('/api/system/databases', async (req, res) => {
       displayNameAr: d.databaseName || d.id,
       displayNameEn: d.databaseName || d.id,
       createDate: d.createdDate,
-      status: d.state || 'ONLINE',
-      category: d.category || 'Active'
+      status: d.dbStatus || d.state || 'ONLINE',
+      state: d.state || 'ONLINE',
+      category: d.category || 'Active',
+      sizeMB: Number(d.sizeMB || 0),
+      sizeMb: Number(d.sizeMB || 0),
+      dbStatus: d.dbStatus || 'ONLINE'
     }));
 
     res.json({
@@ -3741,44 +3752,73 @@ app.post('/api/finance/cheques/add', (req, res) => {
 
 app.get(['/api/finance/journals', '/api/journal-entries', '/api/sql/general-journal', '/api/finance/general-journal', '/api/general-journal'], async (req, res) => {
   try {
-    const targetDb = req.query.db || req.headers['x-database-context'] || process.env.DB_NAME || 'MK_Khalil_Db_2026';
+    const targetDb = req.query.db || req.headers['x-database-context'] || req.targetDb || process.env.DB_NAME || 'MK_Khalil_Db_2026';
     const pool = await getPool(targetDb);
-    // Fetch General Ledger Journals from MK_Khalil_Db_2026
-    let result;
-    try {
-      const query = `
-        SELECT TOP 250 
-          h.Journal_ID AS id,
-          h.Journal_No AS journalNo,
-          h.Journal_Date AS date,
-          h.Journal_Notes AS notes,
-          ISNULL(h.Total_Debit, 0) AS totalDebit,
-          ISNULL(h.Total_Credit, 0) AS totalCredit,
-          h.Is_Posted AS isPosted
-        FROM dbo.GeneralLedger_Head h
-        ORDER BY h.Journal_Date DESC, h.Journal_ID DESC
-      `;
-      result = await pool.request().query(query);
-    } catch (schemaErr) {
-      // Resilient fallback for databases utilizing Note_No / Description / Note_Debit columns (e.g. MK_Khalil_Db_2026)
-      const fallbackQuery = `
-        SELECT TOP 250 
-          h.Note_No AS id,
-          h.Note_No AS journalNo,
-          h.Note_Date AS date,
-          h.Description AS notes,
-          ISNULL(h.Note_Debit, 0) AS totalDebit,
-          ISNULL(h.Note_Credit, 0) AS totalCredit,
-          1 AS isPosted
-        FROM dbo.GeneralLedger_Head h
-        ORDER BY h.Note_Date DESC, h.Note_No DESC
-      `;
-      result = await pool.request().query(fallbackQuery);
+
+    // Dynamic table detection for the active database
+    const checkTableQuery = `
+      SELECT TABLE_NAME 
+      FROM INFORMATION_SCHEMA.TABLES 
+      WHERE TABLE_TYPE = 'BASE TABLE' 
+        AND (TABLE_NAME LIKE '%Journal%' OR TABLE_NAME LIKE '%Voucher%' OR TABLE_NAME LIKE '%Ledger%' OR TABLE_NAME LIKE '%قيد%')
+    `;
+    const tableCheck = await pool.request().query(checkTableQuery);
+    const matchedTables = tableCheck.recordset.map(r => r.TABLE_NAME);
+    console.log('[SQL Bridge] Detected Journal Tables:', matchedTables);
+
+    // Select target table based on ERP schema pattern
+    let targetTable = 
+      matchedTables.find(t => t.toLowerCase() === 'generalledger_head') ||
+      matchedTables.find(t => t.match(/GeneralLedger.*Head/i)) ||
+      matchedTables.find(t => t.match(/Head|Master|GeneralLedger/i) && !t.match(/Detail/i)) ||
+      matchedTables[0];
+
+    if (!targetTable) {
+      return res.json([]);
     }
-    res.json(result.recordset || []);
+
+    // Query top 200 records dynamically
+    const records = await pool.request().query(`
+      SELECT TOP 200 * 
+      FROM [dbo].[${targetTable}]
+      ORDER BY 1 DESC
+    `);
+
+    // Normalize records while preserving raw columns for maximum compatibility
+    const normalized = (records.recordset || []).map(r => {
+      const noteNo = Number(r.Note_No ?? r.Journal_No ?? r.Voucher_No ?? r.Entry_No ?? r.id ?? 0);
+      const rawDate = r.Note_Date ?? r.Journal_Date ?? r.Voucher_Date ?? r.Date ?? '';
+      const noteDate = String(rawDate).trim().replace(/\//g, '-').split('T')[0];
+      const desc = String(r.Description ?? r.Journal_Notes ?? r.Notes ?? r.Memo ?? r.Entry_Name ?? '').trim();
+      const debit = Number(r.Note_Debit ?? r.Total_Debit ?? r.Debit ?? r.totalDebit ?? 0);
+      const credit = Number(r.Note_Credit ?? r.Total_Credit ?? r.Credit ?? r.totalCredit ?? 0);
+      const netText = r.Note_Net_Text || r.Net_Text || r.Tafqeet || '';
+      const entryName = (r.Entry_Name || 'System').trim();
+
+      return {
+        ...r,
+        id: `JV-${noteNo || r.Journal_ID || r.id || Math.random()}`,
+        noteNo,
+        entryNo: noteNo,
+        noteDate,
+        entryDate: noteDate,
+        description: desc,
+        generalDescription: desc,
+        debitTotal: debit,
+        totalDebit: debit,
+        creditTotal: credit,
+        totalCredit: credit,
+        netText,
+        entryName,
+        status: (r.Flag === false || r.Is_Posted === false || r.isPosted === 0) ? 'DRAFT' : 'POSTED',
+        date: noteDate,
+        notes: desc
+      };
+    });
+
+    res.json(normalized);
   } catch (err) {
     console.error('[SQL Bridge Error] /api/finance/journals:', err.message);
-    // Return valid JSON with 500 status so client adapter receives structured error
     res.status(500).json({ error: 'Failed to fetch journals', details: err.message });
   }
 });
@@ -3946,7 +3986,7 @@ app.all('/api/system/databases', async (req, res) => {
     const port = req.headers['x-sql-server-port'] || req.query.port || req.body?.port;
     const pool = await getPool(host ? { server: host, port } : null);
 
-    // Query real user databases from sys.databases
+    // Query real user databases and real sizes from SQL Server system catalogs
     const query = `
       SELECT 
         d.name AS id,
@@ -3954,23 +3994,45 @@ app.all('/api/system/databases', async (req, res) => {
         d.create_date AS createdDate,
         d.state_desc AS state,
         CASE 
+          WHEN d.name LIKE '%Salary%' OR d.name LIKE '%HR%' THEN 'Payroll'
           WHEN d.name LIKE '%2026%' OR d.name LIKE '%Active%' THEN 'Active'
-          WHEN d.name LIKE '%Payroll%' OR d.name LIKE '%HR%' THEN 'Payroll'
           ELSE 'Archive'
         END AS category,
-        (SELECT COUNT(*) FROM sys.tables) AS tableCount
+        -- Real size in MB from sys.master_files
+        ISNULL((
+          SELECT CAST(SUM(CAST(mf.size AS BIGINT)) * 8 / 1024 AS INT)
+          FROM sys.master_files mf 
+          WHERE mf.database_id = d.database_id
+        ), 0) AS sizeMB,
+        -- Live status check
+        DATABASEPROPERTYEX(d.name, 'Status') AS dbStatus
       FROM sys.databases d
       WHERE d.database_id > 4 -- Skip system DBs (master, tempdb, model, msdb)
         AND d.state = 0
       ORDER BY d.name ASC;
     `;
     const result = await pool.request().query(query);
-    console.log(`[SQL Bridge] Discovered ${result.recordset.length} databases.`);
+    console.log(`[SQL Bridge] Discovered ${result.recordset.length} databases with real sizes.`);
+
+    const databases = (result.recordset || []).map(d => ({
+      ...d,
+      name: d.databaseName || d.id,
+      displayNameAr: d.databaseName || d.id,
+      displayNameEn: d.databaseName || d.id,
+      createDate: d.createdDate,
+      status: d.dbStatus || d.state || 'ONLINE',
+      state: d.state || 'ONLINE',
+      category: d.category || 'Active',
+      sizeMB: Number(d.sizeMB || 0),
+      sizeMb: Number(d.sizeMB || 0),
+      dbStatus: d.dbStatus || 'ONLINE'
+    }));
 
     res.json({
       success: true,
-      databases: result.recordset,
+      databases,
       server: activeConfig.server,
+      total: databases.length,
       timestamp: new Date().toISOString()
     });
   } catch (err) {
