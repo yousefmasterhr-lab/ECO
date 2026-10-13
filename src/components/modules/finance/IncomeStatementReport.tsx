@@ -302,10 +302,10 @@ export const IncomeStatementReport: React.FC = () => {
               <span className="font-bold text-[#1A241C] dark:text-[#EAE4D7]">{line.titleAr}</span>
             </div>
           </td>
-          <td className="py-2.5 px-4 text-left font-mono tabular-nums font-bold text-[#1A241C] dark:text-[#F3EFE6]" dir="ltr">
+          <td className="py-2.5 px-4 text-center font-mono align-middle tabular-nums font-bold text-[#1A241C] dark:text-[#F3EFE6]" dir="ltr">
             {formatAccountingNumber(line.amount)}
           </td>
-          <td className="py-2.5 px-4 text-center font-mono text-xs text-[#5C665E] dark:text-[#8FA392]">
+          <td className="py-2.5 px-4 text-center align-middle font-mono text-xs text-[#5C665E] dark:text-[#8FA392]">
             <div className="flex items-center justify-center gap-2">
               <div className="w-16 h-1.5 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
                 <div
@@ -313,7 +313,7 @@ export const IncomeStatementReport: React.FC = () => {
                   style={{ width: `${rawPct}%` }}
                 />
               </div>
-              <span className="w-12 text-right">{pctFormatted}</span>
+              <span className="w-12 text-center">{pctFormatted}</span>
             </div>
           </td>
         </tr>
@@ -525,8 +525,8 @@ export const IncomeStatementReport: React.FC = () => {
             <thead>
               <tr className="border-b border-[#E0D9CB] dark:border-[#243628] bg-[#F4EFE6] dark:bg-[#1A271C] font-black text-[#1A241C] dark:text-[#F3EFE6]">
                 <th className="py-3 px-4 w-1/2">{t('البيان المحاسبي / البند المالي', 'Financial Line Item')}</th>
-                <th className="py-3 px-4 text-left w-1/4 font-mono">{t('المبلغ الحالي (جم)', 'Amount (EGP)')}</th>
-                <th className="py-3 px-4 text-center w-1/4 font-mono">{t('النسبة من الإيرادات', '% of Revenue')}</th>
+                <th className="py-3 px-4 text-center align-middle w-1/4 font-mono">{t('المبلغ الحالي (جم)', 'Amount (EGP)')}</th>
+                <th className="py-3 px-4 text-center align-middle w-1/4 font-mono">{t('النسبة من الإيرادات', '% of Revenue')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#E0D9CB]/50 dark:divide-[#243628]/50">
@@ -550,7 +550,7 @@ export const IncomeStatementReport: React.FC = () => {
                   {renderSectionRows(data.operatingRevenues, data.totalOperatingRevenues)}
                   <tr className="bg-[#FBF9F5] dark:bg-[#1D2B20] font-black text-[#1A241C] dark:text-[#F3EFE6] border-b-2 border-emerald-500/30">
                     <td className="py-2.5 px-4">إجمالي الإيرادات التشغيلية</td>
-                    <td className="py-2.5 px-4 text-left font-mono tabular-nums text-emerald-800 dark:text-emerald-300" dir="ltr">
+                    <td className="py-2.5 px-4 text-center font-mono align-middle tabular-nums text-emerald-800 dark:text-emerald-300" dir="ltr">
                       {formatAccountingNumber(data.totalOperatingRevenues)}
                     </td>
                     <td className="py-2.5 px-4 text-center font-mono font-bold">100.0%</td>
@@ -565,7 +565,7 @@ export const IncomeStatementReport: React.FC = () => {
                   {renderSectionRows(data.costOfRevenues, data.totalOperatingRevenues)}
                   <tr className="bg-[#FBF9F5] dark:bg-[#1D2B20] font-black text-[#1A241C] dark:text-[#F3EFE6] border-b-2 border-rose-500/30">
                     <td className="py-2.5 px-4">إجمالي تكلفة الإيرادات</td>
-                    <td className="py-2.5 px-4 text-left font-mono tabular-nums text-rose-800 dark:text-rose-300" dir="ltr">
+                    <td className="py-2.5 px-4 text-center font-mono align-middle tabular-nums text-rose-800 dark:text-rose-300" dir="ltr">
                       {formatAccountingNumber(-Math.abs(data.totalCostOfRevenues))}
                     </td>
                     <td className="py-2.5 px-4 text-center font-mono font-bold text-rose-600">
@@ -576,7 +576,7 @@ export const IncomeStatementReport: React.FC = () => {
                   {/* SECTION 3: GROSS PROFIT */}
                   <tr className="bg-blue-500/15 dark:bg-blue-950/40 font-black text-blue-950 dark:text-blue-200 border-y-2 border-blue-500/40">
                     <td className="py-3 px-4 text-sm">(=) مجمل الربح (Gross Profit)</td>
-                    <td className="py-3 px-4 text-left font-mono tabular-nums text-sm text-blue-800 dark:text-blue-300" dir="ltr">
+                    <td className="py-3 px-4 text-center font-mono align-middle tabular-nums text-sm text-blue-800 dark:text-blue-300" dir="ltr">
                       {formatAccountingNumber(data.grossProfit)}
                     </td>
                     <td className="py-3 px-4 text-center font-mono text-sm font-black text-blue-800 dark:text-blue-300">
@@ -593,7 +593,7 @@ export const IncomeStatementReport: React.FC = () => {
                   {renderSectionRows(data.operatingExpenses, data.totalOperatingRevenues)}
                   <tr className="bg-[#FBF9F5] dark:bg-[#1D2B20] font-black text-[#1A241C] dark:text-[#F3EFE6] border-b-2 border-amber-500/30">
                     <td className="py-2.5 px-4">إجمالي المصروفات الإدارية والتشغيلية</td>
-                    <td className="py-2.5 px-4 text-left font-mono tabular-nums text-amber-800 dark:text-amber-300" dir="ltr">
+                    <td className="py-2.5 px-4 text-center font-mono align-middle tabular-nums text-amber-800 dark:text-amber-300" dir="ltr">
                       {formatAccountingNumber(-Math.abs(data.totalOperatingExpenses))}
                     </td>
                     <td className="py-2.5 px-4 text-center font-mono font-bold text-amber-600">
@@ -604,7 +604,7 @@ export const IncomeStatementReport: React.FC = () => {
                   {/* SECTION 5: OPERATING PROFIT (EBIT) */}
                   <tr className="bg-emerald-500/15 dark:bg-emerald-950/40 font-black text-emerald-950 dark:text-emerald-200 border-y-2 border-emerald-500/40">
                     <td className="py-3 px-4 text-sm">(=) صافي الربح التشغيلي قبل الضريبة (EBIT)</td>
-                    <td className="py-3 px-4 text-left font-mono tabular-nums text-sm text-emerald-800 dark:text-emerald-300" dir="ltr">
+                    <td className="py-3 px-4 text-center font-mono align-middle tabular-nums text-sm text-emerald-800 dark:text-emerald-300" dir="ltr">
                       {formatAccountingNumber(data.operatingProfit)}
                     </td>
                     <td className="py-3 px-4 text-center font-mono text-sm font-black text-emerald-800 dark:text-emerald-300">
@@ -617,7 +617,7 @@ export const IncomeStatementReport: React.FC = () => {
                     <td className="py-2.5 px-4 font-bold text-[#5C665E] dark:text-[#8FA392]">
                       (-) مخصص ضريبة الدخل المقدرة (22.5%)
                     </td>
-                    <td className="py-2.5 px-4 text-left font-mono tabular-nums font-bold text-rose-700 dark:text-rose-400" dir="ltr">
+                    <td className="py-2.5 px-4 text-center font-mono align-middle tabular-nums font-bold text-rose-700 dark:text-rose-400" dir="ltr">
                       {formatAccountingNumber(-Math.abs(data.estimatedTax))}
                     </td>
                     <td className="py-2.5 px-4 text-center font-mono text-gray-500">
@@ -628,7 +628,7 @@ export const IncomeStatementReport: React.FC = () => {
                   {/* SECTION 7: FINAL NET INCOME */}
                   <tr className="bg-emerald-600 text-white font-black text-sm border-t-2 border-emerald-700">
                     <td className="py-3.5 px-4">(=) صافي أرباح العام النهائي بعد الضريبة (Net Income)</td>
-                    <td className="py-3.5 px-4 text-left font-mono tabular-nums text-base font-black whitespace-nowrap" dir="ltr">
+                    <td className="py-3.5 px-4 text-center font-mono align-middle tabular-nums text-base font-black whitespace-nowrap" dir="ltr">
                       {formatAccountingNumber(data.netProfitAfterTax, 'جم')}
                     </td>
                     <td className="py-3.5 px-4 text-center font-mono text-base font-black">
@@ -652,99 +652,101 @@ export const IncomeStatementReport: React.FC = () => {
         subtitleAr="وفقاً لمعايير المحاسبة المعتمدة وقوانين الضرائب المصرية"
       >
         {data && (
-          <div className="space-y-4">
-            <table className="w-full text-right border-collapse text-xs print:text-[10px]">
-              <thead>
-                <tr className="border-b-2 border-slate-900 bg-slate-100 print:bg-slate-200 font-black text-slate-900">
-                  <th className="py-2 px-2 border border-slate-400">البيان المحاسبي</th>
-                  <th className="py-2 px-2 border border-slate-400 text-left w-36">المبلغ (جم)</th>
-                  <th className="py-2 px-2 border border-slate-400 text-center w-24">النسبة %</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr className="bg-slate-100 font-bold border border-slate-400">
-                  <td colSpan={3} className="py-1 px-2 text-slate-900">أولاً: الإيرادات التشغيلية</td>
-                </tr>
-                {data.operatingRevenues.map((l, i) => (
-                  <tr key={i} className="border-b border-slate-200">
-                    <td className="py-1 px-3 border border-slate-300">• {l.titleAr}</td>
-                    <td className="py-1 px-2 border border-slate-300 text-left font-mono tabular-nums" dir="ltr">{formatAccountingNumber(l.amount)}</td>
-                    <td className="py-1 px-2 border border-slate-300 text-center font-mono">
-                      {calculateRevenueShare(l.amount, data.totalOperatingRevenues)}
+          <div className="space-y-2">
+            <div className="border border-slate-300 rounded-xl overflow-hidden shadow-none print:border-slate-400 print:rounded-xl">
+              <table className="w-full text-right border-collapse text-xs print:text-[9.5px]">
+                <thead>
+                  <tr className="border-b-2 border-slate-900 bg-slate-100 print:bg-slate-200 font-black text-slate-900">
+                    <th className="py-1.5 px-2.5 border-b border-slate-300 text-right">البيان المحاسبي</th>
+                    <th className="py-1.5 px-2 border-b border-slate-300 text-center align-middle w-36">المبلغ (جم)</th>
+                    <th className="py-1.5 px-2 border-b border-slate-300 text-center align-middle w-24">النسبة %</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200">
+                  <tr className="bg-slate-100/90 font-bold text-slate-900">
+                    <td colSpan={3} className="py-1 px-2.5 text-slate-900 font-black">أولاً: الإيرادات التشغيلية</td>
+                  </tr>
+                  {data.operatingRevenues.map((l, i) => (
+                    <tr key={i} className="border-b border-slate-200">
+                      <td className="py-1 print:py-0.5 px-3">• {l.titleAr}</td>
+                      <td className="text-center font-mono align-middle print:text-center py-1 print:py-0.5 tabular-nums" dir="ltr">{formatAccountingNumber(l.amount)}</td>
+                      <td className="text-center align-middle font-mono print:text-center py-1 print:py-0.5">
+                        {calculateRevenueShare(l.amount, data.totalOperatingRevenues)}
+                      </td>
+                    </tr>
+                  ))}
+                  <tr className="font-bold bg-slate-100 text-slate-900 border-t border-b border-slate-300">
+                    <td className="py-1 print:py-0.5 px-2.5">إجمالي الإيرادات</td>
+                    <td className="text-center font-mono align-middle print:text-center py-1 print:py-0.5 tabular-nums font-bold" dir="ltr">{formatAccountingNumber(data.totalOperatingRevenues)}</td>
+                    <td className="text-center align-middle font-mono print:text-center py-1 print:py-0.5 font-bold">100.0%</td>
+                  </tr>
+
+                  <tr className="bg-slate-100/90 font-bold text-slate-900">
+                    <td colSpan={3} className="py-1 px-2.5 text-slate-900 font-black">ثانياً: تكلفة الإيرادات والعقود</td>
+                  </tr>
+                  {data.costOfRevenues.map((l, i) => (
+                    <tr key={i} className="border-b border-slate-200">
+                      <td className="py-1 print:py-0.5 px-3">• {l.titleAr}</td>
+                      <td className="text-center font-mono align-middle print:text-center py-1 print:py-0.5 tabular-nums" dir="ltr">{formatAccountingNumber(-Math.abs(l.amount))}</td>
+                      <td className="text-center align-middle font-mono print:text-center py-1 print:py-0.5">
+                        {calculateRevenueShare(l.amount, data.totalOperatingRevenues)}
+                      </td>
+                    </tr>
+                  ))}
+                  <tr className="font-bold bg-slate-100 text-slate-900 border-t border-b border-slate-300">
+                    <td className="py-1 print:py-0.5 px-2.5">إجمالي التكاليف</td>
+                    <td className="text-center font-mono align-middle print:text-center py-1 print:py-0.5 tabular-nums font-bold" dir="ltr">{formatAccountingNumber(-Math.abs(data.totalCostOfRevenues))}</td>
+                    <td className="text-center align-middle font-mono print:text-center py-1 print:py-0.5 font-bold">
+                      {calculateRevenueShare(data.totalCostOfRevenues, data.totalOperatingRevenues)}
                     </td>
                   </tr>
-                ))}
-                <tr className="font-bold bg-slate-100 border border-slate-400 text-slate-900">
-                  <td className="py-1.5 px-2 border border-slate-400">إجمالي الإيرادات</td>
-                  <td className="py-1.5 px-2 border border-slate-400 text-left font-mono tabular-nums font-bold" dir="ltr">{formatAccountingNumber(data.totalOperatingRevenues)}</td>
-                  <td className="py-1.5 px-2 border border-slate-400 text-center font-mono font-bold">100.0%</td>
-                </tr>
 
-                <tr className="bg-slate-100 font-bold border border-slate-400">
-                  <td colSpan={3} className="py-1 px-2 text-slate-900">ثانياً: تكلفة الإيرادات والعقود</td>
-                </tr>
-                {data.costOfRevenues.map((l, i) => (
-                  <tr key={i} className="border-b border-slate-200">
-                    <td className="py-1 px-3 border border-slate-300">• {l.titleAr}</td>
-                    <td className="py-1 px-2 border border-slate-300 text-left font-mono tabular-nums" dir="ltr">{formatAccountingNumber(-Math.abs(l.amount))}</td>
-                    <td className="py-1 px-2 border border-slate-300 text-center font-mono">
-                      {calculateRevenueShare(l.amount, data.totalOperatingRevenues)}
+                  <tr className="font-black bg-slate-200/80 border-y border-slate-400 text-slate-900">
+                    <td className="py-1.5 print:py-1 px-2.5">مجمل الربح (Gross Profit)</td>
+                    <td className="text-center font-mono align-middle print:text-center py-1.5 print:py-1 tabular-nums font-bold" dir="ltr">{formatAccountingNumber(data.grossProfit)}</td>
+                    <td className="text-center align-middle font-mono print:text-center py-1.5 print:py-1 font-bold">{data.totalOperatingRevenues > 0 ? `${data.grossMarginPercent}%` : '0.0%'}</td>
+                  </tr>
+
+                  <tr className="bg-slate-100/90 font-bold text-slate-900">
+                    <td colSpan={3} className="py-1 px-2.5 text-slate-900 font-black">ثالثاً: المصروفات العمومية والإدارية</td>
+                  </tr>
+                  {data.operatingExpenses.map((l, i) => (
+                    <tr key={i} className="border-b border-slate-200">
+                      <td className="py-1 print:py-0.5 px-3">• {l.titleAr}</td>
+                      <td className="text-center font-mono align-middle print:text-center py-1 print:py-0.5 tabular-nums" dir="ltr">{formatAccountingNumber(-Math.abs(l.amount))}</td>
+                      <td className="text-center align-middle font-mono print:text-center py-1 print:py-0.5">
+                        {calculateRevenueShare(l.amount, data.totalOperatingRevenues)}
+                      </td>
+                    </tr>
+                  ))}
+                  <tr className="font-bold bg-slate-100 text-slate-900 border-t border-b border-slate-300">
+                    <td className="py-1 print:py-0.5 px-2.5">إجمالي المصروفات</td>
+                    <td className="text-center font-mono align-middle print:text-center py-1 print:py-0.5 tabular-nums font-bold" dir="ltr">{formatAccountingNumber(-Math.abs(data.totalOperatingExpenses))}</td>
+                    <td className="text-center align-middle font-mono print:text-center py-1 print:py-0.5 font-bold">
+                      {calculateRevenueShare(data.totalOperatingExpenses, data.totalOperatingRevenues)}
                     </td>
                   </tr>
-                ))}
-                <tr className="font-bold bg-slate-100 border border-slate-400 text-slate-900">
-                  <td className="py-1.5 px-2 border border-slate-400">إجمالي التكاليف</td>
-                  <td className="py-1.5 px-2 border border-slate-400 text-left font-mono tabular-nums font-bold" dir="ltr">{formatAccountingNumber(-Math.abs(data.totalCostOfRevenues))}</td>
-                  <td className="py-1.5 px-2 border border-slate-400 text-center font-mono font-bold">
-                    {calculateRevenueShare(data.totalCostOfRevenues, data.totalOperatingRevenues)}
-                  </td>
-                </tr>
 
-                <tr className="font-black bg-slate-200/80 border-y-2 border-slate-500 text-slate-900">
-                  <td className="py-2 px-2 border border-slate-400">مجمل الربح (Gross Profit)</td>
-                  <td className="py-2 px-2 border border-slate-400 text-left font-mono tabular-nums font-bold" dir="ltr">{formatAccountingNumber(data.grossProfit)}</td>
-                  <td className="py-2 px-2 border border-slate-400 text-center font-mono font-bold">{data.totalOperatingRevenues > 0 ? `${data.grossMarginPercent}%` : '0.0%'}</td>
-                </tr>
-
-                <tr className="bg-slate-100 font-bold border border-slate-400">
-                  <td colSpan={3} className="py-1 px-2 text-slate-900">ثالثاً: المصروفات العمومية والإدارية</td>
-                </tr>
-                {data.operatingExpenses.map((l, i) => (
-                  <tr key={i} className="border-b border-slate-200">
-                    <td className="py-1 px-3 border border-slate-300">• {l.titleAr}</td>
-                    <td className="py-1 px-2 border border-slate-300 text-left font-mono tabular-nums" dir="ltr">{formatAccountingNumber(-Math.abs(l.amount))}</td>
-                    <td className="py-1 px-2 border border-slate-300 text-center font-mono">
-                      {calculateRevenueShare(l.amount, data.totalOperatingRevenues)}
-                    </td>
+                  <tr className="font-black bg-slate-200/80 border-y border-slate-400 text-slate-900">
+                    <td className="py-1.5 print:py-1 px-2.5">صافي الربح التشغيلي قبل الضريبة (EBIT)</td>
+                    <td className="text-center font-mono align-middle print:text-center py-1.5 print:py-1 tabular-nums font-bold" dir="ltr">{formatAccountingNumber(data.operatingProfit)}</td>
+                    <td className="text-center align-middle font-mono print:text-center py-1.5 print:py-1 font-bold">{data.totalOperatingRevenues > 0 ? `${data.operatingMarginPercent}%` : '0.0%'}</td>
                   </tr>
-                ))}
-                <tr className="font-bold bg-slate-100 border border-slate-400 text-slate-900">
-                  <td className="py-1.5 px-2 border border-slate-400">إجمالي المصروفات</td>
-                  <td className="py-1.5 px-2 border border-slate-400 text-left font-mono tabular-nums font-bold" dir="ltr">{formatAccountingNumber(-Math.abs(data.totalOperatingExpenses))}</td>
-                  <td className="py-1.5 px-2 border border-slate-400 text-center font-mono font-bold">
-                    {calculateRevenueShare(data.totalOperatingExpenses, data.totalOperatingRevenues)}
-                  </td>
-                </tr>
 
-                <tr className="font-black bg-slate-200/80 border-y-2 border-slate-500 text-slate-900">
-                  <td className="py-2 px-2 border border-slate-400">صافي الربح التشغيلي قبل الضريبة (EBIT)</td>
-                  <td className="py-2 px-2 border border-slate-400 text-left font-mono tabular-nums font-bold" dir="ltr">{formatAccountingNumber(data.operatingProfit)}</td>
-                  <td className="py-2 px-2 border border-slate-400 text-center font-mono font-bold">{data.totalOperatingRevenues > 0 ? `${data.operatingMarginPercent}%` : '0.0%'}</td>
-                </tr>
+                  <tr className="border-b border-slate-300">
+                    <td className="py-1 print:py-0.5 px-2.5">مخصص ضريبة الدخل (22.5%)</td>
+                    <td className="text-center font-mono align-middle print:text-center py-1 print:py-0.5 tabular-nums" dir="ltr">{formatAccountingNumber(-Math.abs(data.estimatedTax))}</td>
+                    <td className="text-center align-middle font-mono print:text-center py-1 print:py-0.5">{data.operatingProfit > 0 ? '22.5%' : '0.0%'}</td>
+                  </tr>
 
-                <tr className="border-b border-slate-300">
-                  <td className="py-1.5 px-2 border border-slate-300">مخصص ضريبة الدخل (22.5%)</td>
-                  <td className="py-1.5 px-2 border border-slate-300 text-left font-mono tabular-nums" dir="ltr">{formatAccountingNumber(-Math.abs(data.estimatedTax))}</td>
-                  <td className="py-1.5 px-2 border border-slate-300 text-center font-mono">{data.operatingProfit > 0 ? '22.5%' : '0.0%'}</td>
-                </tr>
-
-                <tr className="font-black bg-amber-50/70 text-slate-900 border-t-2 border-slate-900 border-b-4 border-double border-slate-900">
-                  <td className="py-2.5 px-2 border border-slate-400 text-sm">صافي أرباح العام النهائي بعد الضريبة (Net Income)</td>
-                  <td className="py-2.5 px-2 border border-slate-400 text-left font-mono tabular-nums text-sm font-black whitespace-nowrap" dir="ltr">{formatAccountingNumber(data.netProfitAfterTax, 'جم')}</td>
-                  <td className="py-2.5 px-2 border border-slate-400 text-center font-mono text-sm font-black">{data.totalOperatingRevenues > 0 ? `${data.netMarginPercent}%` : '0.0%'}</td>
-                </tr>
-              </tbody>
-            </table>
+                  <tr className="font-black bg-amber-50/70 text-slate-900 border-t-2 border-slate-900 border-b-4 border-double border-slate-900">
+                    <td className="py-2 print:py-1.5 px-2.5 text-xs print:text-[10px]">صافي أرباح العام النهائي بعد الضريبة (Net Income)</td>
+                    <td className="text-center font-mono align-middle print:text-center py-2 print:py-1.5 tabular-nums text-xs print:text-[10px] font-black whitespace-nowrap" dir="ltr">{formatAccountingNumber(data.netProfitAfterTax, 'جم')}</td>
+                    <td className="text-center align-middle font-mono print:text-center py-2 print:py-1.5 text-xs print:text-[10px] font-black">{data.totalOperatingRevenues > 0 ? `${data.netMarginPercent}%` : '0.0%'}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </ReportPrintLayout>
