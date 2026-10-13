@@ -602,42 +602,42 @@ export const BalanceSheetReport: React.FC = () => {
         subtitleAr="وفقاً لمعايير المحاسبة المصرية والدولية (EAS / IFRS)"
       >
         {data && (
-          <div className="space-y-1.5 print:space-y-1">
+          <div className="space-y-2">
             <div className="grid grid-cols-2 gap-3 items-stretch text-xs print:text-[9.5px]">
               {/* Assets Print Column */}
-              <div className="flex flex-col justify-between border border-slate-300 print:border-slate-400 rounded-xl p-2.5 print:p-2 bg-white">
+              <div className="flex flex-col justify-between border border-slate-300 rounded-lg p-2.5 print:p-2 bg-white">
                 <div className="flex-1 space-y-1.5">
-                  <div className="font-bold bg-slate-100 print:bg-slate-200 p-1.5 print:p-1 border border-slate-300 print:border-slate-400 text-center text-slate-900 rounded-lg text-xs print:text-[10px]">
+                  <div className="font-bold bg-slate-100 p-1.5 print:p-1 border-b border-slate-300 text-center text-slate-900 rounded text-xs print:text-[10px]">
                     أولاً: جانب الأصول (Assets)
                   </div>
                   <div className="font-bold text-slate-800 text-[11px] print:text-[9.5px] pt-0.5">الأصول المتداولة (Current Assets):</div>
-                  <table className="w-full text-right border-collapse border border-slate-300 print:border-slate-400 rounded-lg overflow-hidden">
+                  <table className="w-full text-right">
                     <tbody>
                       {data.currentAssets.lines.map((l, i) => (
-                        <tr key={i} className="border-b border-slate-300 print:border-slate-400">
-                          <td className="py-0.5 print:py-0.5 px-2 leading-tight">• {l.titleAr}</td>
-                          <td className="text-center font-mono align-middle py-0.5 print:py-0.5 px-2 tabular-nums border-l border-slate-300 print:border-slate-400 w-32 leading-tight" dir="ltr">{formatAccountingNumber(l.amount)}</td>
+                        <tr key={i} className="border-b border-slate-200">
+                          <td className="py-1 print:py-0.5 px-1.5">• {l.titleAr}</td>
+                          <td className="text-center font-mono align-middle print:text-center py-1 print:py-0.5 tabular-nums" dir="ltr">{formatAccountingNumber(l.amount)}</td>
                         </tr>
                       ))}
-                      <tr className="font-bold bg-slate-50 print:bg-slate-100 border-t border-slate-300 print:border-slate-400">
-                        <td className="py-0.5 print:py-0.5 px-2">مجموع الأصول المتداولة</td>
-                        <td className="text-center font-mono align-middle py-0.5 print:py-0.5 px-2 tabular-nums font-bold border-l border-slate-300 print:border-slate-400 w-32" dir="ltr">{formatAccountingNumber(data.currentAssets.total)}</td>
+                      <tr className="font-bold bg-slate-50 border-t border-slate-300">
+                        <td className="py-1 print:py-0.5 px-1.5">مجموع الأصول المتداولة</td>
+                        <td className="text-center font-mono align-middle print:text-center py-1 print:py-0.5 tabular-nums font-bold" dir="ltr">{formatAccountingNumber(data.currentAssets.total)}</td>
                       </tr>
                     </tbody>
                   </table>
 
                   <div className="font-bold text-slate-800 text-[11px] print:text-[9.5px] pt-1">الأصول غير المتداولة (Non-Current Assets):</div>
-                  <table className="w-full text-right border-collapse border border-slate-300 print:border-slate-400 rounded-lg overflow-hidden">
+                  <table className="w-full text-right">
                     <tbody>
                       {data.nonCurrentAssets.lines.map((l, i) => (
-                        <tr key={i} className="border-b border-slate-300 print:border-slate-400">
-                          <td className="py-0.5 print:py-0.5 px-2 leading-tight">• {l.titleAr}</td>
-                          <td className="text-center font-mono align-middle py-0.5 print:py-0.5 px-2 tabular-nums border-l border-slate-300 print:border-slate-400 w-32 leading-tight" dir="ltr">{formatAccountingNumber(l.amount)}</td>
+                        <tr key={i} className="border-b border-slate-200">
+                          <td className="py-1 print:py-0.5 px-1.5">• {l.titleAr}</td>
+                          <td className="text-center font-mono align-middle print:text-center py-1 print:py-0.5 tabular-nums" dir="ltr">{formatAccountingNumber(l.amount)}</td>
                         </tr>
                       ))}
-                      <tr className="font-bold bg-slate-50 print:bg-slate-100 border-t border-slate-300 print:border-slate-400">
-                        <td className="py-0.5 print:py-0.5 px-2">مجموع الأصول غير المتداولة</td>
-                        <td className="text-center font-mono align-middle py-0.5 print:py-0.5 px-2 tabular-nums font-bold border-l border-slate-300 print:border-slate-400 w-32" dir="ltr">{formatAccountingNumber(data.nonCurrentAssets.total)}</td>
+                      <tr className="font-bold bg-slate-50 border-t border-slate-300">
+                        <td className="py-1 print:py-0.5 px-1.5">مجموع الأصول غير المتداولة</td>
+                        <td className="text-center font-mono align-middle print:text-center py-1 print:py-0.5 tabular-nums font-bold" dir="ltr">{formatAccountingNumber(data.nonCurrentAssets.total)}</td>
                       </tr>
                     </tbody>
                   </table>
@@ -652,59 +652,59 @@ export const BalanceSheetReport: React.FC = () => {
               </div>
 
               {/* Liabilities & Equity Print Column */}
-              <div className="flex flex-col justify-between border border-slate-300 print:border-slate-400 rounded-xl p-2.5 print:p-2 bg-white">
+              <div className="flex flex-col justify-between border border-slate-300 rounded-lg p-2.5 print:p-2 bg-white">
                 <div className="flex-1 space-y-1.5">
-                  <div className="font-bold bg-slate-100 print:bg-slate-200 p-1.5 print:p-1 border border-slate-300 print:border-slate-400 text-center text-slate-900 rounded-lg text-xs print:text-[10px]">
+                  <div className="font-bold bg-slate-100 p-1.5 print:p-1 border-b border-slate-300 text-center text-slate-900 rounded text-xs print:text-[10px]">
                     ثانياً: الخصوم وحقوق الملكية (Liabilities & Equity)
                   </div>
                   <div className="font-bold text-slate-800 text-[11px] print:text-[9.5px] pt-0.5">الخصوم المتداولة (Current Liabilities):</div>
-                  <table className="w-full text-right border-collapse border border-slate-300 print:border-slate-400 rounded-lg overflow-hidden">
+                  <table className="w-full text-right">
                     <tbody>
                       {data.currentLiabilities.lines.map((l, i) => (
-                        <tr key={i} className="border-b border-slate-300 print:border-slate-400">
-                          <td className="py-0.5 print:py-0.5 px-2 leading-tight">• {l.titleAr}</td>
-                          <td className="text-center font-mono align-middle py-0.5 print:py-0.5 px-2 tabular-nums border-l border-slate-300 print:border-slate-400 w-32 leading-tight" dir="ltr">{formatAccountingNumber(l.amount)}</td>
+                        <tr key={i} className="border-b border-slate-200">
+                          <td className="py-1 print:py-0.5 px-1.5">• {l.titleAr}</td>
+                          <td className="text-center font-mono align-middle print:text-center py-1 print:py-0.5 tabular-nums" dir="ltr">{formatAccountingNumber(l.amount)}</td>
                         </tr>
                       ))}
-                      <tr className="font-bold bg-slate-50 print:bg-slate-100 border-t border-slate-300 print:border-slate-400">
-                        <td className="py-0.5 print:py-0.5 px-2">مجموع الخصوم المتداولة</td>
-                        <td className="text-center font-mono align-middle py-0.5 print:py-0.5 px-2 tabular-nums font-bold border-l border-slate-300 print:border-slate-400 w-32" dir="ltr">{formatAccountingNumber(data.currentLiabilities.total)}</td>
+                      <tr className="font-bold bg-slate-50 border-t border-slate-300">
+                        <td className="py-1 print:py-0.5 px-1.5">مجموع الخصوم المتداولة</td>
+                        <td className="text-center font-mono align-middle print:text-center py-1 print:py-0.5 tabular-nums font-bold" dir="ltr">{formatAccountingNumber(data.currentLiabilities.total)}</td>
                       </tr>
                     </tbody>
                   </table>
 
                   <div className="font-bold text-slate-800 text-[11px] print:text-[9.5px] pt-1">الخصوم غير المتداولة (Non-Current Liabilities):</div>
-                  <table className="w-full text-right border-collapse border border-slate-300 print:border-slate-400 rounded-lg overflow-hidden">
+                  <table className="w-full text-right">
                     <tbody>
                       {data.nonCurrentLiabilities.lines.map((l, i) => (
-                        <tr key={i} className="border-b border-slate-300 print:border-slate-400">
-                          <td className="py-0.5 print:py-0.5 px-2 leading-tight">• {l.titleAr}</td>
-                          <td className="text-center font-mono align-middle py-0.5 print:py-0.5 px-2 tabular-nums border-l border-slate-300 print:border-slate-400 w-32 leading-tight" dir="ltr">{formatAccountingNumber(l.amount)}</td>
+                        <tr key={i} className="border-b border-slate-200">
+                          <td className="py-1 print:py-0.5 px-1.5">• {l.titleAr}</td>
+                          <td className="text-center font-mono align-middle print:text-center py-1 print:py-0.5 tabular-nums" dir="ltr">{formatAccountingNumber(l.amount)}</td>
                         </tr>
                       ))}
-                      <tr className="font-bold bg-slate-50 print:bg-slate-100 border-t border-slate-300 print:border-slate-400">
-                        <td className="py-0.5 print:py-0.5 px-2">مجموع الخصوم غير المتداولة</td>
-                        <td className="text-center font-mono align-middle py-0.5 print:py-0.5 px-2 tabular-nums font-bold border-l border-slate-300 print:border-slate-400 w-32" dir="ltr">{formatAccountingNumber(data.nonCurrentLiabilities.total)}</td>
+                      <tr className="font-bold bg-slate-50 border-t border-slate-300">
+                        <td className="py-1 print:py-0.5 px-1.5">مجموع الخصوم غير المتداولة</td>
+                        <td className="text-center font-mono align-middle print:text-center py-1 print:py-0.5 tabular-nums font-bold" dir="ltr">{formatAccountingNumber(data.nonCurrentLiabilities.total)}</td>
                       </tr>
-                      <tr className="font-bold bg-slate-100 print:bg-slate-200 border-t border-slate-400">
-                        <td className="py-0.5 print:py-0.5 px-2">إجمالي الخصوم والالتزامات</td>
-                        <td className="text-center font-mono align-middle py-0.5 print:py-0.5 px-2 tabular-nums font-bold border-l border-slate-400 w-32" dir="ltr">{formatAccountingNumber(data.totalLiabilities)}</td>
+                      <tr className="font-bold bg-slate-100 border-t border-slate-400">
+                        <td className="py-1 print:py-0.5 px-1.5">إجمالي الخصوم والالتزامات</td>
+                        <td className="text-center font-mono align-middle print:text-center py-1 print:py-0.5 tabular-nums font-bold" dir="ltr">{formatAccountingNumber(data.totalLiabilities)}</td>
                       </tr>
                     </tbody>
                   </table>
 
                   <div className="font-bold text-slate-800 text-[11px] print:text-[9.5px] pt-1">حقوق المساهمين (Shareholders Equity):</div>
-                  <table className="w-full text-right border-collapse border border-slate-300 print:border-slate-400 rounded-lg overflow-hidden">
+                  <table className="w-full text-right">
                     <tbody>
                       {data.equity.lines.map((l, i) => (
-                        <tr key={i} className="border-b border-slate-300 print:border-slate-400">
-                          <td className="py-0.5 print:py-0.5 px-2 leading-tight">• {l.titleAr}</td>
-                          <td className="text-center font-mono align-middle py-0.5 print:py-0.5 px-2 tabular-nums border-l border-slate-300 print:border-slate-400 w-32 leading-tight" dir="ltr">{formatAccountingNumber(l.amount)}</td>
+                        <tr key={i} className="border-b border-slate-200">
+                          <td className="py-1 print:py-0.5 px-1.5">• {l.titleAr}</td>
+                          <td className="text-center font-mono align-middle print:text-center py-1 print:py-0.5 tabular-nums" dir="ltr">{formatAccountingNumber(l.amount)}</td>
                         </tr>
                       ))}
-                      <tr className="font-bold bg-slate-50 print:bg-slate-100 border-t border-slate-300 print:border-slate-400">
-                        <td className="py-0.5 print:py-0.5 px-2">مجموع حقوق الملكية</td>
-                        <td className="text-center font-mono align-middle py-0.5 print:py-0.5 px-2 tabular-nums font-bold border-l border-slate-300 print:border-slate-400 w-32" dir="ltr">{formatAccountingNumber(data.totalEquity)}</td>
+                      <tr className="font-bold bg-slate-50 border-t border-slate-300">
+                        <td className="py-1 print:py-0.5 px-1.5">مجموع حقوق الملكية</td>
+                        <td className="text-center font-mono align-middle print:text-center py-1 print:py-0.5 tabular-nums font-bold" dir="ltr">{formatAccountingNumber(data.totalEquity)}</td>
                       </tr>
                     </tbody>
                   </table>
