@@ -249,16 +249,7 @@ table[class*="border-separate"] {
 @media print {
   @page {
     size: A4 portrait;
-    margin-top: 10mm;
-    margin-inline: 12mm;
-    margin-bottom: 20mm; /* Extra room so footer never clips */
-    @bottom-center {
-      content: counter(page) " - " counter(pages);
-      font-family: inherit;
-      font-size: 11px;
-      font-weight: 600;
-      color: #64748b;
-    }
+    margin: 8mm 8mm;
   }
 
   * {
@@ -385,6 +376,12 @@ table[class*="border-separate"] {
     max-width: 100% !important;
     table-layout: fixed !important;
     box-sizing: border-box !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+  }
+
+  tfoot {
+    display: table-row-group !important;
   }
 
   .ledger-curvy-frame table,
@@ -394,14 +391,6 @@ table[class*="border-separate"] {
     border-collapse: separate !important;
     border-spacing: 0 !important;
     border: none !important;
-  }
-
-  table.border-collapse,
-  table:not(.border-separate) {
-    border-collapse: collapse !important;
-    border-top: 1.5px solid #cbd5e1 !important;
-    border-left: 1.5px solid #cbd5e1 !important;
-    border-right: 1.5px solid #cbd5e1 !important;
   }
 
   table th {

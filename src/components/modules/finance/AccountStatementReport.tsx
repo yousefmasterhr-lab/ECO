@@ -1028,6 +1028,9 @@ export const AccountStatementReport: React.FC = () => {
       <ReportPrintLayout
         isOpen={isPrintModalOpen}
         onClose={() => setIsPrintModalOpen(false)}
+        singlePage={false}
+        currentPage={1}
+        totalPages={Math.ceil((data?.transactions?.length || 1) / 25) || 1}
         titleAr={`كشف حساب: ${data?.accountNameAr || ''} (${data?.level5Id || ''})`}
         titleEn={`Statement of Account - ${data?.level5Id || ''}`}
         periodText={`من ${startDate} إلى ${endDate}`}

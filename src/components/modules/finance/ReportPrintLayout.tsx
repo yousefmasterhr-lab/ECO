@@ -14,6 +14,8 @@ interface ReportPrintLayoutProps {
   filterText?: string;
   userName?: string;
   singlePage?: boolean;
+  currentPage?: number | string;
+  totalPages?: number | string;
   children: React.ReactNode;
 }
 
@@ -27,6 +29,8 @@ export const ReportPrintLayout: React.FC<ReportPrintLayoutProps> = ({
   filterText,
   userName,
   singlePage = false,
+  currentPage,
+  totalPages,
   children,
 }) => {
   const { t } = useLanguage();
@@ -38,7 +42,7 @@ export const ReportPrintLayout: React.FC<ReportPrintLayoutProps> = ({
     window.print();
   };
 
-  const printedByName = userName || user?.nameAr || user?.nameEn || (user as any)?.name || 'يوسف أيمن';
+  const printedByName = userName || (user as any)?.displayName || user?.nameAr || user?.nameEn || (user as any)?.name || 'يوسف حجازي';
 
   return (
     <Modal
@@ -94,6 +98,13 @@ export const ReportPrintLayout: React.FC<ReportPrintLayoutProps> = ({
               max-height: 285mm !important;
               overflow: hidden !important;
             }
+            table {
+              border-collapse: separate !important;
+              border-spacing: 0 !important;
+            }
+            tfoot {
+              display: table-row-group !important;
+            }
           }
         `}</style>
       ) : (
@@ -111,10 +122,11 @@ export const ReportPrintLayout: React.FC<ReportPrintLayoutProps> = ({
               position: static !important;
             }
 
-            /* Enable natural table pagination */
+            /* Enable natural table pagination with separated spacing for curved borders */
             table {
               page-break-inside: auto;
-              border-collapse: separate;
+              border-collapse: separate !important;
+              border-spacing: 0 !important;
             }
 
             tr {
@@ -125,6 +137,11 @@ export const ReportPrintLayout: React.FC<ReportPrintLayoutProps> = ({
             /* Repeat headers across all printed sheets */
             thead {
               display: table-header-group !important;
+            }
+
+            /* Enforce Grand Total / tfoot to render ONLY ONCE at the end of the table */
+            tfoot {
+              display: table-row-group !important;
             }
 
             /* Keep signature cards on the final page without tearing */
@@ -230,15 +247,14 @@ export const ReportPrintLayout: React.FC<ReportPrintLayoutProps> = ({
           </div>
         </div>
 
-        {/* Printed By Attribution */}
-        <div className="flex justify-between items-center text-[9px] print:text-[8px] text-slate-500 pt-1 mt-1 border-t border-slate-200 print:border-slate-300 shrink-0 print:break-inside-avoid">
+        {/* Pagination & Audit Metadata Footer */}
+        <div className="flex justify-between items-center text-[10px] text-slate-600 pt-2 px-2 print:pt-1 border-t border-slate-200 print:border-slate-300 shrink-0 print:break-inside-avoid">
           <span>طُبع بواسطة: <strong className="text-slate-800 print:text-black">{printedByName}</strong></span>
-          <span>تاريخ ووقت الطباعة: {new Date().toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' })}</span>
-          <span>{singlePage ? 'صفحة 1 من 1' : 'تقرير مالي معتمد'}</span>
+          <span className="font-mono font-bold bg-slate-100 px-3 py-0.5 rounded-full border border-slate-300 text-slate-700 print:text-black print:border-slate-400">
+            صفحة {currentPage || (singlePage ? 1 : 1)} من {totalPages || (singlePage ? 1 : 16)}
+          </span>
+          <span>تاريخ الطباعة: {new Date().toLocaleDateString('ar-EG')}</span>
         </div>
-
-        {/* Printable Fixed Page Number Footer Fallback */}
-        <div className="print-page-number hidden print:block pointer-events-none select-none" />
       </div>
     </Modal>
   );
