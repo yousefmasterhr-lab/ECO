@@ -46,7 +46,7 @@ function sqlServerBridgePlugin() {
         }
 
         const url = req.url?.split('?')[0];
-        const targetDb = (req.headers['x-database-context'] as string) || (req.url.includes('databaseContext=') ? new URL(req.url, 'http://localhost').searchParams.get('databaseContext') : null) || 'Tarabot_Data_2026';
+        const targetDb = (req.headers['x-database-context'] as string) || (req.url.includes('databaseContext=') ? new URL(req.url, 'http://localhost').searchParams.get('databaseContext') : null) || process.env.DB_NAME || 'MK_Khalil_Db_2026';
 
         // 1. Status
         if (url === '/api/finance/status') {

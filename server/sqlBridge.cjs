@@ -1508,7 +1508,7 @@ function addCheque(chequeData) {
 /**
  * 2.4: General Ledger Manual Journal Vouchers - Uncapped Full Dataset Ingestion
  */
-async function getJournals(targetDb = 'Tarabot_Data_2026', options = {}) {
+async function getJournals(targetDb = process.env.DB_NAME || 'MK_Khalil_Db_2026', options = {}) {
   targetDb = sanitizeDatabaseName(targetDb);
   let list = [];
   try {
@@ -1663,7 +1663,7 @@ async function getJournals(targetDb = 'Tarabot_Data_2026', options = {}) {
 /**
  * True aggregate sum and count metrics of the entire General Ledger dataset
  */
-async function getJournalSummary(targetDb = 'Tarabot_Data_2026', options = {}) {
+async function getJournalSummary(targetDb = process.env.DB_NAME || 'MK_Khalil_Db_2026', options = {}) {
   targetDb = sanitizeDatabaseName(targetDb);
   try {
     let headCols = [];
@@ -3793,16 +3793,16 @@ app.get(['/api/finance/journals', '/api/journal-entries', '/api/sql/general-jour
       return res.json([]);
     }
 
-    // Query top 200 records dynamically
+    // Retrieve ALL journal head records without artificial limit
     const records = await pool.request().query(`
-      SELECT TOP 200 * 
+      SELECT * 
       FROM [dbo].[${targetTable}]
       ORDER BY 1 DESC
     `);
 
     // Normalize records while preserving raw columns for maximum compatibility
     const normalized = (records.recordset || []).map(r => {
-      const noteNo = Number(r.Note_No ?? r.Journal_No ?? r.Voucher_No ?? r.Entry_No ?? r.id ?? 0);
+      const noteNo = Number(r.Note_No ?? r.Journal_No ?? r.Voucher_No ?? r.Entry_No ?? r.Journal_ID ?? r.id ?? 0);
       const rawDate = r.Note_Date ?? r.Journal_Date ?? r.Voucher_Date ?? r.Date ?? '';
       const noteDate = String(rawDate).trim().replace(/\//g, '-').split('T')[0];
       const desc = String(r.Description ?? r.Journal_Notes ?? r.Notes ?? r.Memo ?? r.Entry_Name ?? '').trim();
@@ -3815,11 +3815,14 @@ app.get(['/api/finance/journals', '/api/journal-entries', '/api/sql/general-jour
         ...r,
         id: `JV-${noteNo || r.Journal_ID || r.id || Math.random()}`,
         noteNo,
+        journalNo: noteNo,
         entryNo: noteNo,
         noteDate,
         entryDate: noteDate,
+        date: noteDate,
         description: desc,
         generalDescription: desc,
+        notes: desc,
         debitTotal: debit,
         totalDebit: debit,
         creditTotal: credit,
@@ -3827,15 +3830,15 @@ app.get(['/api/finance/journals', '/api/journal-entries', '/api/sql/general-jour
         netText,
         entryName,
         status: (r.Flag === false || r.Is_Posted === false || r.isPosted === 0) ? 'DRAFT' : 'POSTED',
-        date: noteDate,
-        notes: desc
+        isPosted: (r.Flag === false || r.Is_Posted === false || r.isPosted === 0) ? 0 : 1
       };
     });
 
+    console.log(`[SQL Bridge] Fetched all ${normalized.length} journal entries.`);
     res.json(normalized);
   } catch (err) {
     console.error('[SQL Bridge Error] /api/finance/journals:', err.message);
-    res.status(500).json({ error: 'Failed to fetch journals', details: err.message });
+    res.status(500).json({ error: 'Failed to fetch all journals', details: err.message });
   }
 });
 
