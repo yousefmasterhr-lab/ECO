@@ -13,6 +13,7 @@ interface ReportPrintLayoutProps {
   periodText?: string;
   filterText?: string;
   userName?: string;
+  singlePage?: boolean;
   children: React.ReactNode;
 }
 
@@ -25,6 +26,7 @@ export const ReportPrintLayout: React.FC<ReportPrintLayoutProps> = ({
   periodText,
   filterText,
   userName,
+  singlePage = false,
   children,
 }) => {
   const { t } = useLanguage();
@@ -74,28 +76,73 @@ export const ReportPrintLayout: React.FC<ReportPrintLayoutProps> = ({
         </div>
       }
     >
-      {/* Global Print Page Settings */}
-      <style>{`
-        @page {
-          size: A4 portrait;
-          margin: 6mm 8mm;
-        }
-        @media print {
-          html, body {
-            height: 297mm;
-            max-height: 297mm;
-            overflow: hidden !important;
+      {/* Dynamic Print Page Settings */}
+      {singlePage ? (
+        <style>{`
+          @page {
+            size: A4 portrait;
+            margin: 6mm 8mm;
           }
-          .report-print-sheet {
-            height: 285mm !important;
-            max-height: 285mm !important;
-            overflow: hidden !important;
+          @media print {
+            html, body {
+              height: 297mm;
+              max-height: 297mm;
+              overflow: hidden !important;
+            }
+            .report-print-sheet {
+              height: 285mm !important;
+              max-height: 285mm !important;
+              overflow: hidden !important;
+            }
           }
-        }
-      `}</style>
+        `}</style>
+      ) : (
+        <style>{`
+          @page {
+            size: A4 portrait;
+            margin: 8mm 8mm;
+          }
+          @media print {
+            /* Reset all overflow and fixed height constraints */
+            html, body, #root, #erp-modal-container, .modal-container, .print-wrapper, .report-print-sheet, [role="dialog"], [role="dialog"] > div {
+              overflow: visible !important;
+              height: auto !important;
+              max-height: none !important;
+              position: static !important;
+            }
+
+            /* Enable natural table pagination */
+            table {
+              page-break-inside: auto;
+              border-collapse: separate;
+            }
+
+            tr {
+              page-break-inside: avoid;
+              page-break-after: auto;
+            }
+
+            /* Repeat headers across all printed sheets */
+            thead {
+              display: table-header-group !important;
+            }
+
+            /* Keep signature cards on the final page without tearing */
+            .signatures-block {
+              page-break-inside: avoid;
+              break-inside: avoid;
+              margin-top: 16px;
+            }
+          }
+        `}</style>
+      )}
 
       {/* Printable Document Sheet */}
-      <div className="report-print-sheet print-container print-ledger-container p-6 sm:p-8 space-y-3 print:space-y-1.5 text-slate-900 bg-white print:bg-white print:text-slate-900 print:p-0 font-sans w-full border border-slate-200 shadow-xl rounded-2xl print:border-none print:shadow-none print:rounded-none print:h-[285mm] print:max-h-[285mm] print:overflow-hidden flex flex-col justify-between">
+      <div className={`report-print-sheet print-wrapper print-container print-ledger-container p-6 sm:p-8 space-y-3 text-slate-900 bg-white print:bg-white print:text-slate-900 print:p-0 font-sans w-full border border-slate-200 shadow-xl rounded-2xl print:border-none print:shadow-none print:rounded-none flex flex-col ${
+        singlePage
+          ? 'print:h-[285mm] print:max-h-[285mm] print:overflow-hidden print:space-y-1.5 justify-between'
+          : 'print:h-auto print:max-h-none print:overflow-visible print:space-y-3'
+      }`}>
         {/* Corporate Header */}
         <div className="flex items-center justify-between border-b-2 border-slate-800 print:border-slate-800 pb-3 print:pb-1 shrink-0">
           <div className="space-y-0.5">
@@ -157,7 +204,7 @@ export const ReportPrintLayout: React.FC<ReportPrintLayoutProps> = ({
         </div>
 
         {/* Standardized Signature Footer */}
-        <div className="grid grid-cols-3 gap-3 pt-2 mt-auto print:pt-1 print:mt-auto print:break-inside-avoid shrink-0">
+        <div className="signatures-block grid grid-cols-3 gap-3 pt-2 mt-auto print:pt-1 print:mt-auto print:break-inside-avoid shrink-0">
           {/* 1. Accountant */}
           <div className="border border-slate-300 print:border-slate-400 rounded-xl p-2.5 print:p-2 text-center bg-slate-50/50 print:bg-white flex flex-col justify-between">
             <span className="font-bold text-xs print:text-[11px] text-slate-800 print:text-black block">المحاسب</span>
@@ -187,7 +234,7 @@ export const ReportPrintLayout: React.FC<ReportPrintLayoutProps> = ({
         <div className="flex justify-between items-center text-[9px] print:text-[8px] text-slate-500 pt-1 mt-1 border-t border-slate-200 print:border-slate-300 shrink-0 print:break-inside-avoid">
           <span>طُبع بواسطة: <strong className="text-slate-800 print:text-black">{printedByName}</strong></span>
           <span>تاريخ ووقت الطباعة: {new Date().toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' })}</span>
-          <span>صفحة 1 من 1</span>
+          <span>{singlePage ? 'صفحة 1 من 1' : 'تقرير مالي معتمد'}</span>
         </div>
 
         {/* Printable Fixed Page Number Footer Fallback */}

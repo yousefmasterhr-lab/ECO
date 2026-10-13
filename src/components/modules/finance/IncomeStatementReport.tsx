@@ -646,6 +646,7 @@ export const IncomeStatementReport: React.FC = () => {
       <ReportPrintLayout
         isOpen={isPrintModalOpen}
         onClose={() => setIsPrintModalOpen(false)}
+        singlePage={true}
         titleAr="قائمة الدخل والأرباح والخسائر الرسمية"
         titleEn="Official Statement of Profit and Loss (Income Statement)"
         periodText={`من ${startDate} إلى ${endDate}`}

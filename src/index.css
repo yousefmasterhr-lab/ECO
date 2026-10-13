@@ -324,8 +324,10 @@ table[class*="border-separate"] {
 
   #erp-modal-container > div,
   .max-h-\[92vh\],
-  .overflow-hidden,
-  .overflow-y-auto {
+  #erp-modal-container .overflow-y-auto,
+  #erp-modal-container .overflow-hidden,
+  div[role="dialog"] .overflow-y-auto,
+  div[role="dialog"] .overflow-hidden {
     position: static !important;
     max-height: none !important;
     height: auto !important;

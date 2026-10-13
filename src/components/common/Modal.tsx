@@ -86,7 +86,7 @@ export const Modal: React.FC<ModalProps> = ({
           <div
             key="modal-portal-container"
             id="erp-modal-container"
-            className="fixed inset-0 z-[101] overflow-y-auto flex items-center justify-center p-4 sm:p-6 print:static print:inset-auto print:overflow-visible print:p-0 print:m-0 print:block print:h-auto print:max-h-none print:w-full"
+            className="modal-container fixed inset-0 z-[101] overflow-y-auto flex items-center justify-center p-4 sm:p-6 print:static print:inset-auto print:overflow-visible print:p-0 print:m-0 print:block print:h-auto print:max-h-none print:w-full"
             dir={dir}
             onClick={onClose}
           >
@@ -96,7 +96,7 @@ export const Modal: React.FC<ModalProps> = ({
               exit={{ opacity: 0, scale: 0.95, y: 16 }}
               transition={{ type: 'spring', damping: 25, stiffness: 350 }}
               onClick={(e) => e.stopPropagation()}
-              className={`w-full ${maxWidth} max-h-[92vh] flex flex-col rounded-2xl border border-[#243628] bg-[#17231A] text-[#F3EFE6] shadow-2xl overflow-hidden print:static print:max-h-none print:h-auto print:overflow-visible print:border-none print:shadow-none print:rounded-none print:p-0 print:m-0 print:w-full print:block print:bg-white print:text-black ${className}`}
+              className={`print-wrapper w-full ${maxWidth} max-h-[92vh] flex flex-col rounded-2xl border border-[#243628] bg-[#17231A] text-[#F3EFE6] shadow-2xl overflow-hidden print:static print:max-h-none print:h-auto print:overflow-visible print:border-none print:shadow-none print:rounded-none print:p-0 print:m-0 print:w-full print:block print:bg-white print:text-black ${className}`}
             >
               {/* Optional Custom Header or Default Header */}
               {customHeader ? (

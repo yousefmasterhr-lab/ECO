@@ -595,6 +595,7 @@ export const BalanceSheetReport: React.FC = () => {
       <ReportPrintLayout
         isOpen={isPrintModalOpen}
         onClose={() => setIsPrintModalOpen(false)}
+        singlePage={true}
         titleAr="قائمة المركز المالي (الميزانية العمومية الرسمية)"
         titleEn="Official Statement of Financial Position (Balance Sheet)"
         periodText={`كما في ${asOfDate}`}
