@@ -16,6 +16,9 @@ interface ReportPrintLayoutProps {
   singlePage?: boolean;
   currentPage?: number | string;
   totalPages?: number | string;
+  defaultOrientation?: 'landscape' | 'portrait';
+  badgeText?: string;
+  hideFooter?: boolean;
   children: React.ReactNode;
 }
 
@@ -31,10 +34,22 @@ export const ReportPrintLayout: React.FC<ReportPrintLayoutProps> = ({
   singlePage = false,
   currentPage,
   totalPages,
+  defaultOrientation,
+  badgeText,
+  hideFooter = false,
   children,
 }) => {
   const { t } = useLanguage();
   const { user } = useAuth();
+  const [orientation, setOrientation] = React.useState<'landscape' | 'portrait'>(
+    defaultOrientation || (singlePage ? 'portrait' : 'landscape')
+  );
+
+  React.useEffect(() => {
+    if (defaultOrientation) {
+      setOrientation(defaultOrientation);
+    }
+  }, [defaultOrientation]);
 
   if (!isOpen) return null;
 
@@ -48,7 +63,7 @@ export const ReportPrintLayout: React.FC<ReportPrintLayoutProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      maxWidth="max-w-6xl"
+      maxWidth={orientation === 'landscape' ? 'max-w-[96vw]' : 'max-w-6xl'}
       className="bg-slate-100 text-slate-900 print:border-none print:shadow-none print:bg-white print:text-slate-900 print:max-w-none print:w-full print:h-auto"
       customHeader={
         <div className="flex items-center justify-between p-4 border-b border-[#243628] bg-[#121B14] print:hidden shrink-0">
@@ -62,6 +77,32 @@ export const ReportPrintLayout: React.FC<ReportPrintLayoutProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Landscape / Portrait Orientation Toggle */}
+            <div className="flex items-center gap-1 bg-slate-800 p-1 rounded-lg border border-slate-700 text-xs text-white">
+              <button
+                type="button"
+                onClick={() => setOrientation('landscape')}
+                className={`px-2.5 py-1 rounded transition-all cursor-pointer ${
+                  orientation === 'landscape'
+                    ? 'bg-amber-500 font-bold text-slate-950'
+                    : 'text-slate-300 hover:text-white'
+                }`}
+              >
+                أفقي (Landscape)
+              </button>
+              <button
+                type="button"
+                onClick={() => setOrientation('portrait')}
+                className={`px-2.5 py-1 rounded transition-all cursor-pointer ${
+                  orientation === 'portrait'
+                    ? 'bg-amber-500 font-bold text-slate-950'
+                    : 'text-slate-300 hover:text-white'
+                }`}
+              >
+                رأسي (Portrait)
+              </button>
+            </div>
+
             <button
               onClick={handlePrint}
               className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#D99B26] hover:bg-[#C58F38] text-[#0E1610] text-xs font-bold shadow-md transition-all cursor-pointer"
@@ -84,18 +125,18 @@ export const ReportPrintLayout: React.FC<ReportPrintLayoutProps> = ({
       {singlePage ? (
         <style>{`
           @page {
-            size: A4 portrait;
-            margin: 6mm 8mm;
+            size: A4 ${orientation};
+            margin: 5mm 6mm;
           }
           @media print {
             html, body {
-              height: 297mm;
-              max-height: 297mm;
+              height: ${orientation === 'landscape' ? '210mm' : '297mm'};
+              max-height: ${orientation === 'landscape' ? '210mm' : '297mm'};
               overflow: hidden !important;
             }
             .report-print-sheet {
-              height: 285mm !important;
-              max-height: 285mm !important;
+              height: ${orientation === 'landscape' ? '200mm' : '285mm'} !important;
+              max-height: ${orientation === 'landscape' ? '200mm' : '285mm'} !important;
               overflow: hidden !important;
             }
             table {
@@ -110,8 +151,8 @@ export const ReportPrintLayout: React.FC<ReportPrintLayoutProps> = ({
       ) : (
         <style>{`
           @page {
-            size: A4 portrait;
-            margin: 8mm 8mm;
+            size: A4 ${orientation};
+            margin: 5mm 6mm;
           }
           @media print {
             /* Reset all overflow and fixed height constraints */
@@ -248,13 +289,15 @@ export const ReportPrintLayout: React.FC<ReportPrintLayoutProps> = ({
         </div>
 
         {/* Pagination & Audit Metadata Footer */}
-        <div className="flex justify-between items-center text-[10px] text-slate-600 pt-2 px-2 print:pt-1 border-t border-slate-200 print:border-slate-300 shrink-0 print:break-inside-avoid">
-          <span>طُبع بواسطة: <strong className="text-slate-800 print:text-black">{printedByName}</strong></span>
-          <span className="font-mono font-bold bg-slate-100 px-3 py-0.5 rounded-full border border-slate-300 text-slate-700 print:text-black print:border-slate-400">
-            صفحة {currentPage || (singlePage ? 1 : 1)} من {totalPages || (singlePage ? 1 : 16)}
-          </span>
-          <span>تاريخ الطباعة: {new Date().toLocaleDateString('ar-EG')}</span>
-        </div>
+        {!hideFooter && (
+          <div className="flex justify-between items-center text-[10px] text-slate-600 pt-1.5 px-3 print:pt-1 border-t border-slate-200 print:border-slate-300 shrink-0 print:break-inside-avoid">
+            <span>طُبع بواسطة: <strong className="text-slate-800 print:text-black">{printedByName}</strong></span>
+            <span className="font-mono font-bold bg-slate-100 print:bg-slate-200 px-3 py-0.5 rounded-full border border-slate-300 text-slate-700 print:text-black print:border-slate-400">
+              {badgeText || (singlePage ? 'صفحة 1 من 1' : `صفحة ${currentPage || 1} من ${totalPages || 1}`)}
+            </span>
+            <span>تاريخ الطباعة: {new Date().toLocaleDateString('ar-EG')}</span>
+          </div>
+        )}
       </div>
     </Modal>
   );

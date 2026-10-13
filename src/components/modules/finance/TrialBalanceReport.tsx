@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useLanguage } from '../../../context/LanguageContext';
 import { useFinancial } from '../../../context/FinancialContext';
+import { useAuth } from '../../../context/AuthContext';
 import { useDatabase } from '../../../services/federation/DatabaseContext';
 import { getFiscalDateRange } from '../../../utils/fiscalYearHelper';
 import { TrialBalanceReportData } from '../../../services/database/types';
@@ -25,6 +26,7 @@ import {
 
 export const TrialBalanceReport: React.FC = () => {
   const { t } = useLanguage();
+  const { user } = useAuth();
   const { activeDatabase } = useDatabase();
   const { fetchTrialBalance, costCenters } = useFinancial();
 
@@ -676,8 +678,9 @@ export const TrialBalanceReport: React.FC = () => {
         isOpen={isPrintModalOpen}
         onClose={() => setIsPrintModalOpen(false)}
         singlePage={false}
-        currentPage={1}
-        totalPages={Math.ceil(filteredItems.length / 32) || 16}
+        defaultOrientation="landscape"
+        badgeText={`ميزان المراجعة العام - ${filteredItems.length} حساب`}
+        hideFooter={true}
         titleAr={`ميزان المراجعة بالأرصدة والمجاميع (المستوى ${selectedLevel})`}
         titleEn={`5-Level Trial Balance Report (Level ${selectedLevel})`}
         periodText={`من ${startDate} إلى ${endDate}`}
@@ -698,34 +701,75 @@ export const TrialBalanceReport: React.FC = () => {
 
           {/* Curved Table Container (rounded-xl) with separated border spacing */}
           <div className="border border-slate-300 rounded-xl overflow-hidden shadow-none print:border-slate-400 print:rounded-xl">
-            <table className="w-full border-separate border-spacing-0 text-[10px] print:text-[9px]">
+            <table
+              className="w-full table-fixed border-separate border-spacing-0 text-[10px] print:text-[9px]"
+              style={{ tableLayout: 'fixed', width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}
+            >
+              <colgroup>
+                <col style={{ width: '10%' }} />
+                <col style={{ width: '26%' }} />
+                <col style={{ width: '6%' }} />
+                <col style={{ width: '9.66%' }} />
+                <col style={{ width: '9.66%' }} />
+                <col style={{ width: '9.66%' }} />
+                <col style={{ width: '9.66%' }} />
+                <col style={{ width: '9.66%' }} />
+                <col style={{ width: '9.7%' }} />
+              </colgroup>
               <thead className="bg-slate-100 print:bg-slate-200">
                 <tr className="border-b-2 border-slate-800 bg-slate-100 print:bg-slate-200 font-black">
-                  <th className="w-20 min-w-[75px] py-1.5 px-1 border-b border-l border-slate-300 print:border-slate-400 text-center font-bold align-middle">
+                  <th
+                    style={{ width: '10%' }}
+                    className="w-[10%] min-w-[70px] py-1.5 px-1 border-b border-l border-slate-300 print:border-slate-400 text-center font-bold align-middle text-xs print:text-[9px]"
+                  >
                     كود الحساب
                   </th>
-                  <th className="flex-1 min-w-[140px] py-1.5 px-2 border-b border-l border-slate-300 print:border-slate-400 text-center font-bold align-middle">
+                  <th
+                    style={{ width: '26%', wordBreak: 'normal', overflowWrap: 'break-word', whiteSpace: 'normal' }}
+                    className="w-[26%] min-w-[180px] py-1.5 px-2 border-b border-l border-slate-300 print:border-slate-400 text-center font-bold align-middle whitespace-normal break-words leading-relaxed text-xs print:text-[9px]"
+                  >
                     اسم الحساب
                   </th>
-                  <th className="w-14 min-w-[55px] py-1.5 px-2 border-b border-l border-slate-300 print:border-slate-400 text-center font-bold align-middle text-[10px] whitespace-nowrap">
+                  <th
+                    style={{ width: '6%' }}
+                    className="w-[6%] min-w-[45px] py-1.5 px-1 border-b border-l border-slate-300 print:border-slate-400 text-center font-bold align-middle text-[10px] print:text-[9px] whitespace-nowrap"
+                  >
                     المستوى
                   </th>
-                  <th className="w-24 min-w-[75px] py-1.5 px-1 border-b border-l border-slate-300 print:border-slate-400 text-center font-bold align-middle text-[10px]">
+                  <th
+                    style={{ width: '9.66%' }}
+                    className="w-[9.66%] py-1.5 px-1 border-b border-l border-slate-300 print:border-slate-400 text-center font-bold align-middle text-[9.5px] print:text-[9px] font-mono"
+                  >
                     أول المدة (مدين)
                   </th>
-                  <th className="w-24 min-w-[75px] py-1.5 px-1 border-b border-l border-slate-300 print:border-slate-400 text-center font-bold align-middle text-[10px]">
+                  <th
+                    style={{ width: '9.66%' }}
+                    className="w-[9.66%] py-1.5 px-1 border-b border-l border-slate-300 print:border-slate-400 text-center font-bold align-middle text-[9.5px] print:text-[9px] font-mono"
+                  >
                     أول المدة (دائن)
                   </th>
-                  <th className="w-24 min-w-[75px] py-1.5 px-1 border-b border-l border-slate-300 print:border-slate-400 text-center font-bold align-middle text-[10px]">
+                  <th
+                    style={{ width: '9.66%' }}
+                    className="w-[9.66%] py-1.5 px-1 border-b border-l border-slate-300 print:border-slate-400 text-center font-bold align-middle text-[9.5px] print:text-[9px] font-mono"
+                  >
                     حركات (مدين)
                   </th>
-                  <th className="w-24 min-w-[75px] py-1.5 px-1 border-b border-l border-slate-300 print:border-slate-400 text-center font-bold align-middle text-[10px]">
+                  <th
+                    style={{ width: '9.66%' }}
+                    className="w-[9.66%] py-1.5 px-1 border-b border-l border-slate-300 print:border-slate-400 text-center font-bold align-middle text-[9.5px] print:text-[9px] font-mono"
+                  >
                     حركات (دائن)
                   </th>
-                  <th className="w-24 min-w-[75px] py-1.5 px-1 border-b border-l border-slate-300 print:border-slate-400 text-center font-bold align-middle text-[10px]">
+                  <th
+                    style={{ width: '9.66%' }}
+                    className="w-[9.66%] py-1.5 px-1 border-b border-l border-slate-300 print:border-slate-400 text-center font-bold align-middle text-[9.5px] print:text-[9px] font-mono"
+                  >
                     ختامي (مدين)
                   </th>
-                  <th className="w-24 min-w-[75px] py-1.5 px-1 border-b border-slate-300 print:border-slate-400 text-center font-bold align-middle text-[10px]">
+                  <th
+                    style={{ width: '9.7%' }}
+                    className="w-[9.7%] py-1.5 px-1 border-b border-slate-300 print:border-slate-400 text-center font-bold align-middle text-[9.5px] print:text-[9px] font-mono"
+                  >
                     ختامي (دائن)
                   </th>
                 </tr>
@@ -743,33 +787,44 @@ export const TrialBalanceReport: React.FC = () => {
                     <td className="text-center font-mono align-middle py-1 px-1 text-xs print:text-[9px] border-b border-l border-slate-200 print:border-slate-300">
                       {item.accountCode}
                     </td>
-                    <td className="text-center align-middle font-medium py-1 px-2 text-xs print:text-[9px] border-b border-l border-slate-200 print:border-slate-300">
-                      <div className="flex items-center justify-center gap-1">
+                    <td
+                      className="text-center align-middle font-medium py-1 px-2 text-xs print:text-[9.5px] border-b border-l border-slate-200 print:border-slate-300 whitespace-normal break-words leading-relaxed"
+                      style={{ wordBreak: 'normal', overflowWrap: 'break-word', whiteSpace: 'normal' }}
+                    >
+                      <div
+                        className="flex items-center justify-center gap-1"
+                        style={{ wordBreak: 'normal', overflowWrap: 'break-word', whiteSpace: 'normal' }}
+                      >
                         {item.level > 1 && (
-                          <span className="text-gray-400 print:text-gray-500 font-mono text-[8px]">↳</span>
+                          <span className="text-gray-400 print:text-gray-500 font-mono text-[8px] shrink-0">↳</span>
                         )}
-                        <span>{item.accountNameAr}</span>
+                        <span
+                          className="break-words leading-relaxed"
+                          style={{ wordBreak: 'normal', overflowWrap: 'break-word', whiteSpace: 'normal' }}
+                        >
+                          {item.accountNameAr}
+                        </span>
                       </div>
                     </td>
-                    <td className="text-center align-middle py-1 px-2 text-xs print:text-[9px] whitespace-nowrap border-b border-l border-slate-200 print:border-slate-300">
+                    <td className="text-center align-middle py-1 px-1 text-xs print:text-[9px] whitespace-nowrap border-b border-l border-slate-200 print:border-slate-300">
                       م{item.level}
                     </td>
-                    <td className="text-center font-mono align-middle py-1 px-1 text-xs print:text-[9px] tabular-nums border-b border-l border-slate-200 print:border-slate-300" dir="ltr">
+                    <td className="text-center font-mono align-middle py-1 px-1 text-[9.5px] print:text-[9px] tabular-nums border-b border-l border-slate-200 print:border-slate-300" dir="ltr">
                       {formatAccountingNumber(item.openingDebit)}
                     </td>
-                    <td className="text-center font-mono align-middle py-1 px-1 text-xs print:text-[9px] tabular-nums border-b border-l border-slate-200 print:border-slate-300" dir="ltr">
+                    <td className="text-center font-mono align-middle py-1 px-1 text-[9.5px] print:text-[9px] tabular-nums border-b border-l border-slate-200 print:border-slate-300" dir="ltr">
                       {formatAccountingNumber(item.openingCredit)}
                     </td>
-                    <td className="text-center font-mono align-middle py-1 px-1 text-xs print:text-[9px] tabular-nums border-b border-l border-slate-200 print:border-slate-300" dir="ltr">
+                    <td className="text-center font-mono align-middle py-1 px-1 text-[9.5px] print:text-[9px] tabular-nums border-b border-l border-slate-200 print:border-slate-300" dir="ltr">
                       {formatAccountingNumber(item.periodDebit)}
                     </td>
-                    <td className="text-center font-mono align-middle py-1 px-1 text-xs print:text-[9px] tabular-nums border-b border-l border-slate-200 print:border-slate-300" dir="ltr">
+                    <td className="text-center font-mono align-middle py-1 px-1 text-[9.5px] print:text-[9px] tabular-nums border-b border-l border-slate-200 print:border-slate-300" dir="ltr">
                       {formatAccountingNumber(item.periodCredit)}
                     </td>
-                    <td className="text-center font-mono align-middle py-1 px-1 text-xs print:text-[9px] tabular-nums border-b border-l border-slate-200 print:border-slate-300" dir="ltr">
+                    <td className="text-center font-mono align-middle py-1 px-1 text-[9.5px] print:text-[9px] tabular-nums border-b border-l border-slate-200 print:border-slate-300" dir="ltr">
                       {formatAccountingNumber(item.endingDebit)}
                     </td>
-                    <td className="text-center font-mono align-middle py-1 text-xs print:text-[9px] tabular-nums border-b border-slate-200 print:border-slate-300" dir="ltr">
+                    <td className="text-center font-mono align-middle py-1 px-1 text-[9.5px] print:text-[9px] tabular-nums border-b border-slate-200 print:border-slate-300" dir="ltr">
                       {formatAccountingNumber(item.endingCredit)}
                     </td>
                   </tr>
@@ -781,28 +836,37 @@ export const TrialBalanceReport: React.FC = () => {
                     <td colSpan={3} className="py-2 px-2 text-center align-middle font-black border-t-2 border-b-2 border-slate-800 border-l border-slate-300 print:border-slate-400 text-xs print:text-[9.5px]">
                       الإجمالي العام
                     </td>
-                    <td className="text-center font-mono align-middle py-2 px-1 text-xs print:text-[9px] tabular-nums font-black border-t-2 border-b-2 border-slate-800 border-l border-slate-300 print:border-slate-400" dir="ltr">
+                    <td className="text-center font-mono align-middle py-2 px-1 text-[9.5px] print:text-[9px] tabular-nums font-black border-t-2 border-b-2 border-slate-800 border-l border-slate-300 print:border-slate-400" dir="ltr">
                       {formatAccountingNumber(data.totalOpeningDebit)}
                     </td>
-                    <td className="text-center font-mono align-middle py-2 px-1 text-xs print:text-[9px] tabular-nums font-black border-t-2 border-b-2 border-slate-800 border-l border-slate-300 print:border-slate-400" dir="ltr">
+                    <td className="text-center font-mono align-middle py-2 px-1 text-[9.5px] print:text-[9px] tabular-nums font-black border-t-2 border-b-2 border-slate-800 border-l border-slate-300 print:border-slate-400" dir="ltr">
                       {formatAccountingNumber(data.totalOpeningCredit)}
                     </td>
-                    <td className="text-center font-mono align-middle py-2 px-1 text-xs print:text-[9px] tabular-nums font-black border-t-2 border-b-2 border-slate-800 border-l border-slate-300 print:border-slate-400" dir="ltr">
+                    <td className="text-center font-mono align-middle py-2 px-1 text-[9.5px] print:text-[9px] tabular-nums font-black border-t-2 border-b-2 border-slate-800 border-l border-slate-300 print:border-slate-400" dir="ltr">
                       {formatAccountingNumber(data.totalPeriodDebit)}
                     </td>
-                    <td className="text-center font-mono align-middle py-2 px-1 text-xs print:text-[9px] tabular-nums font-black border-t-2 border-b-2 border-slate-800 border-l border-slate-300 print:border-slate-400" dir="ltr">
+                    <td className="text-center font-mono align-middle py-2 px-1 text-[9.5px] print:text-[9px] tabular-nums font-black border-t-2 border-b-2 border-slate-800 border-l border-slate-300 print:border-slate-400" dir="ltr">
                       {formatAccountingNumber(data.totalPeriodCredit)}
                     </td>
-                    <td className="text-center font-mono align-middle py-2 px-1 text-xs print:text-[9px] tabular-nums font-black border-t-2 border-b-2 border-slate-800 border-l border-slate-300 print:border-slate-400" dir="ltr">
+                    <td className="text-center font-mono align-middle py-2 px-1 text-[9.5px] print:text-[9px] tabular-nums font-black border-t-2 border-b-2 border-slate-800 border-l border-slate-300 print:border-slate-400" dir="ltr">
                       {formatAccountingNumber(data.totalEndingDebit)}
                     </td>
-                    <td className="text-center font-mono align-middle py-2 px-1 text-xs print:text-[9px] tabular-nums font-black border-t-2 border-b-2 border-slate-800 print:border-slate-400" dir="ltr">
+                    <td className="text-center font-mono align-middle py-2 px-1 text-[9.5px] print:text-[9px] tabular-nums font-black border-t-2 border-b-2 border-slate-800 print:border-slate-400" dir="ltr">
                       {formatAccountingNumber(data.totalEndingCredit)}
                     </td>
                   </tr>
                 )}
               </tbody>
             </table>
+          </div>
+
+          {/* Page Attribution and Numbering Bar Directly Below the Table Container */}
+          <div className="flex justify-between items-center text-[10px] text-slate-600 pt-1.5 px-3 print:pt-1">
+            <span>طُبع بواسطة: <strong>{(user as any)?.displayName || user?.nameAr || user?.nameEn || (user as any)?.name || 'يوسف حجازي'}</strong></span>
+            <span className="font-mono font-bold bg-slate-100 print:bg-slate-200 px-3 py-0.5 rounded-full border border-slate-300">
+              ميزان المراجعة العام - {filteredItems.length} حساب
+            </span>
+            <span>تاريخ الطباعة: {new Date().toLocaleDateString('ar-EG')}</span>
           </div>
         </div>
       </ReportPrintLayout>

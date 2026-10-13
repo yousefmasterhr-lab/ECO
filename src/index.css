@@ -248,8 +248,7 @@ table[class*="border-separate"] {
    ========================================================================== */
 @media print {
   @page {
-    size: A4 portrait;
-    margin: 8mm 8mm;
+    margin: 5mm 6mm;
   }
 
   * {
