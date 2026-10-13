@@ -19,6 +19,7 @@ export interface ModalProps {
   hideCloseButton?: boolean;
   dir?: 'rtl' | 'ltr';
   className?: string;
+  overlayClassName?: string;
 }
 
 export const Modal: React.FC<ModalProps> = ({
@@ -37,6 +38,7 @@ export const Modal: React.FC<ModalProps> = ({
   hideCloseButton = false,
   dir = 'rtl',
   className = '',
+  overlayClassName,
 }) => {
   const [mounted, setMounted] = useState(false);
 
@@ -78,7 +80,7 @@ export const Modal: React.FC<ModalProps> = ({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
             onClick={onClose}
-            className="fixed inset-0 z-[100] bg-black/75 backdrop-blur-sm transition-opacity print:hidden"
+            className={`fixed inset-0 z-[100] ${overlayClassName || 'bg-black/75 backdrop-blur-sm'} transition-opacity print:hidden`}
             aria-hidden="true"
           />
 
@@ -96,7 +98,13 @@ export const Modal: React.FC<ModalProps> = ({
               exit={{ opacity: 0, scale: 0.95, y: 16 }}
               transition={{ type: 'spring', damping: 25, stiffness: 350 }}
               onClick={(e) => e.stopPropagation()}
-              className={`print-wrapper w-full ${maxWidth} max-h-[92vh] flex flex-col rounded-2xl border border-[#243628] bg-[#17231A] text-[#F3EFE6] shadow-2xl overflow-hidden print:static print:max-h-none print:h-auto print:overflow-visible print:border-none print:shadow-none print:rounded-none print:p-0 print:m-0 print:w-full print:block print:bg-white print:text-black ${className}`}
+              className={`print-wrapper w-full ${maxWidth} max-h-[92vh] flex flex-col rounded-2xl shadow-2xl overflow-hidden ${
+                className.includes('border-') ? '' : 'border border-[#243628]'
+              } ${
+                className.includes('bg-') ? '' : 'bg-[#17231A]'
+              } ${
+                className.includes('text-') ? '' : 'text-[#F3EFE6]'
+              } print:static print:max-h-none print:h-auto print:overflow-visible print:border-none print:shadow-none print:rounded-none print:p-0 print:m-0 print:w-full print:block print:bg-white print:text-black ${className}`}
             >
               {/* Optional Custom Header or Default Header */}
               {customHeader ? (

@@ -920,21 +920,38 @@ export const TrialBalanceReport: React.FC = () => {
                 <div className="mt-auto pt-2 shrink-0">
                   {isLastPage && (
                     <div className="grid grid-cols-3 gap-3 mb-2 print:gap-2 print:mb-1.5 shrink-0">
-                      <div className="border border-slate-300 print:border-slate-400 rounded-xl p-2 print:p-1.5 text-center bg-slate-50/50 print:bg-white flex flex-col justify-between">
-                        <span className="font-bold text-xs print:text-[10px] text-slate-800 print:text-black block">المحاسب</span>
-                        <span className="text-[9px] print:text-[8px] text-slate-600 print:text-black block mt-3 print:mt-2" dir="rtl">
+                      {/* 1. Accountant */}
+                      <div className="border border-slate-300 rounded-xl p-3 text-center min-h-[110px] flex flex-col justify-between print:min-h-[100px] print:border-slate-400">
+                        <span className="font-bold text-xs text-slate-800 print:text-black block">المحاسب</span>
+                        
+                        {/* Generous blank signing zone (approx 45px - 55px height) */}
+                        <div className="flex-1 min-h-[45px] print:min-h-[40px]"></div>
+
+                        <span className="text-[10px] text-slate-600 print:text-black block" dir="rtl">
                           التاريخ: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                         </span>
                       </div>
-                      <div className="border border-slate-300 print:border-slate-400 rounded-xl p-2 print:p-1.5 text-center bg-slate-50/50 print:bg-white flex flex-col justify-between">
-                        <span className="font-bold text-xs print:text-[10px] text-slate-800 print:text-black block">المراجع</span>
-                        <span className="text-[9px] print:text-[8px] text-slate-600 print:text-black block mt-3 print:mt-2" dir="rtl">
+
+                      {/* 2. Internal Auditor */}
+                      <div className="border border-slate-300 rounded-xl p-3 text-center min-h-[110px] flex flex-col justify-between print:min-h-[100px] print:border-slate-400">
+                        <span className="font-bold text-xs text-slate-800 print:text-black block">المراجع</span>
+                        
+                        {/* Generous blank signing zone (approx 45px - 55px height) */}
+                        <div className="flex-1 min-h-[45px] print:min-h-[40px]"></div>
+
+                        <span className="text-[10px] text-slate-600 print:text-black block" dir="rtl">
                           التاريخ: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                         </span>
                       </div>
-                      <div className="border border-slate-300 print:border-slate-400 rounded-xl p-2 print:p-1.5 text-center bg-slate-50/50 print:bg-white flex flex-col justify-between">
-                        <span className="font-bold text-xs print:text-[10px] text-slate-800 print:text-black block">يعتمد</span>
-                        <span className="text-[9px] print:text-[8px] text-slate-600 print:text-black block mt-3 print:mt-2" dir="rtl">
+
+                      {/* 3. Executive Approval & Stamp */}
+                      <div className="border border-slate-300 rounded-xl p-3 text-center min-h-[110px] flex flex-col justify-between print:min-h-[100px] print:border-slate-400">
+                        <span className="font-bold text-xs text-slate-800 print:text-black block">يعتمد</span>
+                        
+                        {/* Generous blank signing zone (approx 45px - 55px height) */}
+                        <div className="flex-1 min-h-[45px] print:min-h-[40px]"></div>
+
+                        <span className="text-[10px] text-slate-600 print:text-black block" dir="rtl">
                           التاريخ: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                         </span>
                       </div>
