@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLanguage } from '../../../context/LanguageContext';
-import { Modal, formatDate } from '@erp/ui-system';
+import { Modal } from '@erp/ui-system';
 import { X, Printer } from 'lucide-react';
 
 interface ReportPrintLayoutProps {
@@ -87,18 +87,24 @@ export const ReportPrintLayout: React.FC<ReportPrintLayoutProps> = ({
             </p>
           </div>
 
-          <div className="text-center p-3 rounded-2xl border border-amber-300 bg-amber-50/70 print:border-black print:bg-transparent">
+          <div className="text-center p-3 rounded-2xl border border-slate-300 bg-slate-50/80 print:border-slate-800 print:bg-transparent min-w-[240px]">
             <div className="text-base font-black text-slate-900 print:text-black">
               {titleAr}
             </div>
             <div className="text-[11px] font-bold text-slate-600 print:text-black">
               {titleEn}
             </div>
+            <div className="text-[9px] text-slate-500 print:text-gray-600 mt-1">
+              معايير المحاسبة المصرية (EAS) والدولية (IFRS)
+            </div>
             {periodText && (
-              <div className="text-[10px] font-mono text-slate-600 mt-1 print:text-black">
-                الفترة: {periodText}
+              <div className="text-[10px] font-mono text-slate-600 mt-0.5 print:text-black">
+                {periodText}
               </div>
             )}
+            <div className="text-[9px] font-mono text-slate-500 mt-0.5">
+              تاريخ الإصدار: 2026-10-13
+            </div>
           </div>
         </div>
 
@@ -110,9 +116,9 @@ export const ReportPrintLayout: React.FC<ReportPrintLayoutProps> = ({
             {filterText && <span className="font-mono font-normal mr-2 text-[10px]">({filterText})</span>}
           </div>
 
-          {/* Center (text-center): تاريخ الإصدار: {issueDate} */}
+          {/* Center (text-center): تاريخ الإصدار: 2026-10-13 */}
           <div className="text-center font-mono text-[11px] print:text-[10px] text-slate-700 print:text-black font-semibold">
-            تاريخ الإصدار: {formatDate(new Date())}
+            تاريخ الإصدار: 2026-10-13
           </div>
 
           {/* Far Left (text-left): Current user's display name */}
@@ -126,44 +132,27 @@ export const ReportPrintLayout: React.FC<ReportPrintLayoutProps> = ({
           {children}
         </div>
 
-        {/* Formal Audit Signatures Block */}
-        <div className="ledger-final-section ledger-signatures pt-3 mt-4 print:pt-1 print:mt-2 border-t border-slate-300 print:border-black page-break-inside-avoid break-inside-avoid">
-          <div className="grid grid-cols-3 gap-4 print:gap-2.5 text-center text-xs print:text-[10px]">
-            {/* Box 1: المحاسب */}
-            <div className="py-4 px-3 print:py-2.5 print:px-2 rounded-xl border border-slate-300 print:border-black bg-slate-50 print:bg-white flex flex-col justify-between min-h-[105px] print:min-h-[90px]">
-              <div>
-                <span className="font-bold block text-sm print:text-xs text-slate-900 print:text-black">
-                  المحاسب
-                </span>
-              </div>
-              <div className="mt-auto pt-3 print:pt-1.5 text-center text-xs print:text-[10px] text-slate-700 print:text-black" dir="rtl">
-                التاريخ: &nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; م
-              </div>
-            </div>
+        {/* Standardized Signature Footer */}
+        <div className="grid grid-cols-3 gap-4 pt-4 mt-auto print:break-inside-avoid">
+          {/* 1. Accountant */}
+          <div className="border border-slate-300 rounded-xl p-3 text-center">
+            <span className="font-bold text-xs text-slate-800 block mb-6">المحاسب المالي</span>
+            <div className="border-b border-dashed border-slate-400 w-3/4 mx-auto mb-2"></div>
+            <span className="text-[10px] text-slate-500">التاريخ: &nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp; / 2026 م</span>
+          </div>
 
-            {/* Box 2: المراجع */}
-            <div className="py-4 px-3 print:py-2.5 print:px-2 rounded-xl border border-slate-300 print:border-black bg-slate-50 print:bg-white flex flex-col justify-between min-h-[105px] print:min-h-[90px]">
-              <div>
-                <span className="font-bold block text-sm print:text-xs text-slate-900 print:text-black">
-                  المراجع
-                </span>
-              </div>
-              <div className="mt-auto pt-3 print:pt-1.5 text-center text-xs print:text-[10px] text-slate-700 print:text-black" dir="rtl">
-                التاريخ: &nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; م
-              </div>
-            </div>
+          {/* 2. Internal Auditor */}
+          <div className="border border-slate-300 rounded-xl p-3 text-center">
+            <span className="font-bold text-xs text-slate-800 block mb-6">المراجع الداخلي</span>
+            <div className="border-b border-dashed border-slate-400 w-3/4 mx-auto mb-2"></div>
+            <span className="text-[10px] text-slate-500">التاريخ: &nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp; / 2026 م</span>
+          </div>
 
-            {/* Box 3: يعتمد */}
-            <div className="py-4 px-3 print:py-2.5 print:px-2 rounded-xl border border-slate-300 print:border-black bg-slate-50 print:bg-white flex flex-col justify-between min-h-[105px] print:min-h-[90px]">
-              <div>
-                <span className="font-bold block text-sm print:text-xs text-slate-900 print:text-black">
-                  يعتمد
-                </span>
-              </div>
-              <div className="mt-auto pt-3 print:pt-1.5 text-center text-xs print:text-[10px] text-slate-700 print:text-black" dir="rtl">
-                التاريخ: &nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; م
-              </div>
-            </div>
+          {/* 3. Executive Approval & Stamp */}
+          <div className="border border-slate-300 rounded-xl p-3 text-center">
+            <span className="font-bold text-xs text-slate-800 block mb-6">يعتمد (المدير المالي / الإدارة العليا)</span>
+            <div className="border-b border-dashed border-slate-400 w-3/4 mx-auto mb-2"></div>
+            <span className="text-[10px] text-slate-500">الختم والتاريخ: &nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp; / 2026 م</span>
           </div>
         </div>
 

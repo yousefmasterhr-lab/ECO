@@ -5,14 +5,16 @@ import { useDatabase } from '../../../services/federation/DatabaseContext';
 import { getFiscalDateRange } from '../../../utils/fiscalYearHelper';
 import { BalanceSheetReportData, BalanceSheetSection } from '../../../services/database/types';
 import { ReportPrintLayout } from './ReportPrintLayout';
-import { exportToCsv, formatEGP } from '../../../utils/exportUtils';
+import { formatEGP, formatAccountingNumber } from '../../../utils/exportUtils';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 import { toast } from '@erp/ui-system';
 import {
   Landmark,
   Calendar,
   RefreshCw,
   Printer,
-  Download,
+  FileSpreadsheet,
   CheckCircle2,
   AlertTriangle,
   Coins,
@@ -37,6 +39,7 @@ export const BalanceSheetReport: React.FC = () => {
   }, [activeDatabase]);
 
   const [isPrintModalOpen, setIsPrintModalOpen] = useState<boolean>(false);
+  const [isExporting, setIsExporting] = useState<boolean>(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -54,47 +57,255 @@ export const BalanceSheetReport: React.FC = () => {
     loadData();
   }, [loadData]);
 
-  // Export to CSV
-  const handleExportCsv = () => {
+  // Luxury Branded Excel (.xlsx) Export Engine using ExcelJS
+  const handleExportExcel = async () => {
     if (!data) return;
-    const headers = ['القسم المالي / البند', 'المبلغ (جم)'];
-    const rows: (string | number)[][] = [];
+    setIsExporting(true);
 
-    // Assets
-    rows.push(['=== جانب الأصول (ASSETS) ===', '']);
-    rows.push(['--- أصول متداولة (Current Assets) ---', '']);
-    data.currentAssets.lines.forEach(l => rows.push([l.titleAr, l.amount]));
-    rows.push(['إجمالي الأصول المتداولة', data.currentAssets.total]);
+    try {
+      const workbook = new ExcelJS.Workbook();
+      workbook.creator = 'ECO ERP - ترابط';
+      workbook.created = new Date();
+      workbook.modified = new Date();
 
-    rows.push(['--- أصول غير متداولة (Non-Current Assets) ---', '']);
-    data.nonCurrentAssets.lines.forEach(l => rows.push([l.titleAr, l.amount]));
-    rows.push(['إجمالي الأصول غير المتداولة', data.nonCurrentAssets.total]);
-    rows.push(['إجمالي جانب الأصول', data.totalAssets]);
+      const worksheet = workbook.addWorksheet('الميزانية العمومية والمركز المالي', {
+        views: [{ rtl: true, rightToLeft: true, showGridLines: true } as any]
+      });
 
-    // Liabilities
-    rows.push(['=== جانب الخصوم والالتزامات (LIABILITIES) ===', '']);
-    rows.push(['--- خصوم متداولة (Current Liabilities) ---', '']);
-    data.currentLiabilities.lines.forEach(l => rows.push([l.titleAr, l.amount]));
-    rows.push(['إجمالي الخصوم المتداولة', data.currentLiabilities.total]);
+      // 1. Company Brand Header (Row 1)
+      worksheet.mergeCells('A1:C1');
+      const titleCell = worksheet.getCell('A1');
+      titleCell.value = 'شركة ترابط للمقاولات والتجارة - ECO ERP';
+      titleCell.font = { name: 'Arial', size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
+      titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } };
+      titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+      worksheet.getRow(1).height = 36;
 
-    rows.push(['--- خصوم غير متداولة (Non-Current Liabilities) ---', '']);
-    data.nonCurrentLiabilities.lines.forEach(l => rows.push([l.titleAr, l.amount]));
-    rows.push(['إجمالي الخصوم غير المتداولة', data.nonCurrentLiabilities.total]);
-    rows.push(['إجمالي الخصوم', data.totalLiabilities]);
+      // Brand Sub-Header (Row 2)
+      worksheet.mergeCells('A2:C2');
+      const subCell = worksheet.getCell('A2');
+      subCell.value = `قائمة المركز المالي والميزانية العمومية (كما في ${asOfDate})`;
+      subCell.font = { name: 'Arial', size: 12, bold: true, color: { argb: 'FFD97706' } };
+      subCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E293B' } };
+      subCell.alignment = { horizontal: 'center', vertical: 'middle' };
+      worksheet.getRow(2).height = 28;
 
-    // Equity
-    rows.push(['=== حقوق الملكية (SHAREHOLDERS EQUITY) ===', '']);
-    data.equity.lines.forEach(l => rows.push([l.titleAr, l.amount]));
-    rows.push(['إجمالي حقوق الملكية', data.totalEquity]);
+      // Spacing Row 3
+      worksheet.addRow([]);
+      worksheet.getRow(3).height = 10;
 
-    rows.push(['إجمالي الخصوم وحقوق الملكية', data.totalLiabilitiesAndEquity]);
-    rows.push(['فارق الاتزان', data.difference]);
+      // Metadata Box (Rows 4 & 5)
+      worksheet.getCell('A4').value = 'تاريخ المركز المالي:';
+      worksheet.getCell('B4').value = asOfDate;
+      worksheet.getCell('C4').value = `قاعدة البيانات: ${activeDatabase}`;
 
-    exportToCsv(`قائمة_المركز_المالي_الميزانية_العمومية_${asOfDate}`, headers, rows);
-    toast.success(
-      t('تم تصدير الميزانية العمومية بنجاح', 'Balance sheet exported successfully'),
-      `${t('كما في', 'As of')} ${asOfDate}`
-    );
+      worksheet.getCell('A5').value = 'تاريخ الاستخراج:';
+      worksheet.getCell('B5').value = new Date().toLocaleString('ar-EG');
+      worksheet.getCell('C5').value = isBalanced ? 'حالة الميزانية: متزنة تماماً' : `فارق عدم اتزان: ${formatAccountingNumber(diff, 'جم')}`;
+
+      [4, 5].forEach(rowNum => {
+        const row = worksheet.getRow(rowNum);
+        row.height = 22;
+        row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+          if (colNumber <= 3) {
+            cell.font = { name: 'Arial', size: 10, bold: colNumber === 1 };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+            cell.border = {
+              top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+              bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+              left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+              right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
+            };
+            cell.alignment = { horizontal: 'right', vertical: 'middle' };
+          }
+        });
+      });
+
+      // Spacing Row 6
+      worksheet.addRow([]);
+      worksheet.getRow(6).height = 12;
+
+      // Table Header Row 7
+      const headerRow = worksheet.addRow(['القسم المحاسبي / البند المالي', 'المبلغ الجزئي', 'إجمالي القسم (جم)']);
+      headerRow.height = 28;
+      headerRow.eachCell(cell => {
+        cell.font = { name: 'Arial', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E293B' } };
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FF475569' } },
+          bottom: { style: 'medium', color: { argb: 'FFD97706' } },
+          left: { style: 'thin', color: { argb: 'FF475569' } },
+          right: { style: 'thin', color: { argb: 'FF475569' } }
+        };
+      });
+
+      // Helper function to add category banner
+      const addCategoryBanner = (title: string, bgArgb = 'FF0F172A', textArgb = 'FFFFFFFF') => {
+        const r = worksheet.addRow([title, '', '']);
+        worksheet.mergeCells(`A${r.number}:C${r.number}`);
+        r.height = 26;
+        const cell = worksheet.getCell(`A${r.number}`);
+        cell.font = { name: 'Arial', size: 11, bold: true, color: { argb: textArgb } };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgArgb } };
+        cell.alignment = { horizontal: 'right', vertical: 'middle' };
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+          bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+          left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+          right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
+        };
+      };
+
+      // Helper for section lines
+      const addSectionLines = (secTitle: string, lines: { titleAr: string; amount: number }[], subtotal: number) => {
+        const subBanner = worksheet.addRow([secTitle, '', '']);
+        worksheet.mergeCells(`A${subBanner.number}:C${subBanner.number}`);
+        subBanner.height = 22;
+        const bCell = worksheet.getCell(`A${subBanner.number}`);
+        bCell.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FF1E293B' } };
+        bCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+        bCell.alignment = { horizontal: 'right', vertical: 'middle' };
+
+        lines.forEach((l, idx) => {
+          const isEven = idx % 2 === 0;
+          const r = worksheet.addRow([`  • ${l.titleAr}`, l.amount, '']);
+          r.height = 22;
+          r.getCell(1).font = { name: 'Arial', size: 10 };
+          r.getCell(1).alignment = { horizontal: 'right', vertical: 'middle' };
+          r.getCell(2).font = { name: 'Arial', size: 10, bold: true };
+          r.getCell(2).numFmt = '#,##0.00 "جم";(#,##0.00 "جم");"-"';
+          r.getCell(2).alignment = { horizontal: 'right', vertical: 'middle' };
+          r.getCell(3).alignment = { horizontal: 'right', vertical: 'middle' };
+
+          [1, 2, 3].forEach(col => {
+            const c = r.getCell(col);
+            if (isEven) {
+              c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+            }
+            c.border = {
+              top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+              bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+              left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+              right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+            };
+          });
+        });
+
+        // Subtotal row
+        const subRow = worksheet.addRow([`إجمالي ${secTitle}`, '', subtotal]);
+        subRow.height = 24;
+        subRow.getCell(1).font = { name: 'Arial', size: 10, bold: true };
+        subRow.getCell(3).font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FF0F172A' } };
+        subRow.getCell(3).numFmt = '#,##0.00 "جم";(#,##0.00 "جم");"-"';
+        [1, 2, 3].forEach(col => {
+          const c = subRow.getCell(col);
+          c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+          c.border = {
+            top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+            bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+            left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+            right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
+          };
+        });
+      };
+
+      // Add Assets
+      addCategoryBanner('أولاً: جانب الأصول والموجودات (ASSETS)', 'FF065F46', 'FFFFFFFF');
+      addSectionLines(data.currentAssets.titleAr, data.currentAssets.lines, data.currentAssets.total);
+      addSectionLines(data.nonCurrentAssets.titleAr, data.nonCurrentAssets.lines, data.nonCurrentAssets.total);
+
+      // Grand Total Assets
+      const assetsTotalRow = worksheet.addRow(['إجمالي جانب الأصول (Total Assets)', '', data.totalAssets]);
+      assetsTotalRow.height = 30;
+      assetsTotalRow.getCell(1).font = { name: 'Arial', size: 11, bold: true, color: { argb: 'FF0F172A' } };
+      assetsTotalRow.getCell(3).font = { name: 'Arial', size: 12, bold: true, color: { argb: 'FF065F46' } };
+      assetsTotalRow.getCell(3).numFmt = '#,##0.00 "جم";(#,##0.00 "جم");"-"';
+      [1, 2, 3].forEach(col => {
+        const c = assetsTotalRow.getCell(col);
+        c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEF3C7' } };
+        c.border = {
+          top: { style: 'thin', color: { argb: 'FFD97706' } },
+          bottom: { style: 'double', color: { argb: 'FFD97706' } },
+          left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+          right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
+        };
+      });
+
+      // Spacing
+      worksheet.addRow([]);
+
+      // Add Liabilities & Equity
+      addCategoryBanner('ثانياً: جانب الخصوم والالتزامات وحقوق الملكية (LIABILITIES & EQUITY)', 'FF78350F', 'FFFFFFFF');
+      addSectionLines(data.currentLiabilities.titleAr, data.currentLiabilities.lines, data.currentLiabilities.total);
+      addSectionLines(data.nonCurrentLiabilities.titleAr, data.nonCurrentLiabilities.lines, data.nonCurrentLiabilities.total);
+
+      // Total Liabilities
+      const liabRow = worksheet.addRow(['إجمالي الخصوم والالتزامات', '', data.totalLiabilities]);
+      liabRow.height = 24;
+      liabRow.getCell(1).font = { name: 'Arial', size: 10, bold: true };
+      liabRow.getCell(3).font = { name: 'Arial', size: 10, bold: true };
+      liabRow.getCell(3).numFmt = '#,##0.00 "جم";(#,##0.00 "جم");"-"';
+      [1, 2, 3].forEach(col => {
+        const c = liabRow.getCell(col);
+        c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEE2E2' } };
+        c.border = {
+          top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+          bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+          left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+          right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
+        };
+      });
+
+      addSectionLines(data.equity.titleAr, data.equity.lines, data.totalEquity);
+
+      // Grand Total Liabilities & Equity
+      const liabEquityTotalRow = worksheet.addRow(['إجمالي الخصوم وحقوق الملكية (Total Liabilities & Equity)', '', data.totalLiabilitiesAndEquity]);
+      liabEquityTotalRow.height = 30;
+      liabEquityTotalRow.getCell(1).font = { name: 'Arial', size: 11, bold: true, color: { argb: 'FF0F172A' } };
+      liabEquityTotalRow.getCell(3).font = { name: 'Arial', size: 12, bold: true, color: { argb: 'FF92400E' } };
+      liabEquityTotalRow.getCell(3).numFmt = '#,##0.00 "جم";(#,##0.00 "جم");"-"';
+      [1, 2, 3].forEach(col => {
+        const c = liabEquityTotalRow.getCell(col);
+        c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEF3C7' } };
+        c.border = {
+          top: { style: 'thin', color: { argb: 'FFD97706' } },
+          bottom: { style: 'double', color: { argb: 'FFD97706' } },
+          left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+          right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
+        };
+      });
+
+      // Equilibrium Difference Row
+      const diffRow = worksheet.addRow(['فارق توازن المركز المالي (الأصول - الخصوم وحقوق الملكية)', '', data.difference]);
+      diffRow.height = 24;
+      diffRow.getCell(1).font = { name: 'Arial', size: 10, bold: true };
+      diffRow.getCell(3).font = { name: 'Arial', size: 10, bold: true, color: { argb: data.difference === 0 ? 'FF065F46' : 'FFDC2626' } };
+      diffRow.getCell(3).numFmt = '#,##0.00 "جم";(#,##0.00 "جم");"-"';
+
+      // Widths
+      worksheet.getColumn(1).width = 50;
+      worksheet.getColumn(2).width = 24;
+      worksheet.getColumn(3).width = 24;
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const filename = `الميزانية_العمومية_والمركز_المالي_${asOfDate}.xlsx`;
+      saveAs(blob, filename);
+
+      toast.success(
+        t('تم تصدير الميزانية العمومية بنجاح', 'Balance sheet exported successfully'),
+        filename
+      );
+    } catch (err: any) {
+      console.error('[ExcelJS Balance Sheet Error]:', err);
+      toast.error(
+        t('فشل تصدير الميزانية العمومية', 'Failed to export balance sheet'),
+        err?.message || 'Error creating Excel workbook'
+      );
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const isBalanced = data?.isBalanced ?? true;
@@ -105,7 +316,7 @@ export const BalanceSheetReport: React.FC = () => {
       <div className="space-y-1">
         <div className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center justify-between ${bgBadge}`}>
           <span>{section.titleAr}</span>
-          <span className="font-mono">{formatEGP(section.total)} جم</span>
+          <span className="font-mono tabular-nums" dir="ltr">{formatAccountingNumber(section.total, 'جم')}</span>
         </div>
         <table className="w-full text-right text-xs">
           <tbody className="divide-y divide-gray-100 dark:divide-[#243628]/40">
@@ -115,8 +326,8 @@ export const BalanceSheetReport: React.FC = () => {
                   <span className="text-gray-400 text-xs ml-1.5">•</span>
                   {line.titleAr}
                 </td>
-                <td className="py-2 px-3 text-left font-mono font-bold text-[#1A241C] dark:text-[#F3EFE6] w-36">
-                  {formatEGP(line.amount)}
+                <td className="py-2 px-3 text-left font-mono tabular-nums font-bold text-[#1A241C] dark:text-[#F3EFE6] w-36" dir="ltr">
+                  {formatAccountingNumber(line.amount)}
                 </td>
               </tr>
             ))}
@@ -164,12 +375,12 @@ export const BalanceSheetReport: React.FC = () => {
             </button>
 
             <button
-              onClick={handleExportCsv}
-              disabled={loading || !data}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#1F2E23] hover:bg-[#EAE4D7] dark:hover:bg-[#253929] text-[#1A241C] dark:text-[#F3EFE6] transition-all cursor-pointer"
+              onClick={handleExportExcel}
+              disabled={loading || !data || isExporting}
+              className="px-4 py-2 rounded-xl bg-emerald-600/90 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-emerald-950/30 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Download className="w-3.5 h-3.5" />
-              <span>{t('تصدير Excel (CSV)', 'Export CSV')}</span>
+              <FileSpreadsheet className={`w-4 h-4 text-emerald-300 ${isExporting ? 'animate-spin' : ''}`} />
+              <span>{isExporting ? t('جاري التصدير...', 'Exporting...') : 'Excel Report'}</span>
             </button>
 
             <button
@@ -273,12 +484,12 @@ export const BalanceSheetReport: React.FC = () => {
             <div className="flex items-center gap-2 text-xs font-mono font-black shrink-0 self-end md:self-auto">
               <div className="px-3 py-1.5 rounded-xl bg-white/70 dark:bg-black/20 border border-current/10">
                 <span className="text-[10px] font-sans block opacity-70">إجمالي الأصول</span>
-                <span>{formatEGP(data.totalAssets)} جم</span>
+                <span dir="ltr" className="tabular-nums">{formatAccountingNumber(data.totalAssets, 'جم')}</span>
               </div>
               <span className="text-lg font-sans font-bold">=</span>
               <div className="px-3 py-1.5 rounded-xl bg-white/70 dark:bg-black/20 border border-current/10">
                 <span className="text-[10px] font-sans block opacity-70">الخصوم + حقوق الملكية</span>
-                <span>{formatEGP(data.totalLiabilitiesAndEquity)} جم</span>
+                <span dir="ltr" className="tabular-nums">{formatAccountingNumber(data.totalLiabilitiesAndEquity, 'جم')}</span>
               </div>
             </div>
           )}
@@ -297,8 +508,8 @@ export const BalanceSheetReport: React.FC = () => {
                   {t('جانب الأصول والموجودات (ASSETS)', 'Total Assets')}
                 </h3>
               </div>
-              <span className="text-xs font-mono font-black text-emerald-800 dark:text-emerald-300">
-                {formatEGP(data.totalAssets)} جم
+              <span className="text-xs font-mono font-black tabular-nums text-emerald-800 dark:text-emerald-300" dir="ltr">
+                {formatAccountingNumber(data.totalAssets, 'جم')}
               </span>
             </div>
 
@@ -321,8 +532,8 @@ export const BalanceSheetReport: React.FC = () => {
               <span className="text-xs font-black text-[#1A241C] dark:text-[#F3EFE6]">
                 {t('مجموع الأصول (الأصول المتداولة + غير المتداولة):', 'Total Assets:')}
               </span>
-              <span className="text-sm font-black font-mono text-emerald-800 dark:text-emerald-300">
-                {formatEGP(data.totalAssets)} جم
+              <span className="text-sm font-black font-mono tabular-nums text-emerald-800 dark:text-emerald-300" dir="ltr">
+                {formatAccountingNumber(data.totalAssets, 'جم')}
               </span>
             </div>
           </div>
@@ -336,8 +547,8 @@ export const BalanceSheetReport: React.FC = () => {
                   {t('الخصوم وحقوق الملكية (LIABILITIES & EQUITY)', 'Liabilities & Equity')}
                 </h3>
               </div>
-              <span className="text-xs font-mono font-black text-amber-800 dark:text-amber-300">
-                {formatEGP(data.totalLiabilitiesAndEquity)} جم
+              <span className="text-xs font-mono font-black tabular-nums text-amber-800 dark:text-amber-300" dir="ltr">
+                {formatAccountingNumber(data.totalLiabilitiesAndEquity, 'جم')}
               </span>
             </div>
 
@@ -357,7 +568,7 @@ export const BalanceSheetReport: React.FC = () => {
               {/* Total Liabilities Summary */}
               <div className="px-3 py-2 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-between text-xs font-bold">
                 <span>إجمالي الخصوم والالتزامات</span>
-                <span className="font-mono">{formatEGP(data.totalLiabilities)} جم</span>
+                <span className="font-mono tabular-nums" dir="ltr">{formatAccountingNumber(data.totalLiabilities, 'جم')}</span>
               </div>
 
               {/* Shareholders Equity */}
@@ -372,8 +583,8 @@ export const BalanceSheetReport: React.FC = () => {
               <span className="text-xs font-black text-[#1A241C] dark:text-[#F3EFE6]">
                 {t('مجموع الخصوم وحقوق الملكية:', 'Total Liabilities & Equity:')}
               </span>
-              <span className="text-sm font-black font-mono text-amber-800 dark:text-amber-300">
-                {formatEGP(data.totalLiabilitiesAndEquity)} جم
+              <span className="text-sm font-black font-mono tabular-nums text-amber-800 dark:text-amber-300" dir="ltr">
+                {formatAccountingNumber(data.totalLiabilitiesAndEquity, 'جم')}
               </span>
             </div>
           </div>
@@ -391,106 +602,118 @@ export const BalanceSheetReport: React.FC = () => {
       >
         {data && (
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4 text-xs print:text-[10px]">
+            <div className="grid grid-cols-2 gap-4 items-stretch print:h-[calc(100vh-280px)] text-xs print:text-[10px]">
               {/* Assets Print Column */}
-              <div className="border border-black p-2 space-y-2">
-                <div className="font-black bg-gray-200 p-1 border-b border-black text-center">
-                  أولاً: جانب الأصول (Assets)
+              <div className="flex flex-col justify-between border border-slate-300 rounded-lg p-2.5 bg-white">
+                <div className="flex-1 space-y-2">
+                  <div className="font-bold bg-slate-100 p-1.5 border-b border-slate-300 text-center text-slate-900 rounded text-xs print:text-[11px]">
+                    أولاً: جانب الأصول (Assets)
+                  </div>
+                  <div className="font-bold text-slate-800 text-[11px] pt-1">الأصول المتداولة (Current Assets):</div>
+                  <table className="w-full text-right">
+                    <tbody>
+                      {data.currentAssets.lines.map((l, i) => (
+                        <tr key={i} className="border-b border-slate-200">
+                          <td className="py-1 px-1.5">• {l.titleAr}</td>
+                          <td className="py-1 px-1.5 text-left font-mono tabular-nums" dir="ltr">{formatAccountingNumber(l.amount)}</td>
+                        </tr>
+                      ))}
+                      <tr className="font-bold bg-slate-50 border-t border-slate-300">
+                        <td className="py-1 px-1.5">مجموع الأصول المتداولة</td>
+                        <td className="py-1 px-1.5 text-left font-mono tabular-nums" dir="ltr">{formatAccountingNumber(data.currentAssets.total)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  <div className="font-bold text-slate-800 text-[11px] pt-2">الأصول غير المتداولة (Non-Current Assets):</div>
+                  <table className="w-full text-right">
+                    <tbody>
+                      {data.nonCurrentAssets.lines.map((l, i) => (
+                        <tr key={i} className="border-b border-slate-200">
+                          <td className="py-1 px-1.5">• {l.titleAr}</td>
+                          <td className="py-1 px-1.5 text-left font-mono tabular-nums" dir="ltr">{formatAccountingNumber(l.amount)}</td>
+                        </tr>
+                      ))}
+                      <tr className="font-bold bg-slate-50 border-t border-slate-300">
+                        <td className="py-1 px-1.5">مجموع الأصول غير المتداولة</td>
+                        <td className="py-1 px-1.5 text-left font-mono tabular-nums" dir="ltr">{formatAccountingNumber(data.nonCurrentAssets.total)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
-                <div className="font-bold underline">الأصول المتداولة:</div>
-                <table className="w-full">
-                  <tbody>
-                    {data.currentAssets.lines.map((l, i) => (
-                      <tr key={i} className="border-b border-gray-200">
-                        <td className="py-0.5">• {l.titleAr}</td>
-                        <td className="py-0.5 text-left font-mono">{formatEGP(l.amount)}</td>
-                      </tr>
-                    ))}
-                    <tr className="font-bold bg-gray-100">
-                      <td>مجموع الأصول المتداولة</td>
-                      <td className="text-left font-mono">{formatEGP(data.currentAssets.total)}</td>
-                    </tr>
-                  </tbody>
-                </table>
 
-                <div className="font-bold underline pt-2">الأصول غير المتداولة:</div>
-                <table className="w-full">
-                  <tbody>
-                    {data.nonCurrentAssets.lines.map((l, i) => (
-                      <tr key={i} className="border-b border-gray-200">
-                        <td className="py-0.5">• {l.titleAr}</td>
-                        <td className="py-0.5 text-left font-mono">{formatEGP(l.amount)}</td>
-                      </tr>
-                    ))}
-                    <tr className="font-bold bg-gray-100">
-                      <td>مجموع الأصول غير المتداولة</td>
-                      <td className="text-left font-mono">{formatEGP(data.nonCurrentAssets.total)}</td>
-                    </tr>
-                  </tbody>
-                </table>
-
-                <div className="p-1 bg-black text-white font-black flex justify-between mt-4">
-                  <span>إجمالي جانب الأصول:</span>
-                  <span className="font-mono">{formatEGP(data.totalAssets)} جم</span>
+                <div className="mt-auto border-t-2 border-slate-800 pt-2">
+                  <div className="p-2 border-t border-slate-900 border-b-4 border-double border-slate-900 bg-slate-100 font-black text-slate-900 flex justify-between items-center text-xs print:text-[11px]">
+                    <span>إجمالي جانب الأصول:</span>
+                    <span className="font-mono tabular-nums font-black" dir="ltr">{formatAccountingNumber(data.totalAssets, 'جم')}</span>
+                  </div>
                 </div>
               </div>
 
               {/* Liabilities & Equity Print Column */}
-              <div className="border border-black p-2 space-y-2">
-                <div className="font-black bg-gray-200 p-1 border-b border-black text-center">
-                  ثانياً: الخصوم وحقوق الملكية
+              <div className="flex flex-col justify-between border border-slate-300 rounded-lg p-2.5 bg-white">
+                <div className="flex-1 space-y-2">
+                  <div className="font-bold bg-slate-100 p-1.5 border-b border-slate-300 text-center text-slate-900 rounded text-xs print:text-[11px]">
+                    ثانياً: الخصوم وحقوق الملكية (Liabilities & Equity)
+                  </div>
+                  <div className="font-bold text-slate-800 text-[11px] pt-1">الخصوم المتداولة (Current Liabilities):</div>
+                  <table className="w-full text-right">
+                    <tbody>
+                      {data.currentLiabilities.lines.map((l, i) => (
+                        <tr key={i} className="border-b border-slate-200">
+                          <td className="py-1 px-1.5">• {l.titleAr}</td>
+                          <td className="py-1 px-1.5 text-left font-mono tabular-nums" dir="ltr">{formatAccountingNumber(l.amount)}</td>
+                        </tr>
+                      ))}
+                      <tr className="font-bold bg-slate-50 border-t border-slate-300">
+                        <td className="py-1 px-1.5">مجموع الخصوم المتداولة</td>
+                        <td className="py-1 px-1.5 text-left font-mono tabular-nums" dir="ltr">{formatAccountingNumber(data.currentLiabilities.total)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  <div className="font-bold text-slate-800 text-[11px] pt-2">الخصوم غير المتداولة (Non-Current Liabilities):</div>
+                  <table className="w-full text-right">
+                    <tbody>
+                      {data.nonCurrentLiabilities.lines.map((l, i) => (
+                        <tr key={i} className="border-b border-slate-200">
+                          <td className="py-1 px-1.5">• {l.titleAr}</td>
+                          <td className="py-1 px-1.5 text-left font-mono tabular-nums" dir="ltr">{formatAccountingNumber(l.amount)}</td>
+                        </tr>
+                      ))}
+                      <tr className="font-bold bg-slate-50 border-t border-slate-300">
+                        <td className="py-1 px-1.5">مجموع الخصوم غير المتداولة</td>
+                        <td className="py-1 px-1.5 text-left font-mono tabular-nums" dir="ltr">{formatAccountingNumber(data.nonCurrentLiabilities.total)}</td>
+                      </tr>
+                      <tr className="font-bold bg-slate-100 border-t border-slate-400">
+                        <td className="py-1 px-1.5">إجمالي الخصوم والالتزامات</td>
+                        <td className="py-1 px-1.5 text-left font-mono tabular-nums" dir="ltr">{formatAccountingNumber(data.totalLiabilities)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  <div className="font-bold text-slate-800 text-[11px] pt-2">حقوق المساهمين (Shareholders Equity):</div>
+                  <table className="w-full text-right">
+                    <tbody>
+                      {data.equity.lines.map((l, i) => (
+                        <tr key={i} className="border-b border-slate-200">
+                          <td className="py-1 px-1.5">• {l.titleAr}</td>
+                          <td className="py-1 px-1.5 text-left font-mono tabular-nums" dir="ltr">{formatAccountingNumber(l.amount)}</td>
+                        </tr>
+                      ))}
+                      <tr className="font-bold bg-slate-50 border-t border-slate-300">
+                        <td className="py-1 px-1.5">مجموع حقوق الملكية</td>
+                        <td className="py-1 px-1.5 text-left font-mono tabular-nums" dir="ltr">{formatAccountingNumber(data.totalEquity)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
-                <div className="font-bold underline">الخصوم المتداولة:</div>
-                <table className="w-full">
-                  <tbody>
-                    {data.currentLiabilities.lines.map((l, i) => (
-                      <tr key={i} className="border-b border-gray-200">
-                        <td className="py-0.5">• {l.titleAr}</td>
-                        <td className="py-0.5 text-left font-mono">{formatEGP(l.amount)}</td>
-                      </tr>
-                    ))}
-                    <tr className="font-bold bg-gray-100">
-                      <td>مجموع الخصوم المتداولة</td>
-                      <td className="text-left font-mono">{formatEGP(data.currentLiabilities.total)}</td>
-                    </tr>
-                  </tbody>
-                </table>
 
-                <div className="font-bold underline pt-2">الخصوم غير المتداولة:</div>
-                <table className="w-full">
-                  <tbody>
-                    {data.nonCurrentLiabilities.lines.map((l, i) => (
-                      <tr key={i} className="border-b border-gray-200">
-                        <td className="py-0.5">• {l.titleAr}</td>
-                        <td className="py-0.5 text-left font-mono">{formatEGP(l.amount)}</td>
-                      </tr>
-                    ))}
-                    <tr className="font-bold bg-gray-100">
-                      <td>مجموع الخصوم غير المتداولة</td>
-                      <td className="text-left font-mono">{formatEGP(data.nonCurrentLiabilities.total)}</td>
-                    </tr>
-                  </tbody>
-                </table>
-
-                <div className="font-bold underline pt-2">حقوق المساهمين:</div>
-                <table className="w-full">
-                  <tbody>
-                    {data.equity.lines.map((l, i) => (
-                      <tr key={i} className="border-b border-gray-200">
-                        <td className="py-0.5">• {l.titleAr}</td>
-                        <td className="py-0.5 text-left font-mono">{formatEGP(l.amount)}</td>
-                      </tr>
-                    ))}
-                    <tr className="font-bold bg-gray-100">
-                      <td>مجموع حقوق الملكية</td>
-                      <td className="text-left font-mono">{formatEGP(data.totalEquity)}</td>
-                    </tr>
-                  </tbody>
-                </table>
-
-                <div className="p-1 bg-black text-white font-black flex justify-between mt-4">
-                  <span>إجمالي الخصوم وحقوق الملكية:</span>
-                  <span className="font-mono">{formatEGP(data.totalLiabilitiesAndEquity)} جم</span>
+                <div className="mt-auto border-t-2 border-slate-800 pt-2">
+                  <div className="p-2 border-t border-slate-900 border-b-4 border-double border-slate-900 bg-slate-100 font-black text-slate-900 flex justify-between items-center text-xs print:text-[11px]">
+                    <span>إجمالي الخصوم وحقوق الملكية:</span>
+                    <span className="font-mono tabular-nums font-black" dir="ltr">{formatAccountingNumber(data.totalLiabilitiesAndEquity, 'جم')}</span>
+                  </div>
                 </div>
               </div>
             </div>

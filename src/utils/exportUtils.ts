@@ -37,3 +37,33 @@ export function formatEGP(val: number | undefined | null, showZeroDash: boolean 
     maximumFractionDigits: 2,
   });
 }
+
+/**
+ * Safe revenue share percentage calculation helper.
+ * Eliminates division-by-zero anomalies when total revenue is 0.
+ */
+export const calculateRevenueShare = (amount: number, totalRevenue: number): string => {
+  if (!totalRevenue || totalRevenue === 0 || isNaN(totalRevenue)) {
+    return '0.0%';
+  }
+  const percentage = (Math.abs(amount) / Math.abs(totalRevenue)) * 100;
+  return `${percentage.toFixed(1)}%`;
+};
+
+/**
+ * Universal accounting currency formatter enforcing parentheses for negative values:
+ * Positive: 1,526,848.95
+ * Negative: (1,526,848.95)
+ */
+export const formatAccountingNumber = (val: number | undefined | null, suffix = ''): string => {
+  if (val === null || val === undefined || isNaN(val)) return '0.00';
+  const absFormatted = Math.abs(val).toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+  const currency = suffix ? ` ${suffix}` : '';
+  if (val < 0) {
+    return `(${absFormatted})${currency}`;
+  }
+  return `${absFormatted}${currency}`;
+};

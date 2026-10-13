@@ -5,7 +5,9 @@ import { useDatabase } from '../../../services/federation/DatabaseContext';
 import { getFiscalDateRange } from '../../../utils/fiscalYearHelper';
 import { IncomeStatementReportData, FinancialStatementLine } from '../../../services/database/types';
 import { ReportPrintLayout } from './ReportPrintLayout';
-import { exportToCsv, formatEGP } from '../../../utils/exportUtils';
+import { formatAccountingNumber, calculateRevenueShare } from '../../../utils/exportUtils';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 import { toast } from '@erp/ui-system';
 import { FinancialToken } from '../../common/FinancialToken';
 import {
@@ -13,7 +15,7 @@ import {
   Calendar,
   RefreshCw,
   Printer,
-  Download,
+  FileSpreadsheet,
   Percent,
   DollarSign,
   Briefcase,
@@ -42,6 +44,7 @@ export const IncomeStatementReport: React.FC = () => {
   }, [activeDatabase]);
 
   const [isPrintModalOpen, setIsPrintModalOpen] = useState<boolean>(false);
+  const [isExporting, setIsExporting] = useState<boolean>(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -59,48 +62,226 @@ export const IncomeStatementReport: React.FC = () => {
     loadData();
   }, [loadData]);
 
-  // Export to CSV
-  const handleExportCsv = () => {
+  // Luxury Branded Excel (.xlsx) Export Engine using ExcelJS
+  const handleExportExcel = async () => {
     if (!data) return;
-    const headers = ['البند المالي', 'المبلغ (جم)', 'النسبة من الإيرادات (%)'];
-    const rows: (string | number)[][] = [];
+    setIsExporting(true);
 
-    // Revenues
-    rows.push(['--- الإيرادات التشغيلية ---', '', '']);
-    data.operatingRevenues.forEach(line => {
-      rows.push([line.titleAr, line.amount, line.percentage ? `${line.percentage}%` : '']);
-    });
-    rows.push(['إجمالي الإيرادات التشغيلية', data.totalOperatingRevenues, '100%']);
+    try {
+      const workbook = new ExcelJS.Workbook();
+      workbook.creator = 'ECO ERP - ترابط';
+      workbook.created = new Date();
+      workbook.modified = new Date();
 
-    // Cost of Revenues
-    rows.push(['--- تكلفة الإيرادات والعقود ---', '', '']);
-    data.costOfRevenues.forEach(line => {
-      rows.push([line.titleAr, line.amount, line.percentage ? `${line.percentage}%` : '']);
-    });
-    rows.push(['إجمالي تكلفة الإيرادات', data.totalCostOfRevenues, `${((data.totalCostOfRevenues / (data.totalOperatingRevenues || 1)) * 100).toFixed(1)}%`]);
+      const worksheet = workbook.addWorksheet('قائمة الدخل والأرباح والخسائر', {
+        views: [{ rtl: true, rightToLeft: true, showGridLines: true } as any]
+      });
 
-    // Gross Profit
-    rows.push(['مجمل الربح', data.grossProfit, `${data.grossMarginPercent}%`]);
+      // 1. Company Brand Header (Row 1)
+      worksheet.mergeCells('A1:C1');
+      const titleCell = worksheet.getCell('A1');
+      titleCell.value = 'شركة ترابط للمقاولات والتجارة - ECO ERP';
+      titleCell.font = { name: 'Arial', size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
+      titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } };
+      titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+      worksheet.getRow(1).height = 36;
 
-    // Expenses
-    rows.push(['--- المصروفات العمومية والإدارية ---', '', '']);
-    data.operatingExpenses.forEach(line => {
-      rows.push([line.titleAr, line.amount, line.percentage ? `${line.percentage}%` : '']);
-    });
-    rows.push(['إجمالي المصروفات العمومية والإدارية', data.totalOperatingExpenses, `${((data.totalOperatingExpenses / (data.totalOperatingRevenues || 1)) * 100).toFixed(1)}%`]);
+      // Brand Sub-Header (Row 2)
+      worksheet.mergeCells('A2:C2');
+      const subCell = worksheet.getCell('A2');
+      subCell.value = `قائمة الدخل والأرباح والخسائر الشاملة (من ${startDate} إلى ${endDate})`;
+      subCell.font = { name: 'Arial', size: 12, bold: true, color: { argb: 'FFD97706' } };
+      subCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E293B' } };
+      subCell.alignment = { horizontal: 'center', vertical: 'middle' };
+      worksheet.getRow(2).height = 28;
 
-    // Operating Profit
-    rows.push(['صافي الربح التشغيلي قبل الضريبة', data.operatingProfit, `${data.operatingMarginPercent}%`]);
+      // Row 3 Spacing
+      worksheet.addRow([]);
+      worksheet.getRow(3).height = 10;
 
-    // Tax & Net
-    rows.push(['مخصص ضريبة الدخل المقدرة', data.estimatedTax, '']);
-    rows.push(['صافي أرباح العام بعد الضريبة', data.netProfitAfterTax, `${data.netMarginPercent}%`]);
+      // Metadata Box (Rows 4 & 5)
+      worksheet.getCell('A4').value = 'الفترة المالية:';
+      worksheet.getCell('B4').value = `من ${startDate} إلى ${endDate}`;
+      worksheet.getCell('C4').value = `قاعدة البيانات: ${activeDatabase}`;
 
-    exportToCsv(`قائمة_الدخل_والأرباح_والخسائر_${endDate}`, headers, rows);
-    toast.success(
-      t('تم تصدير قائمة الدخل بنجاح', 'Income statement exported successfully'),
-      `${t('الفترة حتى', 'Period up to')} ${endDate}`
-    );
+      worksheet.getCell('A5').value = 'تاريخ الاستخراج:';
+      worksheet.getCell('B5').value = new Date().toLocaleString('ar-EG');
+      worksheet.getCell('C5').value = `صافي النتيجة: ${formatAccountingNumber(data.netProfitAfterTax, 'جم')}`;
+
+      [4, 5].forEach(rowNum => {
+        const row = worksheet.getRow(rowNum);
+        row.height = 22;
+        row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+          if (colNumber <= 3) {
+            cell.font = { name: 'Arial', size: 10, bold: colNumber === 1 };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+            cell.border = {
+              top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+              bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+              left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+              right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
+            };
+            cell.alignment = { horizontal: 'right', vertical: 'middle' };
+          }
+        });
+      });
+
+      // Row 6 Spacing
+      worksheet.addRow([]);
+      worksheet.getRow(6).height = 12;
+
+      // Table Header Row 7
+      const headerRow = worksheet.addRow(['البيان المحاسبي / البند المالي', 'المبلغ (جم)', 'النسبة من الإيرادات (%)']);
+      headerRow.height = 28;
+      headerRow.eachCell(cell => {
+        cell.font = { name: 'Arial', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E293B' } };
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FF475569' } },
+          bottom: { style: 'medium', color: { argb: 'FFD97706' } },
+          left: { style: 'thin', color: { argb: 'FF475569' } },
+          right: { style: 'thin', color: { argb: 'FF475569' } }
+        };
+      });
+
+      const addCategoryHeader = (title: string, bgArgb = 'FF0F172A') => {
+        const r = worksheet.addRow([title, '', '']);
+        worksheet.mergeCells(`A${r.number}:C${r.number}`);
+        r.height = 25;
+        const cell = worksheet.getCell(`A${r.number}`);
+        cell.font = { name: 'Arial', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgArgb } };
+        cell.alignment = { horizontal: 'right', vertical: 'middle' };
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+          bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+          left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+          right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
+        };
+      };
+
+      const addDetailRows = (lines: FinancialStatementLine[], isCost = false) => {
+        lines.forEach((l, idx) => {
+          const isEven = idx % 2 === 0;
+          const r = worksheet.addRow([
+            `  • ${l.titleAr}`,
+            isCost ? -Math.abs(l.amount) : l.amount,
+            calculateRevenueShare(l.amount, data.totalOperatingRevenues)
+          ]);
+          r.height = 22;
+          r.getCell(1).font = { name: 'Arial', size: 10 };
+          r.getCell(1).alignment = { horizontal: 'right', vertical: 'middle' };
+          r.getCell(2).font = { name: 'Arial', size: 10, bold: true };
+          r.getCell(2).numFmt = '#,##0.00 "جم";(#,##0.00 "جم");"-"';
+          r.getCell(2).alignment = { horizontal: 'right', vertical: 'middle' };
+          r.getCell(3).font = { name: 'Arial', size: 10 };
+          r.getCell(3).alignment = { horizontal: 'center', vertical: 'middle' };
+
+          [1, 2, 3].forEach(col => {
+            const c = r.getCell(col);
+            if (isEven) {
+              c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+            }
+            c.border = {
+              top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+              bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+              left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+              right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+            };
+          });
+        });
+      };
+
+      const addSummaryRow = (title: string, amount: number, pct: string, bgArgb = 'FFF1F5F9', isDoubleUnderline = false) => {
+        const r = worksheet.addRow([title, amount, pct]);
+        r.height = isDoubleUnderline ? 30 : 25;
+        r.getCell(1).font = { name: 'Arial', size: isDoubleUnderline ? 11 : 10, bold: true, color: { argb: 'FF0F172A' } };
+        r.getCell(1).alignment = { horizontal: 'right', vertical: 'middle' };
+        r.getCell(2).font = { name: 'Arial', size: isDoubleUnderline ? 12 : 10, bold: true, color: { argb: amount < 0 ? 'FFDC2626' : 'FF0F172A' } };
+        r.getCell(2).numFmt = '#,##0.00 "جم";(#,##0.00 "جم");"-"';
+        r.getCell(2).alignment = { horizontal: 'right', vertical: 'middle' };
+        r.getCell(3).font = { name: 'Arial', size: 10, bold: true };
+        r.getCell(3).alignment = { horizontal: 'center', vertical: 'middle' };
+
+        [1, 2, 3].forEach(col => {
+          const c = r.getCell(col);
+          c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgArgb } };
+          c.border = {
+            top: { style: 'thin', color: { argb: isDoubleUnderline ? 'FFD97706' : 'FFCBD5E1' } },
+            bottom: { style: isDoubleUnderline ? 'double' : 'medium', color: { argb: isDoubleUnderline ? 'FFD97706' : 'FF94A3B8' } },
+            left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+            right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
+          };
+        });
+      };
+
+      // 1. Operating Revenues
+      addCategoryHeader('1. الإيرادات التشغيلية (Operating Revenues)', 'FF065F46');
+      addDetailRows(data.operatingRevenues);
+      addSummaryRow('إجمالي الإيرادات التشغيلية', data.totalOperatingRevenues, '100.0%', 'FFECFDF5');
+
+      // 2. Cost of Revenues
+      addCategoryHeader('2. (-) تكلفة الإيرادات والعقود (Cost of Revenues)', 'FF991B1B');
+      addDetailRows(data.costOfRevenues, true);
+      addSummaryRow('إجمالي تكلفة الإيرادات', -Math.abs(data.totalCostOfRevenues), calculateRevenueShare(data.totalCostOfRevenues, data.totalOperatingRevenues), 'FFFEF2F2');
+
+      // 3. Gross Profit
+      addSummaryRow('(=) مجمل الربح (Gross Profit)', data.grossProfit, data.totalOperatingRevenues > 0 ? `${data.grossMarginPercent}%` : '0.0%', 'FFEFF6FF');
+
+      // 4. Operating Expenses
+      addCategoryHeader('3. (-) المصروفات العمومية والإدارية (Operating Expenses)', 'FF92400E');
+      addDetailRows(data.operatingExpenses, true);
+      addSummaryRow('إجمالي المصروفات الإدارية والتشغيلية', -Math.abs(data.totalOperatingExpenses), calculateRevenueShare(data.totalOperatingExpenses, data.totalOperatingRevenues), 'FFFFFBEB');
+
+      // 5. Operating Profit (EBIT)
+      addSummaryRow('(=) صافي الربح التشغيلي قبل الضريبة (EBIT)', data.operatingProfit, data.totalOperatingRevenues > 0 ? `${data.operatingMarginPercent}%` : '0.0%', 'FFECFDF5');
+
+      // 6. Tax
+      const taxRow = worksheet.addRow(['(-) مخصص ضريبة الدخل المقدرة (22.5%)', -Math.abs(data.estimatedTax), data.operatingProfit > 0 ? '22.5%' : '0.0%']);
+      taxRow.height = 24;
+      taxRow.getCell(1).font = { name: 'Arial', size: 10, bold: true };
+      taxRow.getCell(2).font = { name: 'Arial', size: 10, bold: true };
+      taxRow.getCell(2).numFmt = '#,##0.00 "جم";(#,##0.00 "جم");"-"';
+      taxRow.getCell(2).alignment = { horizontal: 'right', vertical: 'middle' };
+      taxRow.getCell(3).alignment = { horizontal: 'center', vertical: 'middle' };
+      [1, 2, 3].forEach(col => {
+        const c = taxRow.getCell(col);
+        c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+        c.border = {
+          top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+          bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+          left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+          right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+        };
+      });
+
+      // 7. Net Income After Tax
+      addSummaryRow('(=) صافي أرباح العام النهائي بعد الضريبة (Net Income)', data.netProfitAfterTax, data.totalOperatingRevenues > 0 ? `${data.netMarginPercent}%` : '0.0%', 'FFFEF3C7', true);
+
+      // Widths
+      worksheet.getColumn(1).width = 48;
+      worksheet.getColumn(2).width = 24;
+      worksheet.getColumn(3).width = 22;
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const filename = `قائمة_الدخل_والأرباح_والخسائر_${endDate}.xlsx`;
+      saveAs(blob, filename);
+
+      toast.success(
+        t('تم تصدير قائمة الدخل بنجاح', 'Income statement exported successfully'),
+        filename
+      );
+    } catch (err: any) {
+      console.error('[ExcelJS Income Statement Error]:', err);
+      toast.error(
+        t('فشل تصدير قائمة الدخل', 'Failed to export income statement'),
+        err?.message || 'Error creating Excel workbook'
+      );
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const renderSectionRows = (
@@ -108,7 +289,8 @@ export const IncomeStatementReport: React.FC = () => {
     baseRevenue: number
   ) => {
     return lines.map((line, idx) => {
-      const pct = baseRevenue > 0 ? ((line.amount / baseRevenue) * 100).toFixed(1) : '0.0';
+      const pctFormatted = calculateRevenueShare(line.amount, baseRevenue);
+      const rawPct = baseRevenue > 0 ? Math.min(100, Math.max(0, (Math.abs(line.amount) / Math.abs(baseRevenue)) * 100)) : 0;
       return (
         <tr
           key={idx}
@@ -120,18 +302,18 @@ export const IncomeStatementReport: React.FC = () => {
               <span className="font-bold text-[#1A241C] dark:text-[#EAE4D7]">{line.titleAr}</span>
             </div>
           </td>
-          <td className="py-2.5 px-4 text-left font-mono font-bold text-[#1A241C] dark:text-[#F3EFE6]">
-            {formatEGP(line.amount)}
+          <td className="py-2.5 px-4 text-left font-mono tabular-nums font-bold text-[#1A241C] dark:text-[#F3EFE6]" dir="ltr">
+            {formatAccountingNumber(line.amount)}
           </td>
           <td className="py-2.5 px-4 text-center font-mono text-xs text-[#5C665E] dark:text-[#8FA392]">
             <div className="flex items-center justify-center gap-2">
               <div className="w-16 h-1.5 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
                 <div
                   className="h-full bg-emerald-500 rounded-full"
-                  style={{ width: `${Math.min(100, Math.max(0, Number(pct)))}%` }}
+                  style={{ width: `${rawPct}%` }}
                 />
               </div>
-              <span className="w-10 text-right">{pct}%</span>
+              <span className="w-12 text-right">{pctFormatted}</span>
             </div>
           </td>
         </tr>
@@ -177,12 +359,12 @@ export const IncomeStatementReport: React.FC = () => {
             </button>
 
             <button
-              onClick={handleExportCsv}
-              disabled={loading || !data}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#1F2E23] hover:bg-[#EAE4D7] dark:hover:bg-[#253929] text-[#1A241C] dark:text-[#F3EFE6] transition-all cursor-pointer"
+              onClick={handleExportExcel}
+              disabled={loading || !data || isExporting}
+              className="px-4 py-2 rounded-xl bg-emerald-600/90 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-emerald-950/30 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Download className="w-3.5 h-3.5" />
-              <span>{t('تصدير Excel (CSV)', 'Export CSV')}</span>
+              <FileSpreadsheet className={`w-4 h-4 text-emerald-300 ${isExporting ? 'animate-spin' : ''}`} />
+              <span>{isExporting ? t('جاري التصدير...', 'Exporting...') : 'Excel Report'}</span>
             </button>
 
             <button
@@ -282,7 +464,7 @@ export const IncomeStatementReport: React.FC = () => {
               />
             </div>
             <div className="mt-2 text-[11px] font-bold text-blue-600 flex items-center gap-1">
-              <span dir="ltr">هامش مجمل الربح: {data.grossMarginPercent}%</span>
+              <span dir="ltr">هامش مجمل الربح: {data.totalOperatingRevenues > 0 ? `${data.grossMarginPercent}%` : '0.0%'}</span>
             </div>
           </div>
 
@@ -300,7 +482,7 @@ export const IncomeStatementReport: React.FC = () => {
               />
             </div>
             <div className="mt-2 text-[11px] font-bold text-amber-600 flex items-center gap-1">
-              <span dir="ltr">الهامش التشغيلي: {data.operatingMarginPercent}%</span>
+              <span dir="ltr">الهامش التشغيلي: {data.totalOperatingRevenues > 0 ? `${data.operatingMarginPercent}%` : '0.0%'}</span>
             </div>
           </div>
 
@@ -318,7 +500,7 @@ export const IncomeStatementReport: React.FC = () => {
               />
             </div>
             <div className="mt-2 text-[11px] font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
-              <span dir="ltr">صافي العائد النهائي: {data.netMarginPercent}%</span>
+              <span dir="ltr">صافي العائد النهائي: {data.totalOperatingRevenues > 0 ? `${data.netMarginPercent}%` : '0.0%'}</span>
             </div>
           </div>
         </div>
@@ -368,8 +550,8 @@ export const IncomeStatementReport: React.FC = () => {
                   {renderSectionRows(data.operatingRevenues, data.totalOperatingRevenues)}
                   <tr className="bg-[#FBF9F5] dark:bg-[#1D2B20] font-black text-[#1A241C] dark:text-[#F3EFE6] border-b-2 border-emerald-500/30">
                     <td className="py-2.5 px-4">إجمالي الإيرادات التشغيلية</td>
-                    <td className="py-2.5 px-4 text-left font-mono text-emerald-800 dark:text-emerald-300">
-                      {formatEGP(data.totalOperatingRevenues)}
+                    <td className="py-2.5 px-4 text-left font-mono tabular-nums text-emerald-800 dark:text-emerald-300" dir="ltr">
+                      {formatAccountingNumber(data.totalOperatingRevenues)}
                     </td>
                     <td className="py-2.5 px-4 text-center font-mono font-bold">100.0%</td>
                   </tr>
@@ -383,22 +565,22 @@ export const IncomeStatementReport: React.FC = () => {
                   {renderSectionRows(data.costOfRevenues, data.totalOperatingRevenues)}
                   <tr className="bg-[#FBF9F5] dark:bg-[#1D2B20] font-black text-[#1A241C] dark:text-[#F3EFE6] border-b-2 border-rose-500/30">
                     <td className="py-2.5 px-4">إجمالي تكلفة الإيرادات</td>
-                    <td className="py-2.5 px-4 text-left font-mono text-rose-800 dark:text-rose-300">
-                      ({formatEGP(data.totalCostOfRevenues)})
+                    <td className="py-2.5 px-4 text-left font-mono tabular-nums text-rose-800 dark:text-rose-300" dir="ltr">
+                      {formatAccountingNumber(-Math.abs(data.totalCostOfRevenues))}
                     </td>
                     <td className="py-2.5 px-4 text-center font-mono font-bold text-rose-600">
-                      {((data.totalCostOfRevenues / (data.totalOperatingRevenues || 1)) * 100).toFixed(1)}%
+                      {calculateRevenueShare(data.totalCostOfRevenues, data.totalOperatingRevenues)}
                     </td>
                   </tr>
 
                   {/* SECTION 3: GROSS PROFIT */}
                   <tr className="bg-blue-500/15 dark:bg-blue-950/40 font-black text-blue-950 dark:text-blue-200 border-y-2 border-blue-500/40">
                     <td className="py-3 px-4 text-sm">(=) مجمل الربح (Gross Profit)</td>
-                    <td className="py-3 px-4 text-left font-mono text-sm text-blue-800 dark:text-blue-300">
-                      {formatEGP(data.grossProfit)}
+                    <td className="py-3 px-4 text-left font-mono tabular-nums text-sm text-blue-800 dark:text-blue-300" dir="ltr">
+                      {formatAccountingNumber(data.grossProfit)}
                     </td>
                     <td className="py-3 px-4 text-center font-mono text-sm font-black text-blue-800 dark:text-blue-300">
-                      {data.grossMarginPercent}%
+                      {data.totalOperatingRevenues > 0 ? `${data.grossMarginPercent}%` : '0.0%'}
                     </td>
                   </tr>
 
@@ -411,22 +593,22 @@ export const IncomeStatementReport: React.FC = () => {
                   {renderSectionRows(data.operatingExpenses, data.totalOperatingRevenues)}
                   <tr className="bg-[#FBF9F5] dark:bg-[#1D2B20] font-black text-[#1A241C] dark:text-[#F3EFE6] border-b-2 border-amber-500/30">
                     <td className="py-2.5 px-4">إجمالي المصروفات الإدارية والتشغيلية</td>
-                    <td className="py-2.5 px-4 text-left font-mono text-amber-800 dark:text-amber-300">
-                      ({formatEGP(data.totalOperatingExpenses)})
+                    <td className="py-2.5 px-4 text-left font-mono tabular-nums text-amber-800 dark:text-amber-300" dir="ltr">
+                      {formatAccountingNumber(-Math.abs(data.totalOperatingExpenses))}
                     </td>
                     <td className="py-2.5 px-4 text-center font-mono font-bold text-amber-600">
-                      {((data.totalOperatingExpenses / (data.totalOperatingRevenues || 1)) * 100).toFixed(1)}%
+                      {calculateRevenueShare(data.totalOperatingExpenses, data.totalOperatingRevenues)}
                     </td>
                   </tr>
 
                   {/* SECTION 5: OPERATING PROFIT (EBIT) */}
                   <tr className="bg-emerald-500/15 dark:bg-emerald-950/40 font-black text-emerald-950 dark:text-emerald-200 border-y-2 border-emerald-500/40">
                     <td className="py-3 px-4 text-sm">(=) صافي الربح التشغيلي قبل الضريبة (EBIT)</td>
-                    <td className="py-3 px-4 text-left font-mono text-sm text-emerald-800 dark:text-emerald-300">
-                      {formatEGP(data.operatingProfit)}
+                    <td className="py-3 px-4 text-left font-mono tabular-nums text-sm text-emerald-800 dark:text-emerald-300" dir="ltr">
+                      {formatAccountingNumber(data.operatingProfit)}
                     </td>
                     <td className="py-3 px-4 text-center font-mono text-sm font-black text-emerald-800 dark:text-emerald-300">
-                      {data.operatingMarginPercent}%
+                      {data.totalOperatingRevenues > 0 ? `${data.operatingMarginPercent}%` : '0.0%'}
                     </td>
                   </tr>
 
@@ -435,8 +617,8 @@ export const IncomeStatementReport: React.FC = () => {
                     <td className="py-2.5 px-4 font-bold text-[#5C665E] dark:text-[#8FA392]">
                       (-) مخصص ضريبة الدخل المقدرة (22.5%)
                     </td>
-                    <td className="py-2.5 px-4 text-left font-mono font-bold text-rose-700 dark:text-rose-400">
-                      ({formatEGP(data.estimatedTax)})
+                    <td className="py-2.5 px-4 text-left font-mono tabular-nums font-bold text-rose-700 dark:text-rose-400" dir="ltr">
+                      {formatAccountingNumber(-Math.abs(data.estimatedTax))}
                     </td>
                     <td className="py-2.5 px-4 text-center font-mono text-gray-500">
                       {data.operatingProfit > 0 ? '22.5%' : '0.0%'}
@@ -446,11 +628,11 @@ export const IncomeStatementReport: React.FC = () => {
                   {/* SECTION 7: FINAL NET INCOME */}
                   <tr className="bg-emerald-600 text-white font-black text-sm border-t-2 border-emerald-700">
                     <td className="py-3.5 px-4">(=) صافي أرباح العام النهائي بعد الضريبة (Net Income)</td>
-                    <td className="py-3.5 px-4 text-left font-mono text-base font-black whitespace-nowrap" dir="ltr">
-                      {formatEGP(data.netProfitAfterTax)} <span className="text-xs">ج.م</span>
+                    <td className="py-3.5 px-4 text-left font-mono tabular-nums text-base font-black whitespace-nowrap" dir="ltr">
+                      {formatAccountingNumber(data.netProfitAfterTax, 'جم')}
                     </td>
                     <td className="py-3.5 px-4 text-center font-mono text-base font-black">
-                      {data.netMarginPercent}%
+                      {data.totalOperatingRevenues > 0 ? `${data.netMarginPercent}%` : '0.0%'}
                     </td>
                   </tr>
                 </>
@@ -473,93 +655,93 @@ export const IncomeStatementReport: React.FC = () => {
           <div className="space-y-4">
             <table className="w-full text-right border-collapse text-xs print:text-[10px]">
               <thead>
-                <tr className="border-b-2 border-black bg-gray-100 print:bg-gray-200 font-black">
-                  <th className="py-1.5 px-2 border border-black">البيان المحاسبي</th>
-                  <th className="py-1.5 px-2 border border-black text-left w-36">المبلغ (جم)</th>
-                  <th className="py-1.5 px-2 border border-black text-center w-24">النسبة %</th>
+                <tr className="border-b-2 border-slate-900 bg-slate-100 print:bg-slate-200 font-black text-slate-900">
+                  <th className="py-2 px-2 border border-slate-400">البيان المحاسبي</th>
+                  <th className="py-2 px-2 border border-slate-400 text-left w-36">المبلغ (جم)</th>
+                  <th className="py-2 px-2 border border-slate-400 text-center w-24">النسبة %</th>
                 </tr>
               </thead>
               <tbody>
-                <tr className="bg-gray-50 font-black border border-black">
-                  <td colSpan={3} className="py-1 px-2">أولاً: الإيرادات التشغيلية</td>
+                <tr className="bg-slate-100 font-bold border border-slate-400">
+                  <td colSpan={3} className="py-1 px-2 text-slate-900">أولاً: الإيرادات التشغيلية</td>
                 </tr>
                 {data.operatingRevenues.map((l, i) => (
-                  <tr key={i} className="border-b border-gray-300">
-                    <td className="py-1 px-3 border border-gray-300">• {l.titleAr}</td>
-                    <td className="py-1 px-2 border border-gray-300 text-left font-mono">{formatEGP(l.amount)}</td>
-                    <td className="py-1 px-2 border border-gray-300 text-center font-mono">
-                      {data.totalOperatingRevenues > 0 ? `${((l.amount / data.totalOperatingRevenues) * 100).toFixed(1)}%` : '0.0%'}
+                  <tr key={i} className="border-b border-slate-200">
+                    <td className="py-1 px-3 border border-slate-300">• {l.titleAr}</td>
+                    <td className="py-1 px-2 border border-slate-300 text-left font-mono tabular-nums" dir="ltr">{formatAccountingNumber(l.amount)}</td>
+                    <td className="py-1 px-2 border border-slate-300 text-center font-mono">
+                      {calculateRevenueShare(l.amount, data.totalOperatingRevenues)}
                     </td>
                   </tr>
                 ))}
-                <tr className="font-black bg-gray-100 border border-black">
-                  <td className="py-1 px-2 border border-black">إجمالي الإيرادات</td>
-                  <td className="py-1 px-2 border border-black text-left font-mono">{formatEGP(data.totalOperatingRevenues)}</td>
-                  <td className="py-1 px-2 border border-black text-center font-mono">100.0%</td>
+                <tr className="font-bold bg-slate-100 border border-slate-400 text-slate-900">
+                  <td className="py-1.5 px-2 border border-slate-400">إجمالي الإيرادات</td>
+                  <td className="py-1.5 px-2 border border-slate-400 text-left font-mono tabular-nums font-bold" dir="ltr">{formatAccountingNumber(data.totalOperatingRevenues)}</td>
+                  <td className="py-1.5 px-2 border border-slate-400 text-center font-mono font-bold">100.0%</td>
                 </tr>
 
-                <tr className="bg-gray-50 font-black border border-black">
-                  <td colSpan={3} className="py-1 px-2">ثانياً: تكلفة الإيرادات والعقود</td>
+                <tr className="bg-slate-100 font-bold border border-slate-400">
+                  <td colSpan={3} className="py-1 px-2 text-slate-900">ثانياً: تكلفة الإيرادات والعقود</td>
                 </tr>
                 {data.costOfRevenues.map((l, i) => (
-                  <tr key={i} className="border-b border-gray-300">
-                    <td className="py-1 px-3 border border-gray-300">• {l.titleAr}</td>
-                    <td className="py-1 px-2 border border-gray-300 text-left font-mono">({formatEGP(l.amount)})</td>
-                    <td className="py-1 px-2 border border-gray-300 text-center font-mono">
-                      {data.totalOperatingRevenues > 0 ? `${((l.amount / data.totalOperatingRevenues) * 100).toFixed(1)}%` : '0.0%'}
+                  <tr key={i} className="border-b border-slate-200">
+                    <td className="py-1 px-3 border border-slate-300">• {l.titleAr}</td>
+                    <td className="py-1 px-2 border border-slate-300 text-left font-mono tabular-nums" dir="ltr">{formatAccountingNumber(-Math.abs(l.amount))}</td>
+                    <td className="py-1 px-2 border border-slate-300 text-center font-mono">
+                      {calculateRevenueShare(l.amount, data.totalOperatingRevenues)}
                     </td>
                   </tr>
                 ))}
-                <tr className="font-black bg-gray-100 border border-black">
-                  <td className="py-1 px-2 border border-black">إجمالي التكاليف</td>
-                  <td className="py-1 px-2 border border-black text-left font-mono">({formatEGP(data.totalCostOfRevenues)})</td>
-                  <td className="py-1 px-2 border border-black text-center font-mono">
-                    {((data.totalCostOfRevenues / (data.totalOperatingRevenues || 1)) * 100).toFixed(1)}%
+                <tr className="font-bold bg-slate-100 border border-slate-400 text-slate-900">
+                  <td className="py-1.5 px-2 border border-slate-400">إجمالي التكاليف</td>
+                  <td className="py-1.5 px-2 border border-slate-400 text-left font-mono tabular-nums font-bold" dir="ltr">{formatAccountingNumber(-Math.abs(data.totalCostOfRevenues))}</td>
+                  <td className="py-1.5 px-2 border border-slate-400 text-center font-mono font-bold">
+                    {calculateRevenueShare(data.totalCostOfRevenues, data.totalOperatingRevenues)}
                   </td>
                 </tr>
 
-                <tr className="font-black bg-gray-200 border-2 border-black">
-                  <td className="py-1.5 px-2 border border-black">مجمل الربح (Gross Profit)</td>
-                  <td className="py-1.5 px-2 border border-black text-left font-mono">{formatEGP(data.grossProfit)}</td>
-                  <td className="py-1.5 px-2 border border-black text-center font-mono">{data.grossMarginPercent}%</td>
+                <tr className="font-black bg-slate-200/80 border-y-2 border-slate-500 text-slate-900">
+                  <td className="py-2 px-2 border border-slate-400">مجمل الربح (Gross Profit)</td>
+                  <td className="py-2 px-2 border border-slate-400 text-left font-mono tabular-nums font-bold" dir="ltr">{formatAccountingNumber(data.grossProfit)}</td>
+                  <td className="py-2 px-2 border border-slate-400 text-center font-mono font-bold">{data.totalOperatingRevenues > 0 ? `${data.grossMarginPercent}%` : '0.0%'}</td>
                 </tr>
 
-                <tr className="bg-gray-50 font-black border border-black">
-                  <td colSpan={3} className="py-1 px-2">ثالثاً: المصروفات العمومية والإدارية</td>
+                <tr className="bg-slate-100 font-bold border border-slate-400">
+                  <td colSpan={3} className="py-1 px-2 text-slate-900">ثالثاً: المصروفات العمومية والإدارية</td>
                 </tr>
                 {data.operatingExpenses.map((l, i) => (
-                  <tr key={i} className="border-b border-gray-300">
-                    <td className="py-1 px-3 border border-gray-300">• {l.titleAr}</td>
-                    <td className="py-1 px-2 border border-gray-300 text-left font-mono">({formatEGP(l.amount)})</td>
-                    <td className="py-1 px-2 border border-gray-300 text-center font-mono">
-                      {data.totalOperatingRevenues > 0 ? `${((l.amount / data.totalOperatingRevenues) * 100).toFixed(1)}%` : '0.0%'}
+                  <tr key={i} className="border-b border-slate-200">
+                    <td className="py-1 px-3 border border-slate-300">• {l.titleAr}</td>
+                    <td className="py-1 px-2 border border-slate-300 text-left font-mono tabular-nums" dir="ltr">{formatAccountingNumber(-Math.abs(l.amount))}</td>
+                    <td className="py-1 px-2 border border-slate-300 text-center font-mono">
+                      {calculateRevenueShare(l.amount, data.totalOperatingRevenues)}
                     </td>
                   </tr>
                 ))}
-                <tr className="font-black bg-gray-100 border border-black">
-                  <td className="py-1 px-2 border border-black">إجمالي المصروفات</td>
-                  <td className="py-1 px-2 border border-black text-left font-mono">({formatEGP(data.totalOperatingExpenses)})</td>
-                  <td className="py-1 px-2 border border-black text-center font-mono">
-                    {((data.totalOperatingExpenses / (data.totalOperatingRevenues || 1)) * 100).toFixed(1)}%
+                <tr className="font-bold bg-slate-100 border border-slate-400 text-slate-900">
+                  <td className="py-1.5 px-2 border border-slate-400">إجمالي المصروفات</td>
+                  <td className="py-1.5 px-2 border border-slate-400 text-left font-mono tabular-nums font-bold" dir="ltr">{formatAccountingNumber(-Math.abs(data.totalOperatingExpenses))}</td>
+                  <td className="py-1.5 px-2 border border-slate-400 text-center font-mono font-bold">
+                    {calculateRevenueShare(data.totalOperatingExpenses, data.totalOperatingRevenues)}
                   </td>
                 </tr>
 
-                <tr className="font-black bg-gray-200 border-2 border-black">
-                  <td className="py-1.5 px-2 border border-black">صافي الربح التشغيلي قبل الضريبة</td>
-                  <td className="py-1.5 px-2 border border-black text-left font-mono">{formatEGP(data.operatingProfit)}</td>
-                  <td className="py-1.5 px-2 border border-black text-center font-mono">{data.operatingMarginPercent}%</td>
+                <tr className="font-black bg-slate-200/80 border-y-2 border-slate-500 text-slate-900">
+                  <td className="py-2 px-2 border border-slate-400">صافي الربح التشغيلي قبل الضريبة (EBIT)</td>
+                  <td className="py-2 px-2 border border-slate-400 text-left font-mono tabular-nums font-bold" dir="ltr">{formatAccountingNumber(data.operatingProfit)}</td>
+                  <td className="py-2 px-2 border border-slate-400 text-center font-mono font-bold">{data.totalOperatingRevenues > 0 ? `${data.operatingMarginPercent}%` : '0.0%'}</td>
                 </tr>
 
-                <tr className="border border-black">
-                  <td className="py-1 px-2 border border-black">مخصص ضريبة الدخل (22.5%)</td>
-                  <td className="py-1 px-2 border border-black text-left font-mono">({formatEGP(data.estimatedTax)})</td>
-                  <td className="py-1 px-2 border border-black text-center font-mono">---</td>
+                <tr className="border-b border-slate-300">
+                  <td className="py-1.5 px-2 border border-slate-300">مخصص ضريبة الدخل (22.5%)</td>
+                  <td className="py-1.5 px-2 border border-slate-300 text-left font-mono tabular-nums" dir="ltr">{formatAccountingNumber(-Math.abs(data.estimatedTax))}</td>
+                  <td className="py-1.5 px-2 border border-slate-300 text-center font-mono">{data.operatingProfit > 0 ? '22.5%' : '0.0%'}</td>
                 </tr>
 
-                <tr className="font-black bg-black text-white print:bg-black print:text-white border-2 border-black">
-                  <td className="py-2 px-2 border border-black text-sm">صافي أرباح العام بعد الضريبة</td>
-                  <td className="py-2 px-2 border border-black text-left font-mono text-sm whitespace-nowrap" dir="ltr">{formatEGP(data.netProfitAfterTax)} ج.م</td>
-                  <td className="py-2 px-2 border border-black text-center font-mono text-sm">{data.netMarginPercent}%</td>
+                <tr className="font-black bg-amber-50/70 text-slate-900 border-t-2 border-slate-900 border-b-4 border-double border-slate-900">
+                  <td className="py-2.5 px-2 border border-slate-400 text-sm">صافي أرباح العام النهائي بعد الضريبة (Net Income)</td>
+                  <td className="py-2.5 px-2 border border-slate-400 text-left font-mono tabular-nums text-sm font-black whitespace-nowrap" dir="ltr">{formatAccountingNumber(data.netProfitAfterTax, 'جم')}</td>
+                  <td className="py-2.5 px-2 border border-slate-400 text-center font-mono text-sm font-black">{data.totalOperatingRevenues > 0 ? `${data.netMarginPercent}%` : '0.0%'}</td>
                 </tr>
               </tbody>
             </table>

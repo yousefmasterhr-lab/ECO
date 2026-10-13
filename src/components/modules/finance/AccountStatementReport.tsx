@@ -7,7 +7,7 @@ import { getFiscalDateRange } from '../../../utils/fiscalYearHelper';
 import { StatementOfAccountReportData, StatementOfAccountLine, AccountNode } from '../../../services/database/types';
 import { ReportPrintLayout } from './ReportPrintLayout';
 import { Modal, toast } from '@erp/ui-system';
-import { formatEGP } from '../../../utils/exportUtils';
+import { formatEGP, formatAccountingNumber } from '../../../utils/exportUtils';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import {
@@ -334,7 +334,7 @@ export const AccountStatementReport: React.FC = () => {
         const c = worksheet.getCell(box.cell);
         c.font = { name: 'Arial', size: 13, bold: true, color: { argb: box.color } };
         c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: box.bg } };
-        c.numFmt = '#,##0.00 "جم"';
+        c.numFmt = '#,##0.00 "جم";(#,##0.00 "جم");"-"';
         c.alignment = { horizontal: 'center', vertical: 'middle' };
       });
 
@@ -405,7 +405,7 @@ export const AccountStatementReport: React.FC = () => {
         } else if (colNumber <= 6) {
           cell.alignment = { horizontal: 'right', vertical: 'middle' };
         } else {
-          cell.numFmt = '#,##0.00 "جم"';
+          cell.numFmt = '#,##0.00 "جم";(#,##0.00 "جم");"-"';
           cell.alignment = { horizontal: 'right', vertical: 'middle' };
         }
       });
@@ -443,7 +443,7 @@ export const AccountStatementReport: React.FC = () => {
           } else if (colNumber <= 6) {
             cell.alignment = { horizontal: 'right', vertical: 'middle' };
           } else {
-            cell.numFmt = '#,##0.00 "جم"';
+            cell.numFmt = '#,##0.00 "جم";(#,##0.00 "جم");"-"';
             cell.alignment = { horizontal: 'right', vertical: 'middle' };
 
             if (colNumber === 7 && tx.debit > 0) {
@@ -490,7 +490,7 @@ export const AccountStatementReport: React.FC = () => {
           if (colNumber === 1) {
             cell.alignment = { horizontal: 'center', vertical: 'middle' };
           } else if (colNumber >= 7) {
-            cell.numFmt = '#,##0.00 "جم"';
+            cell.numFmt = '#,##0.00 "جم";(#,##0.00 "جم");"-"';
             cell.alignment = { horizontal: 'right', vertical: 'middle' };
             if (colNumber === 9 && data.endingBalance < 0) {
               cell.font = { name: 'Arial', size: 11, bold: true, color: { argb: 'FF991B1B' } };
@@ -570,8 +570,8 @@ export const AccountStatementReport: React.FC = () => {
               disabled={loading || !data || isExporting}
               className="px-4 py-2 rounded-xl bg-emerald-600/90 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-emerald-950/30 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <FileSpreadsheet className={`w-4 h-4 text-emerald-200 ${isExporting ? 'animate-spin' : ''}`} />
-              <span>{isExporting ? t('جاري التصدير...', 'Exporting...') : t('تصدير كشف حساب فاخر (.xlsx)', 'Export Luxury Statement (.xlsx)')}</span>
+              <FileSpreadsheet className={`w-4 h-4 text-emerald-300 ${isExporting ? 'animate-spin' : ''}`} />
+              <span>{isExporting ? t('جاري التصدير...', 'Exporting...') : 'Excel Report'}</span>
             </button>
 
             <button
@@ -771,12 +771,10 @@ export const AccountStatementReport: React.FC = () => {
             }`}>
               {t('الرصيد الختامي الحالي', 'Current Ending Balance')}
             </span>
-            <div className={`text-xl font-black font-mono ${
+            <div className={`text-xl font-black font-mono tabular-nums ${
               data.endingBalance < 0 ? 'text-rose-700 dark:text-rose-400' : 'text-[#1A241C] dark:text-[#F3EFE6]'
             }`} dir="ltr">
-              {data.endingBalance < 0
-                ? `(${formatEGP(Math.abs(data.endingBalance))} جم)`
-                : `${formatEGP(data.endingBalance)} جم`}
+              {formatAccountingNumber(data.endingBalance, 'جم')}
             </div>
             <div className={`mt-1 text-[11px] font-bold ${
               data.endingBalance < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-[#5C665E] dark:text-[#8FA392]'
@@ -856,14 +854,12 @@ export const AccountStatementReport: React.FC = () => {
                     <td className="py-2.5 px-3 text-left font-mono" dir="ltr">
                       {data.openingBalance < 0 ? formatEGP(Math.abs(data.openingBalance)) : '-'}
                     </td>
-                    <td className={`py-2.5 px-4 text-left font-mono font-black whitespace-nowrap ${
+                    <td className={`py-2.5 px-4 text-left font-mono font-black tabular-nums whitespace-nowrap ${
                       data.openingBalance < 0
                         ? 'text-rose-600 dark:text-rose-400 text-negative-balance'
                         : 'text-[#1A241C] dark:text-[#F3EFE6]'
                     }`} dir="ltr">
-                      {data.openingBalance < 0
-                        ? `(${formatEGP(Math.abs(data.openingBalance))})`
-                        : formatEGP(data.openingBalance)}
+                      {formatAccountingNumber(data.openingBalance)}
                     </td>
                   </tr>
 
@@ -917,14 +913,12 @@ export const AccountStatementReport: React.FC = () => {
                       </td>
 
                       {/* Running Balance */}
-                      <td className={`py-2.5 px-4 text-left font-mono font-black bg-[#1F2E23]/20 whitespace-nowrap ${
+                      <td className={`py-2.5 px-4 text-left font-mono font-black tabular-nums bg-[#1F2E23]/20 whitespace-nowrap ${
                         tx.runningBalance < 0
                           ? 'text-rose-600 dark:text-rose-400 text-negative-balance'
                           : 'text-[#1A241C] dark:text-[#F3EFE6]'
                       }`} dir="ltr">
-                        {tx.runningBalance < 0
-                          ? `(${formatEGP(Math.abs(tx.runningBalance))})`
-                          : formatEGP(tx.runningBalance)}
+                        {formatAccountingNumber(tx.runningBalance)}
                       </td>
                     </tr>
                   ))}
@@ -936,7 +930,7 @@ export const AccountStatementReport: React.FC = () => {
             {data && data.transactions.length > 0 && (
               <tfoot>
                 <tr className="border-t-2 border-[#1A241C] dark:border-[#F3EFE6] bg-[#EAE4D7] dark:bg-[#1D2B20] font-black text-[#1A241C] dark:text-[#F3EFE6] text-xs">
-                  <td colSpan={5} className="py-3 px-4 text-center">
+                  <td colSpan={5} className="py-3 px-4 text-right">
                     <span>{t('إجمالي حركات الفترة والرصيد الختامي المستحق', 'Period Totals and Ending Balance')}</span>
                   </td>
                   <td className="py-3 px-3 text-left font-mono text-blue-800 dark:text-blue-300" dir="ltr">
@@ -945,14 +939,12 @@ export const AccountStatementReport: React.FC = () => {
                   <td className="py-3 px-3 text-left font-mono text-amber-800 dark:text-amber-300" dir="ltr">
                     {formatEGP(data.totalCredit)}
                   </td>
-                  <td className={`py-3 px-4 text-left font-mono font-black text-sm whitespace-nowrap ${
+                  <td className={`py-3 px-4 text-left font-mono font-black tabular-nums text-sm whitespace-nowrap ${
                     data.endingBalance < 0
                       ? 'text-rose-600 dark:text-rose-400 text-negative-balance'
                       : 'text-[#EBB34D]'
                   }`} dir="ltr">
-                    {data.endingBalance < 0
-                      ? `(${formatEGP(Math.abs(data.endingBalance))})`
-                      : formatEGP(data.endingBalance)}
+                    {formatAccountingNumber(data.endingBalance)}
                   </td>
                 </tr>
               </tfoot>
@@ -1091,15 +1083,13 @@ export const AccountStatementReport: React.FC = () => {
                   </span>
                   <span
                     dir="ltr"
-                    className={`font-mono text-sm print:text-xs font-bold inline-block ${
+                    className={`font-mono tabular-nums text-sm print:text-xs font-bold inline-block ${
                       data.endingBalance < 0
                         ? 'text-rose-700'
                         : 'text-slate-900'
                     }`}
                   >
-                    {data.endingBalance < 0
-                      ? `(${formatEGP(Math.abs(data.endingBalance))} جم)`
-                      : `${formatEGP(data.endingBalance)} جم`}
+                    {formatAccountingNumber(data.endingBalance, 'جم')}
                   </span>
                 </div>
               </div>
@@ -1168,9 +1158,7 @@ export const AccountStatementReport: React.FC = () => {
                         ? 'text-rose-600 font-semibold text-negative-balance'
                         : 'font-bold text-slate-900'
                     }`} dir="ltr">
-                      {data.openingBalance < 0
-                        ? `(${formatEGP(Math.abs(data.openingBalance))})`
-                        : formatEGP(data.openingBalance)}
+                      {formatAccountingNumber(data.openingBalance)}
                     </td>
                   </tr>
 
@@ -1207,9 +1195,7 @@ export const AccountStatementReport: React.FC = () => {
                             ? 'text-rose-600 font-semibold text-negative-balance'
                             : 'font-bold text-slate-900'
                         }`} dir="ltr">
-                          {t.runningBalance < 0
-                            ? `(${formatEGP(Math.abs(t.runningBalance))})`
-                            : formatEGP(t.runningBalance)}
+                          {formatAccountingNumber(t.runningBalance)}
                         </td>
                       </tr>
                     );
@@ -1231,9 +1217,7 @@ export const AccountStatementReport: React.FC = () => {
                         ? 'text-rose-600 text-negative-balance'
                         : 'text-slate-950'
                     }`} dir="ltr">
-                      {data.endingBalance < 0
-                        ? `(${formatEGP(Math.abs(data.endingBalance))})`
-                        : formatEGP(data.endingBalance)}
+                      {formatAccountingNumber(data.endingBalance)}
                     </td>
                   </tr>
                 </tbody>

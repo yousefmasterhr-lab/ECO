@@ -5,14 +5,16 @@ import { useDatabase } from '../../../services/federation/DatabaseContext';
 import { getFiscalDateRange } from '../../../utils/fiscalYearHelper';
 import { TrialBalanceReportData } from '../../../services/database/types';
 import { ReportPrintLayout } from './ReportPrintLayout';
-import { exportToCsv, formatEGP } from '../../../utils/exportUtils';
+import { formatEGP, formatAccountingNumber } from '../../../utils/exportUtils';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 import { toast } from '@erp/ui-system';
 import {
   Scale,
   Search,
   RefreshCw,
   Printer,
-  Download,
+  FileSpreadsheet,
   CheckCircle2,
   AlertTriangle,
   Layers,
@@ -79,52 +81,187 @@ export const TrialBalanceReport: React.FC = () => {
     );
   }, [data, searchQuery]);
 
-  // Export to CSV
-  const handleExportCsv = () => {
+  // Export to Excel (.xlsx)
+  const handleExportExcel = async () => {
     if (!filteredItems.length) return;
-    const headers = [
-      'كود الحساب',
-      'اسم الحساب',
-      'المستوى',
-      'رصيد أول المدة - مدين',
-      'رصيد أول المدة - دائن',
-      'حركات الفترة - مدين',
-      'حركات الفترة - دائن',
-      'رصيد ختامي - مدين',
-      'رصيد ختامي - دائن'
-    ];
-    const rows = filteredItems.map(item => [
-      item.accountCode,
-      item.accountNameAr,
-      `المستوى ${item.level}`,
-      item.openingDebit,
-      item.openingCredit,
-      item.periodDebit,
-      item.periodCredit,
-      item.endingDebit,
-      item.endingCredit
-    ]);
+    try {
+      const workbook = new ExcelJS.Workbook();
+      workbook.creator = 'ECO ERP';
+      workbook.created = new Date();
 
-    // Summary row
-    if (data) {
-      rows.push([
-        'الإجمالي العام',
-        '---',
-        '---',
-        data.totalOpeningDebit,
-        data.totalOpeningCredit,
-        data.totalPeriodDebit,
-        data.totalPeriodCredit,
-        data.totalEndingDebit,
-        data.totalEndingCredit
+      const worksheet = workbook.addWorksheet('ميزان المراجعة', {
+        views: [{ rtl: true, rightToLeft: true, showGridLines: true } as any]
+      });
+
+      // 1. Company Brand Header
+      worksheet.mergeCells('A1:I1');
+      const titleCell = worksheet.getCell('A1');
+      titleCell.value = 'شركة ترابط للمقاولات والتجارة - ECO ERP';
+      titleCell.font = { name: 'Calibri', size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
+      titleCell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF0F172A' }
+      };
+      titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+      worksheet.getRow(1).height = 36;
+
+      // 2. Report Title & Accent
+      worksheet.mergeCells('A2:I2');
+      const subTitleCell = worksheet.getCell('A2');
+      subTitleCell.value = `ميزان المراجعة بالمستويات الخمسة (المستوى ${selectedLevel})`;
+      subTitleCell.font = { name: 'Calibri', size: 12, bold: true, color: { argb: 'FF0F172A' } };
+      subTitleCell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFFEF3C7' }
+      };
+      subTitleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+      worksheet.getRow(2).height = 24;
+
+      // 3. Metadata info
+      worksheet.mergeCells('A3:I3');
+      const metaCell = worksheet.getCell('A3');
+      metaCell.value = `قاعدة البيانات: ${activeDatabase || 'MK_Khalil_Db_2026'} | الفترة: من ${startDate} إلى ${endDate} | تاريخ الإصدار: 2026-10-13`;
+      metaCell.font = { name: 'Calibri', size: 10, italic: true, color: { argb: 'FF475569' } };
+      metaCell.alignment = { horizontal: 'center', vertical: 'middle' };
+      worksheet.getRow(3).height = 20;
+
+      // 4. Empty row
+      worksheet.addRow([]);
+
+      // 5. Table Header
+      const headerRow = worksheet.addRow([
+        'كود الحساب',
+        'اسم الحساب',
+        'المستوى',
+        'رصيد أول المدة - مدين',
+        'رصيد أول المدة - دائن',
+        'حركات الفترة - مدين',
+        'حركات الفترة - دائن',
+        'الرصيد الختامي - مدين',
+        'الرصيد الختامي - دائن'
       ]);
-    }
+      headerRow.height = 26;
+      headerRow.eachCell(cell => {
+        cell.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FF0F172A' }
+        };
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+          bottom: { style: 'medium', color: { argb: 'FF0F172A' } },
+          left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+          right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
+        };
+      });
 
-    exportToCsv(`ميزان_المراجعة_مستوى_${selectedLevel}_${endDate}`, headers, rows);
-    toast.success(
-      t('تم تصدير ميزان المراجعة بنجاح', 'Trial balance exported successfully'),
-      `${t('المستوى', 'Level')} ${selectedLevel} (${data?.items.length || 0} ${t('حساب محاسبي', 'accounts')})`
-    );
+      // 6. Data rows
+      const thinBorder: Partial<ExcelJS.Borders> = {
+        top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+        bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+        left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+        right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+      };
+
+      filteredItems.forEach((item, index) => {
+        const row = worksheet.addRow([
+          item.accountCode,
+          item.accountNameAr,
+          `م${item.level}`,
+          item.openingDebit,
+          item.openingCredit,
+          item.periodDebit,
+          item.periodCredit,
+          item.endingDebit,
+          item.endingCredit
+        ]);
+        row.height = 20;
+
+        const isZebra = index % 2 === 1;
+        const rowBg = isZebra ? 'FFF8FAFC' : 'FFFFFFFF';
+
+        row.eachCell((cell, colNumber) => {
+          cell.border = thinBorder;
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: rowBg }
+          };
+          if (colNumber === 1 || colNumber === 3) {
+            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+          } else if (colNumber === 2) {
+            cell.alignment = { horizontal: 'right', vertical: 'middle' };
+          } else {
+            cell.alignment = { horizontal: 'left', vertical: 'middle' };
+            cell.numFmt = '#,##0.00 "جم";(#,##0.00 "جم");"-"';
+          }
+        });
+      });
+
+      // 7. Grand Totals
+      if (data) {
+        const totalRow = worksheet.addRow([
+          'الإجمالي العام',
+          '',
+          '',
+          data.totalOpeningDebit,
+          data.totalOpeningCredit,
+          data.totalPeriodDebit,
+          data.totalPeriodCredit,
+          data.totalEndingDebit,
+          data.totalEndingCredit
+        ]);
+        totalRow.height = 24;
+
+        totalRow.eachCell((cell, colNumber) => {
+          cell.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FF0F172A' } };
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFFEF3C7' }
+          };
+          cell.border = {
+            top: { style: 'medium', color: { argb: 'FF0F172A' } },
+            bottom: { style: 'double', color: { argb: 'FF0F172A' } },
+            left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+            right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
+          };
+          if (colNumber <= 3) {
+            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+          } else {
+            cell.alignment = { horizontal: 'left', vertical: 'middle' };
+            cell.numFmt = '#,##0.00 "جم";(#,##0.00 "جم");"-"';
+          }
+        });
+      }
+
+      // Column widths
+      worksheet.getColumn(1).width = 16;
+      worksheet.getColumn(2).width = 34;
+      worksheet.getColumn(3).width = 12;
+      worksheet.getColumn(4).width = 22;
+      worksheet.getColumn(5).width = 22;
+      worksheet.getColumn(6).width = 22;
+      worksheet.getColumn(7).width = 22;
+      worksheet.getColumn(8).width = 22;
+      worksheet.getColumn(9).width = 22;
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      saveAs(blob, `ميزان_المراجعة_مستوى_${selectedLevel}_${endDate}.xlsx`);
+
+      toast.success(
+        t('تم تصدير تقرير ميزان المراجعة بنجاح', 'Trial balance report exported successfully'),
+        `${t('المستوى', 'Level')} ${selectedLevel} (${filteredItems.length} ${t('حساب', 'accounts')})`
+      );
+    } catch (err) {
+      console.error('Failed to export Excel:', err);
+      toast.error(t('فشل تصدير ملف Excel', 'Failed to export Excel report'));
+    }
   };
 
   const isBalanced = data?.isBalanced ?? true;
@@ -168,12 +305,12 @@ export const TrialBalanceReport: React.FC = () => {
             </button>
 
             <button
-              onClick={handleExportCsv}
+              onClick={handleExportExcel}
               disabled={loading || !data?.items.length}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#1F2E23] hover:bg-[#EAE4D7] dark:hover:bg-[#253929] text-[#1A241C] dark:text-[#F3EFE6] transition-all cursor-pointer"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border border-emerald-600/30 dark:border-emerald-500/30 bg-emerald-950/20 hover:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 transition-all cursor-pointer shadow-xs"
             >
-              <Download className="w-3.5 h-3.5" />
-              <span>{t('تصدير Excel (CSV)', 'Export CSV')}</span>
+              <FileSpreadsheet className="w-4 h-4 text-emerald-300" />
+              <span>Excel Report</span>
             </button>
 
             <button
@@ -468,33 +605,33 @@ export const TrialBalanceReport: React.FC = () => {
                       </td>
 
                       {/* Opening Debit */}
-                      <td className="py-2.5 px-3 text-left border-l border-[#E0D9CB]/50 dark:border-[#243628]/50 font-mono">
-                        {formatEGP(item.openingDebit, false)}
+                      <td className="py-2.5 px-3 text-left border-l border-[#E0D9CB]/50 dark:border-[#243628]/50 font-mono tabular-nums" dir="ltr">
+                        {formatAccountingNumber(item.openingDebit)}
                       </td>
 
                       {/* Opening Credit */}
-                      <td className="py-2.5 px-3 text-left border-l border-[#E0D9CB]/50 dark:border-[#243628]/50 font-mono">
-                        {formatEGP(item.openingCredit, false)}
+                      <td className="py-2.5 px-3 text-left border-l border-[#E0D9CB]/50 dark:border-[#243628]/50 font-mono tabular-nums" dir="ltr">
+                        {formatAccountingNumber(item.openingCredit)}
                       </td>
 
                       {/* Period Debit */}
-                      <td className="py-2.5 px-3 text-left border-l border-[#E0D9CB]/50 dark:border-[#243628]/50 font-mono font-bold text-blue-700 dark:text-blue-300">
-                        {formatEGP(item.periodDebit, false)}
+                      <td className="py-2.5 px-3 text-left border-l border-[#E0D9CB]/50 dark:border-[#243628]/50 font-mono font-bold text-blue-700 dark:text-blue-300 tabular-nums" dir="ltr">
+                        {formatAccountingNumber(item.periodDebit)}
                       </td>
 
                       {/* Period Credit */}
-                      <td className="py-2.5 px-3 text-left border-l border-[#E0D9CB]/50 dark:border-[#243628]/50 font-mono font-bold text-amber-700 dark:text-amber-300">
-                        {formatEGP(item.periodCredit, false)}
+                      <td className="py-2.5 px-3 text-left border-l border-[#E0D9CB]/50 dark:border-[#243628]/50 font-mono font-bold text-amber-700 dark:text-amber-300 tabular-nums" dir="ltr">
+                        {formatAccountingNumber(item.periodCredit)}
                       </td>
 
                       {/* Ending Debit */}
-                      <td className="py-2.5 px-3 text-left border-l border-[#E0D9CB]/50 dark:border-[#243628]/50 font-mono font-black text-emerald-800 dark:text-emerald-300">
-                        {formatEGP(item.endingDebit, false)}
+                      <td className="py-2.5 px-3 text-left border-l border-[#E0D9CB]/50 dark:border-[#243628]/50 font-mono font-black text-emerald-800 dark:text-emerald-300 tabular-nums" dir="ltr">
+                        {formatAccountingNumber(item.endingDebit)}
                       </td>
 
                       {/* Ending Credit */}
-                      <td className="py-2.5 px-3 text-left font-mono font-black text-emerald-800 dark:text-emerald-300">
-                        {formatEGP(item.endingCredit, false)}
+                      <td className="py-2.5 px-3 text-left font-mono font-black text-emerald-800 dark:text-emerald-300 tabular-nums" dir="ltr">
+                        {formatAccountingNumber(item.endingCredit)}
                       </td>
                     </tr>
                   );
@@ -509,23 +646,23 @@ export const TrialBalanceReport: React.FC = () => {
                   <td colSpan={3} className="py-3 px-3 text-center border-l border-[#E0D9CB] dark:border-[#243628]">
                     <span>{t('الإجمالي العام لميزان المراجعة', 'Grand Total Equilibrium Sum')}</span>
                   </td>
-                  <td className="py-3 px-3 text-left border-l border-[#E0D9CB] dark:border-[#243628] font-mono">
-                    {formatEGP(data.totalOpeningDebit)}
+                  <td className="py-3 px-3 text-left border-l border-[#E0D9CB] dark:border-[#243628] font-mono tabular-nums" dir="ltr">
+                    {formatAccountingNumber(data.totalOpeningDebit)}
                   </td>
-                  <td className="py-3 px-3 text-left border-l border-[#E0D9CB] dark:border-[#243628] font-mono">
-                    {formatEGP(data.totalOpeningCredit)}
+                  <td className="py-3 px-3 text-left border-l border-[#E0D9CB] dark:border-[#243628] font-mono tabular-nums" dir="ltr">
+                    {formatAccountingNumber(data.totalOpeningCredit)}
                   </td>
-                  <td className="py-3 px-3 text-left border-l border-[#E0D9CB] dark:border-[#243628] font-mono text-blue-800 dark:text-blue-300">
-                    {formatEGP(data.totalPeriodDebit)}
+                  <td className="py-3 px-3 text-left border-l border-[#E0D9CB] dark:border-[#243628] font-mono text-blue-800 dark:text-blue-300 tabular-nums" dir="ltr">
+                    {formatAccountingNumber(data.totalPeriodDebit)}
                   </td>
-                  <td className="py-3 px-3 text-left border-l border-[#E0D9CB] dark:border-[#243628] font-mono text-amber-800 dark:text-amber-300">
-                    {formatEGP(data.totalPeriodCredit)}
+                  <td className="py-3 px-3 text-left border-l border-[#E0D9CB] dark:border-[#243628] font-mono text-amber-800 dark:text-amber-300 tabular-nums" dir="ltr">
+                    {formatAccountingNumber(data.totalPeriodCredit)}
                   </td>
-                  <td className="py-3 px-3 text-left border-l border-[#E0D9CB] dark:border-[#243628] font-mono text-emerald-800 dark:text-emerald-300">
-                    {formatEGP(data.totalEndingDebit)}
+                  <td className="py-3 px-3 text-left border-l border-[#E0D9CB] dark:border-[#243628] font-mono text-emerald-800 dark:text-emerald-300 tabular-nums" dir="ltr">
+                    {formatAccountingNumber(data.totalEndingDebit)}
                   </td>
-                  <td className="py-3 px-3 text-left font-mono text-emerald-800 dark:text-emerald-300">
-                    {formatEGP(data.totalEndingCredit)}
+                  <td className="py-3 px-3 text-left font-mono text-emerald-800 dark:text-emerald-300 tabular-nums" dir="ltr">
+                    {formatAccountingNumber(data.totalEndingCredit)}
                   </td>
                 </tr>
               </tfoot>
@@ -586,12 +723,12 @@ export const TrialBalanceReport: React.FC = () => {
                     </span>
                   </td>
                   <td className="py-1 px-1 border border-gray-300 print:border-black text-center font-mono">م{item.level}</td>
-                  <td className="py-1 px-1 border border-gray-300 print:border-black text-left font-mono">{formatEGP(item.openingDebit, false)}</td>
-                  <td className="py-1 px-1 border border-gray-300 print:border-black text-left font-mono">{formatEGP(item.openingCredit, false)}</td>
-                  <td className="py-1 px-1 border border-gray-300 print:border-black text-left font-mono">{formatEGP(item.periodDebit, false)}</td>
-                  <td className="py-1 px-1 border border-gray-300 print:border-black text-left font-mono">{formatEGP(item.periodCredit, false)}</td>
-                  <td className="py-1 px-1 border border-gray-300 print:border-black text-left font-mono">{formatEGP(item.endingDebit, false)}</td>
-                  <td className="py-1 px-1 border border-gray-300 print:border-black text-left font-mono">{formatEGP(item.endingCredit, false)}</td>
+                  <td className="py-1 px-1 border border-gray-300 print:border-black text-left font-mono tabular-nums" dir="ltr">{formatAccountingNumber(item.openingDebit)}</td>
+                  <td className="py-1 px-1 border border-gray-300 print:border-black text-left font-mono tabular-nums" dir="ltr">{formatAccountingNumber(item.openingCredit)}</td>
+                  <td className="py-1 px-1 border border-gray-300 print:border-black text-left font-mono tabular-nums" dir="ltr">{formatAccountingNumber(item.periodDebit)}</td>
+                  <td className="py-1 px-1 border border-gray-300 print:border-black text-left font-mono tabular-nums" dir="ltr">{formatAccountingNumber(item.periodCredit)}</td>
+                  <td className="py-1 px-1 border border-gray-300 print:border-black text-left font-mono tabular-nums" dir="ltr">{formatAccountingNumber(item.endingDebit)}</td>
+                  <td className="py-1 px-1 border border-gray-300 print:border-black text-left font-mono tabular-nums" dir="ltr">{formatAccountingNumber(item.endingCredit)}</td>
                 </tr>
               ))}
             </tbody>
@@ -599,12 +736,12 @@ export const TrialBalanceReport: React.FC = () => {
               <tfoot>
                 <tr className="border-t-2 border-black bg-gray-200 print:bg-gray-300 font-black">
                   <td colSpan={3} className="py-1.5 px-2 text-center border border-black">الإجمالي العام</td>
-                  <td className="py-1.5 px-1 border border-black text-left font-mono">{formatEGP(data.totalOpeningDebit)}</td>
-                  <td className="py-1.5 px-1 border border-black text-left font-mono">{formatEGP(data.totalOpeningCredit)}</td>
-                  <td className="py-1.5 px-1 border border-black text-left font-mono">{formatEGP(data.totalPeriodDebit)}</td>
-                  <td className="py-1.5 px-1 border border-black text-left font-mono">{formatEGP(data.totalPeriodCredit)}</td>
-                  <td className="py-1.5 px-1 border border-black text-left font-mono">{formatEGP(data.totalEndingDebit)}</td>
-                  <td className="py-1.5 px-1 border border-black text-left font-mono">{formatEGP(data.totalEndingCredit)}</td>
+                  <td className="py-1.5 px-1 border border-black text-left font-mono tabular-nums" dir="ltr">{formatAccountingNumber(data.totalOpeningDebit)}</td>
+                  <td className="py-1.5 px-1 border border-black text-left font-mono tabular-nums" dir="ltr">{formatAccountingNumber(data.totalOpeningCredit)}</td>
+                  <td className="py-1.5 px-1 border border-black text-left font-mono tabular-nums" dir="ltr">{formatAccountingNumber(data.totalPeriodDebit)}</td>
+                  <td className="py-1.5 px-1 border border-black text-left font-mono tabular-nums" dir="ltr">{formatAccountingNumber(data.totalPeriodCredit)}</td>
+                  <td className="py-1.5 px-1 border border-black text-left font-mono tabular-nums" dir="ltr">{formatAccountingNumber(data.totalEndingDebit)}</td>
+                  <td className="py-1.5 px-1 border border-black text-left font-mono tabular-nums" dir="ltr">{formatAccountingNumber(data.totalEndingCredit)}</td>
                 </tr>
               </tfoot>
             )}
