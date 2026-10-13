@@ -7,21 +7,23 @@ import { getFiscalDateRange } from '../../../utils/fiscalYearHelper';
 import { StatementOfAccountReportData, StatementOfAccountLine, AccountNode } from '../../../services/database/types';
 import { ReportPrintLayout } from './ReportPrintLayout';
 import { Modal, toast } from '@erp/ui-system';
-import { exportToCsv, formatEGP } from '../../../utils/exportUtils';
+import { formatEGP } from '../../../utils/exportUtils';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 import {
   BookOpen,
   Calendar,
   Search,
   RefreshCw,
   Printer,
-  Download,
   Building2,
   Tag,
   ArrowUpRight,
   ArrowDownRight,
   ChevronDown,
   Info,
-  FileText
+  FileText,
+  FileSpreadsheet
 } from 'lucide-react';
 
 function getLeafAccounts(nodes: AccountNode[]): AccountNode[] {
@@ -92,6 +94,7 @@ export const AccountStatementReport: React.FC = () => {
   // Selected line for transaction inspection modal
   const [inspectingLine, setInspectingLine] = useState<StatementOfAccountLine | null>(null);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState<boolean>(false);
+  const [isExporting, setIsExporting] = useState<boolean>(false);
 
   // Listen for cross-module deep link events
   useEffect(() => {
@@ -203,69 +206,324 @@ export const AccountStatementReport: React.FC = () => {
       .slice(0, 40);
   }, [leafAccounts, accountSearchText]);
 
-  // Export to CSV
-  const handleExportCsv = () => {
+  // Luxury Branded Excel (.xlsx) Export Engine using ExcelJS
+  const handleExportExcel = async () => {
     if (!data) return;
-    const headers = [
-      'التاريخ',
-      'رقم المستند/القيد',
-      'نوع المعاملة',
-      'البيان والشرح',
-      'مركز التكلفة',
-      'التحليلي',
-      'مدين (جم)',
-      'دائن (جم)',
-      'الرصيد التراكمي المتحرك (جم)'
-    ];
+    setIsExporting(true);
 
-    const rows: (string | number)[][] = [];
+    try {
+      const workbook = new ExcelJS.Workbook();
+      workbook.creator = 'ECO ERP - ترابط';
+      workbook.created = new Date();
+      workbook.modified = new Date();
 
-    // Opening Balance row
-    rows.push([
-      startDate,
-      '-',
-      'رصيد افتتاحي',
-      'رصيد أول المدة المنقول',
-      '-',
-      '-',
-      data.openingBalance >= 0 ? data.openingBalance : 0,
-      data.openingBalance < 0 ? Math.abs(data.openingBalance) : 0,
-      data.openingBalance
-    ]);
+      const worksheet = workbook.addWorksheet('كشف الحساب التفصيلي', {
+        views: [{ rtl: true, rightToLeft: true, showGridLines: true } as any]
+      });
 
-    // Transactions
-    data.transactions.forEach(t => {
-      rows.push([
-        t.noteDate,
-        t.noteNo,
-        t.voucherType,
-        t.description,
-        t.costCenterNameAr || '-',
-        t.analysisNameAr || '-',
-        t.debit,
-        t.credit,
-        t.runningBalance
+      const cleanAccountId = String(data.level5Id || selectedAccountId || '').replace(/^L[1-5]-/i, '');
+      const costCenterObj = selectedCostCenter !== undefined ? costCenters.find(c => String(c.id) === String(selectedCostCenter)) : undefined;
+      const dimensionObj = selectedDimension !== undefined ? dimensions.find(d => String(d.id) === String(selectedDimension)) : undefined;
+      const costCenterLabel = costCenterObj ? costCenterObj.nameAr : t('عام / كافة المراكز', 'All Cost Centers');
+      const dimensionLabel = dimensionObj ? dimensionObj.nameAr : t('كافة الحسابات التحليلية', 'All Sub-Ledgers');
+
+      // 1. Company Brand Header (Row 1)
+      worksheet.mergeCells('A1:I1');
+      const titleCell = worksheet.getCell('A1');
+      titleCell.value = 'شركة ترابط للمقاولات والتجارة - منظومة إدارة الموارد المؤسسية الذكية ECO';
+      titleCell.font = { name: 'Arial', size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
+      titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } };
+      titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+      worksheet.getRow(1).height = 36;
+
+      // Brand Sub-Header (Row 2)
+      worksheet.mergeCells('A2:I2');
+      const subCell = worksheet.getCell('A2');
+      subCell.value = `كشف الحساب التفصيلي والتحليلي للأستاذ المساعد: ${data.accountNameAr} (${cleanAccountId})`;
+      subCell.font = { name: 'Arial', size: 12, bold: true, color: { argb: 'FFD97706' } };
+      subCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E293B' } };
+      subCell.alignment = { horizontal: 'center', vertical: 'middle' };
+      worksheet.getRow(2).height = 28;
+
+      // Row 3 Spacing
+      worksheet.addRow([]);
+      worksheet.getRow(3).height = 10;
+
+      // 2. Report Parameters & Metadata Box (Rows 4 & 5)
+      worksheet.mergeCells('A4:B4');
+      worksheet.getCell('A4').value = 'اسم ورقم الحساب:';
+      worksheet.mergeCells('C4:D4');
+      worksheet.getCell('C4').value = `${data.accountNameAr} (${cleanAccountId})`;
+      worksheet.getCell('E4').value = 'مركز التكلفة:';
+      worksheet.getCell('F4').value = costCenterLabel;
+      worksheet.getCell('G4').value = 'تاريخ الاستخراج:';
+      worksheet.mergeCells('H4:I4');
+      worksheet.getCell('H4').value = new Date().toLocaleString('ar-EG');
+
+      worksheet.mergeCells('A5:B5');
+      worksheet.getCell('A5').value = 'الفترة المحاسبية:';
+      worksheet.mergeCells('C5:D5');
+      worksheet.getCell('C5').value = `من ${startDate} إلى ${endDate}`;
+      worksheet.getCell('E5').value = 'الحساب التحليلي:';
+      worksheet.getCell('F5').value = dimensionLabel;
+      worksheet.getCell('G5').value = 'قاعدة البيانات:';
+      worksheet.mergeCells('H5:I5');
+      worksheet.getCell('H5').value = activeDatabase;
+
+      [4, 5].forEach(rowNum => {
+        const row = worksheet.getRow(rowNum);
+        row.height = 24;
+        row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+          if (colNumber <= 9) {
+            cell.font = { name: 'Arial', size: 10, bold: colNumber % 2 !== 0 };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+            cell.border = {
+              top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+              bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+              left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+              right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
+            };
+            cell.alignment = { horizontal: 'right', vertical: 'middle' };
+          }
+        });
+      });
+
+      // Row 6 Spacing
+      worksheet.addRow([]);
+      worksheet.getRow(6).height = 10;
+
+      // 3. Financial Balance Summary Cards (Rows 7 & 8)
+      worksheet.mergeCells('A7:B7');
+      worksheet.getCell('A7').value = 'رصيد أول المدة المنقول';
+      worksheet.mergeCells('C7:D7');
+      worksheet.getCell('C7').value = 'إجمالي حركات المدين (+)';
+      worksheet.mergeCells('E7:F7');
+      worksheet.getCell('E7').value = 'إجمالي حركات الدائن (-)';
+      worksheet.mergeCells('G7:I7');
+      worksheet.getCell('G7').value = 'الرصيد الختامي الحالي';
+
+      worksheet.getRow(7).height = 24;
+      [
+        { range: 'A7:B7', color: 'FF475569', bg: 'FFF1F5F9' },
+        { range: 'C7:D7', color: 'FF047857', bg: 'FFECFDF5' },
+        { range: 'E7:F7', color: 'FFB91C1C', bg: 'FFFEF2F2' },
+        { range: 'G7:I7', color: 'FFB45309', bg: 'FFFFFBEB' }
+      ].forEach(box => {
+        const cell = worksheet.getCell(box.range.split(':')[0]);
+        cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: box.color } };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: box.bg } };
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      });
+
+      worksheet.mergeCells('A8:B8');
+      worksheet.getCell('A8').value = data.openingBalance;
+      worksheet.mergeCells('C8:D8');
+      worksheet.getCell('C8').value = data.totalDebit;
+      worksheet.mergeCells('E8:F8');
+      worksheet.getCell('E8').value = data.totalCredit;
+      worksheet.mergeCells('G8:I8');
+      worksheet.getCell('G8').value = data.endingBalance;
+
+      worksheet.getRow(8).height = 32;
+      [
+        { cell: 'A8', color: 'FF0F172A', bg: 'FFF8FAFC' },
+        { cell: 'C8', color: 'FF059669', bg: 'FFF0FDF4' },
+        { cell: 'E8', color: 'FFDC2626', bg: 'FFFFF1F2' },
+        { cell: 'G8', color: data.endingBalance >= 0 ? 'FFD97706' : 'FFDC2626', bg: 'FFFEF3C7' }
+      ].forEach(box => {
+        const c = worksheet.getCell(box.cell);
+        c.font = { name: 'Arial', size: 13, bold: true, color: { argb: box.color } };
+        c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: box.bg } };
+        c.numFmt = '#,##0.00 "جم"';
+        c.alignment = { horizontal: 'center', vertical: 'middle' };
+      });
+
+      ['A7', 'B7', 'C7', 'D7', 'E7', 'F7', 'G7', 'H7', 'I7',
+       'A8', 'B8', 'C8', 'D8', 'E8', 'F8', 'G8', 'H8', 'I8'].forEach(addr => {
+        worksheet.getCell(addr).border = {
+          top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+          bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+          left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+          right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
+        };
+      });
+
+      // Row 9 Spacing
+      worksheet.addRow([]);
+      worksheet.getRow(9).height = 12;
+
+      // 4. Data Headers (Row 10)
+      const headerRow = worksheet.addRow([
+        'التاريخ',
+        'رقم القيد',
+        'نوع المعاملة',
+        'البيان والشرح التفصيلي',
+        'مركز التكلفة',
+        'الحساب التحليلي',
+        'مدين',
+        'دائن',
+        'الرصيد المتحرك'
       ]);
-    });
+      headerRow.height = 32;
+      headerRow.eachCell(cell => {
+        cell.font = { name: 'Arial', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E293B' } };
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FF475569' } },
+          bottom: { style: 'medium', color: { argb: 'FFD97706' } },
+          left: { style: 'thin', color: { argb: 'FF475569' } },
+          right: { style: 'thin', color: { argb: 'FF475569' } }
+        };
+      });
 
-    // Summary row
-    rows.push([
-      endDate,
-      '-',
-      'إجمالي ختامي',
-      'مجموع الحركات والرصيد الختامي',
-      '-',
-      '-',
-      data.totalDebit,
-      data.totalCredit,
-      data.endingBalance
-    ]);
+      // 5. Data Rows
+      // 5.1 Opening Balance Row
+      const openingRow = worksheet.addRow([
+        startDate,
+        '---',
+        'رصيد افتتاحي',
+        'رصيد أول المدة المنقول للحساب',
+        costCenterLabel,
+        dimensionLabel,
+        data.openingBalance >= 0 ? data.openingBalance : 0,
+        data.openingBalance < 0 ? Math.abs(data.openingBalance) : 0,
+        data.openingBalance
+      ]);
+      openingRow.height = 24;
+      openingRow.eachCell((cell, colNumber) => {
+        cell.font = { name: 'Arial', size: 10, bold: colNumber >= 4 };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEF9C3' } };
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+          bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+          left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+          right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+        };
+        if (colNumber <= 3) {
+          cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        } else if (colNumber <= 6) {
+          cell.alignment = { horizontal: 'right', vertical: 'middle' };
+        } else {
+          cell.numFmt = '#,##0.00 "جم"';
+          cell.alignment = { horizontal: 'right', vertical: 'middle' };
+        }
+      });
 
-    exportToCsv(`كشف_حساب_${data.level5Id}_${endDate}`, headers, rows);
-    toast.success(
-      t('تم تصدير كشف الحساب بنجاح', 'Statement exported successfully'),
-      `${data.accountNameAr} (${data.transactions.length} ${t('حركة مسجلة', 'transactions')})`
-    );
+      // 5.2 Transaction Rows
+      data.transactions.forEach((tx, idx) => {
+        const isEven = idx % 2 === 0;
+        const txRow = worksheet.addRow([
+          tx.noteDate,
+          tx.noteNo ? `#${tx.noteNo}` : '---',
+          tx.voucherType || 'قيود عامة',
+          tx.description || '',
+          tx.costCenterNameAr || 'عام / غير مخصص',
+          tx.analysisNameAr || 'حساب عام',
+          tx.debit || 0,
+          tx.credit || 0,
+          tx.runningBalance || 0
+        ]);
+        txRow.height = 24;
+
+        txRow.eachCell((cell, colNumber) => {
+          cell.font = { name: 'Arial', size: 10 };
+          if (isEven) {
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+          }
+          cell.border = {
+            top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+          };
+
+          if (colNumber <= 3) {
+            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+          } else if (colNumber <= 6) {
+            cell.alignment = { horizontal: 'right', vertical: 'middle' };
+          } else {
+            cell.numFmt = '#,##0.00 "جم"';
+            cell.alignment = { horizontal: 'right', vertical: 'middle' };
+
+            if (colNumber === 7 && tx.debit > 0) {
+              cell.font = { name: 'Arial', size: 10, color: { argb: 'FF0F766E' } };
+            } else if (colNumber === 8 && tx.credit > 0) {
+              cell.font = { name: 'Arial', size: 10, color: { argb: 'FF991B1B' } };
+            } else if (colNumber === 9) {
+              cell.font = {
+                name: 'Arial',
+                size: 10,
+                bold: true,
+                color: { argb: tx.runningBalance < 0 ? 'FF991B1B' : 'FF0F172A' }
+              };
+            }
+          }
+        });
+      });
+
+      // 6. Grand Totals Row
+      const totalRow = worksheet.addRow([
+        'إجمالي حركات الفترة والرصيد الختامي',
+        '',
+        '',
+        '',
+        '',
+        '',
+        data.totalDebit,
+        data.totalCredit,
+        data.endingBalance
+      ]);
+      worksheet.mergeCells(`A${totalRow.number}:F${totalRow.number}`);
+      totalRow.height = 30;
+
+      totalRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+        if (colNumber <= 9) {
+          cell.font = { name: 'Arial', size: 11, bold: true, color: { argb: 'FF0F172A' } };
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEF3C7' } };
+          cell.border = {
+            top: { style: 'thin', color: { argb: 'FFD97706' } },
+            bottom: { style: 'double', color: { argb: 'FFD97706' } },
+            left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+            right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
+          };
+          if (colNumber === 1) {
+            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+          } else if (colNumber >= 7) {
+            cell.numFmt = '#,##0.00 "جم"';
+            cell.alignment = { horizontal: 'right', vertical: 'middle' };
+            if (colNumber === 9 && data.endingBalance < 0) {
+              cell.font = { name: 'Arial', size: 11, bold: true, color: { argb: 'FF991B1B' } };
+            }
+          }
+        }
+      });
+
+      // 7. Auto-fit Column Widths
+      const colWidths = [15, 16, 16, 48, 26, 22, 18, 18, 20];
+      colWidths.forEach((w, idx) => {
+        worksheet.getColumn(idx + 1).width = w;
+      });
+
+      // 8. Generate & Download File
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const filename = `كشف_حساب_${cleanAccountId}_${endDate}.xlsx`;
+      saveAs(blob, filename);
+
+      toast.success(
+        t('تم تصدير كشف الحساب الفاخر بنجاح', 'Luxury statement workbook exported successfully'),
+        `${data.accountNameAr} (${filename})`
+      );
+    } catch (err: any) {
+      console.error('[ExcelJS Export Error]:', err);
+      toast.error(
+        t('فشل تصدير كشف الحساب', 'Failed to export statement'),
+        err?.message || 'Error creating Excel workbook'
+      );
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   return (
@@ -308,12 +566,12 @@ export const AccountStatementReport: React.FC = () => {
             </button>
 
             <button
-              onClick={handleExportCsv}
-              disabled={loading || !data}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#1F2E23] hover:bg-[#EAE4D7] dark:hover:bg-[#253929] text-[#1A241C] dark:text-[#F3EFE6] transition-all cursor-pointer"
+              onClick={handleExportExcel}
+              disabled={loading || !data || isExporting}
+              className="px-4 py-2 rounded-xl bg-emerald-600/90 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-emerald-950/30 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Download className="w-3.5 h-3.5" />
-              <span>{t('تصدير Excel (CSV)', 'Export CSV')}</span>
+              <FileSpreadsheet className={`w-4 h-4 text-emerald-200 ${isExporting ? 'animate-spin' : ''}`} />
+              <span>{isExporting ? t('جاري التصدير...', 'Exporting...') : t('تصدير كشف حساب فاخر (.xlsx)', 'Export Luxury Statement (.xlsx)')}</span>
             </button>
 
             <button
