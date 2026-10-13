@@ -83,6 +83,20 @@ export const TrialBalanceReport: React.FC = () => {
     );
   }, [data, searchQuery]);
 
+  // Programmatic Page Chunking for Print
+  const [printOrientation, setPrintOrientation] = useState<'landscape' | 'portrait'>('landscape');
+  const ROWS_PER_PAGE = printOrientation === 'landscape' ? 22 : 26;
+
+  const printPages = useMemo(() => {
+    if (!filteredItems.length) return [];
+    const chunks: (typeof filteredItems)[] = [];
+    for (let i = 0; i < filteredItems.length; i += ROWS_PER_PAGE) {
+      chunks.push(filteredItems.slice(i, i + ROWS_PER_PAGE));
+    }
+    return chunks;
+  }, [filteredItems, ROWS_PER_PAGE]);
+  const totalPrintPages = printPages.length;
+
   // Export to Excel (.xlsx)
   const handleExportExcel = async () => {
     if (!filteredItems.length) return;
@@ -677,10 +691,9 @@ export const TrialBalanceReport: React.FC = () => {
       <ReportPrintLayout
         isOpen={isPrintModalOpen}
         onClose={() => setIsPrintModalOpen(false)}
-        singlePage={false}
-        defaultOrientation="landscape"
-        badgeText={`ميزان المراجعة العام - ${filteredItems.length} حساب`}
-        hideFooter={true}
+        programmaticPagination={true}
+        orientation={printOrientation}
+        onOrientationChange={setPrintOrientation}
         titleAr={`ميزان المراجعة بالأرصدة والمجاميع (المستوى ${selectedLevel})`}
         titleEn={`5-Level Trial Balance Report (Level ${selectedLevel})`}
         periodText={`من ${startDate} إلى ${endDate}`}
@@ -690,184 +703,256 @@ export const TrialBalanceReport: React.FC = () => {
             : 'جميع مراكز التكلفة'
         }
       >
-        <div className="space-y-4 print:space-y-3">
-          {/* Printable Balance Confirmation Header */}
-          <div className="flex items-center justify-between p-3 rounded-xl border border-gray-300 text-xs font-bold print:border-black print:break-inside-avoid">
-            <span>
-              حالة اتزان الميزان: {isBalanced ? 'متزن بنجاح (الفرق = 0.00 جم)' : `غير متزن (الفرق = ${formatEGP(diff)} جم)`}
-            </span>
-            <span>عدد الحسابات المندرجة: {filteredItems.length}</span>
-          </div>
+        <div className="print-document flex flex-col items-center gap-6 print:gap-0 print:block w-full">
+          {printPages.map((pageRows, pageIndex) => {
+            const isFirstPage = pageIndex === 0;
+            const isLastPage = pageIndex === totalPrintPages - 1;
+            const printedByName = (user as any)?.displayName || user?.nameAr || user?.nameEn || (user as any)?.name || 'يوسف حجازي';
 
-          {/* Curved Table Container (rounded-xl) with separated border spacing */}
-          <div className="border border-slate-300 rounded-xl overflow-hidden shadow-none print:border-slate-400 print:rounded-xl">
-            <table
-              className="w-full table-fixed border-separate border-spacing-0 text-[10px] print:text-[9px]"
-              style={{ tableLayout: 'fixed', width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}
-            >
-              <colgroup>
-                <col style={{ width: '10%' }} />
-                <col style={{ width: '26%' }} />
-                <col style={{ width: '6%' }} />
-                <col style={{ width: '9.66%' }} />
-                <col style={{ width: '9.66%' }} />
-                <col style={{ width: '9.66%' }} />
-                <col style={{ width: '9.66%' }} />
-                <col style={{ width: '9.66%' }} />
-                <col style={{ width: '9.7%' }} />
-              </colgroup>
-              <thead className="bg-slate-100 print:bg-slate-200">
-                <tr className="border-b-2 border-slate-800 bg-slate-100 print:bg-slate-200 font-black">
-                  <th
-                    style={{ width: '10%' }}
-                    className="w-[10%] min-w-[70px] py-1.5 px-1 border-b border-l border-slate-300 print:border-slate-400 text-center font-bold align-middle text-xs print:text-[9px]"
-                  >
-                    كود الحساب
-                  </th>
-                  <th
-                    style={{ width: '26%', wordBreak: 'normal', overflowWrap: 'break-word', whiteSpace: 'normal' }}
-                    className="w-[26%] min-w-[180px] py-1.5 px-2 border-b border-l border-slate-300 print:border-slate-400 text-center font-bold align-middle whitespace-normal break-words leading-relaxed text-xs print:text-[9px]"
-                  >
-                    اسم الحساب
-                  </th>
-                  <th
-                    style={{ width: '6%' }}
-                    className="w-[6%] min-w-[45px] py-1.5 px-1 border-b border-l border-slate-300 print:border-slate-400 text-center font-bold align-middle text-[10px] print:text-[9px] whitespace-nowrap"
-                  >
-                    المستوى
-                  </th>
-                  <th
-                    style={{ width: '9.66%' }}
-                    className="w-[9.66%] py-1.5 px-1 border-b border-l border-slate-300 print:border-slate-400 text-center font-bold align-middle text-[9.5px] print:text-[9px] font-mono"
-                  >
-                    أول المدة (مدين)
-                  </th>
-                  <th
-                    style={{ width: '9.66%' }}
-                    className="w-[9.66%] py-1.5 px-1 border-b border-l border-slate-300 print:border-slate-400 text-center font-bold align-middle text-[9.5px] print:text-[9px] font-mono"
-                  >
-                    أول المدة (دائن)
-                  </th>
-                  <th
-                    style={{ width: '9.66%' }}
-                    className="w-[9.66%] py-1.5 px-1 border-b border-l border-slate-300 print:border-slate-400 text-center font-bold align-middle text-[9.5px] print:text-[9px] font-mono"
-                  >
-                    حركات (مدين)
-                  </th>
-                  <th
-                    style={{ width: '9.66%' }}
-                    className="w-[9.66%] py-1.5 px-1 border-b border-l border-slate-300 print:border-slate-400 text-center font-bold align-middle text-[9.5px] print:text-[9px] font-mono"
-                  >
-                    حركات (دائن)
-                  </th>
-                  <th
-                    style={{ width: '9.66%' }}
-                    className="w-[9.66%] py-1.5 px-1 border-b border-l border-slate-300 print:border-slate-400 text-center font-bold align-middle text-[9.5px] print:text-[9px] font-mono"
-                  >
-                    ختامي (مدين)
-                  </th>
-                  <th
-                    style={{ width: '9.7%' }}
-                    className="w-[9.7%] py-1.5 px-1 border-b border-slate-300 print:border-slate-400 text-center font-bold align-middle text-[9.5px] print:text-[9px] font-mono"
-                  >
-                    ختامي (دائن)
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200 print:divide-slate-300">
-                {filteredItems.map((item, idx) => (
-                  <tr
-                    key={item.accountCode}
-                    className={`border-b border-slate-200 print:border-slate-300 transition-colors ${
-                      idx % 2 === 1 ? 'bg-slate-50/50 print:bg-slate-100/40' : 'bg-white print:bg-white'
-                    } ${
-                      item.level <= 2 ? 'font-black bg-slate-100/80 print:bg-slate-200/60' : ''
-                    }`}
-                  >
-                    <td className="text-center font-mono align-middle py-1 px-1 text-xs print:text-[9px] border-b border-l border-slate-200 print:border-slate-300">
-                      {item.accountCode}
-                    </td>
-                    <td
-                      className="text-center align-middle font-medium py-1 px-2 text-xs print:text-[9.5px] border-b border-l border-slate-200 print:border-slate-300 whitespace-normal break-words leading-relaxed"
-                      style={{ wordBreak: 'normal', overflowWrap: 'break-word', whiteSpace: 'normal' }}
-                    >
-                      <div
-                        className="flex items-center justify-center gap-1"
-                        style={{ wordBreak: 'normal', overflowWrap: 'break-word', whiteSpace: 'normal' }}
-                      >
-                        {item.level > 1 && (
-                          <span className="text-gray-400 print:text-gray-500 font-mono text-[8px] shrink-0">↳</span>
-                        )}
-                        <span
-                          className="break-words leading-relaxed"
-                          style={{ wordBreak: 'normal', overflowWrap: 'break-word', whiteSpace: 'normal' }}
-                        >
-                          {item.accountNameAr}
+            return (
+              <div
+                key={pageIndex}
+                className="print-sheet flex flex-col justify-between bg-white text-slate-900 p-6 rounded-2xl border border-slate-200 shadow-md w-full max-w-[1240px] print:max-w-none print:w-full print:bg-white print:p-0 print:m-0 print:border-none print:shadow-none print:rounded-none print:overflow-hidden print:break-after-page"
+                style={{ pageBreakAfter: isLastPage ? 'auto' : 'always' }}
+              >
+                {/* 1. Header (Full Brand Header on Page 1, Condensed Mini-Header on Subsequent Pages) */}
+                <div className="shrink-0">
+                  {isFirstPage ? (
+                    <div className="space-y-2 pb-2">
+                      <div className="flex items-center justify-between border-b-2 border-slate-800 pb-2 print:pb-1">
+                        <div className="space-y-0.5">
+                          <h1 className="text-xl print:text-lg font-black tracking-tight text-slate-900 print:text-black flex items-center gap-2">
+                            <span className="text-[#D99B26] print:text-black">شركة ترابط للمقاولات والتجارة</span>
+                            <span className="text-xs px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-300 print:hidden font-bold">ش.م.م</span>
+                          </h1>
+                          <p className="text-xs print:text-[10px] font-bold text-slate-600 print:text-gray-700">
+                            TARABOT CONTRACTING & TRADING CO.
+                          </p>
+                          <p className="text-[10px] print:text-[9px] text-slate-500 print:text-gray-600">
+                            سجل تجاري: 48921 | بطاقة ضريبية: 312-894-102 | القاهرة، جمهورية مصر العربية
+                          </p>
+                        </div>
+
+                        <div className="text-center p-2 print:p-1.5 rounded-2xl border border-slate-300 bg-slate-50/80 print:border-slate-800 print:bg-transparent min-w-[220px]">
+                          <div className="text-sm print:text-xs font-black text-slate-900 print:text-black">
+                            ميزان المراجعة بالأرصدة والمجاميع (المستوى {selectedLevel})
+                          </div>
+                          <div className="text-[10px] print:text-[9px] font-bold text-slate-600 print:text-black">
+                            5-Level Trial Balance Report (Level {selectedLevel})
+                          </div>
+                          <div className="text-[9px] print:text-[8px] text-slate-500 print:text-gray-600 mt-0.5">
+                            معايير المحاسبة المصرية (EAS) والدولية (IFRS)
+                          </div>
+                          <div className="text-[9px] print:text-[8px] font-mono text-slate-600 mt-0.5 print:text-black">
+                            من {startDate} إلى {endDate}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Subtitle / Filter notes / Metadata 3-Way Realignment */}
+                      <div className="grid grid-cols-3 items-center text-xs print:text-[10px] text-slate-600 pb-1 border-b border-slate-200 print:border-slate-300">
+                        <div className="text-right font-bold text-slate-800 print:text-black">
+                          {selectedCostCenter
+                            ? `مركز التكلفة: ${costCenters.find(c => String(c.id) === String(selectedCostCenter))?.nameAr || selectedCostCenter}`
+                            : 'جميع مراكز التكلفة'}
+                        </div>
+                        <div className="text-center font-mono text-[10px] text-slate-700 print:text-black font-semibold">
+                          تاريخ الإصدار: 2026-10-13
+                        </div>
+                        <div className="text-left font-bold text-slate-800 print:text-black">
+                          {printedByName}
+                        </div>
+                      </div>
+
+                      {/* Printable Balance Confirmation Alert Header */}
+                      <div className="flex items-center justify-between p-2 rounded-xl border border-slate-300 text-xs font-bold print:border-slate-400 bg-slate-50/50 print:bg-slate-100/40">
+                        <span className="flex items-center gap-1.5">
+                          <span className={`w-2 h-2 rounded-full ${isBalanced ? 'bg-emerald-600' : 'bg-rose-600'}`}></span>
+                          حالة اتزان الميزان: {isBalanced ? 'متزن بنجاح (الفرق = 0.00 جم)' : `غير متزن (الفرق = ${formatEGP(diff)} جم)`}
+                        </span>
+                        <span>عدد الحسابات الإجمالي: {filteredItems.length} حساب</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between border-b border-slate-300 pb-1 mb-1 text-slate-700 text-xs shrink-0 print:border-slate-400">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-slate-900 print:text-black">شركة ترابط للمقاولات والتجارة</span>
+                        <span className="text-slate-400 print:text-slate-500">|</span>
+                        <span className="font-medium text-slate-700 print:text-black">
+                          ميزان المراجعة بالأرصدة والمجاميع (المستوى {selectedLevel})
+                        </span>
+                        <span className="text-slate-400 print:text-slate-500">|</span>
+                        <span className="font-mono text-[10px] text-slate-600 print:text-black">
+                          من {startDate} إلى {endDate}
                         </span>
                       </div>
-                    </td>
-                    <td className="text-center align-middle py-1 px-1 text-xs print:text-[9px] whitespace-nowrap border-b border-l border-slate-200 print:border-slate-300">
-                      م{item.level}
-                    </td>
-                    <td className="text-center font-mono align-middle py-1 px-1 text-[9.5px] print:text-[9px] tabular-nums border-b border-l border-slate-200 print:border-slate-300" dir="ltr">
-                      {formatAccountingNumber(item.openingDebit)}
-                    </td>
-                    <td className="text-center font-mono align-middle py-1 px-1 text-[9.5px] print:text-[9px] tabular-nums border-b border-l border-slate-200 print:border-slate-300" dir="ltr">
-                      {formatAccountingNumber(item.openingCredit)}
-                    </td>
-                    <td className="text-center font-mono align-middle py-1 px-1 text-[9.5px] print:text-[9px] tabular-nums border-b border-l border-slate-200 print:border-slate-300" dir="ltr">
-                      {formatAccountingNumber(item.periodDebit)}
-                    </td>
-                    <td className="text-center font-mono align-middle py-1 px-1 text-[9.5px] print:text-[9px] tabular-nums border-b border-l border-slate-200 print:border-slate-300" dir="ltr">
-                      {formatAccountingNumber(item.periodCredit)}
-                    </td>
-                    <td className="text-center font-mono align-middle py-1 px-1 text-[9.5px] print:text-[9px] tabular-nums border-b border-l border-slate-200 print:border-slate-300" dir="ltr">
-                      {formatAccountingNumber(item.endingDebit)}
-                    </td>
-                    <td className="text-center font-mono align-middle py-1 px-1 text-[9.5px] print:text-[9px] tabular-nums border-b border-slate-200 print:border-slate-300" dir="ltr">
-                      {formatAccountingNumber(item.endingCredit)}
-                    </td>
-                  </tr>
-                ))}
+                      <div className="flex items-center gap-2 font-mono text-[10px] text-slate-600">
+                        <span className="bg-slate-100 px-2 py-0.5 rounded border border-slate-300 print:border-slate-400 font-bold">
+                          صفحة {pageIndex + 1} من {totalPrintPages}
+                        </span>
+                      </div>
+                    </div>
+                  )}
 
-                {/* Grand Total Row - Renders strictly ONCE at the very conclusion of the dataset on the final sheet */}
-                {data && (
-                  <tr className="ledger-tail-row border-t-2 border-b-2 border-slate-800 bg-slate-200 print:bg-slate-300 font-black page-break-inside-avoid">
-                    <td colSpan={3} className="py-2 px-2 text-center align-middle font-black border-t-2 border-b-2 border-slate-800 border-l border-slate-300 print:border-slate-400 text-xs print:text-[9.5px]">
-                      الإجمالي العام
-                    </td>
-                    <td className="text-center font-mono align-middle py-2 px-1 text-[9.5px] print:text-[9px] tabular-nums font-black border-t-2 border-b-2 border-slate-800 border-l border-slate-300 print:border-slate-400" dir="ltr">
-                      {formatAccountingNumber(data.totalOpeningDebit)}
-                    </td>
-                    <td className="text-center font-mono align-middle py-2 px-1 text-[9.5px] print:text-[9px] tabular-nums font-black border-t-2 border-b-2 border-slate-800 border-l border-slate-300 print:border-slate-400" dir="ltr">
-                      {formatAccountingNumber(data.totalOpeningCredit)}
-                    </td>
-                    <td className="text-center font-mono align-middle py-2 px-1 text-[9.5px] print:text-[9px] tabular-nums font-black border-t-2 border-b-2 border-slate-800 border-l border-slate-300 print:border-slate-400" dir="ltr">
-                      {formatAccountingNumber(data.totalPeriodDebit)}
-                    </td>
-                    <td className="text-center font-mono align-middle py-2 px-1 text-[9.5px] print:text-[9px] tabular-nums font-black border-t-2 border-b-2 border-slate-800 border-l border-slate-300 print:border-slate-400" dir="ltr">
-                      {formatAccountingNumber(data.totalPeriodCredit)}
-                    </td>
-                    <td className="text-center font-mono align-middle py-2 px-1 text-[9.5px] print:text-[9px] tabular-nums font-black border-t-2 border-b-2 border-slate-800 border-l border-slate-300 print:border-slate-400" dir="ltr">
-                      {formatAccountingNumber(data.totalEndingDebit)}
-                    </td>
-                    <td className="text-center font-mono align-middle py-2 px-1 text-[9.5px] print:text-[9px] tabular-nums font-black border-t-2 border-b-2 border-slate-800 print:border-slate-400" dir="ltr">
-                      {formatAccountingNumber(data.totalEndingCredit)}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                  {/* 2. Curved Table with Fixed Rows */}
+                  <div className="border border-slate-300 rounded-xl overflow-hidden mt-1.5 print:border-slate-400 print:rounded-xl">
+                    <table
+                      className="w-full table-fixed border-separate border-spacing-0 text-center"
+                      style={{ tableLayout: 'fixed', width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}
+                    >
+                      <colgroup>
+                        <col style={{ width: '10%' }} /> {/* كود الحساب */}
+                        <col style={{ width: '28%' }} /> {/* اسم الحساب (مساحة واسعة مريحة) */}
+                        <col style={{ width: '6%' }} />  {/* المستوى */}
+                        <col style={{ width: '9.3%' }} />{/* أول المدة مدين */}
+                        <col style={{ width: '9.3%' }} />{/* أول المدة دائن */}
+                        <col style={{ width: '9.3%' }} />{/* حركات مدين */}
+                        <col style={{ width: '9.3%' }} />{/* حركات دائن */}
+                        <col style={{ width: '9.3%' }} />{/* ختامي مدين */}
+                        <col style={{ width: '9.5%' }} />{/* ختامي دائن */}
+                      </colgroup>
+                      <thead className="bg-slate-100 print:bg-slate-200 text-slate-800 text-[10px] font-bold">
+                        <tr className="border-b border-slate-300 print:border-slate-400">
+                          <th className="w-[10%] py-1.5 px-1 border-b border-l border-slate-300 print:border-slate-400 text-center font-bold align-middle">
+                            كود الحساب
+                          </th>
+                          <th className="w-[28%] py-1.5 px-2 border-b border-l border-slate-300 print:border-slate-400 text-center font-bold align-middle">
+                            اسم الحساب
+                          </th>
+                          <th className="w-[6%] py-1.5 px-1 border-b border-l border-slate-300 print:border-slate-400 text-center font-bold align-middle whitespace-nowrap">
+                            المستوى
+                          </th>
+                          <th className="w-[9.3%] py-1.5 px-1 border-b border-l border-slate-300 print:border-slate-400 text-center font-bold align-middle font-mono">
+                            أول المدة (مدين)
+                          </th>
+                          <th className="w-[9.3%] py-1.5 px-1 border-b border-l border-slate-300 print:border-slate-400 text-center font-bold align-middle font-mono">
+                            أول المدة (دائن)
+                          </th>
+                          <th className="w-[9.3%] py-1.5 px-1 border-b border-l border-slate-300 print:border-slate-400 text-center font-bold align-middle font-mono">
+                            حركات (مدين)
+                          </th>
+                          <th className="w-[9.3%] py-1.5 px-1 border-b border-l border-slate-300 print:border-slate-400 text-center font-bold align-middle font-mono">
+                            حركات (دائن)
+                          </th>
+                          <th className="w-[9.3%] py-1.5 px-1 border-b border-l border-slate-300 print:border-slate-400 text-center font-bold align-middle font-mono">
+                            ختامي (مدين)
+                          </th>
+                          <th className="w-[9.5%] py-1.5 px-1 border-b border-slate-300 print:border-slate-400 text-center font-bold align-middle font-mono">
+                            ختامي (دائن)
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200 print:divide-slate-300 text-[9.5px]">
+                        {pageRows.map((row, idx) => (
+                          <tr
+                            key={row.accountCode}
+                            className={`h-6 border-b border-slate-200 print:border-slate-300 ${
+                              idx % 2 === 1 ? 'bg-slate-50/50 print:bg-slate-100/40' : 'bg-white print:bg-white'
+                            } ${row.level <= 2 ? 'font-bold bg-slate-100/70 print:bg-slate-200/50' : ''}`}
+                          >
+                            <td className="font-mono text-center align-middle py-1 px-1 border-b border-l border-slate-200 print:border-slate-300">
+                              {row.accountCode}
+                            </td>
+                            <td className="text-center align-middle px-2 overflow-hidden text-ellipsis whitespace-nowrap border-b border-l border-slate-200 print:border-slate-300">
+                              <div className="flex items-center justify-center gap-1 overflow-hidden">
+                                {row.level > 1 && (
+                                  <span className="text-gray-400 print:text-gray-500 font-mono text-[8px] shrink-0">↳</span>
+                                )}
+                                <span className="truncate">{row.accountNameAr}</span>
+                              </div>
+                            </td>
+                            <td className="text-center align-middle py-1 px-1 whitespace-nowrap border-b border-l border-slate-200 print:border-slate-300">
+                              م{row.level}
+                            </td>
+                            <td className="font-mono text-center align-middle py-1 px-1 tabular-nums border-b border-l border-slate-200 print:border-slate-300" dir="ltr">
+                              {formatAccountingNumber(row.openingDebit)}
+                            </td>
+                            <td className="font-mono text-center align-middle py-1 px-1 tabular-nums border-b border-l border-slate-200 print:border-slate-300" dir="ltr">
+                              {formatAccountingNumber(row.openingCredit)}
+                            </td>
+                            <td className="font-mono text-center align-middle py-1 px-1 tabular-nums border-b border-l border-slate-200 print:border-slate-300" dir="ltr">
+                              {formatAccountingNumber(row.periodDebit)}
+                            </td>
+                            <td className="font-mono text-center align-middle py-1 px-1 tabular-nums border-b border-l border-slate-200 print:border-slate-300" dir="ltr">
+                              {formatAccountingNumber(row.periodCredit)}
+                            </td>
+                            <td className="font-mono text-center align-middle py-1 px-1 tabular-nums border-b border-l border-slate-200 print:border-slate-300" dir="ltr">
+                              {formatAccountingNumber(row.endingDebit)}
+                            </td>
+                            <td className="font-mono text-center align-middle py-1 px-1 tabular-nums border-b border-slate-200 print:border-slate-300" dir="ltr">
+                              {formatAccountingNumber(row.endingCredit)}
+                            </td>
+                          </tr>
+                        ))}
 
-          {/* Page Attribution and Numbering Bar Directly Below the Table Container */}
-          <div className="flex justify-between items-center text-[10px] text-slate-600 pt-1.5 px-3 print:pt-1">
-            <span>طُبع بواسطة: <strong>{(user as any)?.displayName || user?.nameAr || user?.nameEn || (user as any)?.name || 'يوسف حجازي'}</strong></span>
-            <span className="font-mono font-bold bg-slate-100 print:bg-slate-200 px-3 py-0.5 rounded-full border border-slate-300">
-              ميزان المراجعة العام - {filteredItems.length} حساب
-            </span>
-            <span>تاريخ الطباعة: {new Date().toLocaleDateString('ar-EG')}</span>
-          </div>
+                        {/* If Last Page: Append Grand Total Row directly below last account */}
+                        {isLastPage && data && (
+                          <tr className="ledger-tail-row h-7 border-t-2 border-b-2 border-slate-800 bg-slate-200 print:bg-slate-300 font-black">
+                            <td colSpan={3} className="py-1 px-2 text-center align-middle font-black border-t-2 border-b-2 border-slate-800 border-l border-slate-300 print:border-slate-400 text-xs">
+                              الإجمالي العام
+                            </td>
+                            <td className="font-mono text-center align-middle py-1 px-1 tabular-nums font-black border-t-2 border-b-2 border-slate-800 border-l border-slate-300 print:border-slate-400" dir="ltr">
+                              {formatAccountingNumber(data.totalOpeningDebit)}
+                            </td>
+                            <td className="font-mono text-center align-middle py-1 px-1 tabular-nums font-black border-t-2 border-b-2 border-slate-800 border-l border-slate-300 print:border-slate-400" dir="ltr">
+                              {formatAccountingNumber(data.totalOpeningCredit)}
+                            </td>
+                            <td className="font-mono text-center align-middle py-1 px-1 tabular-nums font-black border-t-2 border-b-2 border-slate-800 border-l border-slate-300 print:border-slate-400" dir="ltr">
+                              {formatAccountingNumber(data.totalPeriodDebit)}
+                            </td>
+                            <td className="font-mono text-center align-middle py-1 px-1 tabular-nums font-black border-t-2 border-b-2 border-slate-800 border-l border-slate-300 print:border-slate-400" dir="ltr">
+                              {formatAccountingNumber(data.totalPeriodCredit)}
+                            </td>
+                            <td className="font-mono text-center align-middle py-1 px-1 tabular-nums font-black border-t-2 border-b-2 border-slate-800 border-l border-slate-300 print:border-slate-400" dir="ltr">
+                              {formatAccountingNumber(data.totalEndingDebit)}
+                            </td>
+                            <td className="font-mono text-center align-middle py-1 px-1 tabular-nums font-black border-t-2 border-b-2 border-slate-800 print:border-slate-400" dir="ltr">
+                              {formatAccountingNumber(data.totalEndingCredit)}
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* 3. Bottom Section: Signatures on Last Page + Persistent Numbered Footer on ALL Pages */}
+                <div className="mt-auto pt-2 shrink-0">
+                  {isLastPage && (
+                    <div className="grid grid-cols-3 gap-3 mb-2 print:gap-2 print:mb-1.5 shrink-0">
+                      <div className="border border-slate-300 print:border-slate-400 rounded-xl p-2 print:p-1.5 text-center bg-slate-50/50 print:bg-white flex flex-col justify-between">
+                        <span className="font-bold text-xs print:text-[10px] text-slate-800 print:text-black block">المحاسب</span>
+                        <span className="text-[9px] print:text-[8px] text-slate-600 print:text-black block mt-3 print:mt-2" dir="rtl">
+                          التاريخ: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        </span>
+                      </div>
+                      <div className="border border-slate-300 print:border-slate-400 rounded-xl p-2 print:p-1.5 text-center bg-slate-50/50 print:bg-white flex flex-col justify-between">
+                        <span className="font-bold text-xs print:text-[10px] text-slate-800 print:text-black block">المراجع</span>
+                        <span className="text-[9px] print:text-[8px] text-slate-600 print:text-black block mt-3 print:mt-2" dir="rtl">
+                          التاريخ: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        </span>
+                      </div>
+                      <div className="border border-slate-300 print:border-slate-400 rounded-xl p-2 print:p-1.5 text-center bg-slate-50/50 print:bg-white flex flex-col justify-between">
+                        <span className="font-bold text-xs print:text-[10px] text-slate-800 print:text-black block">يعتمد</span>
+                        <span className="text-[9px] print:text-[8px] text-slate-600 print:text-black block mt-3 print:mt-2" dir="rtl">
+                          التاريخ: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Visible Audit & Pagination Bar on EVERY single printed page */}
+                  <div className="flex justify-between items-center text-[9px] text-slate-600 pt-1 border-t border-slate-300 print:pt-1 shrink-0">
+                    <span>طُبع بواسطة: <strong>{printedByName}</strong></span>
+                    <span className="font-mono font-bold bg-slate-100 border border-slate-300 px-3 py-0.5 rounded-full text-slate-800 print:text-black">
+                      صفحة {pageIndex + 1} من {totalPrintPages}
+                    </span>
+                    <span>تاريخ الطباعة: {new Date().toLocaleDateString('ar-EG')}</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </ReportPrintLayout>
     </div>
