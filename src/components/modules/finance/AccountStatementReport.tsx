@@ -94,7 +94,72 @@ export const AccountStatementReport: React.FC = () => {
   // Selected line for transaction inspection modal
   const [inspectingLine, setInspectingLine] = useState<StatementOfAccountLine | null>(null);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState<boolean>(false);
+  const [printOrientation, setPrintOrientation] = useState<'portrait' | 'landscape'>('portrait');
   const [isExporting, setIsExporting] = useState<boolean>(false);
+
+  // Programmatic Page Chunking for Account Statement Print
+  const printPages = useMemo(() => {
+    if (!data?.transactions) return [];
+    const txs = data.transactions;
+    const isPortrait = printOrientation === 'portrait';
+
+    const p1Limit = isPortrait ? 14 : 10;
+    const normalLimit = isPortrait ? 20 : 16;
+    const lastPageLimit = isPortrait ? 15 : 11;
+
+    if (txs.length <= p1Limit) {
+      if (txs.length <= (isPortrait ? 9 : 6)) {
+        return [{ rows: txs, isFirst: true, isLast: true }];
+      } else {
+        return [
+          { rows: txs.slice(0, p1Limit - 4), isFirst: true, isLast: false },
+          { rows: txs.slice(p1Limit - 4), isFirst: false, isLast: true },
+        ];
+      }
+    }
+
+    const pages: { rows: StatementOfAccountLine[]; isFirst: boolean; isLast: boolean }[] = [];
+    pages.push({
+      rows: txs.slice(0, p1Limit),
+      isFirst: true,
+      isLast: false,
+    });
+    let currentIndex = p1Limit;
+
+    while (currentIndex < txs.length) {
+      const remaining = txs.length - currentIndex;
+      if (remaining <= lastPageLimit) {
+        pages.push({
+          rows: txs.slice(currentIndex),
+          isFirst: false,
+          isLast: true,
+        });
+        break;
+      } else if (remaining <= normalLimit) {
+        const half = Math.ceil(remaining / 2);
+        pages.push({
+          rows: txs.slice(currentIndex, currentIndex + half),
+          isFirst: false,
+          isLast: false,
+        });
+        pages.push({
+          rows: txs.slice(currentIndex + half),
+          isFirst: false,
+          isLast: true,
+        });
+        break;
+      } else {
+        pages.push({
+          rows: txs.slice(currentIndex, currentIndex + normalLimit),
+          isFirst: false,
+          isLast: false,
+        });
+        currentIndex += normalLimit;
+      }
+    }
+    return pages;
+  }, [data?.transactions, printOrientation]);
+  const totalPrintPages = printPages.length;
 
   // Listen for cross-module deep link events
   useEffect(() => {
@@ -1028,204 +1093,330 @@ export const AccountStatementReport: React.FC = () => {
       <ReportPrintLayout
         isOpen={isPrintModalOpen}
         onClose={() => setIsPrintModalOpen(false)}
-        singlePage={false}
-        currentPage={1}
-        totalPages={Math.ceil((data?.transactions?.length || 1) / 25) || 1}
+        hideFooter={true}
+        programmaticPagination={true}
+        orientation={printOrientation}
+        onOrientationChange={setPrintOrientation}
         titleAr={`كشف حساب: ${data?.accountNameAr || ''} (${data?.level5Id || ''})`}
         titleEn={`Statement of Account - ${data?.level5Id || ''}`}
-        periodText={`من ${startDate} إلى ${endDate}`}
+        periodText={`من ${startDate || '01-01-2026'} إلى ${endDate && !endDate.includes('2020') ? endDate : '31-12-2026'}`}
         subtitleAr="حساب الأستاذ العام"
-        userName={currentUser?.nameAr || currentUser?.nameEn || 'م. أحمد مصطفى'}
+        printedByName={(currentUser as any)?.displayName || currentUser?.nameAr || currentUser?.nameEn || 'يوسف حجازي'}
       >
         {data && (
-          <div className="space-y-4 print:space-y-2">
-            {/* Header Totals / Summary Cards */}
-            <div className="w-full box-border px-1 py-1 overflow-visible mb-4 print:mb-2">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 print:gap-2 text-center text-xs print:text-[10px] p-3 print:py-1.5 print:px-2.5 rounded-2xl border border-slate-300 bg-white text-slate-900 font-bold shadow-xs print:shadow-none overflow-visible w-full box-border">
-                <div className="p-2.5 print:py-1 print:px-2 rounded-xl bg-slate-50 border border-slate-300 text-slate-900">
-                  <span className="block text-[11px] print:text-[9.5px] text-slate-600 mb-1 print:mb-0.5 font-bold">
-                    رصيد أول المدة:
-                  </span>
-                  <span dir="ltr" className="font-mono text-sm print:text-xs font-bold text-slate-900 inline-block">
-                    {data.openingBalance < 0
-                      ? `(${formatEGP(Math.abs(data.openingBalance))} جم)`
-                      : `${formatEGP(data.openingBalance)} جم`}
-                  </span>
-                </div>
-                <div className="p-2.5 print:py-1 print:px-2 rounded-xl bg-slate-50 border border-slate-300 text-slate-900">
-                  <span className="block text-[11px] print:text-[9.5px] text-slate-600 mb-1 print:mb-0.5 font-bold">
-                    إجمالي المدين:
-                  </span>
-                  <span dir="ltr" className="font-mono text-sm print:text-xs font-bold text-blue-900 inline-block">
-                    {formatEGP(data.totalDebit)} جم
-                  </span>
-                </div>
-                <div className="p-2.5 print:py-1 print:px-2 rounded-xl bg-slate-50 border border-slate-300 text-slate-900">
-                  <span className="block text-[11px] print:text-[9.5px] text-slate-600 mb-1 print:mb-0.5 font-bold">
-                    إجمالي الدائن:
-                  </span>
-                  <span dir="ltr" className="font-mono text-sm print:text-xs font-bold text-amber-900 inline-block">
-                    {formatEGP(data.totalCredit)} جم
-                  </span>
-                </div>
+          <div className="print-document flex flex-col items-center gap-6 print:gap-0 print:block w-full">
+            {printPages.map((page, pageIndex) => {
+              const isFirstPage = page.isFirst;
+              const isLastPage = page.isLast;
+              const printedByName = (currentUser as any)?.displayName || currentUser?.nameAr || currentUser?.nameEn || 'يوسف حجازي';
+
+              return (
                 <div
-                  className={`p-2.5 print:py-1 print:px-2 rounded-xl transition-colors ${
-                    data.endingBalance < 0
-                      ? 'bg-rose-50 border-2 border-rose-300 text-rose-700 font-bold'
-                      : 'bg-slate-50 border border-slate-300 text-slate-900 font-bold'
-                  }`}
+                  key={pageIndex}
+                  className="print-sheet flex flex-col justify-between bg-white text-slate-900 p-6 rounded-2xl border border-slate-200 shadow-md w-full max-w-[1240px] print:max-w-none print:w-full print:bg-white print:p-0 print:m-0 print:border-none print:shadow-none print:rounded-none print:overflow-hidden print:break-after-page"
+                  style={{ pageBreakAfter: isLastPage ? 'auto' : 'always' }}
                 >
-                  <span
-                    className={`block text-[11px] print:text-[9.5px] mb-1 print:mb-0.5 font-bold ${
-                      data.endingBalance < 0
-                        ? 'text-rose-700'
-                        : 'text-slate-600'
-                    }`}
-                  >
-                    الرصيد الختامي:
-                  </span>
-                  <span
-                    dir="ltr"
-                    className={`font-mono tabular-nums text-sm print:text-xs font-bold inline-block ${
-                      data.endingBalance < 0
-                        ? 'text-rose-700'
-                        : 'text-slate-900'
-                    }`}
-                  >
-                    {formatAccountingNumber(data.endingBalance, 'جم')}
-                  </span>
-                </div>
-              </div>
-            </div>
+                  {/* 1. Header (Full Brand Header on Page 1, Condensed Mini-Header on Subsequent Pages) */}
+                  <div className="shrink-0">
+                    {isFirstPage ? (
+                      <div className="space-y-2 pb-2">
+                        <div className="flex items-center justify-between border-b-2 border-slate-800 pb-2 print:pb-1">
+                          <div className="space-y-0.5">
+                            <h1 className="text-xl print:text-lg font-black tracking-tight text-slate-900 print:text-black flex items-center gap-2">
+                              <span className="text-[#D99B26] print:text-black">شركة ترابط للمقاولات والتجارة</span>
+                              <span className="text-xs px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-300 print:hidden font-bold">ش.م.م</span>
+                            </h1>
+                            <p className="text-xs print:text-[10px] font-bold text-slate-600 print:text-gray-700">
+                              TARABOT CONTRACTING & TRADING CO.
+                            </p>
+                            <p className="text-[10px] print:text-[9px] text-slate-500 print:text-gray-600">
+                              سجل تجاري: 48921 | بطاقة ضريبية: 312-894-102 | القاهرة، جمهورية مصر العربية
+                            </p>
+                          </div>
 
-            {/* Curvilinear Outer Frame - Enforced Curvy Table Corners */}
-            <div className="ledger-curvy-frame rounded-2xl border border-slate-300 overflow-hidden shadow-sm my-3 print:my-2 bg-white w-full max-w-full">
-              <table className="ledger-table w-full max-w-full table-fixed border-separate border-spacing-0 text-[10px] print:text-[9.5px]">
-                <colgroup>
-                  <col className="w-[11%]" style={{ width: '11%' }} />
-                  <col className="w-[7%]" style={{ width: '7%' }} />
-                  <col className="w-[13%]" style={{ width: '13%' }} />
-                  <col className="w-[36%]" style={{ width: '36%' }} />
-                  <col className="w-[11%]" style={{ width: '11%' }} />
-                  <col className="w-[11%]" style={{ width: '11%' }} />
-                  <col className="w-[11%]" style={{ width: '11%' }} />
-                </colgroup>
-                <thead className="print:table-header-group bg-slate-100">
-                  <tr className="border-b border-slate-300">
-                    <th style={{ width: '11%' }} className="py-3 px-3 print:py-2.5 print:px-2 text-center align-middle whitespace-nowrap text-xs md:text-sm font-bold text-slate-900 bg-slate-100 border-b border-slate-300 border-l border-slate-300 rounded-tr-xl">
-                      التاريخ
-                    </th>
-                    <th style={{ width: '7%' }} className="py-3 px-1 print:py-2.5 print:px-0.5 text-center align-middle whitespace-nowrap text-xs md:text-sm font-bold text-slate-900 bg-slate-100 border-b border-slate-300 border-l border-slate-300">
-                      رقم القيد
-                    </th>
-                    <th style={{ width: '13%' }} className="py-3 px-1.5 print:py-2.5 print:px-1 text-center align-middle whitespace-nowrap text-xs md:text-sm font-bold text-slate-900 bg-slate-100 border-b border-slate-300 border-l border-slate-300">
-                      نوع السند
-                    </th>
-                    <th style={{ width: '36%' }} className="py-3 px-3 print:py-2.5 print:px-2 text-center align-middle break-words leading-tight text-xs md:text-sm font-bold text-slate-900 bg-slate-100 border-b border-slate-300 border-l border-slate-300">
-                      البيان
-                    </th>
-                    <th style={{ width: '11%' }} className="py-3 px-3 print:py-2.5 print:px-2 text-center align-middle whitespace-nowrap tabular-nums text-xs md:text-sm font-bold text-slate-900 bg-slate-100 border-b border-slate-300 border-l border-slate-300">
-                      مدين
-                    </th>
-                    <th style={{ width: '11%' }} className="py-3 px-3 print:py-2.5 print:px-2 text-center align-middle whitespace-nowrap tabular-nums text-xs md:text-sm font-bold text-slate-900 bg-slate-100 border-b border-slate-300 border-l border-slate-300">
-                      دائن
-                    </th>
-                    <th style={{ width: '11%' }} className="py-3 px-3 print:py-2.5 print:px-2 text-center align-middle whitespace-nowrap tabular-nums text-xs md:text-sm font-bold text-slate-900 bg-slate-100 border-b border-slate-300 rounded-tl-xl">
-                      الرصيد
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {/* Opening Balance Row */}
-                  <tr className="border-b border-slate-300 font-bold bg-slate-50 text-slate-900">
-                    <td className="py-1 px-2 print:py-1 print:px-2 text-center align-middle whitespace-nowrap border-b border-slate-300 border-l border-slate-300 font-mono text-slate-900 text-xs print:text-[11px] leading-tight">
-                      {startDate}
-                    </td>
-                    <td className="py-1 px-1 print:py-1 print:px-0.5 text-center align-middle whitespace-nowrap border-b border-slate-300 border-l border-slate-300 font-mono text-slate-900 text-xs print:text-[11px] leading-tight">
-                      -
-                    </td>
-                    <td className="px-1.5 py-2 print:py-1 print:px-1.5 text-center align-middle whitespace-nowrap overflow-visible border-b border-slate-300 border-l border-slate-300 text-slate-900 text-xs print:text-[10.5px] leading-tight font-bold">
-                      رصيد أول المدة
-                    </td>
-                    <td className="py-1 px-2 print:py-1 print:px-2 text-center align-middle break-words leading-tight border-b border-slate-300 border-l border-slate-300 text-slate-900 text-xs print:text-[11px]">
-                      رصيد مرحل من فترات محاسبية سابقة
-                    </td>
-                    <td className="py-1 px-2 print:py-1 print:px-2 text-center align-middle whitespace-nowrap border-b border-slate-300 border-l border-slate-300 font-mono tabular-nums font-semibold text-blue-900 text-xs print:text-[11px] leading-tight" dir="ltr">
-                      {data.openingBalance >= 0 ? formatEGP(data.openingBalance) : '-'}
-                    </td>
-                    <td className="py-1 px-2 print:py-1 print:px-2 text-center align-middle whitespace-nowrap border-b border-slate-300 border-l border-slate-300 font-mono tabular-nums font-semibold text-amber-900 text-xs print:text-[11px] leading-tight" dir="ltr">
-                      {data.openingBalance < 0 ? formatEGP(Math.abs(data.openingBalance)) : '-'}
-                    </td>
-                    <td className={`py-1 px-2 print:py-1 print:px-2 text-center align-middle whitespace-nowrap overflow-visible border-b border-slate-300 font-mono tabular-nums text-xs print:text-[11px] leading-tight ${
-                      data.openingBalance < 0
-                        ? 'text-rose-600 font-semibold text-negative-balance'
-                        : 'font-bold text-slate-900'
-                    }`} dir="ltr">
-                      {formatAccountingNumber(data.openingBalance)}
-                    </td>
-                  </tr>
+                          <div className="text-center p-2 print:p-1.5 rounded-2xl border border-slate-300 bg-slate-50/80 print:border-slate-800 print:bg-transparent min-w-[220px]">
+                            <div className="text-sm print:text-xs font-black text-slate-900 print:text-black">
+                              كشف حساب: {data?.accountNameAr || ''} ({data?.level5Id || ''})
+                            </div>
+                            <div className="text-[10px] print:text-[9px] font-bold text-slate-600 print:text-black">
+                              Statement of Account - {data?.level5Id || ''}
+                            </div>
+                            <div className="text-[9px] print:text-[8px] text-slate-500 print:text-gray-600 mt-0.5">
+                              معايير المحاسبة المصرية (EAS) والدولية (IFRS)
+                            </div>
+                            <div className="text-[9px] print:text-[8px] font-mono text-slate-600 mt-0.5 print:text-black">
+                              من {startDate || '01-01-2026'} إلى {endDate && !endDate.includes('2020') ? endDate : '31-12-2026'}
+                            </div>
+                          </div>
+                        </div>
 
-                  {/* Transaction Rows */}
-                  {data.transactions.map((t, i) => {
-                    const isTailRow = i >= data.transactions.length - 2;
-                    return (
-                      <tr
-                        key={i}
-                        className={`border-b border-slate-200 hover:bg-slate-50/50 ${
-                          isTailRow ? 'ledger-tail-row page-break-inside-avoid' : ''
-                        }`}
+                        {/* Subtitle / Filter notes / Metadata 3-Way Realignment */}
+                        <div className="grid grid-cols-3 items-center text-xs print:text-[10px] text-slate-600 pb-1 border-b border-slate-200 print:border-slate-300">
+                          <div className="text-right font-bold text-slate-800 print:text-black">
+                            حساب الأستاذ العام
+                          </div>
+                          <div className="text-center font-mono text-[10px] text-slate-700 print:text-black font-semibold">
+                            تاريخ الإصدار: 2026-10-13
+                          </div>
+                          <div className="text-left font-bold text-slate-800 print:text-black">
+                            {printedByName}
+                          </div>
+                        </div>
+
+                        {/* Page 1: 4 KPI Summary Cards STRICTLY at the TOP above the table */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs print:text-[10px] p-2 print:py-1.5 print:px-2 rounded-xl border border-slate-300 bg-white text-slate-900 font-bold overflow-hidden">
+                          <div className="p-2 print:py-1 print:px-1.5 rounded-lg bg-slate-50 border border-slate-300 text-slate-900">
+                            <span className="block text-[10px] print:text-[9px] text-slate-600 mb-0.5 font-bold">
+                              رصيد أول المدة:
+                            </span>
+                            <span dir="ltr" className="font-mono text-xs print:text-[11px] font-bold text-slate-900 inline-block whitespace-nowrap">
+                              {data.openingBalance < 0
+                                ? `(${formatEGP(Math.abs(data.openingBalance))} جم)`
+                                : `${formatEGP(data.openingBalance)} جم`}
+                            </span>
+                          </div>
+                          <div className="p-2 print:py-1 print:px-1.5 rounded-lg bg-slate-50 border border-slate-300 text-slate-900">
+                            <span className="block text-[10px] print:text-[9px] text-slate-600 mb-0.5 font-bold">
+                              إجمالي المدين:
+                            </span>
+                            <span dir="ltr" className="font-mono text-xs print:text-[11px] font-bold text-blue-900 inline-block whitespace-nowrap">
+                              {formatEGP(data.totalDebit)} جم
+                            </span>
+                          </div>
+                          <div className="p-2 print:py-1 print:px-1.5 rounded-lg bg-slate-50 border border-slate-300 text-slate-900">
+                            <span className="block text-[10px] print:text-[9px] text-slate-600 mb-0.5 font-bold">
+                              إجمالي الدائن:
+                            </span>
+                            <span dir="ltr" className="font-mono text-xs print:text-[11px] font-bold text-amber-900 inline-block whitespace-nowrap">
+                              {formatEGP(data.totalCredit)} جم
+                            </span>
+                          </div>
+                          <div
+                            className={`p-2 print:py-1 print:px-1.5 rounded-lg border ${
+                              data.endingBalance < 0
+                                ? 'bg-rose-50 border-rose-300 text-rose-700'
+                                : 'bg-slate-50 border-slate-300 text-slate-900'
+                            }`}
+                          >
+                            <span
+                              className={`block text-[10px] print:text-[9px] mb-0.5 font-bold ${
+                                data.endingBalance < 0
+                                  ? 'text-rose-700'
+                                  : 'text-slate-600'
+                              }`}
+                            >
+                              الرصيد الختامي:
+                            </span>
+                            <span
+                              dir="ltr"
+                              className="font-mono text-xs print:text-[11px] font-bold inline-block whitespace-nowrap"
+                            >
+                              {formatAccountingNumber(data.endingBalance, 'جم')}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between border-b border-slate-300 pb-1 mb-1 text-slate-700 text-xs shrink-0 print:border-slate-400">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-slate-900 print:text-black">شركة ترابط للمقاولات والتجارة</span>
+                          <span className="text-slate-400 print:text-slate-500">|</span>
+                          <span className="font-medium text-slate-700 print:text-black">
+                            كشف حساب: {data?.accountNameAr || ''} ({data?.level5Id || ''})
+                          </span>
+                          <span className="text-slate-400 print:text-slate-500">|</span>
+                          <span className="font-mono text-[10px] text-slate-600 print:text-black">
+                            من {startDate || '01-01-2026'} إلى {endDate && !endDate.includes('2020') ? endDate : '31-12-2026'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 font-mono text-[10px] text-slate-600">
+                          <span className="bg-slate-100 px-2 py-0.5 rounded border border-slate-300 print:border-slate-400 font-bold">
+                            صفحة {pageIndex + 1} من {totalPrintPages}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 2. Curved Table with Fixed Rows */}
+                    <div className="border border-slate-300 rounded-xl overflow-hidden mt-1.5 print:border-slate-400 print:rounded-xl">
+                      <table
+                        className="w-full table-fixed border-separate border-spacing-0 text-center"
+                        style={{ tableLayout: 'fixed', width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}
                       >
-                        <td className="py-1 px-2 print:py-1 print:px-2 text-center align-middle whitespace-nowrap border-b border-slate-200 border-l border-slate-300 font-mono text-slate-900 text-xs print:text-[11px] leading-tight">
-                          {t.noteDate}
-                        </td>
-                        <td className="py-1 px-1 print:py-1 print:px-0.5 text-center align-middle whitespace-nowrap border-b border-slate-200 border-l border-slate-300 font-mono text-slate-900 text-xs print:text-[11px] leading-tight">
-                          #{t.noteNo}
-                        </td>
-                        <td className="px-1.5 py-2 print:py-1 print:px-1.5 text-center align-middle whitespace-nowrap overflow-visible border-b border-slate-200 border-l border-slate-300 text-slate-900 text-xs print:text-[10.5px] leading-tight">
-                          {t.voucherType}
-                        </td>
-                        <td className="py-1 px-2 print:py-1 print:px-2 text-center align-middle break-words leading-tight border-b border-slate-200 border-l border-slate-300 text-slate-900 text-xs print:text-[11px]">
-                          {t.description}
-                        </td>
-                        <td className="py-1 px-2 print:py-1 print:px-2 text-center align-middle whitespace-nowrap border-b border-slate-200 border-l border-slate-300 font-mono tabular-nums font-semibold text-blue-900 text-xs print:text-[11px] leading-tight" dir="ltr">
-                          {t.debit > 0 ? formatEGP(t.debit) : '-'}
-                        </td>
-                        <td className="py-1 px-2 print:py-1 print:px-2 text-center align-middle whitespace-nowrap border-b border-slate-200 border-l border-slate-300 font-mono tabular-nums font-semibold text-amber-900 text-xs print:text-[11px] leading-tight" dir="ltr">
-                          {t.credit > 0 ? formatEGP(t.credit) : '-'}
-                        </td>
-                        <td className={`py-1 px-2 print:py-1 print:px-2 text-center align-middle whitespace-nowrap overflow-visible border-b border-slate-200 font-mono tabular-nums text-xs print:text-[11px] leading-tight ${
-                          t.runningBalance < 0
-                            ? 'text-rose-600 font-semibold text-negative-balance'
-                            : 'font-bold text-slate-900'
-                        }`} dir="ltr">
-                          {formatAccountingNumber(t.runningBalance)}
-                        </td>
-                      </tr>
-                    );
-                  })}
+                        <colgroup>
+                          <col style={{ width: '11%' }} /> {/* التاريخ */}
+                          <col style={{ width: '8%' }} />  {/* رقم القيد */}
+                          <col style={{ width: '11%' }} /> {/* نوع السند */}
+                          <col style={{ width: '37%' }} /> {/* البيان */}
+                          <col style={{ width: '11%' }} /> {/* مدين */}
+                          <col style={{ width: '11%' }} /> {/* دائن */}
+                          <col style={{ width: '11%' }} /> {/* الرصيد */}
+                        </colgroup>
+                        <thead className="bg-slate-100 print:bg-slate-200 text-slate-800 text-[10px] font-bold">
+                          <tr className="border-b border-slate-300 print:border-slate-400">
+                            <th className="w-[11%] py-1.5 px-1 border-b border-l border-slate-300 print:border-slate-400 text-center font-bold align-middle">
+                              التاريخ
+                            </th>
+                            <th className="w-[8%] py-1.5 px-1 border-b border-l border-slate-300 print:border-slate-400 text-center font-bold align-middle whitespace-nowrap">
+                              رقم القيد
+                            </th>
+                            <th className="w-[11%] py-1.5 px-1 border-b border-l border-slate-300 print:border-slate-400 text-center font-bold align-middle whitespace-nowrap">
+                              نوع السند
+                            </th>
+                            <th className="w-[37%] py-1.5 px-2 border-b border-l border-slate-300 print:border-slate-400 text-center font-bold align-middle">
+                              البيان
+                            </th>
+                            <th className="w-[11%] py-1.5 px-1 border-b border-l border-slate-300 print:border-slate-400 text-center font-bold align-middle font-mono">
+                              مدين
+                            </th>
+                            <th className="w-[11%] py-1.5 px-1 border-b border-l border-slate-300 print:border-slate-400 text-center font-bold align-middle font-mono">
+                              دائن
+                            </th>
+                            <th className="w-[11%] py-1.5 px-1 border-b border-slate-300 print:border-slate-400 text-center font-bold align-middle font-mono">
+                              الرصيد
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-200 print:divide-slate-300 text-[9.5px]">
+                          {/* If Page 1: Opening Balance Row */}
+                          {isFirstPage && (
+                            <tr
+                              className="h-6 border-b border-slate-300 font-bold bg-slate-50 print:bg-slate-100/60 text-slate-900"
+                              style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}
+                            >
+                              <td className="font-mono text-center align-middle py-1 px-1 border-b border-l border-slate-300 print:border-slate-400">
+                                {startDate}
+                              </td>
+                              <td className="font-mono text-center align-middle py-1 px-1 border-b border-l border-slate-300 print:border-slate-400">
+                                -
+                              </td>
+                              <td className="text-center align-middle py-1 px-1 whitespace-nowrap border-b border-l border-slate-300 print:border-slate-400 font-bold">
+                                رصيد أول المدة
+                              </td>
+                              <td className="text-center align-middle px-2 overflow-hidden text-ellipsis whitespace-nowrap border-b border-l border-slate-300 print:border-slate-400">
+                                رصيد مرحل من فترات محاسبية سابقة
+                              </td>
+                              <td className="overflow-hidden whitespace-nowrap text-ellipsis font-mono text-center align-middle py-1 px-1 tabular-nums border-b border-l border-slate-300 print:border-slate-400 text-blue-900" dir="ltr">
+                                {data.openingBalance >= 0 ? formatEGP(data.openingBalance) : '-'}
+                              </td>
+                              <td className="overflow-hidden whitespace-nowrap text-ellipsis font-mono text-center align-middle py-1 px-1 tabular-nums border-b border-l border-slate-300 print:border-slate-400 text-amber-900" dir="ltr">
+                                {data.openingBalance < 0 ? formatEGP(Math.abs(data.openingBalance)) : '-'}
+                              </td>
+                              <td className="overflow-hidden whitespace-nowrap text-ellipsis font-mono text-center align-middle py-1 px-1 tabular-nums border-b border-slate-300 print:border-slate-400" dir="ltr">
+                                <span className={`inline-block whitespace-nowrap font-mono text-center ${data.openingBalance < 0 ? 'text-rose-600 font-semibold' : 'text-slate-900'}`} dir="ltr">
+                                  {formatAccountingNumber(data.openingBalance)}
+                                </span>
+                              </td>
+                            </tr>
+                          )}
 
-                  {/* Grand Total Row - Renders strictly ONCE at the very end of data rows on the final page */}
-                  <tr className="ledger-tail-row border-t-2 border-b-2 border-slate-400 bg-slate-100 font-bold text-slate-900 page-break-inside-avoid print:bg-slate-100">
-                    <td colSpan={4} className="py-3 px-3 print:py-2.5 print:px-2 text-center align-middle border-t-2 border-b-2 border-slate-400 border-l border-slate-300 text-slate-950 font-extrabold text-sm md:text-base print:text-xs leading-tight rounded-br-xl">
-                      الإجمالي العام والرصيد الختامي
-                    </td>
-                    <td className="py-3 px-3 print:py-2.5 print:px-2 text-center align-middle whitespace-nowrap border-t-2 border-b-2 border-slate-400 border-l border-slate-300 font-mono tabular-nums text-sm md:text-base print:text-xs leading-tight font-extrabold text-blue-950" dir="ltr">
-                      {formatEGP(data.totalDebit)}
-                    </td>
-                    <td className="py-3 px-3 print:py-2.5 print:px-2 text-center align-middle whitespace-nowrap border-t-2 border-b-2 border-slate-400 border-l border-slate-300 font-mono tabular-nums text-sm md:text-base print:text-xs leading-tight font-extrabold text-amber-950" dir="ltr">
-                      {formatEGP(data.totalCredit)}
-                    </td>
-                    <td className={`py-3 px-3 print:py-2.5 print:px-2.5 text-center align-middle whitespace-nowrap overflow-visible border-t-2 border-b-2 border-slate-400 font-mono tabular-nums text-sm md:text-base print:text-xs leading-tight font-extrabold rounded-bl-xl ${
-                      data.endingBalance < 0
-                        ? 'text-rose-600 text-negative-balance'
-                        : 'text-slate-950'
-                    }`} dir="ltr">
-                      {formatAccountingNumber(data.endingBalance)}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+                          {/* Transaction Rows */}
+                          {page.rows.map((t, idx) => (
+                            <tr
+                              key={idx}
+                              className={`h-6 border-b border-slate-200 print:border-slate-300 ${
+                                idx % 2 === 1 ? 'bg-slate-50/50 print:bg-slate-100/40' : 'bg-white print:bg-white'
+                              }`}
+                              style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}
+                            >
+                              <td className="font-mono text-center align-middle py-1 px-1 border-b border-l border-slate-200 print:border-slate-300">
+                                {t.noteDate}
+                              </td>
+                              <td className="font-mono text-center align-middle py-1 px-1 border-b border-l border-slate-200 print:border-slate-300">
+                                #{t.noteNo}
+                              </td>
+                              <td className="text-center align-middle py-1 px-1 whitespace-nowrap border-b border-l border-slate-200 print:border-slate-300">
+                                {t.voucherType}
+                              </td>
+                              <td className="text-center align-middle px-2 overflow-hidden text-ellipsis whitespace-nowrap border-b border-l border-slate-200 print:border-slate-300">
+                                <span className="truncate block" title={t.description}>{t.description}</span>
+                              </td>
+                              <td className="overflow-hidden whitespace-nowrap text-ellipsis font-mono text-center align-middle py-1 px-1 tabular-nums border-b border-slate-200 border-l border-slate-300 text-blue-900" dir="ltr">
+                                {t.debit > 0 ? formatEGP(t.debit) : '-'}
+                              </td>
+                              <td className="overflow-hidden whitespace-nowrap text-ellipsis font-mono text-center align-middle py-1 px-1 tabular-nums border-b border-slate-200 border-l border-slate-300 text-amber-900" dir="ltr">
+                                {t.credit > 0 ? formatEGP(t.credit) : '-'}
+                              </td>
+                              <td className="overflow-hidden whitespace-nowrap text-ellipsis font-mono text-center align-middle py-1 px-1 tabular-nums border-b border-slate-200 print:border-slate-300" dir="ltr">
+                                <span className={`inline-block whitespace-nowrap font-mono text-center ${t.runningBalance < 0 ? 'text-rose-600 font-semibold' : 'text-slate-900'}`} dir="ltr">
+                                  {formatAccountingNumber(t.runningBalance)}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+
+                          {/* If Last Page: Grand Total Row */}
+                          {isLastPage && (
+                            <tr
+                              className="ledger-tail-row h-7 border-t-2 border-b-2 border-slate-800 bg-slate-200 print:bg-slate-300 font-black"
+                              style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}
+                            >
+                              <td colSpan={4} className="py-1 px-2 text-center align-middle font-black border-t-2 border-b-2 border-slate-800 border-l border-slate-300 print:border-slate-400 text-xs">
+                                الإجمالي العام والرصيد الختامي
+                              </td>
+                              <td className="overflow-hidden whitespace-nowrap text-ellipsis font-mono text-center align-middle py-1 px-1 tabular-nums font-black border-t-2 border-b-2 border-slate-800 border-l border-slate-300 print:border-slate-400 text-blue-950" dir="ltr">
+                                {formatEGP(data.totalDebit)}
+                              </td>
+                              <td className="overflow-hidden whitespace-nowrap text-ellipsis font-mono text-center align-middle py-1 px-1 tabular-nums font-black border-t-2 border-b-2 border-slate-800 border-l border-slate-300 print:border-slate-400 text-amber-950" dir="ltr">
+                                {formatEGP(data.totalCredit)}
+                              </td>
+                              <td className="overflow-hidden whitespace-nowrap text-ellipsis font-mono text-center align-middle py-1 px-1 tabular-nums font-black border-t-2 border-b-2 border-slate-800 print:border-slate-400" dir="ltr">
+                                <span className={`inline-block whitespace-nowrap font-mono text-center ${data.endingBalance < 0 ? 'text-rose-600' : 'text-slate-950'}`} dir="ltr">
+                                  {formatAccountingNumber(data.endingBalance)}
+                                </span>
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* 3. Bottom Section: Signatures on Last Page + Persistent Audit Bar on ALL Pages */}
+                  <div className="mt-auto pt-2 shrink-0">
+                    {isLastPage && (
+                      <div className="grid grid-cols-3 gap-3 mb-2 print:gap-2 print:mb-1.5 shrink-0" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+                        {/* 1. Accountant */}
+                        <div className="border border-slate-300 print:border-slate-400 rounded-xl p-2.5 print:p-2 text-center bg-slate-50/50 print:bg-white flex flex-col justify-between min-h-[95px] print:min-h-[85px]">
+                          <span className="font-bold text-xs text-slate-800 print:text-black block">المحاسب</span>
+                          <div className="flex-1 min-h-[35px] print:min-h-[30px]"></div>
+                          <span className="text-[10px] text-slate-600 print:text-black block" dir="rtl">
+                            التاريخ: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                          </span>
+                        </div>
+
+                        {/* 2. Internal Auditor */}
+                        <div className="border border-slate-300 print:border-slate-400 rounded-xl p-2.5 print:p-2 text-center bg-slate-50/50 print:bg-white flex flex-col justify-between min-h-[95px] print:min-h-[85px]">
+                          <span className="font-bold text-xs text-slate-800 print:text-black block">المراجع</span>
+                          <div className="flex-1 min-h-[35px] print:min-h-[30px]"></div>
+                          <span className="text-[10px] text-slate-600 print:text-black block" dir="rtl">
+                            التاريخ: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                          </span>
+                        </div>
+
+                        {/* 3. Executive Approval */}
+                        <div className="border border-slate-300 print:border-slate-400 rounded-xl p-2.5 print:p-2 text-center bg-slate-50/50 print:bg-white flex flex-col justify-between min-h-[95px] print:min-h-[85px]">
+                          <span className="font-bold text-xs text-slate-800 print:text-black block">يعتمد</span>
+                          <div className="flex-1 min-h-[35px] print:min-h-[30px]"></div>
+                          <span className="text-[10px] text-slate-600 print:text-black block" dir="rtl">
+                            التاريخ: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Persistent Audit Bar on ALL pages */}
+                    <div className="flex justify-between items-center text-[9px] text-slate-600 pt-1 border-t border-slate-300 print:pt-1 shrink-0">
+                      <span>طُبع بواسطة: <strong>{printedByName}</strong></span>
+                      <span className="font-mono font-bold bg-slate-100 border border-slate-300 px-3 py-0.5 rounded-full text-slate-800 print:text-black">
+                        صفحة {pageIndex + 1} من {totalPrintPages}
+                      </span>
+                      <span>تاريخ الطباعة: {new Date().toLocaleDateString('ar-EG')}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </ReportPrintLayout>

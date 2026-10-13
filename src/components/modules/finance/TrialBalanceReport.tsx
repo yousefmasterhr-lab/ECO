@@ -691,12 +691,13 @@ export const TrialBalanceReport: React.FC = () => {
       <ReportPrintLayout
         isOpen={isPrintModalOpen}
         onClose={() => setIsPrintModalOpen(false)}
+        hideFooter={true}
         programmaticPagination={true}
         orientation={printOrientation}
         onOrientationChange={setPrintOrientation}
         titleAr={`ميزان المراجعة بالأرصدة والمجاميع (المستوى ${selectedLevel})`}
         titleEn={`5-Level Trial Balance Report (Level ${selectedLevel})`}
-        periodText={`من ${startDate} إلى ${endDate}`}
+        periodText={`من ${startDate || '01-01-2026'} إلى ${endDate && !endDate.includes('2020') ? endDate : '31-12-2026'}`}
         filterText={
           selectedCostCenter
             ? `مركز التكلفة: ${costCenters.find(c => String(c.id) === String(selectedCostCenter))?.nameAr || selectedCostCenter}`
@@ -744,7 +745,7 @@ export const TrialBalanceReport: React.FC = () => {
                             معايير المحاسبة المصرية (EAS) والدولية (IFRS)
                           </div>
                           <div className="text-[9px] print:text-[8px] font-mono text-slate-600 mt-0.5 print:text-black">
-                            من {startDate} إلى {endDate}
+                            من {startDate || '01-01-2026'} إلى {endDate && !endDate.includes('2020') ? endDate : '31-12-2026'}
                           </div>
                         </div>
                       </div>
@@ -783,7 +784,7 @@ export const TrialBalanceReport: React.FC = () => {
                         </span>
                         <span className="text-slate-400 print:text-slate-500">|</span>
                         <span className="font-mono text-[10px] text-slate-600 print:text-black">
-                          من {startDate} إلى {endDate}
+                          من {startDate || '01-01-2026'} إلى {endDate && !endDate.includes('2020') ? endDate : '31-12-2026'}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 font-mono text-[10px] text-slate-600">
@@ -801,40 +802,40 @@ export const TrialBalanceReport: React.FC = () => {
                       style={{ tableLayout: 'fixed', width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}
                     >
                       <colgroup>
-                        <col style={{ width: '10%' }} /> {/* كود الحساب */}
-                        <col style={{ width: '28%' }} /> {/* اسم الحساب (مساحة واسعة مريحة) */}
-                        <col style={{ width: '6%' }} />  {/* المستوى */}
-                        <col style={{ width: '9.3%' }} />{/* أول المدة مدين */}
-                        <col style={{ width: '9.3%' }} />{/* أول المدة دائن */}
-                        <col style={{ width: '9.3%' }} />{/* حركات مدين */}
-                        <col style={{ width: '9.3%' }} />{/* حركات دائن */}
-                        <col style={{ width: '9.3%' }} />{/* ختامي مدين */}
-                        <col style={{ width: '9.5%' }} />{/* ختامي دائن */}
+                        <col style={{ width: '10%' }} />  {/* كود الحساب */}
+                        <col style={{ width: '27%' }} />  {/* اسم الحساب (مساحة واسعة مريحة) */}
+                        <col style={{ width: '6%' }} />   {/* المستوى */}
+                        <col style={{ width: '9.5%' }} /> {/* أول المدة مدين */}
+                        <col style={{ width: '9.5%' }} /> {/* أول المدة دائن */}
+                        <col style={{ width: '9.5%' }} /> {/* حركات مدين */}
+                        <col style={{ width: '9.5%' }} /> {/* حركات دائن */}
+                        <col style={{ width: '9.5%' }} /> {/* ختامي مدين */}
+                        <col style={{ width: '9.5%' }} /> {/* ختامي دائن */}
                       </colgroup>
                       <thead className="bg-slate-100 print:bg-slate-200 text-slate-800 text-[10px] font-bold">
                         <tr className="border-b border-slate-300 print:border-slate-400">
                           <th className="w-[10%] py-1.5 px-1 border-b border-l border-slate-300 print:border-slate-400 text-center font-bold align-middle">
                             كود الحساب
                           </th>
-                          <th className="w-[28%] py-1.5 px-2 border-b border-l border-slate-300 print:border-slate-400 text-center font-bold align-middle">
+                          <th className="w-[27%] py-1.5 px-2 border-b border-l border-slate-300 print:border-slate-400 text-center font-bold align-middle">
                             اسم الحساب
                           </th>
                           <th className="w-[6%] py-1.5 px-1 border-b border-l border-slate-300 print:border-slate-400 text-center font-bold align-middle whitespace-nowrap">
                             المستوى
                           </th>
-                          <th className="w-[9.3%] py-1.5 px-1 border-b border-l border-slate-300 print:border-slate-400 text-center font-bold align-middle font-mono">
+                          <th className="w-[9.5%] py-1.5 px-1 border-b border-l border-slate-300 print:border-slate-400 text-center font-bold align-middle font-mono">
                             أول المدة (مدين)
                           </th>
-                          <th className="w-[9.3%] py-1.5 px-1 border-b border-l border-slate-300 print:border-slate-400 text-center font-bold align-middle font-mono">
+                          <th className="w-[9.5%] py-1.5 px-1 border-b border-l border-slate-300 print:border-slate-400 text-center font-bold align-middle font-mono">
                             أول المدة (دائن)
                           </th>
-                          <th className="w-[9.3%] py-1.5 px-1 border-b border-l border-slate-300 print:border-slate-400 text-center font-bold align-middle font-mono">
+                          <th className="w-[9.5%] py-1.5 px-1 border-b border-l border-slate-300 print:border-slate-400 text-center font-bold align-middle font-mono">
                             حركات (مدين)
                           </th>
-                          <th className="w-[9.3%] py-1.5 px-1 border-b border-l border-slate-300 print:border-slate-400 text-center font-bold align-middle font-mono">
+                          <th className="w-[9.5%] py-1.5 px-1 border-b border-l border-slate-300 print:border-slate-400 text-center font-bold align-middle font-mono">
                             حركات (دائن)
                           </th>
-                          <th className="w-[9.3%] py-1.5 px-1 border-b border-l border-slate-300 print:border-slate-400 text-center font-bold align-middle font-mono">
+                          <th className="w-[9.5%] py-1.5 px-1 border-b border-l border-slate-300 print:border-slate-400 text-center font-bold align-middle font-mono">
                             ختامي (مدين)
                           </th>
                           <th className="w-[9.5%] py-1.5 px-1 border-b border-slate-300 print:border-slate-400 text-center font-bold align-middle font-mono">
@@ -864,22 +865,22 @@ export const TrialBalanceReport: React.FC = () => {
                             <td className="text-center align-middle py-1 px-1 whitespace-nowrap border-b border-l border-slate-200 print:border-slate-300">
                               م{row.level}
                             </td>
-                            <td className="font-mono text-center align-middle py-1 px-1 tabular-nums border-b border-l border-slate-200 print:border-slate-300" dir="ltr">
+                            <td className="overflow-hidden whitespace-nowrap text-ellipsis font-mono text-center align-middle py-1 px-1 tabular-nums border-b border-l border-slate-200 print:border-slate-300" dir="ltr">
                               {formatAccountingNumber(row.openingDebit)}
                             </td>
-                            <td className="font-mono text-center align-middle py-1 px-1 tabular-nums border-b border-l border-slate-200 print:border-slate-300" dir="ltr">
+                            <td className="overflow-hidden whitespace-nowrap text-ellipsis font-mono text-center align-middle py-1 px-1 tabular-nums border-b border-l border-slate-200 print:border-slate-300" dir="ltr">
                               {formatAccountingNumber(row.openingCredit)}
                             </td>
-                            <td className="font-mono text-center align-middle py-1 px-1 tabular-nums border-b border-l border-slate-200 print:border-slate-300" dir="ltr">
+                            <td className="overflow-hidden whitespace-nowrap text-ellipsis font-mono text-center align-middle py-1 px-1 tabular-nums border-b border-l border-slate-200 print:border-slate-300" dir="ltr">
                               {formatAccountingNumber(row.periodDebit)}
                             </td>
-                            <td className="font-mono text-center align-middle py-1 px-1 tabular-nums border-b border-l border-slate-200 print:border-slate-300" dir="ltr">
+                            <td className="overflow-hidden whitespace-nowrap text-ellipsis font-mono text-center align-middle py-1 px-1 tabular-nums border-b border-l border-slate-200 print:border-slate-300" dir="ltr">
                               {formatAccountingNumber(row.periodCredit)}
                             </td>
-                            <td className="font-mono text-center align-middle py-1 px-1 tabular-nums border-b border-l border-slate-200 print:border-slate-300" dir="ltr">
+                            <td className="overflow-hidden whitespace-nowrap text-ellipsis font-mono text-center align-middle py-1 px-1 tabular-nums border-b border-l border-slate-200 print:border-slate-300" dir="ltr">
                               {formatAccountingNumber(row.endingDebit)}
                             </td>
-                            <td className="font-mono text-center align-middle py-1 px-1 tabular-nums border-b border-slate-200 print:border-slate-300" dir="ltr">
+                            <td className="overflow-hidden whitespace-nowrap text-ellipsis font-mono text-center align-middle py-1 px-1 tabular-nums border-b border-slate-200 print:border-slate-300" dir="ltr">
                               {formatAccountingNumber(row.endingCredit)}
                             </td>
                           </tr>
@@ -891,22 +892,22 @@ export const TrialBalanceReport: React.FC = () => {
                             <td colSpan={3} className="py-1 px-2 text-center align-middle font-black border-t-2 border-b-2 border-slate-800 border-l border-slate-300 print:border-slate-400 text-xs">
                               الإجمالي العام
                             </td>
-                            <td className="font-mono text-center align-middle py-1 px-1 tabular-nums font-black border-t-2 border-b-2 border-slate-800 border-l border-slate-300 print:border-slate-400" dir="ltr">
+                            <td className="overflow-hidden whitespace-nowrap text-ellipsis font-mono text-center align-middle py-1 px-1 tabular-nums font-black border-t-2 border-b-2 border-slate-800 border-l border-slate-300 print:border-slate-400" dir="ltr">
                               {formatAccountingNumber(data.totalOpeningDebit)}
                             </td>
-                            <td className="font-mono text-center align-middle py-1 px-1 tabular-nums font-black border-t-2 border-b-2 border-slate-800 border-l border-slate-300 print:border-slate-400" dir="ltr">
+                            <td className="overflow-hidden whitespace-nowrap text-ellipsis font-mono text-center align-middle py-1 px-1 tabular-nums font-black border-t-2 border-b-2 border-slate-800 border-l border-slate-300 print:border-slate-400" dir="ltr">
                               {formatAccountingNumber(data.totalOpeningCredit)}
                             </td>
-                            <td className="font-mono text-center align-middle py-1 px-1 tabular-nums font-black border-t-2 border-b-2 border-slate-800 border-l border-slate-300 print:border-slate-400" dir="ltr">
+                            <td className="overflow-hidden whitespace-nowrap text-ellipsis font-mono text-center align-middle py-1 px-1 tabular-nums font-black border-t-2 border-b-2 border-slate-800 border-l border-slate-300 print:border-slate-400" dir="ltr">
                               {formatAccountingNumber(data.totalPeriodDebit)}
                             </td>
-                            <td className="font-mono text-center align-middle py-1 px-1 tabular-nums font-black border-t-2 border-b-2 border-slate-800 border-l border-slate-300 print:border-slate-400" dir="ltr">
+                            <td className="overflow-hidden whitespace-nowrap text-ellipsis font-mono text-center align-middle py-1 px-1 tabular-nums font-black border-t-2 border-b-2 border-slate-800 border-l border-slate-300 print:border-slate-400" dir="ltr">
                               {formatAccountingNumber(data.totalPeriodCredit)}
                             </td>
-                            <td className="font-mono text-center align-middle py-1 px-1 tabular-nums font-black border-t-2 border-b-2 border-slate-800 border-l border-slate-300 print:border-slate-400" dir="ltr">
+                            <td className="overflow-hidden whitespace-nowrap text-ellipsis font-mono text-center align-middle py-1 px-1 tabular-nums font-black border-t-2 border-b-2 border-slate-800 border-l border-slate-300 print:border-slate-400" dir="ltr">
                               {formatAccountingNumber(data.totalEndingDebit)}
                             </td>
-                            <td className="font-mono text-center align-middle py-1 px-1 tabular-nums font-black border-t-2 border-b-2 border-slate-800 print:border-slate-400" dir="ltr">
+                            <td className="overflow-hidden whitespace-nowrap text-ellipsis font-mono text-center align-middle py-1 px-1 tabular-nums font-black border-t-2 border-b-2 border-slate-800 print:border-slate-400" dir="ltr">
                               {formatAccountingNumber(data.totalEndingCredit)}
                             </td>
                           </tr>

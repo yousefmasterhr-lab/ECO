@@ -13,6 +13,7 @@ interface ReportPrintLayoutProps {
   periodText?: string;
   filterText?: string;
   userName?: string;
+  printedByName?: string;
   singlePage?: boolean;
   currentPage?: number | string;
   totalPages?: number | string;
@@ -34,6 +35,7 @@ export const ReportPrintLayout: React.FC<ReportPrintLayoutProps> = ({
   periodText,
   filterText,
   userName,
+  printedByName: propPrintedByName,
   singlePage = false,
   currentPage,
   totalPages,
@@ -72,7 +74,7 @@ export const ReportPrintLayout: React.FC<ReportPrintLayoutProps> = ({
     }
   };
 
-  const printedByName = userName || (user as any)?.displayName || user?.nameAr || user?.nameEn || (user as any)?.name || 'يوسف حجازي';
+  const printedByName = propPrintedByName || userName || (user as any)?.displayName || user?.nameAr || user?.nameEn || (user as any)?.name || 'يوسف حجازي';
 
   return (
     <Modal
@@ -338,11 +340,13 @@ export const ReportPrintLayout: React.FC<ReportPrintLayoutProps> = ({
             {/* Standardized Signature Footer */}
             <div className="signatures-block grid grid-cols-3 gap-3 pt-2 mt-auto print:pt-1 print:mt-auto print:break-inside-avoid shrink-0">
               {/* 1. Accountant */}
-              <div className="border border-slate-300 rounded-xl p-3 text-center min-h-[110px] flex flex-col justify-between print:min-h-[100px] print:border-slate-400">
+              <div className={`border border-slate-300 print:border-slate-400 rounded-xl p-2.5 print:p-2 text-center bg-slate-50/50 print:bg-white flex flex-col justify-between ${
+                singlePage ? 'min-h-[85px] print:min-h-[75px]' : 'min-h-[110px] print:min-h-[100px]'
+              }`}>
                 <span className="font-bold text-xs text-slate-800 print:text-black block">المحاسب</span>
                 
-                {/* Generous blank signing zone (approx 45px - 55px height) */}
-                <div className="flex-1 min-h-[45px] print:min-h-[40px]"></div>
+                {/* Generous blank signing zone */}
+                <div className={`flex-1 ${singlePage ? 'min-h-[30px] print:min-h-[25px]' : 'min-h-[45px] print:min-h-[40px]'}`}></div>
 
                 <span className="text-[10px] text-slate-600 print:text-black block" dir="rtl">
                   التاريخ: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -350,11 +354,13 @@ export const ReportPrintLayout: React.FC<ReportPrintLayoutProps> = ({
               </div>
 
               {/* 2. Internal Auditor */}
-              <div className="border border-slate-300 rounded-xl p-3 text-center min-h-[110px] flex flex-col justify-between print:min-h-[100px] print:border-slate-400">
+              <div className={`border border-slate-300 print:border-slate-400 rounded-xl p-2.5 print:p-2 text-center bg-slate-50/50 print:bg-white flex flex-col justify-between ${
+                singlePage ? 'min-h-[85px] print:min-h-[75px]' : 'min-h-[110px] print:min-h-[100px]'
+              }`}>
                 <span className="font-bold text-xs text-slate-800 print:text-black block">المراجع</span>
                 
-                {/* Generous blank signing zone (approx 45px - 55px height) */}
-                <div className="flex-1 min-h-[45px] print:min-h-[40px]"></div>
+                {/* Generous blank signing zone */}
+                <div className={`flex-1 ${singlePage ? 'min-h-[30px] print:min-h-[25px]' : 'min-h-[45px] print:min-h-[40px]'}`}></div>
 
                 <span className="text-[10px] text-slate-600 print:text-black block" dir="rtl">
                   التاريخ: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -362,11 +368,13 @@ export const ReportPrintLayout: React.FC<ReportPrintLayoutProps> = ({
               </div>
 
               {/* 3. Executive Approval & Stamp */}
-              <div className="border border-slate-300 rounded-xl p-3 text-center min-h-[110px] flex flex-col justify-between print:min-h-[100px] print:border-slate-400">
+              <div className={`border border-slate-300 print:border-slate-400 rounded-xl p-2.5 print:p-2 text-center bg-slate-50/50 print:bg-white flex flex-col justify-between ${
+                singlePage ? 'min-h-[85px] print:min-h-[75px]' : 'min-h-[110px] print:min-h-[100px]'
+              }`}>
                 <span className="font-bold text-xs text-slate-800 print:text-black block">يعتمد</span>
                 
-                {/* Generous blank signing zone (approx 45px - 55px height) */}
-                <div className="flex-1 min-h-[45px] print:min-h-[40px]"></div>
+                {/* Generous blank signing zone */}
+                <div className={`flex-1 ${singlePage ? 'min-h-[30px] print:min-h-[25px]' : 'min-h-[45px] print:min-h-[40px]'}`}></div>
 
                 <span className="text-[10px] text-slate-600 print:text-black block" dir="rtl">
                   التاريخ: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -375,7 +383,7 @@ export const ReportPrintLayout: React.FC<ReportPrintLayoutProps> = ({
             </div>
 
             {/* Pagination & Audit Metadata Footer */}
-            {!hideFooter && (
+            {!hideFooter && !programmaticPagination && (
               <div className="flex justify-between items-center text-[10px] text-slate-600 pt-1.5 px-3 print:pt-1 border-t border-slate-200 print:border-slate-300 shrink-0 print:break-inside-avoid">
                 <span>طُبع بواسطة: <strong className="text-slate-800 print:text-black">{printedByName}</strong></span>
                 <span className="font-mono font-bold bg-slate-100 print:bg-slate-200 px-3 py-0.5 rounded-full border border-slate-300 text-slate-700 print:text-black print:border-slate-400">
