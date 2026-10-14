@@ -4,7 +4,6 @@ import { useLanguage } from '../../../context/LanguageContext';
 import { useNavigation } from '../../../context/NavigationContext';
 import { CheckCircle2 } from 'lucide-react';
 import {
-  INITIAL_BRANCHES,
   INITIAL_DEPARTMENTS,
   INITIAL_COST_CENTERS,
   INITIAL_SIGNATORIES
@@ -18,6 +17,7 @@ import {
 } from './types';
 import { companyStorage } from './companyStorage';
 import { licenseStorage } from './licenseStorage';
+import { branchStorage } from './branchStorage';
 import { CompanyDirectoryTab } from './CompanyDirectoryTab';
 import { CompanyLicensesTab } from './CompanyLicensesTab';
 import { CompanyBranchesTab } from './CompanyBranchesTab';
@@ -38,7 +38,7 @@ export const CompaniesModule: React.FC<CompaniesModuleProps> = ({ activeSubItemI
   // Reactive State for all Sub-Modules
   const [companies, setCompanies] = useState<CompanyEntity[]>(() => companyStorage.getCompaniesSync());
   const [documents, setDocuments] = useState<SmartDocument[]>(() => licenseStorage.getLicensesSync());
-  const [branches, setBranches] = useState<BranchLocation[]>(INITIAL_BRANCHES);
+  const [branches, setBranches] = useState<BranchLocation[]>(() => branchStorage.getBranchesSync());
   const [departments] = useState(INITIAL_DEPARTMENTS);
   const [costCenters, setCostCenters] = useState<CostCenter[]>(INITIAL_COST_CENTERS);
   const [signatories, setSignatories] = useState<AuthorizedSignatory[]>(INITIAL_SIGNATORIES);
@@ -50,6 +50,9 @@ export const CompaniesModule: React.FC<CompaniesModuleProps> = ({ activeSubItemI
     });
     licenseStorage.getLicenses().then(loaded => {
       setDocuments(loaded);
+    });
+    branchStorage.getBranches().then(loaded => {
+      setBranches(loaded);
     });
   }, []);
 
@@ -63,17 +66,127 @@ export const CompaniesModule: React.FC<CompaniesModuleProps> = ({ activeSubItemI
     setTimeout(() => setToast(null), 3500);
   };
 
-  // --- Companies CRUD with Real Persistence ---
+  // --- Bi-directional Sync: Auto-sync Company CR, Tax Card, and uploaded docs to Licenses ---
+  const syncCompanyToLicenses = async (comp: CompanyEntity, uName: string) => {
+    const existingLicenses = licenseStorage.getLicensesSync();
+
+    // 1. Sync Commercial Register (السجل التجاري)
+    if (comp.crNumber && comp.crNumber.trim()) {
+      const existingCR = existingLicenses.find(
+        l => l.companyId === comp.id && l.docType === 'سجل تجاري'
+      );
+      const attachedCRDoc = comp.documents?.find(d => d.docType === 'السجل التجاري');
+
+      if (existingCR) {
+        await licenseStorage.saveLicense(
+          {
+            ...existingCR,
+            companyNameAr: comp.nameAr,
+            docNumber: comp.crNumber.trim(),
+            issuerAr: comp.crOffice?.trim() || existingCR.issuerAr || 'مصلحة السجل التجاري',
+            fileAttachment: attachedCRDoc || existingCR.fileAttachment
+          },
+          uName
+        );
+      } else {
+        await licenseStorage.saveLicense(
+          {
+            companyId: comp.id,
+            companyNameAr: comp.nameAr,
+            docType: 'سجل تجاري',
+            titleAr: `السجل التجاري الرسمي - ${comp.nameAr}`,
+            docNumber: comp.crNumber.trim(),
+            issuerAr: comp.crOffice?.trim() || 'مصلحة السجل التجاري',
+            issueDate: comp.establishedYear ? `${comp.establishedYear}-01-01` : new Date().toISOString().slice(0, 10),
+            expiryDate: '', // Draft awaiting expiry date entry
+            notesAr: 'تمت المزامنة آلياً من دليل الشركات - بانتظار استكمال تاريخ الانتهاء',
+            fileAttachment: attachedCRDoc
+          },
+          uName
+        );
+      }
+    }
+
+    // 2. Sync Tax Card (البطاقة الضريبية)
+    if (comp.taxNumber && comp.taxNumber.trim()) {
+      const existingTax = existingLicenses.find(
+        l => l.companyId === comp.id && l.docType === 'بطاقة ضريبية'
+      );
+      const attachedTaxDoc = comp.documents?.find(d => d.docType === 'البطاقة الضريبية');
+
+      if (existingTax) {
+        await licenseStorage.saveLicense(
+          {
+            ...existingTax,
+            companyNameAr: comp.nameAr,
+            docNumber: comp.taxNumber.trim(),
+            issuerAr: existingTax.issuerAr || 'مصلحة الضرائب المصرية',
+            fileAttachment: attachedTaxDoc || existingTax.fileAttachment
+          },
+          uName
+        );
+      } else {
+        await licenseStorage.saveLicense(
+          {
+            companyId: comp.id,
+            companyNameAr: comp.nameAr,
+            docType: 'بطاقة ضريبية',
+            titleAr: `البطاقة الضريبية - ${comp.nameAr}`,
+            docNumber: comp.taxNumber.trim(),
+            issuerAr: 'مصلحة الضرائب المصرية',
+            issueDate: comp.establishedYear ? `${comp.establishedYear}-01-01` : new Date().toISOString().slice(0, 10),
+            expiryDate: '', // Draft awaiting expiry date entry
+            notesAr: 'تمت المزامنة آلياً من دليل الشركات - بانتظار استكمال تاريخ الانتهاء',
+            fileAttachment: attachedTaxDoc
+          },
+          uName
+        );
+      }
+    }
+
+    // 3. Sync other uploaded files (عقد التأسيس، تراخيص مزاولة النشاط، القيمة المضافة)
+    if (comp.documents && comp.documents.length > 0) {
+      for (const doc of comp.documents) {
+        if (doc.docType === 'السجل التجاري' || doc.docType === 'البطاقة الضريبية') continue;
+        const existingOther = existingLicenses.find(
+          l => l.companyId === comp.id && (l.fileAttachment?.id === doc.id || l.titleAr.includes(doc.name))
+        );
+        if (!existingOther) {
+          await licenseStorage.saveLicense(
+            {
+              companyId: comp.id,
+              companyNameAr: comp.nameAr,
+              docType: doc.docType || 'وثيقة رسمية',
+              titleAr: `${doc.docType || 'مستند'} - ${doc.name}`,
+              docNumber: `DOC-${Date.now().toString().slice(-5)}`,
+              issuerAr: 'الجهة المصدرة للوثيقة',
+              issueDate: new Date().toISOString().slice(0, 10),
+              expiryDate: '',
+              notesAr: 'تمت أرشفته ومزامنته آلياً من مرفقات دليل الشركات',
+              fileAttachment: doc
+            },
+            uName
+          );
+        }
+      }
+    }
+  };
+
+  // --- Companies CRUD with Real Persistence & Bi-directional Sync ---
   const handleAddCompany = async (newComp: CompanyEntity) => {
     await companyStorage.saveCompany(newComp, userName);
     setCompanies(companyStorage.getCompaniesSync());
-    showToast(isRtl ? `تم تسجيل "${newComp.nameAr}" وتثبيت هيكل المساهمين بنجاح` : 'Company registered successfully');
+    await syncCompanyToLicenses(newComp, userName);
+    setDocuments(licenseStorage.getLicensesSync());
+    showToast(isRtl ? `تم تسجيل "${newComp.nameAr}" وتثبيت هيكل المساهمين والمستندات بنجاح` : 'Company registered successfully');
   };
 
   const handleUpdateCompany = async (updated: CompanyEntity) => {
     await companyStorage.saveCompany(updated, userName);
     setCompanies(companyStorage.getCompaniesSync());
-    showToast(isRtl ? `تم تحديث بيانات "${updated.nameAr}" وهيكل الملكية` : 'Company updated successfully');
+    await syncCompanyToLicenses(updated, userName);
+    setDocuments(licenseStorage.getLicensesSync());
+    showToast(isRtl ? `تم تحديث بيانات "${updated.nameAr}" وهيكل الملكية والمستندات` : 'Company updated successfully');
   };
 
   const handleDeleteCompany = async (id: string) => {
@@ -115,20 +228,24 @@ export const CompaniesModule: React.FC<CompaniesModuleProps> = ({ activeSubItemI
     showToast(isRtl ? `تم حذف المستند "${doc?.titleAr || 'الترخيص'}" نهائياً` : 'Document deleted');
   };
 
-  // --- Branches CRUD ---
-  const handleAddBranch = (newBranch: BranchLocation) => {
-    setBranches(prev => [newBranch, ...prev]);
-    showToast(isRtl ? `تمت إضافة "${newBranch.nameAr}" بنجاح` : 'Branch added successfully');
+  // --- Branches CRUD with Real Persistence & Audit Log ---
+  const handleAddBranch = async (newBranch: BranchLocation) => {
+    await branchStorage.saveBranch(newBranch, userName);
+    setBranches(branchStorage.getBranchesSync());
+    showToast(isRtl ? `تمت إضافة المقر/الموقع "${newBranch.nameAr}" بنجاح` : 'Branch added successfully');
   };
 
-  const handleUpdateBranch = (updated: BranchLocation) => {
-    setBranches(prev => prev.map(b => (b.id === updated.id ? updated : b)));
-    showToast(isRtl ? `تم تحديث بيانات "${updated.nameAr}"` : 'Branch updated successfully');
+  const handleUpdateBranch = async (updated: BranchLocation) => {
+    await branchStorage.saveBranch(updated, userName);
+    setBranches(branchStorage.getBranchesSync());
+    showToast(isRtl ? `تم تحديث بيانات المقر/الموقع "${updated.nameAr}"` : 'Branch updated successfully');
   };
 
-  const handleDeleteBranch = (id: string) => {
-    setBranches(prev => prev.filter(b => b.id !== id));
-    showToast(isRtl ? 'تم حذف الفرع من القائمة' : 'Branch deleted');
+  const handleDeleteBranch = async (id: string) => {
+    const branch = branches.find(b => b.id === id);
+    await branchStorage.deleteBranch(id, userName);
+    setBranches(branchStorage.getBranchesSync());
+    showToast(isRtl ? `تم حذف الموقع "${branch?.nameAr || 'المقر'}" نهائياً` : 'Branch deleted');
   };
 
   // --- Cost Centers CRUD ---

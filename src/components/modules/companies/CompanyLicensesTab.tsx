@@ -80,9 +80,16 @@ export const CompanyLicensesTab: React.FC<CompanyLicensesTabProps> = ({
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Synchronize filter when preselectedCompanyId changes (e.g. navigation from Company Directory card)
+  React.useEffect(() => {
+    if (preselectedCompanyId) {
+      setSelectedCompanyId(preselectedCompanyId);
+    }
+  }, [preselectedCompanyId]);
+
   // Helper to compute remaining days from today
-  const getDaysRemaining = (expiryDateStr: string): number => {
-    if (!expiryDateStr) return 0;
+  const getDaysRemaining = (expiryDateStr?: string): number => {
+    if (!expiryDateStr || !expiryDateStr.trim()) return 0;
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const exp = new Date(expiryDateStr);
@@ -92,7 +99,8 @@ export const CompanyLicensesTab: React.FC<CompanyLicensesTabProps> = ({
   };
 
   // Helper to categorize status
-  const getDocumentStatus = (daysRemaining: number): 'expired' | 'urgent' | 'active' => {
+  const getDocumentStatus = (daysRemaining: number, expiryDateStr?: string): 'expired' | 'urgent' | 'active' | 'draft' => {
+    if (!expiryDateStr || !expiryDateStr.trim()) return 'draft';
     if (daysRemaining <= 0) return 'expired';
     if (daysRemaining <= 45) return 'urgent';
     return 'active';
@@ -102,7 +110,7 @@ export const CompanyLicensesTab: React.FC<CompanyLicensesTabProps> = ({
   const enrichedDocuments = useMemo(() => {
     return documents.map(doc => {
       const daysRemaining = getDaysRemaining(doc.expiryDate);
-      const computedStatus = getDocumentStatus(daysRemaining);
+      const computedStatus = getDocumentStatus(daysRemaining, doc.expiryDate);
       return {
         ...doc,
         remainingDays: daysRemaining,
@@ -114,12 +122,12 @@ export const CompanyLicensesTab: React.FC<CompanyLicensesTabProps> = ({
   // Priority Sorting Logic:
   // 1st Priority: Expired (daysRemaining <= 0)
   // 2nd Priority: Near-expiration (1 <= daysRemaining <= 45)
-  // 3rd Priority: Active (> 45 days)
-  // Secondary sort: ascending daysRemaining
+  // 3rd Priority: Draft / Missing expiry
+  // 4th Priority: Active (> 45 days)
   const sortedDocuments = useMemo(() => {
     return [...enrichedDocuments].sort((a, b) => {
-      const priorityOrder = { expired: 1, urgent: 2, active: 3 };
-      const pDiff = priorityOrder[a.computedStatus] - priorityOrder[b.computedStatus];
+      const priorityOrder: Record<string, number> = { expired: 1, urgent: 2, draft: 3, active: 4 };
+      const pDiff = (priorityOrder[a.computedStatus] || 99) - (priorityOrder[b.computedStatus] || 99);
       if (pDiff !== 0) return pDiff;
       return a.remainingDays - b.remainingDays;
     });
@@ -551,13 +559,17 @@ export const CompanyLicensesTab: React.FC<CompanyLicensesTabProps> = ({
                         <td className="p-3.5 font-mono font-bold text-slate-800 dark:text-[#F3EFE6] whitespace-nowrap">
                           <div className="flex items-center gap-1.5">
                             <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                            <span>{doc.expiryDate}</span>
+                            <span>{doc.expiryDate || '— (غير محدد)'}</span>
                           </div>
                         </td>
 
                         {/* Remaining Days */}
                         <td className="p-3.5 text-center whitespace-nowrap">
-                          {isExpired ? (
+                          {doc.computedStatus === 'draft' ? (
+                            <span className="font-semibold text-slate-500 dark:text-[#8FA392] text-xs">
+                              بانتظار تحديد التاريخ
+                            </span>
+                          ) : isExpired ? (
                             <span className="font-bold text-rose-600 dark:text-rose-400 font-mono text-xs">
                               منتهي منذ {Math.abs(doc.remainingDays)} يوم
                             </span>
@@ -574,7 +586,12 @@ export const CompanyLicensesTab: React.FC<CompanyLicensesTabProps> = ({
 
                         {/* Status Badge */}
                         <td className="p-3.5 text-center whitespace-nowrap">
-                          {isExpired ? (
+                          {doc.computedStatus === 'draft' ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-bold bg-slate-100 text-slate-700 border border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 shadow-2xs">
+                              <Clock className="w-3 h-3 text-slate-500" />
+                              <span>مسودة / غير مكتمل</span>
+                            </span>
+                          ) : isExpired ? (
                             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-black bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-800/60 shadow-2xs">
                               <AlertTriangle className="w-3 h-3 text-rose-500 animate-pulse" />
                               <span>منتهي الصلاحية</span>

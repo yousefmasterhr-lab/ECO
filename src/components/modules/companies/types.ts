@@ -94,18 +94,45 @@ export interface SmartDocument {
   updatedAt?: string;
 }
 
+export interface BranchAuditChange {
+  field: string;
+  fieldLabel: string;
+  oldValue: string;
+  newValue: string;
+}
+
+export interface BranchAuditLogEntry {
+  id: string;
+  branchId: string;
+  timestamp: string; // Exact date and time (YYYY-MM-DD HH:mm:ss)
+  userName: string;
+  action: 'create' | 'update' | 'delete';
+  actionLabelAr: string;
+  changes: BranchAuditChange[];
+  notes?: string;
+}
+
 export interface BranchLocation {
   id: string;
   companyId: string;
   companyNameAr: string;
   nameAr: string;
-  typeAr: 'مقر رئيسي' | 'فرع إقليمي' | 'مستودع تشوين وورش' | 'مكتب موقع';
+  typeAr: 'مقر رئيسي' | 'فرع إداري' | 'موقع إنشائي/مشروع' | 'مخزن' | 'ورشة مركزية' | 'فرع إقليمي' | 'مستودع تشوين وورش' | 'مكتب موقع' | string;
   cityAr: string;
   addressAr: string;
+  googleMapsUrl?: string;
   managerAr: string;
   phone: string;
   staffCount: number;
   activeProjects: number;
+  costCenterCode?: string;
+  startDate?: string;
+  expectedDeliveryDate?: string;
+  status?: 'نشط' | 'تحت الإنشاء' | 'مسلم' | 'معلق' | string;
+  notesAr?: string;
+  auditLogs?: BranchAuditLogEntry[];
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface DepartmentOrg {

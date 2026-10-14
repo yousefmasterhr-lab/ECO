@@ -255,7 +255,7 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
   onUpdateCompany,
   onDeleteCompany,
   onToggleStatus,
-  onOpenAddDocumentForCompany: _onOpenAddDocumentForCompany
+  onOpenAddDocumentForCompany
 }) => {
   // Modal Visibility States
   const [modalOpen, setModalOpen] = useState(false);
@@ -542,7 +542,13 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
               index={idx}
               onView={setViewDetailsCompany}
               onEdit={handleOpenEditModal}
-              onOpenDocs={setDocsModalCompany}
+              onOpenDocs={(comp) => {
+                if (onOpenAddDocumentForCompany) {
+                  onOpenAddDocumentForCompany(comp);
+                } else {
+                  setDocsModalCompany(comp);
+                }
+              }}
               onDelete={setCompanyToDelete}
               onToggleStatus={onToggleStatus}
               onOpenAudit={setAuditLogCompany}

@@ -11,73 +11,7 @@ export const INITIAL_COMPANIES: CompanyEntity[] = [];
 
 export const INITIAL_DOCUMENTS: SmartDocument[] = [];
 
-export const INITIAL_BRANCHES: BranchLocation[] = [
-  {
-    id: 'branch_hq',
-    companyId: 'comp_01',
-    companyNameAr: 'شركة أركان للإنشاءات الهندسية (ش.م.م)',
-    nameAr: 'المقر الإداري الرئيسي (مبنى أركان بلازا)',
-    typeAr: 'مقر رئيسي',
-    cityAr: 'القاهرة الجديدة',
-    addressAr: 'شارع التسعين الشمالي، التجمع الخامس، القاهرة',
-    managerAr: 'أ. سامح عبد الفتاح',
-    phone: '+20 2 2810 5000',
-    staffCount: 185,
-    activeProjects: 8
-  },
-  {
-    id: 'branch_alex',
-    companyId: 'comp_01',
-    companyNameAr: 'شركة أركان للإنشاءات الهندسية (ش.م.م)',
-    nameAr: 'فرع الإسكندرية والساحل الشمالي',
-    typeAr: 'فرع إقليمي',
-    cityAr: 'الإسكندرية',
-    addressAr: 'طريق 14 مايو، سموحة، برج الصفوة، الإسكندرية',
-    managerAr: 'م. إسلام الجندي',
-    phone: '+20 3 4290 120',
-    staffCount: 48,
-    activeProjects: 4
-  },
-  {
-    id: 'branch_wh',
-    companyId: 'comp_01',
-    companyNameAr: 'شركة أركان للإنشاءات الهندسية (ش.م.م)',
-    nameAr: 'المستودع المركزي وورش التشوين الميكانيكية',
-    typeAr: 'مستودع تشوين وورش',
-    cityAr: 'العاشر من رمضان',
-    addressAr: 'المنطقة الصناعية الثالثة (A3)، بجوار محطة المحولات',
-    managerAr: 'م. عادل الشامي',
-    phone: '+20 15 360 880',
-    staffCount: 72,
-    activeProjects: 14
-  },
-  {
-    id: 'branch_mono',
-    companyId: 'comp_04',
-    companyNameAr: 'أركان لإدارة المشروعات والبنية التحتية (ش.م.م)',
-    nameAr: 'مكتب موقع مشروع مونوريل شرق النيل',
-    typeAr: 'مكتب موقع',
-    cityAr: 'العاصمة الإدارية الجديدة',
-    addressAr: 'القطاع الأوسط، محطة الحي الحكومي رقم 18',
-    managerAr: 'م. شريف مدكور',
-    phone: '+20 10 9940 112',
-    staffCount: 95,
-    activeProjects: 1
-  },
-  {
-    id: 'branch_consult',
-    companyId: 'comp_02',
-    companyNameAr: 'دار الاستشارات الهندسية المتطورة (ذ.م.م)',
-    nameAr: 'مقر الدراسات والتصميم الهندسي المركزي',
-    typeAr: 'مقر رئيسي',
-    cityAr: 'الجيزة',
-    addressAr: 'شارع مصدق، الدقي، برج المهندسين، الطابق الرابع',
-    managerAr: 'د.م. طارق عبد الرحمن',
-    phone: '+20 2 3762 4410',
-    staffCount: 60,
-    activeProjects: 8
-  }
-];
+export const INITIAL_BRANCHES: BranchLocation[] = [];
 
 export const INITIAL_DEPARTMENTS: DepartmentOrg[] = [
   {
