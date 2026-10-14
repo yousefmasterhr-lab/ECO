@@ -7,6 +7,34 @@ export interface Shareholder {
   nationality: string;
 }
 
+export interface CompanyDocumentAttachment {
+  id: string;
+  name: string;
+  docType: 'السجل التجاري' | 'البطاقة الضريبية' | 'عقد التأسيس' | 'شهادة تسجيل القيمة المضافة' | 'تراخيص مزاولة النشاط' | string;
+  sizeBytes: number;
+  mimeType: string;
+  uploadedAt: string;
+  dataUrl?: string; // Base64 or Object URL for instant preview / download
+}
+
+export interface CompanyAuditChange {
+  field: string;
+  fieldLabel: string;
+  oldValue: string;
+  newValue: string;
+}
+
+export interface CompanyAuditLogEntry {
+  id: string;
+  companyId: string;
+  timestamp: string; // Exact date and time (YYYY-MM-DD HH:mm:ss)
+  userName: string;
+  action: 'create' | 'update' | 'delete' | 'status_change';
+  actionLabelAr: string;
+  changes: CompanyAuditChange[];
+  notes?: string;
+}
+
 export interface CompanyEntity {
   id: string;
   nameAr: string;
@@ -24,6 +52,10 @@ export interface CompanyEntity {
   projectsCount: number;
   status: 'active' | 'inactive';
   shareholders: Shareholder[];
+  documents?: CompanyDocumentAttachment[];
+  auditLogs?: CompanyAuditLogEntry[];
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface SmartDocument {

@@ -1,10 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '../../../context/LanguageContext';
 import { useNavigation } from '../../../context/NavigationContext';
 import { CheckCircle2 } from 'lucide-react';
 import {
-  INITIAL_COMPANIES,
   INITIAL_DOCUMENTS,
   INITIAL_BRANCHES,
   INITIAL_DEPARTMENTS,
@@ -18,6 +17,7 @@ import {
   CostCenter,
   AuthorizedSignatory
 } from './types';
+import { companyStorage } from './companyStorage';
 import { CompanyDirectoryTab } from './CompanyDirectoryTab';
 import { CompanyLicensesTab } from './CompanyLicensesTab';
 import { CompanyBranchesTab } from './CompanyBranchesTab';
@@ -30,16 +30,25 @@ interface CompaniesModuleProps {
 
 export const CompaniesModule: React.FC<CompaniesModuleProps> = ({ activeSubItemId }) => {
   const { isRtl } = useLanguage();
-  const { selectItem } = useNavigation();
+  const { selectItem, currentUser } = useNavigation();
   const currentTab = activeSubItemId || 'comp_directory';
 
+  const userName = (currentUser as any)?.displayName || currentUser?.nameAr || currentUser?.nameEn || 'يوسف حجازي';
+
   // Reactive State for all Sub-Modules
-  const [companies, setCompanies] = useState<CompanyEntity[]>(INITIAL_COMPANIES);
+  const [companies, setCompanies] = useState<CompanyEntity[]>(() => companyStorage.getCompaniesSync());
   const [documents, setDocuments] = useState<SmartDocument[]>(INITIAL_DOCUMENTS);
   const [branches, setBranches] = useState<BranchLocation[]>(INITIAL_BRANCHES);
   const [departments] = useState(INITIAL_DEPARTMENTS);
   const [costCenters, setCostCenters] = useState<CostCenter[]>(INITIAL_COST_CENTERS);
   const [signatories, setSignatories] = useState<AuthorizedSignatory[]>(INITIAL_SIGNATORIES);
+
+  // Load from persistent storage & API sync on mount
+  useEffect(() => {
+    companyStorage.getCompanies().then(loaded => {
+      setCompanies(loaded);
+    });
+  }, []);
 
   // Cross-Tab Interaction State
   const [preselectedCompanyIdForDoc, setPreselectedCompanyIdForDoc] = useState<string | null>(null);
@@ -51,29 +60,29 @@ export const CompaniesModule: React.FC<CompaniesModuleProps> = ({ activeSubItemI
     setTimeout(() => setToast(null), 3500);
   };
 
-  // --- Companies CRUD ---
-  const handleAddCompany = (newComp: CompanyEntity) => {
-    setCompanies(prev => [newComp, ...prev]);
+  // --- Companies CRUD with Real Persistence ---
+  const handleAddCompany = async (newComp: CompanyEntity) => {
+    await companyStorage.saveCompany(newComp, userName);
+    setCompanies(companyStorage.getCompaniesSync());
     showToast(isRtl ? `تم تسجيل "${newComp.nameAr}" وتثبيت هيكل المساهمين بنجاح` : 'Company registered successfully');
   };
 
-  const handleUpdateCompany = (updated: CompanyEntity) => {
-    setCompanies(prev => prev.map(c => (c.id === updated.id ? updated : c)));
+  const handleUpdateCompany = async (updated: CompanyEntity) => {
+    await companyStorage.saveCompany(updated, userName);
+    setCompanies(companyStorage.getCompaniesSync());
     showToast(isRtl ? `تم تحديث بيانات "${updated.nameAr}" وهيكل الملكية` : 'Company updated successfully');
   };
 
-  const handleDeleteCompany = (id: string) => {
+  const handleDeleteCompany = async (id: string) => {
     const comp = companies.find(c => c.id === id);
-    setCompanies(prev => prev.filter(c => c.id !== id));
+    await companyStorage.deleteCompany(id, userName);
+    setCompanies(companyStorage.getCompaniesSync());
     showToast(isRtl ? `تم حذف / أرشفة "${comp?.nameAr || 'الشركة'}"` : 'Company archived');
   };
 
-  const handleToggleCompanyStatus = (id: string) => {
-    setCompanies(prev =>
-      prev.map(c =>
-        c.id === id ? { ...c, status: c.status === 'active' ? 'inactive' : 'active' } : c
-      )
-    );
+  const handleToggleCompanyStatus = async (id: string) => {
+    await companyStorage.toggleCompanyStatus(id, userName);
+    setCompanies(companyStorage.getCompaniesSync());
     showToast(isRtl ? 'تم تحديث حالة تفعيل الشركة' : 'Company status updated');
   };
 

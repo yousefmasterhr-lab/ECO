@@ -80,7 +80,7 @@ export const CompanyBranchesTab: React.FC<CompanyBranchesTabProps> = ({
     if (!formNameAr.trim()) return;
 
     const parentComp = companies.find(c => c.id === formCompanyId);
-    const companyNameAr = parentComp ? parentComp.nameAr : 'شركة أركان للإنشاءات الهندسية (ش.م.م)';
+    const companyNameAr = parentComp ? parentComp.nameAr : (companies[0]?.nameAr || 'الشركة الرئيسية');
 
     if (editingBranch) {
       const updated: BranchLocation = {

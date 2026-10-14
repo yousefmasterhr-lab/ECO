@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence, useMotionValue, useTransform, useSpring } from 'framer-motion';
 import {
   Building2,
@@ -7,15 +7,26 @@ import {
   Eye,
   Pencil,
   Trash2,
-  FilePlus,
+  FileText,
   Power,
   Users,
   PieChart,
   ShieldCheck,
   X,
-  AlertCircle
+  AlertCircle,
+  UploadCloud,
+  Clock,
+  User,
+  History,
+  Download,
+  Image as ImageIcon
 } from 'lucide-react';
-import { CompanyEntity, Shareholder } from './types';
+import {
+  CompanyEntity,
+  Shareholder,
+  CompanyDocumentAttachment
+} from './types';
+import { getFormattedAuditTimestamp } from './companyStorage';
 import { formatCurrency, formatNumber } from '../../../utils/formatters';
 
 interface CompanyDirectoryTabProps {
@@ -27,23 +38,35 @@ interface CompanyDirectoryTabProps {
   onOpenAddDocumentForCompany: (comp: CompanyEntity) => void;
 }
 
-// 3D Spotlight Interactive Card
+function formatBytes(bytes: number): string {
+  if (!bytes || bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
+// -------------------------------------------------------------
+// 1. Company Card Component (3D Spotlight, Icon-Only Actions, Audit Icon)
+// -------------------------------------------------------------
 const SpotlightCompanyCard: React.FC<{
   company: CompanyEntity;
+  index: number;
   onView: (comp: CompanyEntity) => void;
   onEdit: (comp: CompanyEntity) => void;
-  onAddDoc: (comp: CompanyEntity) => void;
-  onDelete: (id: string) => void;
+  onOpenDocs: (comp: CompanyEntity) => void;
+  onDelete: (comp: CompanyEntity) => void;
   onToggleStatus: (id: string) => void;
-}> = ({ company, onView, onEdit, onAddDoc, onDelete, onToggleStatus }) => {
-  const cardRef = React.useRef<HTMLDivElement>(null);
+  onOpenAudit: (comp: CompanyEntity) => void;
+}> = ({ company, index, onView, onEdit, onOpenDocs, onDelete, onToggleStatus, onOpenAudit }) => {
+  const cardRef = useRef<HTMLDivElement>(null);
   const [mousePos, setMousePos] = useState({ x: -1000, y: -1000 });
   const [isHovered, setIsHovered] = useState(false);
 
   const x = useMotionValue(0);
   const y = useMotionValue(0);
-  const rotateX = useSpring(useTransform(y, [-120, 120], [4, -4]), { damping: 25, stiffness: 300 });
-  const rotateY = useSpring(useTransform(x, [-120, 120], [-4, 4]), { damping: 25, stiffness: 300 });
+  const rotateX = useSpring(useTransform(y, [-120, 120], [3, -3]), { damping: 25, stiffness: 300 });
+  const rotateY = useSpring(useTransform(x, [-120, 120], [-3, 3]), { damping: 25, stiffness: 300 });
   const scale = useSpring(isHovered ? 1.01 : 1, { damping: 25, stiffness: 300 });
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -57,10 +80,15 @@ const SpotlightCompanyCard: React.FC<{
   };
 
   const formattedCapital = formatCurrency(company.issuedCapital);
+  const docsCount = company.documents?.length || 0;
+  const auditCount = company.auditLogs?.length || 0;
 
   return (
     <motion.div
       ref={cardRef}
+      initial={{ opacity: 0, y: 15 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, delay: Math.min(index * 0.05, 0.4) }}
       onMouseMove={handleMouseMove}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => {
@@ -70,17 +98,17 @@ const SpotlightCompanyCard: React.FC<{
         y.set(0);
       }}
       style={{ rotateX, rotateY, scale, transformStyle: 'preserve-3d' }}
-      className={`relative p-5 rounded-2xl border transition-all duration-200 bg-[#F3EFE6] dark:bg-[#17231A] flex flex-col justify-between overflow-hidden shadow-xs ${
+      className={`group relative p-5 rounded-2xl border transition-all duration-300 bg-white dark:bg-[#17231A] flex flex-col justify-between overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 ${
         company.status === 'inactive'
-          ? 'opacity-65 border-dashed border-gray-400'
-          : 'border-[#E0D9CB] dark:border-[#243628] hover:border-[#D97706]/50'
+          ? 'opacity-70 border-dashed border-slate-300 dark:border-gray-600'
+          : 'border-slate-200 dark:border-[#243628] hover:border-amber-500/60 dark:hover:border-amber-500/50'
       }`}
     >
-      {/* Spotlight Effect */}
+      {/* Dynamic Cursor Spotlight Effect */}
       <div
         className="pointer-events-none absolute -inset-px rounded-2xl transition-opacity duration-300 opacity-0 group-hover:opacity-100"
         style={{
-          background: `radial-gradient(350px circle at ${mousePos.x}px ${mousePos.y}px, rgba(217, 155, 38, 0.15), transparent 70%)`
+          background: `radial-gradient(350px circle at ${mousePos.x}px ${mousePos.y}px, rgba(217, 119, 6, 0.12), transparent 70%)`
         }}
       />
 
@@ -88,137 +116,172 @@ const SpotlightCompanyCard: React.FC<{
       <div className="relative z-10">
         <div className="flex items-start justify-between gap-3 mb-3">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl bg-[#D97706]/15 text-[#D97706] dark:text-[#EBB34D] flex items-center justify-center shrink-0">
+            <div className="w-11 h-11 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/20">
               <Building className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="text-sm font-black text-[#1A241C] dark:text-[#F3EFE6] leading-snug">
+              <h3 className="text-sm font-black text-slate-900 dark:text-[#F3EFE6] leading-snug">
                 {company.nameAr}
               </h3>
               <div className="flex items-center gap-2 mt-0.5">
-                <span className="text-[11px] font-bold text-[#D97706] dark:text-[#EBB34D]">
+                <span className="text-[11px] font-bold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-md border border-amber-200 dark:border-amber-800/40">
                   {company.legalType}
                 </span>
-                <span className="text-[11px] text-[#5C665E] dark:text-[#8FA392]">
-                  تأسست عام {company.establishedYear}
-                </span>
+                {company.establishedYear && (
+                  <span className="text-[11px] text-slate-500 dark:text-[#8FA392]">
+                    تأسست عام {company.establishedYear}
+                  </span>
+                )}
               </div>
             </div>
           </div>
 
-          <span
-            className={`px-2.5 py-0.5 rounded-full text-[10.5px] font-bold shrink-0 ${
-              company.status === 'active'
-                ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30'
-                : 'bg-gray-400/20 text-gray-500'
-            }`}
-          >
-            {company.status === 'active' ? 'نشطة رسمياً' : 'معطلة مؤقتاً'}
-          </span>
+          {/* Interactive Change Audit Log ("!" Exclamation Icon) */}
+          <div className="relative shrink-0">
+            <button
+              onClick={() => onOpenAudit(company)}
+              title="سجل تعديلات الكيان (Audit Trail)"
+              className="group/audit relative p-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/50 text-amber-600 dark:text-amber-400 hover:bg-amber-500 hover:text-white transition-all shadow-xs"
+            >
+              <AlertCircle className="w-4 h-4 transition-transform group-hover/audit:scale-110" />
+              {auditCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-amber-500 ring-2 ring-white dark:ring-[#17231A] animate-pulse" />
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Vital Metadata Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 my-3 p-3 rounded-xl bg-[#FBF9F5] dark:bg-[#0E1610] text-xs border border-[#E0D9CB]/70 dark:border-[#243628]">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 my-3 p-3 rounded-xl bg-slate-50 dark:bg-[#0E1610] text-xs border border-slate-200/80 dark:border-[#243628]">
           <div>
-            <span className="text-[11px] text-[#5C665E] dark:text-[#8FA392] block">رأس المال المصدر:</span>
-            <strong className="text-[#1A241C] dark:text-[#F3EFE6] font-bold text-xs">{formattedCapital} ج.م</strong>
+            <span className="text-[11px] text-slate-500 dark:text-[#8FA392] block">رأس المال المصدر:</span>
+            <strong className="text-slate-900 dark:text-[#F3EFE6] font-bold text-xs">{formattedCapital} ج.م</strong>
           </div>
           <div>
-            <span className="text-[11px] text-[#5C665E] dark:text-[#8FA392] block">السجل التجاري:</span>
-            <strong className="text-[#1A241C] dark:text-[#F3EFE6] font-bold text-xs font-mono">{company.crNumber}</strong>
+            <span className="text-[11px] text-slate-500 dark:text-[#8FA392] block">السجل التجاري:</span>
+            <strong className="text-slate-900 dark:text-[#F3EFE6] font-bold text-xs font-mono">{company.crNumber || '—'}</strong>
           </div>
           <div>
-            <span className="text-[11px] text-[#5C665E] dark:text-[#8FA392] block">المدير المسؤول:</span>
-            <strong className="text-[#1A241C] dark:text-[#F3EFE6] font-bold text-xs">{company.ceoAr}</strong>
+            <span className="text-[11px] text-slate-500 dark:text-[#8FA392] block">المدير المسؤول:</span>
+            <strong className="text-slate-900 dark:text-[#F3EFE6] font-bold text-xs truncate block">{company.ceoAr || '—'}</strong>
           </div>
         </div>
 
-        {/* Additional Stats & Shareholders count */}
-        <div className="flex flex-wrap items-center justify-between text-xs text-[#5C665E] dark:text-[#8FA392] pb-3 gap-2">
-          <span>البطاقة الضريبية: <strong className="font-mono text-[#1A241C] dark:text-[#F3EFE6]">{company.taxNumber}</strong></span>
-          <div className="flex items-center gap-3 font-semibold text-[11px]">
-            <span className="flex items-center gap-1 text-[#D97706] dark:text-[#EBB34D]">
+        {/* Stats Row: Tax Card, Shareholders, and Document Count */}
+        <div className="flex flex-wrap items-center justify-between text-xs text-slate-500 dark:text-[#8FA392] pb-3 gap-2">
+          <span>البطاقة الضريبية: <strong className="font-mono text-slate-800 dark:text-[#F3EFE6]">{company.taxNumber || '—'}</strong></span>
+          <div className="flex items-center gap-2.5 font-semibold text-[11px]">
+            <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
               <Users className="w-3.5 h-3.5" />
-              <span>{company.shareholders.length} مساهمين</span>
+              <span>{company.shareholders?.length || 0} مساهمين</span>
             </span>
             <span>•</span>
-            <span>{company.branchesCount} فروع</span>
-            <span>•</span>
-            <span>{company.projectsCount} مشاريع</span>
+            <span className="flex items-center gap-1 text-blue-600 dark:text-blue-400">
+              <FileText className="w-3.5 h-3.5" />
+              <span>{docsCount} وثائق</span>
+            </span>
           </div>
         </div>
       </div>
 
-      {/* Action Buttons Row */}
-      <div className="pt-3 border-t border-[#E0D9CB]/70 dark:border-[#243628] flex flex-wrap items-center justify-between gap-1.5 relative z-10">
-        <button
-          onClick={() => onView(company)}
-          className="flex-1 min-h-[44px] flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-[#EAE4D7] dark:bg-[#1F2E23] hover:bg-[#D97706]/20 hover:text-[#D97706] dark:hover:text-[#EBB34D] text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6] transition-all"
-        >
-          <Eye className="w-4 h-4 text-[#D97706]" />
-          <span>عرض التفاصيل</span>
-        </button>
+      {/* Icon-Only Action Buttons Row with Accessible Tooltips */}
+      <div className="pt-3 border-t border-slate-100 dark:border-[#243628] flex items-center justify-between gap-1.5 relative z-10">
+        <div className="flex items-center gap-1.5">
+          {/* 1. عرض التفاصيل */}
+          <button
+            onClick={() => onView(company)}
+            title="عرض التفاصيل الكاملة"
+            className="p-2.5 rounded-xl bg-slate-100 dark:bg-[#1F2E23] hover:bg-amber-500/20 hover:text-amber-600 dark:hover:text-amber-400 text-slate-700 dark:text-[#E0D9CB] transition-all border border-slate-200/60 dark:border-transparent"
+          >
+            <Eye className="w-4 h-4" />
+          </button>
 
-        <button
-          onClick={() => onEdit(company)}
-          className="min-h-[44px] px-3 py-2 rounded-xl bg-[#EAE4D7] dark:bg-[#1F2E23] hover:bg-[#D97706]/20 hover:text-[#D97706] text-[#5C665E] dark:text-[#8FA392] text-xs font-bold transition-colors flex items-center gap-1"
-          title="تعديل بيانات الشركة وهيكل المساهمين"
-        >
-          <Pencil className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">تعديل</span>
-        </button>
+          {/* 2. تعديل البيانات */}
+          <button
+            onClick={() => onEdit(company)}
+            title="تعديل بيانات الشركة وهيكل المساهمين"
+            className="p-2.5 rounded-xl bg-slate-100 dark:bg-[#1F2E23] hover:bg-amber-500/20 hover:text-amber-600 dark:hover:text-amber-400 text-slate-700 dark:text-[#E0D9CB] transition-all border border-slate-200/60 dark:border-transparent"
+          >
+            <Pencil className="w-4 h-4" />
+          </button>
 
-        <button
-          onClick={() => onAddDoc(company)}
-          className="min-h-[44px] px-3 py-2 rounded-xl bg-[#EAE4D7] dark:bg-[#1F2E23] hover:bg-[#D97706]/20 hover:text-[#D97706] text-[#5C665E] dark:text-[#8FA392] text-xs font-bold transition-colors flex items-center gap-1"
-          title="إضافة مستند أو ترخيص لهذه الشركة"
-        >
-          <FilePlus className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-          <span className="hidden sm:inline">مستند</span>
-        </button>
+          {/* 3. المستندات والملفات */}
+          <button
+            onClick={() => onOpenDocs(company)}
+            title="المستندات والملفات المرفقة"
+            className="relative p-2.5 rounded-xl bg-slate-100 dark:bg-[#1F2E23] hover:bg-blue-500/20 hover:text-blue-600 dark:hover:text-blue-400 text-slate-700 dark:text-[#E0D9CB] transition-all border border-slate-200/60 dark:border-transparent"
+          >
+            <FileText className="w-4 h-4" />
+            {docsCount > 0 && (
+              <span className="absolute -top-1 -right-1 px-1.5 py-0.2 rounded-full text-[9px] font-black bg-blue-600 text-white">
+                {docsCount}
+              </span>
+            )}
+          </button>
 
-        <button
-          onClick={() => onToggleStatus(company.id)}
-          className="min-h-[44px] p-2.5 rounded-xl bg-[#EAE4D7] dark:bg-[#1F2E23] hover:bg-amber-500/20 text-[#5C665E] dark:text-[#8FA392] transition-colors"
-          title={company.status === 'active' ? 'تعطيل مؤقت' : 'تفعيل'}
-        >
-          <Power className="w-4 h-4" />
-        </button>
+          {/* 4. تفعيل / تعطيل الكيان */}
+          <button
+            onClick={() => onToggleStatus(company.id)}
+            title={company.status === 'active' ? 'تعطيل الكيان مؤقتاً' : 'تفعيل الكيان رسمياً'}
+            className={`p-2.5 rounded-xl transition-all border ${
+              company.status === 'active'
+                ? 'bg-slate-100 dark:bg-[#1F2E23] text-emerald-600 hover:bg-emerald-500/20 border-slate-200/60 dark:border-transparent'
+                : 'bg-rose-50 dark:bg-rose-950/30 text-rose-600 border-rose-200 dark:border-rose-900/50'
+            }`}
+          >
+            <Power className="w-4 h-4" />
+          </button>
+        </div>
 
+        {/* 5. حذف الكيان */}
         <button
-          onClick={() => onDelete(company.id)}
-          className="min-h-[44px] p-2.5 rounded-xl bg-[#EAE4D7] dark:bg-[#1F2E23] hover:bg-red-500/20 hover:text-red-500 text-[#5C665E] dark:text-[#8FA392] transition-colors"
-          title="حذف / أرشفة الشركة"
+          onClick={() => onDelete(company)}
+          title="حذف الكيان نهائياً"
+          className="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/30 hover:bg-rose-500 hover:text-white text-rose-600 dark:text-rose-400 transition-all border border-rose-200/60 dark:border-rose-900/40"
         >
-          <Trash2 className="w-4 h-4" />
+          <Trash2 className="w-4 h-4 text-rose-500 hover:text-white" />
         </button>
       </div>
     </motion.div>
   );
 };
 
+// -------------------------------------------------------------
+// Main Directory Tab Component
+// -------------------------------------------------------------
 export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
   companies,
   onAddCompany,
   onUpdateCompany,
   onDeleteCompany,
   onToggleStatus,
-  onOpenAddDocumentForCompany
+  onOpenAddDocumentForCompany: _onOpenAddDocumentForCompany
 }) => {
+  // Modal Visibility States
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCompany, setEditingCompany] = useState<CompanyEntity | null>(null);
   const [viewDetailsCompany, setViewDetailsCompany] = useState<CompanyEntity | null>(null);
+  const [docsModalCompany, setDocsModalCompany] = useState<CompanyEntity | null>(null);
+  const [auditLogCompany, setAuditLogCompany] = useState<CompanyEntity | null>(null);
+  const [companyToDelete, setCompanyToDelete] = useState<CompanyEntity | null>(null);
+  const [previewDocument, setPreviewDocument] = useState<CompanyDocumentAttachment | null>(null);
 
   // Form State
   const [nameAr, setNameAr] = useState('');
   const [legalType, setLegalType] = useState<CompanyEntity['legalType']>('ش.م.م');
-  const [totalShares, setTotalShares] = useState<number>(5000000);
+  const [totalShares, setTotalShares] = useState<number>(1000000);
   const [nominalShareValue, setNominalShareValue] = useState<number>(100);
   const [crNumber, setCrNumber] = useState('');
   const [crOffice, setCrOffice] = useState('');
   const [taxNumber, setTaxNumber] = useState('');
   const [ceoAr, setCeoAr] = useState('');
-  const [establishedYear, setEstablishedYear] = useState('2024');
+  const [establishedYear, setEstablishedYear] = useState(String(new Date().getFullYear()));
+
+  // Document Uploads State in Registration/Edit Modal
+  const [attachedDocs, setAttachedDocs] = useState<CompanyDocumentAttachment[]>([]);
+  const [selectedUploadDocType, setSelectedUploadDocType] = useState<string>('السجل التجاري');
+  const [isDragOver, setIsDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Shareholders Repeater State
   const [shareholders, setShareholders] = useState<Shareholder[]>([
@@ -226,18 +289,19 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
       id: 'sh_temp_1',
       name: '',
       entityType: 'فرد',
-      sharesCount: 0,
-      ownershipPercent: 0,
+      sharesCount: 1000000,
+      ownershipPercent: 100,
       nationality: 'مصري'
     }
   ]);
 
-  // Derived Capital calculation
+  // Derived Capital Calculations
   const calculatedCapital = totalShares * nominalShareValue;
   const totalAllocatedShares = shareholders.reduce((acc, sh) => acc + (Number(sh.sharesCount) || 0), 0);
   const totalOwnershipPercent = shareholders.reduce((acc, sh) => acc + (Number(sh.ownershipPercent) || 0), 0);
   const remainingShares = totalShares - totalAllocatedShares;
 
+  // Open Create Modal
   const handleOpenAddModal = () => {
     setEditingCompany(null);
     setNameAr('');
@@ -245,10 +309,11 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
     setTotalShares(1000000);
     setNominalShareValue(100);
     setCrNumber('');
-    setCrOffice('مكتب سجل تجاري القاهرة');
+    setCrOffice('');
     setTaxNumber('');
     setCeoAr('');
     setEstablishedYear(String(new Date().getFullYear()));
+    setAttachedDocs([]);
     setShareholders([
       {
         id: `sh_${Date.now()}_1`,
@@ -262,6 +327,7 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
     setModalOpen(true);
   };
 
+  // Open Edit Modal
   const handleOpenEditModal = (comp: CompanyEntity) => {
     setEditingCompany(comp);
     setNameAr(comp.nameAr);
@@ -273,11 +339,50 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
     setTaxNumber(comp.taxNumber);
     setCeoAr(comp.ceoAr);
     setEstablishedYear(comp.establishedYear);
-    setShareholders(comp.shareholders.map(s => ({ ...s })));
+    setAttachedDocs(comp.documents ? comp.documents.map(d => ({ ...d })) : []);
+    setShareholders(
+      comp.shareholders && comp.shareholders.length > 0
+        ? comp.shareholders.map(s => ({ ...s }))
+        : [
+            {
+              id: `sh_${Date.now()}_1`,
+              name: '',
+              entityType: 'فرد',
+              sharesCount: comp.totalShares || 1000000,
+              ownershipPercent: 100,
+              nationality: 'مصري'
+            }
+          ]
+    );
     setModalOpen(true);
   };
 
-  // Shareholders Repeater actions
+  // File Upload Handlers
+  const processFiles = (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    Array.from(files).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const newAttachment: CompanyDocumentAttachment = {
+          id: `doc_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+          name: file.name,
+          docType: selectedUploadDocType,
+          sizeBytes: file.size,
+          mimeType: file.type || 'application/octet-stream',
+          uploadedAt: getFormattedAuditTimestamp(),
+          dataUrl: reader.result as string
+        };
+        setAttachedDocs(prev => [newAttachment, ...prev]);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleRemoveDoc = (id: string) => {
+    setAttachedDocs(prev => prev.filter(d => d.id !== id));
+  };
+
+  // Shareholders Repeater Handlers
   const handleAddShareholderRow = () => {
     const unallocated = Math.max(0, totalShares - totalAllocatedShares);
     const percent = totalShares > 0 ? (unallocated / totalShares) * 100 : 0;
@@ -316,7 +421,6 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
 
   const handleTotalSharesChange = (newTotal: number) => {
     setTotalShares(newTotal);
-    // Recalculate all percentages
     if (newTotal > 0) {
       setShareholders(prev =>
         prev.map(sh => ({
@@ -327,6 +431,7 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
     }
   };
 
+  // Submit Company (Create or Update)
   const handleSubmitCompany = (e: React.FormEvent) => {
     e.preventDefault();
     if (!nameAr.trim()) return;
@@ -334,42 +439,51 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
     if (editingCompany) {
       const updated: CompanyEntity = {
         ...editingCompany,
-        nameAr,
+        nameAr: nameAr.trim(),
         legalType,
         totalShares,
         nominalShareValue,
         issuedCapital: calculatedCapital,
         paidCapital: calculatedCapital,
-        crNumber,
-        crOffice,
-        taxNumber,
-        ceoAr,
+        crNumber: crNumber.trim(),
+        crOffice: crOffice.trim(),
+        taxNumber: taxNumber.trim(),
+        ceoAr: ceoAr.trim(),
         establishedYear,
-        shareholders
+        shareholders,
+        documents: attachedDocs
       };
       onUpdateCompany(updated);
     } else {
       const newComp: CompanyEntity = {
         id: `comp_${Date.now()}`,
-        nameAr,
+        nameAr: nameAr.trim(),
         legalType,
         totalShares,
         nominalShareValue,
         issuedCapital: calculatedCapital,
         paidCapital: calculatedCapital,
-        crNumber: crNumber || '10293 / استثمار القاهرة',
-        crOffice: crOffice || 'مكتب سجل تجاري القاهرة',
-        taxNumber: taxNumber || '100-200-300',
+        crNumber: crNumber.trim(),
+        crOffice: crOffice.trim(),
+        taxNumber: taxNumber.trim(),
         establishedYear: establishedYear || String(new Date().getFullYear()),
-        ceoAr: ceoAr || 'المدير التنفيذي',
+        ceoAr: ceoAr.trim(),
         branchesCount: 1,
         projectsCount: 0,
         status: 'active',
-        shareholders
+        shareholders,
+        documents: attachedDocs
       };
       onAddCompany(newComp);
     }
     setModalOpen(false);
+  };
+
+  // Delete Confirmation Handler
+  const handleConfirmDelete = () => {
+    if (!companyToDelete) return;
+    onDeleteCompany(companyToDelete.id);
+    setCompanyToDelete(null);
   };
 
   return (
@@ -377,39 +491,69 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
       {/* Top Header & CTA */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h3 className="text-base font-black text-[#1A241C] dark:text-[#F3EFE6]">
+          <h3 className="text-base font-black text-slate-900 dark:text-[#F3EFE6]">
             دليل الشركات المسجلة والمساهمات
           </h3>
-          <p className="text-xs text-[#5C665E] dark:text-[#8FA392]">
-            إدارة الكيانات والشركات التابعة، وحصص المساهمين ورؤوس الأموال المعتمدة
+          <p className="text-xs text-slate-500 dark:text-[#8FA392]">
+            إدارة الكيانات المؤسسية، وحصص المساهمين ورؤوس الأموال والمستندات القانونية
           </p>
         </div>
 
         <button
           onClick={handleOpenAddModal}
-          className="min-h-[44px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#D97706] text-white text-xs font-bold hover:bg-[#B45309] transition-colors shadow-xs shrink-0"
+          className="min-h-[44px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-all shadow-sm hover:shadow-md shrink-0"
         >
           <Plus className="w-4 h-4" />
           <span>+ إضافة شركة جديدة</span>
         </button>
       </div>
 
-      {/* Grid of Company Cards (Fluid Responsive) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 w-full">
-        {companies.map(comp => (
-          <SpotlightCompanyCard
-            key={comp.id}
-            company={comp}
-            onView={setViewDetailsCompany}
-            onEdit={handleOpenEditModal}
-            onAddDoc={onOpenAddDocumentForCompany}
-            onDelete={onDeleteCompany}
-            onToggleStatus={onToggleStatus}
-          />
-        ))}
-      </div>
+      {/* Empty State when no companies exist */}
+      {companies.length === 0 ? (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="py-16 px-6 text-center rounded-3xl border border-slate-200 dark:border-[#243628] bg-white dark:bg-[#17231A] shadow-xs flex flex-col items-center justify-center"
+        >
+          <div className="w-20 h-20 rounded-2xl bg-amber-500/15 border border-amber-500/25 text-amber-600 dark:text-amber-400 flex items-center justify-center mb-4">
+            <Building2 className="w-10 h-10 stroke-[1.5]" />
+          </div>
+          <h4 className="text-base font-black text-slate-900 dark:text-[#F3EFE6] mb-1">
+            لا توجد شركات مسجلة حالياً
+          </h4>
+          <p className="text-xs text-slate-500 dark:text-[#8FA392] max-w-md mb-6 leading-relaxed">
+            ابدأ بتسجيل شركتك الأولى لتوثيق الهيكل القانوني ورأس المال وتوزيع الحصص ورفع الوثائق الرسمية
+          </p>
+          <button
+            onClick={handleOpenAddModal}
+            className="flex items-center gap-2 px-6 py-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-md hover:shadow-lg transition-all"
+          >
+            <Plus className="w-4 h-4" />
+            <span>تسجيل أول شركة الآن</span>
+          </button>
+        </motion.div>
+      ) : (
+        /* Grid of Company Cards (Fluid Responsive) */
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 w-full">
+          {companies.map((comp, idx) => (
+            <SpotlightCompanyCard
+              key={comp.id}
+              company={comp}
+              index={idx}
+              onView={setViewDetailsCompany}
+              onEdit={handleOpenEditModal}
+              onOpenDocs={setDocsModalCompany}
+              onDelete={setCompanyToDelete}
+              onToggleStatus={onToggleStatus}
+              onOpenAudit={setAuditLogCompany}
+            />
+          ))}
+        </div>
+      )}
 
-      {/* Modal 1: إضافة / تعديل شركة مع هيكل المساهمين */}
+      {/* ============================================================= */}
+      {/* Modal 1: تسجيل / تعديل شركة مع المرفقات وهيكل المساهمين       */}
+      {/* ============================================================= */}
       <AnimatePresence>
         {modalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-xs overflow-y-auto">
@@ -417,63 +561,63 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-2xl max-h-[90vh] flex flex-col bg-[#FBF9F5] dark:bg-[#0E1610] rounded-2xl border border-[#E0D9CB] dark:border-[#243628] shadow-2xl overflow-hidden text-start"
+              className="w-full max-w-2xl max-h-[92vh] flex flex-col bg-white dark:bg-[#0E1610] rounded-2xl border border-slate-200 dark:border-[#243628] shadow-2xl overflow-hidden text-start"
             >
               {/* Modal Header */}
-              <div className="flex items-center justify-between p-4 border-b border-[#E0D9CB] dark:border-[#243628] shrink-0">
+              <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-[#243628] shrink-0 bg-slate-50/70 dark:bg-[#121B14]">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-[#D97706]/15 text-[#D97706] flex items-center justify-center">
+                  <div className="w-9 h-9 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center border border-amber-500/20">
                     <Building2 className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-[#1A241C] dark:text-[#F3EFE6]">
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-[#F3EFE6]">
                       {editingCompany ? 'تعديل بيانات الشركة وهيكل المساهمين' : 'تسجيل شركة جديدة'}
                     </h3>
-                    <span className="text-[11px] text-[#5C665E] dark:text-[#8FA392]">
-                      البيانات القانونية ورأس المال وتوزيع الحصص
+                    <span className="text-[11px] text-slate-500 dark:text-[#8FA392]">
+                      البيانات الرسمية، رأس المال، الوثائق، وتوزيع الحصص
                     </span>
                   </div>
                 </div>
                 <button
                   onClick={() => setModalOpen(false)}
-                  className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-gray-500 hover:bg-gray-200 dark:hover:bg-white/10"
+                  className="min-h-[40px] min-w-[40px] flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
               {/* Modal Body (Scrollable) */}
-              <form onSubmit={handleSubmitCompany} className="p-4 sm:p-5 space-y-4 overflow-y-auto text-xs">
+              <form onSubmit={handleSubmitCompany} className="p-4 sm:p-5 space-y-5 overflow-y-auto text-xs">
                 {/* 1. Core Corporate Info */}
                 <div className="space-y-3">
-                  <h4 className="text-xs font-black uppercase text-[#D97706] tracking-wider flex items-center gap-1.5">
+                  <h4 className="text-xs font-black uppercase text-amber-600 dark:text-amber-400 tracking-wider flex items-center gap-1.5">
                     <Building className="w-3.5 h-3.5" />
                     <span>البيانات الأساسية والقانونية</span>
                   </h4>
 
                   <div>
-                    <label className="block font-bold text-[#1A241C] dark:text-[#F3EFE6] mb-1">
-                      اسم الشركة بالكامل (بالعربية) *
+                    <label className="block font-bold text-slate-800 dark:text-[#F3EFE6] mb-1">
+                      اسم الشركة الرسمي *
                     </label>
                     <input
                       type="text"
                       required
                       value={nameAr}
                       onChange={e => setNameAr(e.target.value)}
-                      placeholder="مثال: شركة أركان للإنشاءات الهندسية (ش.م.م)"
-                      className="w-full min-h-[44px] px-3.5 py-2 rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-[#F3EFE6] dark:bg-[#17231A] text-[#1A241C] dark:text-[#F3EFE6] focus:outline-none focus:border-[#D97706]"
+                      placeholder="أدخل الاسم التجاري الرسمي المسجل في السجل التجاري"
+                      className="w-full min-h-[44px] px-3.5 py-2 rounded-xl border border-slate-300 dark:border-[#243628] bg-slate-50/70 dark:bg-[#17231A] text-slate-900 dark:text-[#F3EFE6] focus:outline-none focus:border-amber-500 focus:bg-white dark:focus:bg-[#17231A] transition-colors"
                     />
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="block font-bold text-[#1A241C] dark:text-[#F3EFE6] mb-1">
+                      <label className="block font-bold text-slate-800 dark:text-[#F3EFE6] mb-1">
                         الشكل القانوني *
                       </label>
                       <select
                         value={legalType}
                         onChange={e => setLegalType(e.target.value as CompanyEntity['legalType'])}
-                        className="w-full min-h-[44px] px-3 py-2 rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-[#F3EFE6] dark:bg-[#17231A] text-[#1A241C] dark:text-[#F3EFE6] focus:outline-none focus:border-[#D97706]"
+                        className="w-full min-h-[44px] px-3 py-2 rounded-xl border border-slate-300 dark:border-[#243628] bg-slate-50/70 dark:bg-[#17231A] text-slate-900 dark:text-[#F3EFE6] focus:outline-none focus:border-amber-500"
                       >
                         <option value="ش.م.م">ش.م.م (شركة مساهمة مصرية)</option>
                         <option value="ذ.م.م">ذ.م.م (شركة ذات مسؤولية محدودة)</option>
@@ -483,23 +627,23 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
                     </div>
 
                     <div>
-                      <label className="block font-bold text-[#1A241C] dark:text-[#F3EFE6] mb-1">
-                        المدير التنفيذي المسؤول *
+                      <label className="block font-bold text-slate-800 dark:text-[#F3EFE6] mb-1">
+                        المدير المسؤول *
                       </label>
                       <input
                         type="text"
                         required
                         value={ceoAr}
                         onChange={e => setCeoAr(e.target.value)}
-                        placeholder="م. أحمد مصطفى"
-                        className="w-full min-h-[44px] px-3.5 py-2 rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-[#F3EFE6] dark:bg-[#17231A] text-[#1A241C] dark:text-[#F3EFE6] focus:outline-none focus:border-[#D97706]"
+                        placeholder="الاسم الرباعي للمدير التنفيذي أو المفوض قانونياً"
+                        className="w-full min-h-[44px] px-3.5 py-2 rounded-xl border border-slate-300 dark:border-[#243628] bg-slate-50/70 dark:bg-[#17231A] text-slate-900 dark:text-[#F3EFE6] focus:outline-none focus:border-amber-500"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
-                      <label className="block font-bold text-[#1A241C] dark:text-[#F3EFE6] mb-1">
+                      <label className="block font-bold text-slate-800 dark:text-[#F3EFE6] mb-1">
                         رقم السجل التجاري *
                       </label>
                       <input
@@ -507,26 +651,26 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
                         required
                         value={crNumber}
                         onChange={e => setCrNumber(e.target.value)}
-                        placeholder="44912 / جنوب القاهرة"
-                        className="w-full min-h-[44px] px-3.5 py-2 rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-[#F3EFE6] dark:bg-[#17231A] text-[#1A241C] dark:text-[#F3EFE6] focus:outline-none focus:border-[#D97706] font-mono"
+                        placeholder="رقم القيد بالسجل التجاري وتاريخه"
+                        className="w-full min-h-[44px] px-3.5 py-2 rounded-xl border border-slate-300 dark:border-[#243628] bg-slate-50/70 dark:bg-[#17231A] text-slate-900 dark:text-[#F3EFE6] focus:outline-none focus:border-amber-500 font-mono"
                       />
                     </div>
 
                     <div>
-                      <label className="block font-bold text-[#1A241C] dark:text-[#F3EFE6] mb-1">
+                      <label className="block font-bold text-slate-800 dark:text-[#F3EFE6] mb-1">
                         مكتب السجل التجاري
                       </label>
                       <input
                         type="text"
                         value={crOffice}
                         onChange={e => setCrOffice(e.target.value)}
-                        placeholder="مكتب استثمار القاهرة"
-                        className="w-full min-h-[44px] px-3.5 py-2 rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-[#F3EFE6] dark:bg-[#17231A] text-[#1A241C] dark:text-[#F3EFE6] focus:outline-none focus:border-[#D97706]"
+                        placeholder="اسم مكتب السجل التجاري التابع له الكيان"
+                        className="w-full min-h-[44px] px-3.5 py-2 rounded-xl border border-slate-300 dark:border-[#243628] bg-slate-50/70 dark:bg-[#17231A] text-slate-900 dark:text-[#F3EFE6] focus:outline-none focus:border-amber-500"
                       />
                     </div>
 
                     <div>
-                      <label className="block font-bold text-[#1A241C] dark:text-[#F3EFE6] mb-1">
+                      <label className="block font-bold text-slate-800 dark:text-[#F3EFE6] mb-1">
                         البطاقة الضريبية *
                       </label>
                       <input
@@ -534,31 +678,158 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
                         required
                         value={taxNumber}
                         onChange={e => setTaxNumber(e.target.value)}
-                        placeholder="210-948-112"
-                        className="w-full min-h-[44px] px-3.5 py-2 rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-[#F3EFE6] dark:bg-[#17231A] text-[#1A241C] dark:text-[#F3EFE6] focus:outline-none focus:border-[#D97706] font-mono"
+                        placeholder="رقم التسجيل الضريبي المكون من 9 أرقام"
+                        className="w-full min-h-[44px] px-3.5 py-2 rounded-xl border border-slate-300 dark:border-[#243628] bg-slate-50/70 dark:bg-[#17231A] text-slate-900 dark:text-[#F3EFE6] focus:outline-none focus:border-amber-500 font-mono"
                       />
                     </div>
                   </div>
                 </div>
 
-                {/* 2. Shareholders & Equity Engine */}
-                <div className="pt-3 border-t border-[#E0D9CB] dark:border-[#243628] space-y-3">
+                {/* 2. Company Documents Upload Engine */}
+                <div className="pt-3 border-t border-slate-200 dark:border-[#243628] space-y-3">
+                  <h4 className="text-xs font-black uppercase text-amber-600 dark:text-amber-400 tracking-wider flex items-center gap-1.5">
+                    <FileText className="w-3.5 h-3.5" />
+                    <span>وثائق ومستندات الكيان الرسمية</span>
+                  </h4>
+
+                  <div className="flex flex-col sm:flex-row items-center gap-2">
+                    <div className="w-full sm:w-1/2">
+                      <label className="block text-[11px] font-semibold text-slate-600 dark:text-[#8FA392] mb-1">
+                        نوع المستند المراد إرفاقه:
+                      </label>
+                      <select
+                        value={selectedUploadDocType}
+                        onChange={e => setSelectedUploadDocType(e.target.value)}
+                        className="w-full min-h-[40px] px-3 py-1.5 rounded-xl border border-slate-300 dark:border-[#243628] bg-slate-50 dark:bg-[#17231A] text-slate-900 dark:text-[#F3EFE6]"
+                      >
+                        <option value="السجل التجاري">السجل التجاري</option>
+                        <option value="البطاقة الضريبية">البطاقة الضريبية</option>
+                        <option value="عقد التأسيس">عقد التأسيس</option>
+                        <option value="شهادة تسجيل القيمة المضافة">شهادة تسجيل القيمة المضافة</option>
+                        <option value="تراخيص مزاولة النشاط">تراخيص مزاولة النشاط</option>
+                      </select>
+                    </div>
+
+                    <div className="w-full sm:w-1/2 flex items-end">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        multiple
+                        accept=".pdf,image/png,image/jpeg,image/jpg"
+                        onChange={e => processFiles(e.target.files)}
+                        className="hidden"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="w-full min-h-[40px] px-3 py-1.5 rounded-xl border border-dashed border-amber-500 bg-amber-50/60 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 font-bold flex items-center justify-center gap-2 hover:bg-amber-100 transition-colors"
+                      >
+                        <UploadCloud className="w-4 h-4" />
+                        <span>اختر ملفات (PDF / صور)</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Drag and Drop Zone */}
+                  <div
+                    onDragOver={e => {
+                      e.preventDefault();
+                      setIsDragOver(true);
+                    }}
+                    onDragLeave={() => setIsDragOver(false)}
+                    onDrop={e => {
+                      e.preventDefault();
+                      setIsDragOver(false);
+                      processFiles(e.dataTransfer.files);
+                    }}
+                    onClick={() => fileInputRef.current?.click()}
+                    className={`p-4 rounded-xl border-2 border-dashed text-center cursor-pointer transition-all ${
+                      isDragOver
+                        ? 'border-amber-500 bg-amber-500/10'
+                        : 'border-slate-200 dark:border-[#243628] hover:border-amber-400 bg-slate-50/50 dark:bg-[#0E1610]'
+                    }`}
+                  >
+                    <UploadCloud className="w-6 h-6 text-slate-400 mx-auto mb-1" />
+                    <p className="text-[11px] font-bold text-slate-700 dark:text-[#E0D9CB]">
+                      اسحب الملفات وأفلتها هنا أو اضغط للاستعراض
+                    </p>
+                    <span className="text-[10px] text-slate-400">
+                      يدعم ملفات PDF وصور JPG و PNG
+                    </span>
+                  </div>
+
+                  {/* Attached Documents List */}
+                  {attachedDocs.length > 0 && (
+                    <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                      {attachedDocs.map(doc => (
+                        <div
+                          key={doc.id}
+                          className="flex items-center justify-between p-2 rounded-xl bg-slate-50 dark:bg-[#121B14] border border-slate-200 dark:border-[#243628] text-[11px]"
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            {doc.mimeType?.includes('pdf') ? (
+                              <FileText className="w-4 h-4 text-rose-500 shrink-0" />
+                            ) : (
+                              <ImageIcon className="w-4 h-4 text-blue-500 shrink-0" />
+                            )}
+                            <div className="truncate">
+                              <span className="font-bold text-slate-800 dark:text-[#F3EFE6] block truncate">
+                                {doc.name}
+                              </span>
+                              <div className="flex items-center gap-2 text-[10px] text-slate-500">
+                                <span className="text-amber-600 font-bold">{doc.docType}</span>
+                                <span>•</span>
+                                <span>{formatBytes(doc.sizeBytes)}</span>
+                                <span>•</span>
+                                <span>{doc.uploadedAt}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1 shrink-0">
+                            {doc.dataUrl && (
+                              <button
+                                type="button"
+                                onClick={() => setPreviewDocument(doc)}
+                                className="p-1 rounded-lg text-slate-500 hover:text-amber-600 hover:bg-slate-200 dark:hover:bg-white/10"
+                                title="معاينة المستند"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveDoc(doc.id)}
+                              className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20"
+                              title="حذف المستند"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* 3. Shareholders & Equity Engine */}
+                <div className="pt-3 border-t border-slate-200 dark:border-[#243628] space-y-3">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <h4 className="text-xs font-black uppercase text-[#D97706] tracking-wider flex items-center gap-1.5">
+                    <h4 className="text-xs font-black uppercase text-amber-600 dark:text-amber-400 tracking-wider flex items-center gap-1.5">
                       <PieChart className="w-3.5 h-3.5" />
                       <span>هيكل الملكية والمساهمين ورأس المال</span>
                     </h4>
 
                     <div className="flex items-center gap-2 text-[11px] font-bold">
-                      <span className="px-2 py-0.5 rounded-md bg-[#D97706]/15 text-[#D97706]">
+                      <span className="px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-700 dark:text-amber-400">
                         {shareholders.length} مساهمين مسجلين
                       </span>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 rounded-xl bg-[#F3EFE6] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628]">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 rounded-xl bg-slate-50 dark:bg-[#17231A] border border-slate-200 dark:border-[#243628]">
                     <div>
-                      <label className="block font-semibold text-[#5C665E] dark:text-[#8FA392] mb-1">
+                      <label className="block font-semibold text-slate-600 dark:text-[#8FA392] mb-1">
                         إجمالي عدد الأسهم:
                       </label>
                       <input
@@ -567,12 +838,12 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
                         required
                         value={totalShares}
                         onChange={e => handleTotalSharesChange(Number(e.target.value) || 0)}
-                        className="w-full min-h-[44px] px-3 py-1.5 rounded-lg border border-[#E0D9CB] dark:border-[#243628] bg-[#FBF9F5] dark:bg-[#0E1610] text-[#1A241C] dark:text-[#F3EFE6] font-bold font-mono"
+                        className="w-full min-h-[40px] px-3 py-1.5 rounded-lg border border-slate-300 dark:border-[#243628] bg-white dark:bg-[#0E1610] text-slate-900 dark:text-[#F3EFE6] font-bold font-mono"
                       />
                     </div>
 
                     <div>
-                      <label className="block font-semibold text-[#5C665E] dark:text-[#8FA392] mb-1">
+                      <label className="block font-semibold text-slate-600 dark:text-[#8FA392] mb-1">
                         القيمة الاسمية للسهم (ج.م):
                       </label>
                       <input
@@ -581,15 +852,15 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
                         required
                         value={nominalShareValue}
                         onChange={e => setNominalShareValue(Number(e.target.value) || 0)}
-                        className="w-full min-h-[44px] px-3 py-1.5 rounded-lg border border-[#E0D9CB] dark:border-[#243628] bg-[#FBF9F5] dark:bg-[#0E1610] text-[#1A241C] dark:text-[#F3EFE6] font-bold font-mono"
+                        className="w-full min-h-[40px] px-3 py-1.5 rounded-lg border border-slate-300 dark:border-[#243628] bg-white dark:bg-[#0E1610] text-slate-900 dark:text-[#F3EFE6] font-bold font-mono"
                       />
                     </div>
 
                     <div>
-                      <span className="block font-semibold text-[#5C665E] dark:text-[#8FA392] mb-1">
+                      <span className="block font-semibold text-slate-600 dark:text-[#8FA392] mb-1">
                         رأس المال المصدر (محسوب):
                       </span>
-                      <div className="min-h-[44px] px-3 py-2 rounded-lg bg-[#EAE4D7] dark:bg-[#1F2E23] flex items-center font-black text-sm text-[#1A241C] dark:text-[#F3EFE6]">
+                      <div className="min-h-[40px] px-3 py-2 rounded-lg bg-slate-200/80 dark:bg-[#1F2E23] flex items-center font-black text-sm text-slate-900 dark:text-[#F3EFE6]">
                         {formatCurrency(calculatedCapital)}
                       </div>
                     </div>
@@ -598,21 +869,21 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
                   {/* Dynamic Shareholders Repeater */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-[#1A241C] dark:text-[#F3EFE6]">جدول توزيع الحصص والمساهمين:</span>
+                      <span className="font-bold text-slate-800 dark:text-[#F3EFE6]">جدول توزيع الحصص والمساهمين:</span>
                       <button
                         type="button"
                         onClick={handleAddShareholderRow}
-                        className="min-h-[38px] px-3 py-1.5 rounded-xl bg-[#D97706]/15 hover:bg-[#D97706]/25 text-[#D97706] font-bold text-xs flex items-center gap-1 transition-colors"
+                        className="min-h-[36px] px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-400 font-bold text-xs flex items-center gap-1 transition-colors"
                       >
                         <Plus className="w-3.5 h-3.5" />
                         <span>+ إضافة مساهم</span>
                       </button>
                     </div>
 
-                    <div className="border border-[#E0D9CB] dark:border-[#243628] rounded-xl overflow-hidden">
+                    <div className="border border-slate-200 dark:border-[#243628] rounded-xl overflow-hidden">
                       <div className="overflow-x-auto">
                         <table className="w-full text-xs">
-                          <thead className="bg-[#EAE4D7] dark:bg-[#1F2E23] text-[#1A241C] dark:text-[#F3EFE6] border-b border-[#E0D9CB] dark:border-[#243628]">
+                          <thead className="bg-slate-100 dark:bg-[#1F2E23] text-slate-800 dark:text-[#F3EFE6] border-b border-slate-200 dark:border-[#243628]">
                             <tr>
                               <th className="p-2.5 text-start whitespace-nowrap">اسم المساهم</th>
                               <th className="p-2.5 text-start whitespace-nowrap">الصفة / الكيان</th>
@@ -621,9 +892,9 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
                               <th className="p-2.5 text-center whitespace-nowrap">حذف</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-[#E0D9CB]/60 dark:divide-[#243628]">
+                          <tbody className="divide-y divide-slate-200 dark:divide-[#243628]">
                             {shareholders.map(sh => (
-                              <tr key={sh.id} className="bg-[#FBF9F5] dark:bg-[#0E1610]">
+                              <tr key={sh.id} className="bg-white dark:bg-[#0E1610]">
                                 <td className="p-2">
                                   <input
                                     type="text"
@@ -631,14 +902,14 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
                                     value={sh.name}
                                     onChange={e => handleShareholderChange(sh.id, 'name', e.target.value)}
                                     placeholder="اسم الشريك أو المؤسسة"
-                                    className="w-full px-2.5 py-1.5 rounded-lg border border-[#E0D9CB] dark:border-[#243628] bg-[#F3EFE6] dark:bg-[#17231A] text-[#1A241C] dark:text-[#F3EFE6] text-xs font-bold"
+                                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-[#243628] bg-slate-50 dark:bg-[#17231A] text-slate-900 dark:text-[#F3EFE6] text-xs font-bold"
                                   />
                                 </td>
                                 <td className="p-2">
                                   <select
                                     value={sh.entityType}
                                     onChange={e => handleShareholderChange(sh.id, 'entityType', e.target.value)}
-                                    className="w-full px-2 py-1.5 rounded-lg border border-[#E0D9CB] dark:border-[#243628] bg-[#F3EFE6] dark:bg-[#17231A] text-[#1A241C] dark:text-[#F3EFE6] text-xs"
+                                    className="w-full px-2 py-1.5 rounded-lg border border-slate-300 dark:border-[#243628] bg-slate-50 dark:bg-[#17231A] text-slate-900 dark:text-[#F3EFE6] text-xs"
                                   >
                                     <option value="فرد">فرد</option>
                                     <option value="مؤسسة">مؤسسة / شركة</option>
@@ -654,10 +925,10 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
                                     required
                                     value={sh.sharesCount}
                                     onChange={e => handleShareholderChange(sh.id, 'sharesCount', Number(e.target.value) || 0)}
-                                    className="w-28 px-2.5 py-1.5 rounded-lg border border-[#E0D9CB] dark:border-[#243628] bg-[#F3EFE6] dark:bg-[#17231A] text-[#1A241C] dark:text-[#F3EFE6] text-xs font-mono font-bold"
+                                    className="w-28 px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-[#243628] bg-slate-50 dark:bg-[#17231A] text-slate-900 dark:text-[#F3EFE6] text-xs font-mono font-bold"
                                   />
                                 </td>
-                                <td className="p-2 font-mono font-bold text-xs text-[#D97706] whitespace-nowrap">
+                                <td className="p-2 font-mono font-bold text-xs text-amber-600 whitespace-nowrap">
                                   {sh.ownershipPercent}%
                                 </td>
                                 <td className="p-2 text-center">
@@ -665,7 +936,7 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
                                     type="button"
                                     disabled={shareholders.length === 1}
                                     onClick={() => handleRemoveShareholderRow(sh.id)}
-                                    className="p-1.5 text-gray-400 hover:text-red-500 disabled:opacity-30 disabled:hover:text-gray-400 rounded-lg"
+                                    className="p-1.5 text-slate-400 hover:text-rose-500 disabled:opacity-30 disabled:hover:text-slate-400 rounded-lg"
                                   >
                                     <Trash2 className="w-3.5 h-3.5" />
                                   </button>
@@ -677,8 +948,8 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
                       </div>
                     </div>
 
-                    {/* Ownership summary alert */}
-                    <div className="flex flex-wrap items-center justify-between p-2.5 rounded-xl bg-[#EAE4D7]/70 dark:bg-[#1F2E23]/70 text-[11px] font-semibold">
+                    {/* Ownership Summary Alert */}
+                    <div className="flex flex-wrap items-center justify-between p-2.5 rounded-xl bg-slate-100 dark:bg-[#1F2E23]/70 text-[11px] font-semibold">
                       <span className="flex items-center gap-1.5">
                         <ShieldCheck className="w-4 h-4 text-emerald-600" />
                         <span>إجمالي الأسهم الموزعة: <strong>{formatNumber(totalAllocatedShares)}</strong> من أصل <strong>{formatNumber(totalShares)}</strong></span>
@@ -699,17 +970,17 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
                 </div>
 
                 {/* Modal Footer Actions */}
-                <div className="pt-3 border-t border-[#E0D9CB] dark:border-[#243628] flex items-center justify-end gap-2.5">
+                <div className="pt-3 border-t border-slate-200 dark:border-[#243628] flex items-center justify-end gap-2.5">
                   <button
                     type="button"
                     onClick={() => setModalOpen(false)}
-                    className="min-h-[44px] px-4 py-2 rounded-xl border border-[#E0D9CB] dark:border-[#243628] text-[#5C665E] dark:text-[#8FA392] hover:bg-gray-100 dark:hover:bg-white/5 font-semibold"
+                    className="min-h-[44px] px-4 py-2 rounded-xl border border-slate-300 dark:border-[#243628] text-slate-600 dark:text-[#8FA392] hover:bg-slate-100 dark:hover:bg-white/5 font-semibold"
                   >
                     إلغاء
                   </button>
                   <button
                     type="submit"
-                    className="min-h-[44px] px-6 py-2 rounded-xl bg-[#D97706] text-white font-bold hover:bg-[#B45309] transition-colors shadow-xs"
+                    className="min-h-[44px] px-6 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold transition-colors shadow-sm"
                   >
                     {editingCompany ? 'حفظ التعديلات' : 'تسجيل الشركة رسمياً'}
                   </button>
@@ -720,7 +991,9 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
         )}
       </AnimatePresence>
 
-      {/* Modal 2: عرض ملف الشركة الكامل وهيكل المساهمين */}
+      {/* ============================================================= */}
+      {/* Modal 2: عرض ملف الشركة الكامل وهيكل المساهمين                */}
+      {/* ============================================================= */}
       <AnimatePresence>
         {viewDetailsCompany && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-xs overflow-y-auto">
@@ -728,25 +1001,25 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-2xl bg-[#FBF9F5] dark:bg-[#0E1610] rounded-2xl border border-[#E0D9CB] dark:border-[#243628] shadow-2xl overflow-hidden p-5 text-start"
+              className="w-full max-w-2xl bg-white dark:bg-[#0E1610] rounded-2xl border border-slate-200 dark:border-[#243628] shadow-2xl overflow-hidden p-5 text-start"
             >
-              <div className="flex items-center justify-between pb-3 border-b border-[#E0D9CB] dark:border-[#243628] mb-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-[#243628] mb-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-[#D97706]/15 text-[#D97706] flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center border border-amber-500/20">
                     <Building className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-black text-[#1A241C] dark:text-[#F3EFE6]">
+                    <h3 className="text-sm font-black text-slate-900 dark:text-[#F3EFE6]">
                       {viewDetailsCompany.nameAr}
                     </h3>
-                    <span className="text-xs text-[#5C665E] dark:text-[#8FA392]">
-                      {viewDetailsCompany.legalType} • السجل التجاري: {viewDetailsCompany.crNumber}
+                    <span className="text-xs text-slate-500 dark:text-[#8FA392]">
+                      {viewDetailsCompany.legalType} • السجل التجاري: {viewDetailsCompany.crNumber || '—'}
                     </span>
                   </div>
                 </div>
                 <button
                   onClick={() => setViewDetailsCompany(null)}
-                  className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-gray-500 hover:bg-gray-200 dark:hover:bg-white/10"
+                  className="min-h-[40px] min-w-[40px] flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-white/10"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -754,44 +1027,44 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
 
               <div className="space-y-4 text-xs">
                 {/* Highlights Grid */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3 rounded-xl bg-[#F3EFE6] dark:bg-[#17231A] border border-[#E0D9CB]/70 dark:border-[#243628]">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3 rounded-xl bg-slate-50 dark:bg-[#17231A] border border-slate-200 dark:border-[#243628]">
                   <div>
-                    <span className="text-[11px] text-[#5C665E] dark:text-[#8FA392] block">رأس المال المصدر:</span>
-                    <strong className="text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6]">
+                    <span className="text-[11px] text-slate-500 dark:text-[#8FA392] block">رأس المال المصدر:</span>
+                    <strong className="text-xs font-bold text-slate-900 dark:text-[#F3EFE6]">
                       {formatCurrency(viewDetailsCompany.issuedCapital)}
                     </strong>
                   </div>
                   <div>
-                    <span className="text-[11px] text-[#5C665E] dark:text-[#8FA392] block">عدد الأسهم:</span>
-                    <strong className="text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6] font-mono">
+                    <span className="text-[11px] text-slate-500 dark:text-[#8FA392] block">عدد الأسهم:</span>
+                    <strong className="text-xs font-bold text-slate-900 dark:text-[#F3EFE6] font-mono">
                       {formatNumber(viewDetailsCompany.totalShares)}
                     </strong>
                   </div>
                   <div>
-                    <span className="text-[11px] text-[#5C665E] dark:text-[#8FA392] block">القيمة الاسمية:</span>
-                    <strong className="text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6]">
+                    <span className="text-[11px] text-slate-500 dark:text-[#8FA392] block">القيمة الاسمية:</span>
+                    <strong className="text-xs font-bold text-slate-900 dark:text-[#F3EFE6]">
                       {formatCurrency(viewDetailsCompany.nominalShareValue, false)} ج.م / سهم
                     </strong>
                   </div>
                   <div>
-                    <span className="text-[11px] text-[#5C665E] dark:text-[#8FA392] block">المدير المسؤول:</span>
-                    <strong className="text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6]">
-                      {viewDetailsCompany.ceoAr}
+                    <span className="text-[11px] text-slate-500 dark:text-[#8FA392] block">المدير المسؤول:</span>
+                    <strong className="text-xs font-bold text-slate-900 dark:text-[#F3EFE6]">
+                      {viewDetailsCompany.ceoAr || '—'}
                     </strong>
                   </div>
                 </div>
 
-                {/* Shareholders Breakdown Table */}
+                {/* Shareholders Breakdown */}
                 <div className="space-y-2">
-                  <h4 className="font-bold text-xs text-[#1A241C] dark:text-[#F3EFE6] flex items-center gap-1.5">
-                    <Users className="w-4 h-4 text-[#D97706]" />
-                    <span>هيكل المساهمين والملكية ({formatNumber(viewDetailsCompany.shareholders.length)} مساهمين):</span>
+                  <h4 className="font-bold text-xs text-slate-800 dark:text-[#F3EFE6] flex items-center gap-1.5">
+                    <Users className="w-4 h-4 text-amber-600" />
+                    <span>هيكل المساهمين والملكية ({formatNumber(viewDetailsCompany.shareholders?.length || 0)} مساهمين):</span>
                   </h4>
 
-                  <div className="border border-[#E0D9CB] dark:border-[#243628] rounded-xl overflow-hidden">
+                  <div className="border border-slate-200 dark:border-[#243628] rounded-xl overflow-hidden">
                     <div className="overflow-x-auto">
                       <table className="w-full text-xs">
-                        <thead className="bg-[#EAE4D7] dark:bg-[#1F2E23] text-[#1A241C] dark:text-[#F3EFE6]">
+                        <thead className="bg-slate-100 dark:bg-[#1F2E23] text-slate-800 dark:text-[#F3EFE6]">
                           <tr>
                             <th className="p-2.5 text-start whitespace-nowrap">المساهم</th>
                             <th className="p-2.5 text-start whitespace-nowrap">الصفة</th>
@@ -799,29 +1072,29 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
                             <th className="p-2.5 text-start whitespace-nowrap">نسبة المساهمة</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-[#E0D9CB]/60 dark:divide-[#243628]">
-                          {viewDetailsCompany.shareholders.map(sh => (
-                            <tr key={sh.id} className="bg-[#FBF9F5] dark:bg-[#0E1610]">
-                              <td className="p-2.5 font-bold text-[#1A241C] dark:text-[#F3EFE6]">
+                        <tbody className="divide-y divide-slate-200 dark:divide-[#243628]">
+                          {viewDetailsCompany.shareholders?.map(sh => (
+                            <tr key={sh.id} className="bg-white dark:bg-[#0E1610]">
+                              <td className="p-2.5 font-bold text-slate-900 dark:text-[#F3EFE6]">
                                 {sh.name}
                               </td>
-                              <td className="p-2.5 text-[#5C665E] dark:text-[#8FA392]">
-                                <span className="px-2 py-0.5 rounded-md bg-[#EAE4D7] dark:bg-[#1F2E23] text-[10.5px] font-semibold">
+                              <td className="p-2.5 text-slate-500 dark:text-[#8FA392]">
+                                <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#1F2E23] text-[10.5px] font-semibold">
                                   {sh.entityType}
                                 </span>
                               </td>
-                              <td className="p-2.5 font-mono font-bold text-[#1A241C] dark:text-[#F3EFE6]">
+                              <td className="p-2.5 font-mono font-bold text-slate-900 dark:text-[#F3EFE6]">
                                 {formatNumber(sh.sharesCount)}
                               </td>
                               <td className="p-2.5">
                                 <div className="flex items-center gap-2">
-                                  <div className="w-20 bg-gray-200 dark:bg-gray-700 h-2 rounded-full overflow-hidden">
+                                  <div className="w-20 bg-slate-200 dark:bg-gray-700 h-2 rounded-full overflow-hidden">
                                     <div
-                                      className="bg-[#D97706] h-full rounded-full"
+                                      className="bg-amber-500 h-full rounded-full"
                                       style={{ width: `${Math.min(100, sh.ownershipPercent)}%` }}
                                     />
                                   </div>
-                                  <span className="font-mono font-bold text-[#D97706] text-xs">
+                                  <span className="font-mono font-bold text-amber-600 text-xs">
                                     {sh.ownershipPercent}%
                                   </span>
                                 </div>
@@ -834,14 +1107,444 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
                   </div>
                 </div>
 
-                <div className="flex justify-end pt-2">
+                {/* Attached Documents Quick Preview */}
+                {viewDetailsCompany.documents && viewDetailsCompany.documents.length > 0 && (
+                  <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-[#243628]">
+                    <h4 className="font-bold text-xs text-slate-800 dark:text-[#F3EFE6] flex items-center gap-1.5">
+                      <FileText className="w-4 h-4 text-blue-600" />
+                      <span>المستندات الرسمية المرفقة ({viewDetailsCompany.documents.length}):</span>
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {viewDetailsCompany.documents.map(doc => (
+                        <div
+                          key={doc.id}
+                          className="p-2.5 rounded-xl border border-slate-200 dark:border-[#243628] bg-slate-50 dark:bg-[#17231A] flex items-center justify-between"
+                        >
+                          <div className="truncate min-w-0">
+                            <span className="font-bold text-slate-800 dark:text-[#F3EFE6] block truncate">{doc.name}</span>
+                            <span className="text-[10px] text-amber-600 font-semibold">{doc.docType}</span>
+                          </div>
+                          {doc.dataUrl && (
+                            <button
+                              onClick={() => setPreviewDocument(doc)}
+                              className="p-1.5 rounded-lg bg-slate-200 dark:bg-[#1F2E23] text-slate-700 hover:text-amber-600 shrink-0"
+                              title="معاينة"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex justify-between items-center pt-2">
+                  <button
+                    onClick={() => {
+                      const comp = viewDetailsCompany;
+                      setViewDetailsCompany(null);
+                      setAuditLogCompany(comp);
+                    }}
+                    className="flex items-center gap-1.5 text-xs font-bold text-amber-600 hover:text-amber-700"
+                  >
+                    <History className="w-4 h-4" />
+                    <span>عرض سجل التعديلات (Audit Trail)</span>
+                  </button>
+
                   <button
                     onClick={() => setViewDetailsCompany(null)}
-                    className="min-h-[44px] px-5 py-2 rounded-xl bg-[#D97706] text-white font-bold text-xs hover:bg-[#B45309]"
+                    className="min-h-[40px] px-5 py-2 rounded-xl bg-amber-600 text-white font-bold text-xs hover:bg-amber-700"
                   >
                     إغلاق الملف
                   </button>
                 </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ============================================================= */}
+      {/* Modal 3: إدارة مستندات وملفات الشركة المحددة                  */}
+      {/* ============================================================= */}
+      <AnimatePresence>
+        {docsModalCompany && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-xs overflow-y-auto">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-xl bg-white dark:bg-[#0E1610] rounded-2xl border border-slate-200 dark:border-[#243628] shadow-2xl overflow-hidden p-5 text-start"
+            >
+              <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-[#243628] mb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-blue-500/15 text-blue-600 flex items-center justify-center border border-blue-500/20">
+                    <FileText className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-slate-900 dark:text-[#F3EFE6]">
+                      مستندات: {docsModalCompany.nameAr}
+                    </h3>
+                    <span className="text-xs text-slate-500 dark:text-[#8FA392]">
+                      السجلات الرسمية، البطاقات الضريبية، وعقود التأسيس
+                    </span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setDocsModalCompany(null)}
+                  className="min-h-[40px] min-w-[40px] flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-white/10"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Upload New Document Directly */}
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#17231A] border border-slate-200 dark:border-[#243628] mb-4 space-y-2.5">
+                <span className="font-bold text-xs text-slate-800 dark:text-[#F3EFE6] block">
+                  إرفاق مستند جديد للشركة:
+                </span>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <select
+                    value={selectedUploadDocType}
+                    onChange={e => setSelectedUploadDocType(e.target.value)}
+                    className="min-h-[40px] px-3 py-1.5 rounded-xl border border-slate-300 dark:border-[#243628] bg-white dark:bg-[#0E1610] text-xs text-slate-900 dark:text-[#F3EFE6]"
+                  >
+                    <option value="السجل التجاري">السجل التجاري</option>
+                    <option value="البطاقة الضريبية">البطاقة الضريبية</option>
+                    <option value="عقد التأسيس">عقد التأسيس</option>
+                    <option value="شهادة تسجيل القيمة المضافة">شهادة تسجيل القيمة المضافة</option>
+                    <option value="تراخيص مزاولة النشاط">تراخيص مزاولة النشاط</option>
+                  </select>
+
+                  <input
+                    id="docsModalFileInput"
+                    type="file"
+                    multiple
+                    accept=".pdf,image/png,image/jpeg,image/jpg"
+                    onChange={e => {
+                      const files = e.target.files;
+                      if (!files || files.length === 0 || !docsModalCompany) return;
+                      Array.from(files).forEach(file => {
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                          const newAttachment: CompanyDocumentAttachment = {
+                            id: `doc_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+                            name: file.name,
+                            docType: selectedUploadDocType,
+                            sizeBytes: file.size,
+                            mimeType: file.type || 'application/octet-stream',
+                            uploadedAt: getFormattedAuditTimestamp(),
+                            dataUrl: reader.result as string
+                          };
+                          const updated = {
+                            ...docsModalCompany,
+                            documents: [newAttachment, ...(docsModalCompany.documents || [])]
+                          };
+                          onUpdateCompany(updated);
+                          setDocsModalCompany(updated);
+                        };
+                        reader.readAsDataURL(file);
+                      });
+                    }}
+                    className="hidden"
+                  />
+                  <label
+                    htmlFor="docsModalFileInput"
+                    className="flex-1 min-h-[40px] px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-colors shadow-xs"
+                  >
+                    <UploadCloud className="w-4 h-4" />
+                    <span>رفع ملفات (PDF / صور)</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Documents List */}
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {!docsModalCompany.documents || docsModalCompany.documents.length === 0 ? (
+                  <div className="py-8 text-center text-slate-400">
+                    <FileText className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-xs">لم يتم رفع أي مستندات لهذه الشركة بعد</p>
+                  </div>
+                ) : (
+                  docsModalCompany.documents.map(doc => (
+                    <div
+                      key={doc.id}
+                      className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-[#121B14] border border-slate-200 dark:border-[#243628] text-xs"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        {doc.mimeType?.includes('pdf') ? (
+                          <FileText className="w-5 h-5 text-rose-500 shrink-0" />
+                        ) : (
+                          <ImageIcon className="w-5 h-5 text-blue-500 shrink-0" />
+                        )}
+                        <div className="truncate">
+                          <span className="font-bold text-slate-800 dark:text-[#F3EFE6] block truncate">
+                            {doc.name}
+                          </span>
+                          <div className="flex items-center gap-2 text-[10px] text-slate-500">
+                            <span className="text-amber-600 font-bold">{doc.docType}</span>
+                            <span>•</span>
+                            <span>{formatBytes(doc.sizeBytes)}</span>
+                            <span>•</span>
+                            <span>{doc.uploadedAt}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {doc.dataUrl && (
+                          <button
+                            onClick={() => setPreviewDocument(doc)}
+                            className="p-2 rounded-lg bg-slate-200/80 dark:bg-[#1F2E23] text-slate-700 dark:text-[#E0D9CB] hover:text-amber-600 transition-colors"
+                            title="معاينة"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => {
+                            const updatedDocs = (docsModalCompany.documents || []).filter(d => d.id !== doc.id);
+                            const updated = { ...docsModalCompany, documents: updatedDocs };
+                            onUpdateCompany(updated);
+                            setDocsModalCompany(updated);
+                          }}
+                          className="p-2 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-colors"
+                          title="حذف المستند"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <div className="flex justify-end pt-4 border-t border-slate-200 dark:border-[#243628] mt-4">
+                <button
+                  onClick={() => setDocsModalCompany(null)}
+                  className="min-h-[40px] px-5 py-2 rounded-xl bg-slate-800 text-white font-bold text-xs hover:bg-slate-900"
+                >
+                  إغلاق
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ============================================================= */}
+      {/* Modal 4: سجل تعديلات الكيان (Audit Trail)                      */}
+      {/* ============================================================= */}
+      <AnimatePresence>
+        {auditLogCompany && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-xs overflow-y-auto">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-xl max-h-[85vh] flex flex-col bg-white dark:bg-[#0E1610] rounded-2xl border border-slate-200 dark:border-[#243628] shadow-2xl overflow-hidden p-5 text-start"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-[#243628] mb-4 shrink-0">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center border border-amber-500/25">
+                    <History className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-slate-900 dark:text-[#F3EFE6]">
+                      سجل تعديلات الكيان (Audit Trail)
+                    </h3>
+                    <span className="text-xs text-amber-600 dark:text-amber-400 font-bold">
+                      {auditLogCompany.nameAr}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setAuditLogCompany(null)}
+                  className="min-h-[40px] min-w-[40px] flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-white/10"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Audit Trail Timeline */}
+              <div className="space-y-3 overflow-y-auto flex-1 pr-1">
+                {!auditLogCompany.auditLogs || auditLogCompany.auditLogs.length === 0 ? (
+                  <div className="py-12 text-center text-slate-500 dark:text-[#8FA392]">
+                    <Clock className="w-8 h-8 mx-auto mb-2 opacity-50 text-amber-500" />
+                    <p className="text-xs font-bold">
+                      لم يتم تسجيل أي تعديلات على بيانات هذه الشركة منذ إنشائها
+                    </p>
+                  </div>
+                ) : (
+                  auditLogCompany.auditLogs.map((entry, idx) => (
+                    <div
+                      key={entry.id || idx}
+                      className="p-3.5 rounded-xl border border-slate-200 dark:border-[#243628] bg-slate-50/70 dark:bg-[#17231A] text-xs space-y-2"
+                    >
+                      {/* Meta header: User, Date, Action */}
+                      <div className="flex items-center justify-between gap-2 border-b border-slate-200/80 dark:border-[#243628] pb-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-slate-200 dark:bg-[#1F2E23] flex items-center justify-center text-slate-700 dark:text-[#E0D9CB] font-bold text-[10px]">
+                            <User className="w-3.5 h-3.5" />
+                          </div>
+                          <span className="font-bold text-slate-900 dark:text-[#F3EFE6]">
+                            {entry.userName || 'يوسف حجازي'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-[10px] text-slate-500">
+                          <span className="px-2 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 font-bold border border-amber-200 dark:border-amber-800/40">
+                            {entry.actionLabelAr || entry.action}
+                          </span>
+                          <span className="font-mono">{entry.timestamp}</span>
+                        </div>
+                      </div>
+
+                      {/* Field Diff List */}
+                      {entry.changes && entry.changes.length > 0 ? (
+                        <div className="space-y-1.5 pt-1">
+                          {entry.changes.map((ch, cIdx) => (
+                            <div
+                              key={cIdx}
+                              className="p-2 rounded-lg bg-white dark:bg-[#0E1610] border border-slate-200/60 dark:border-[#243628] text-[11px] leading-relaxed"
+                            >
+                              <strong className="text-slate-800 dark:text-[#F3EFE6]">
+                                [{ch.fieldLabel || ch.field}]:
+                              </strong>{' '}
+                              <span>تم التغيير من </span>
+                              <span className="line-through text-rose-600 font-mono px-1 bg-rose-50 dark:bg-rose-950/30 rounded">
+                                "{ch.oldValue}"
+                              </span>{' '}
+                              <span>إلى </span>
+                              <span className="text-emerald-700 dark:text-emerald-400 font-bold font-mono px-1 bg-emerald-50 dark:bg-emerald-950/30 rounded">
+                                "{ch.newValue}"
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-[11px] text-slate-500 italic">
+                          {entry.notes || 'تم تحديث السجل المؤسسي'}
+                        </p>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <div className="flex justify-end pt-3 border-t border-slate-200 dark:border-[#243628] mt-4 shrink-0">
+                <button
+                  onClick={() => setAuditLogCompany(null)}
+                  className="min-h-[40px] px-5 py-2 rounded-xl bg-slate-800 text-white font-bold text-xs hover:bg-slate-900"
+                >
+                  إغلاق السجل
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ============================================================= */}
+      {/* Modal 5: تأكيد الحذف النهائي مع الرسوم المتحركة                */}
+      {/* ============================================================= */}
+      <AnimatePresence>
+        {companyToDelete && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-xs">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 10 }}
+              className="w-full max-w-md bg-white dark:bg-[#0E1610] rounded-2xl border border-slate-200 dark:border-[#243628] shadow-2xl p-6 text-center"
+            >
+              <div className="w-14 h-14 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 text-rose-600 flex items-center justify-center mx-auto mb-4">
+                <Trash2 className="w-7 h-7" />
+              </div>
+              <h3 className="text-base font-black text-slate-900 dark:text-[#F3EFE6] mb-2">
+                تأكيد حذف الكيان نهائياً
+              </h3>
+              <p className="text-xs text-slate-600 dark:text-[#8FA392] leading-relaxed mb-6">
+                هل أنت متأكد من رغبتك في حذف شركة{' '}
+                <strong className="text-slate-900 dark:text-white font-black">
+                  "{companyToDelete.nameAr}"
+                </strong>{' '}
+                بشكل نهائي؟ سيتم حذف جميع البيانات والوثائق المرتبطة بها ولا يمكن التراجع عن هذا الإجراء.
+              </p>
+              <div className="flex items-center justify-center gap-3">
+                <button
+                  onClick={() => setCompanyToDelete(null)}
+                  className="min-h-[44px] px-5 py-2.5 rounded-xl border border-slate-300 dark:border-[#243628] text-slate-700 dark:text-[#E0D9CB] font-bold text-xs hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
+                >
+                  إلغاء
+                </button>
+                <button
+                  onClick={handleConfirmDelete}
+                  className="min-h-[44px] px-6 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-md transition-all"
+                >
+                  تأكيد الحذف النهائي
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ============================================================= */}
+      {/* Modal 6: عارض ومعاينة المستندات المرفقة (Lightbox / PDF)      */}
+      {/* ============================================================= */}
+      <AnimatePresence>
+        {previewDocument && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/75 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-3xl max-h-[90vh] bg-white dark:bg-[#0E1610] rounded-2xl border border-slate-200 dark:border-[#243628] shadow-2xl flex flex-col overflow-hidden text-start"
+            >
+              <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-[#243628] bg-slate-50 dark:bg-[#121B14] shrink-0">
+                <div className="truncate min-w-0 pr-2">
+                  <h3 className="text-sm font-black text-slate-900 dark:text-[#F3EFE6] truncate">
+                    {previewDocument.name}
+                  </h3>
+                  <span className="text-[11px] text-amber-600 font-bold">
+                    {previewDocument.docType} • {formatBytes(previewDocument.sizeBytes)}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {previewDocument.dataUrl && (
+                    <a
+                      href={previewDocument.dataUrl}
+                      download={previewDocument.name}
+                      className="min-h-[38px] px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-400 font-bold text-xs flex items-center gap-1.5 transition-colors"
+                    >
+                      <Download className="w-4 h-4" />
+                      <span>تحميل</span>
+                    </a>
+                  )}
+                  <button
+                    onClick={() => setPreviewDocument(null)}
+                    className="min-h-[38px] min-w-[38px] flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-white/10"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex-1 p-4 overflow-auto flex items-center justify-center bg-slate-100/50 dark:bg-[#070B08]">
+                {previewDocument.mimeType?.includes('pdf') ? (
+                  <iframe
+                    src={previewDocument.dataUrl}
+                    className="w-full h-[65vh] rounded-xl border border-slate-300 dark:border-[#243628]"
+                    title={previewDocument.name}
+                  />
+                ) : (
+                  <img
+                    src={previewDocument.dataUrl}
+                    alt={previewDocument.name}
+                    className="max-h-[65vh] max-w-full object-contain rounded-xl shadow-md"
+                  />
+                )}
               </div>
             </motion.div>
           </div>
