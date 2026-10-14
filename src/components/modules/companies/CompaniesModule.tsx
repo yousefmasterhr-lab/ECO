@@ -4,7 +4,6 @@ import { useLanguage } from '../../../context/LanguageContext';
 import { useNavigation } from '../../../context/NavigationContext';
 import { CheckCircle2 } from 'lucide-react';
 import {
-  INITIAL_DOCUMENTS,
   INITIAL_BRANCHES,
   INITIAL_DEPARTMENTS,
   INITIAL_COST_CENTERS,
@@ -18,6 +17,7 @@ import {
   AuthorizedSignatory
 } from './types';
 import { companyStorage } from './companyStorage';
+import { licenseStorage } from './licenseStorage';
 import { CompanyDirectoryTab } from './CompanyDirectoryTab';
 import { CompanyLicensesTab } from './CompanyLicensesTab';
 import { CompanyBranchesTab } from './CompanyBranchesTab';
@@ -37,7 +37,7 @@ export const CompaniesModule: React.FC<CompaniesModuleProps> = ({ activeSubItemI
 
   // Reactive State for all Sub-Modules
   const [companies, setCompanies] = useState<CompanyEntity[]>(() => companyStorage.getCompaniesSync());
-  const [documents, setDocuments] = useState<SmartDocument[]>(INITIAL_DOCUMENTS);
+  const [documents, setDocuments] = useState<SmartDocument[]>(() => licenseStorage.getLicensesSync());
   const [branches, setBranches] = useState<BranchLocation[]>(INITIAL_BRANCHES);
   const [departments] = useState(INITIAL_DEPARTMENTS);
   const [costCenters, setCostCenters] = useState<CostCenter[]>(INITIAL_COST_CENTERS);
@@ -47,6 +47,9 @@ export const CompaniesModule: React.FC<CompaniesModuleProps> = ({ activeSubItemI
   useEffect(() => {
     companyStorage.getCompanies().then(loaded => {
       setCompanies(loaded);
+    });
+    licenseStorage.getLicenses().then(loaded => {
+      setDocuments(loaded);
     });
   }, []);
 
@@ -92,20 +95,24 @@ export const CompaniesModule: React.FC<CompaniesModuleProps> = ({ activeSubItemI
     showToast(isRtl ? `تم توجيهك إلى شاشة التراخيص لشركة "${comp.nameAr}"` : 'Redirected to licenses');
   };
 
-  // --- Smart Documents CRUD ---
-  const handleAddDocument = (newDoc: SmartDocument) => {
-    setDocuments(prev => [newDoc, ...prev]);
-    showToast(isRtl ? `تمت إضافة ترخيص/مستند "${newDoc.titleAr}" بنجاح` : 'Document added successfully');
+  // --- Smart Documents CRUD with Real Persistence & Audit Log ---
+  const handleAddDocument = async (newDoc: SmartDocument) => {
+    await licenseStorage.saveLicense(newDoc, userName);
+    setDocuments(licenseStorage.getLicensesSync());
+    showToast(isRtl ? `تم تسجيل ترخيص/مستند "${newDoc.titleAr}" بنجاح` : 'Document added successfully');
   };
 
-  const handleUpdateDocument = (updated: SmartDocument) => {
-    setDocuments(prev => prev.map(d => (d.id === updated.id ? updated : d)));
+  const handleUpdateDocument = async (updated: SmartDocument) => {
+    await licenseStorage.saveLicense(updated, userName);
+    setDocuments(licenseStorage.getLicensesSync());
     showToast(isRtl ? `تم تحديث المستند رقم "${updated.docNumber}"` : 'Document updated successfully');
   };
 
-  const handleDeleteDocument = (id: string) => {
-    setDocuments(prev => prev.filter(d => d.id !== id));
-    showToast(isRtl ? 'تم حذف المستند من السجل' : 'Document deleted');
+  const handleDeleteDocument = async (id: string) => {
+    const doc = documents.find(d => d.id === id);
+    await licenseStorage.deleteLicense(id, userName);
+    setDocuments(licenseStorage.getLicensesSync());
+    showToast(isRtl ? `تم حذف المستند "${doc?.titleAr || 'الترخيص'}" نهائياً` : 'Document deleted');
   };
 
   // --- Branches CRUD ---

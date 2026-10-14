@@ -58,18 +58,40 @@ export interface CompanyEntity {
   updatedAt?: string;
 }
 
+export interface DocumentAuditChange {
+  field: string;
+  fieldLabel: string;
+  oldValue: string;
+  newValue: string;
+}
+
+export interface DocumentAuditLogEntry {
+  id: string;
+  documentId: string;
+  timestamp: string; // Exact date and time (YYYY-MM-DD HH:mm:ss)
+  userName: string;
+  action: 'create' | 'update' | 'delete';
+  actionLabelAr: string;
+  changes: DocumentAuditChange[];
+  notes?: string;
+}
+
 export interface SmartDocument {
   id: string;
   companyId: string;
   companyNameAr: string;
-  docType: 'سجل تجاري' | 'بطاقة ضريبية' | 'رخصة تشغيل' | 'اتحاد مقاولين' | 'تأمينات اجتماعية' | 'شهادة تصنيف';
+  docType: 'سجل تجاري' | 'بطاقة ضريبية' | 'رخصة تشغيل' | 'اتحاد مقاولين' | 'تأمينات اجتماعية' | 'شهادة تصنيف' | string;
   titleAr: string;
   docNumber: string;
   issuerAr: string;
   issueDate: string; // YYYY-MM-DD
   expiryDate: string; // YYYY-MM-DD
-  driveUrl: string;
+  driveUrl?: string;
   notesAr?: string;
+  fileAttachment?: CompanyDocumentAttachment;
+  auditLogs?: DocumentAuditLogEntry[];
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface BranchLocation {
