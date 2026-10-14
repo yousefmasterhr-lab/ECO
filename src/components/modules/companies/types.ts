@@ -184,7 +184,26 @@ export interface CostCenter {
   financialOfficerAr: string;
 }
 
+export interface SignatoryAuditChange {
+  field: string;
+  fieldLabel: string;
+  oldValue: string;
+  newValue: string;
+}
+
+export interface SignatoryAuditLogEntry {
+  id: string;
+  signatoryId: string;
+  timestamp: string; // Exact date and time (YYYY-MM-DD HH:mm:ss)
+  userName: string;
+  action: 'create' | 'update' | 'revoke' | 'activate' | 'delete';
+  actionLabelAr: string;
+  changes: SignatoryAuditChange[];
+  notes?: string;
+}
+
 export interface BankingLimits {
+  enabled?: boolean;
   singleLimit: number;
   jointLimit: number;
   allowLettersOfGuarantee: boolean;
@@ -211,15 +230,21 @@ export interface AuthorizedSignatory {
   id: string;
   nameAr: string;
   roleAr: string;
+  nationalId?: string;
   companyId: string;
   companyNameAr: string;
   poaNumber: string;
   notaryOfficeAr: string;
   issueDate: string;
   expiryDate: string;
-  driveDocUrl: string;
-  status: 'active' | 'revoked';
+  isOpenEnded?: boolean;
+  driveDocUrl?: string;
+  status: 'active' | 'revoked' | 'expired';
   bankingLimits: BankingLimits;
   contractualLimits: ContractualLimits;
   judicialLimits: JudicialLimits;
+  poaAttachment?: CompanyDocumentAttachment;
+  auditLogs?: SignatoryAuditLogEntry[];
+  createdAt?: string;
+  updatedAt?: string;
 }

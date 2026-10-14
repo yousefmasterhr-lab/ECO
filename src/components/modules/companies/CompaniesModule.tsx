@@ -3,9 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '../../../context/LanguageContext';
 import { useNavigation } from '../../../context/NavigationContext';
 import { CheckCircle2 } from 'lucide-react';
-import {
-  INITIAL_SIGNATORIES
-} from './mockData';
+
 import {
   CompanyEntity,
   SmartDocument,
@@ -17,6 +15,7 @@ import { companyStorage } from './companyStorage';
 import { licenseStorage } from './licenseStorage';
 import { branchStorage } from './branchStorage';
 import { departmentStorage } from './departmentStorage';
+import { signatoryStorage } from './signatoryStorage';
 import { CompanyDirectoryTab } from './CompanyDirectoryTab';
 import { CompanyLicensesTab } from './CompanyLicensesTab';
 import { CompanyBranchesTab } from './CompanyBranchesTab';
@@ -39,7 +38,7 @@ export const CompaniesModule: React.FC<CompaniesModuleProps> = ({ activeSubItemI
   const [documents, setDocuments] = useState<SmartDocument[]>(() => licenseStorage.getLicensesSync());
   const [branches, setBranches] = useState<BranchLocation[]>(() => branchStorage.getBranchesSync());
   const [departments, setDepartments] = useState<DepartmentOrg[]>(() => departmentStorage.getDepartmentsSync());
-  const [signatories, setSignatories] = useState<AuthorizedSignatory[]>(INITIAL_SIGNATORIES);
+  const [signatories, setSignatories] = useState<AuthorizedSignatory[]>(() => signatoryStorage.getSignatoriesSync());
 
   // Load from persistent storage & API sync on mount
   useEffect(() => {
@@ -55,6 +54,9 @@ export const CompaniesModule: React.FC<CompaniesModuleProps> = ({ activeSubItemI
     departmentStorage.getDepartments().then(loaded => {
       setDepartments(loaded);
     });
+    signatoryStorage.getSignatories().then(loaded => {
+      setSignatories(loaded);
+    });
   }, []);
 
   // Cross-Tab Interaction State
@@ -67,127 +69,17 @@ export const CompaniesModule: React.FC<CompaniesModuleProps> = ({ activeSubItemI
     setTimeout(() => setToast(null), 3500);
   };
 
-  // --- Bi-directional Sync: Auto-sync Company CR, Tax Card, and uploaded docs to Licenses ---
-  const syncCompanyToLicenses = async (comp: CompanyEntity, uName: string) => {
-    const existingLicenses = licenseStorage.getLicensesSync();
-
-    // 1. Sync Commercial Register (السجل التجاري)
-    if (comp.crNumber && comp.crNumber.trim()) {
-      const existingCR = existingLicenses.find(
-        l => l.companyId === comp.id && l.docType === 'سجل تجاري'
-      );
-      const attachedCRDoc = comp.documents?.find(d => d.docType === 'السجل التجاري');
-
-      if (existingCR) {
-        await licenseStorage.saveLicense(
-          {
-            ...existingCR,
-            companyNameAr: comp.nameAr,
-            docNumber: comp.crNumber.trim(),
-            issuerAr: comp.crOffice?.trim() || existingCR.issuerAr || 'مصلحة السجل التجاري',
-            fileAttachment: attachedCRDoc || existingCR.fileAttachment
-          },
-          uName
-        );
-      } else {
-        await licenseStorage.saveLicense(
-          {
-            companyId: comp.id,
-            companyNameAr: comp.nameAr,
-            docType: 'سجل تجاري',
-            titleAr: `السجل التجاري الرسمي - ${comp.nameAr}`,
-            docNumber: comp.crNumber.trim(),
-            issuerAr: comp.crOffice?.trim() || 'مصلحة السجل التجاري',
-            issueDate: comp.establishedYear ? `${comp.establishedYear}-01-01` : new Date().toISOString().slice(0, 10),
-            expiryDate: '', // Draft awaiting expiry date entry
-            notesAr: 'تمت المزامنة آلياً من دليل الشركات - بانتظار استكمال تاريخ الانتهاء',
-            fileAttachment: attachedCRDoc
-          },
-          uName
-        );
-      }
-    }
-
-    // 2. Sync Tax Card (البطاقة الضريبية)
-    if (comp.taxNumber && comp.taxNumber.trim()) {
-      const existingTax = existingLicenses.find(
-        l => l.companyId === comp.id && l.docType === 'بطاقة ضريبية'
-      );
-      const attachedTaxDoc = comp.documents?.find(d => d.docType === 'البطاقة الضريبية');
-
-      if (existingTax) {
-        await licenseStorage.saveLicense(
-          {
-            ...existingTax,
-            companyNameAr: comp.nameAr,
-            docNumber: comp.taxNumber.trim(),
-            issuerAr: existingTax.issuerAr || 'مصلحة الضرائب المصرية',
-            fileAttachment: attachedTaxDoc || existingTax.fileAttachment
-          },
-          uName
-        );
-      } else {
-        await licenseStorage.saveLicense(
-          {
-            companyId: comp.id,
-            companyNameAr: comp.nameAr,
-            docType: 'بطاقة ضريبية',
-            titleAr: `البطاقة الضريبية - ${comp.nameAr}`,
-            docNumber: comp.taxNumber.trim(),
-            issuerAr: 'مصلحة الضرائب المصرية',
-            issueDate: comp.establishedYear ? `${comp.establishedYear}-01-01` : new Date().toISOString().slice(0, 10),
-            expiryDate: '', // Draft awaiting expiry date entry
-            notesAr: 'تمت المزامنة آلياً من دليل الشركات - بانتظار استكمال تاريخ الانتهاء',
-            fileAttachment: attachedTaxDoc
-          },
-          uName
-        );
-      }
-    }
-
-    // 3. Sync other uploaded files (عقد التأسيس، تراخيص مزاولة النشاط، القيمة المضافة)
-    if (comp.documents && comp.documents.length > 0) {
-      for (const doc of comp.documents) {
-        if (doc.docType === 'السجل التجاري' || doc.docType === 'البطاقة الضريبية') continue;
-        const existingOther = existingLicenses.find(
-          l => l.companyId === comp.id && (l.fileAttachment?.id === doc.id || l.titleAr.includes(doc.name))
-        );
-        if (!existingOther) {
-          await licenseStorage.saveLicense(
-            {
-              companyId: comp.id,
-              companyNameAr: comp.nameAr,
-              docType: doc.docType || 'وثيقة رسمية',
-              titleAr: `${doc.docType || 'مستند'} - ${doc.name}`,
-              docNumber: `DOC-${Date.now().toString().slice(-5)}`,
-              issuerAr: 'الجهة المصدرة للوثيقة',
-              issueDate: new Date().toISOString().slice(0, 10),
-              expiryDate: '',
-              notesAr: 'تمت أرشفته ومزامنته آلياً من مرفقات دليل الشركات',
-              fileAttachment: doc
-            },
-            uName
-          );
-        }
-      }
-    }
-  };
-
-  // --- Companies CRUD with Real Persistence & Bi-directional Sync ---
+  // --- Companies CRUD with Real Persistence (Master Data Only) ---
   const handleAddCompany = async (newComp: CompanyEntity) => {
     await companyStorage.saveCompany(newComp, userName);
     setCompanies(companyStorage.getCompaniesSync());
-    await syncCompanyToLicenses(newComp, userName);
-    setDocuments(licenseStorage.getLicensesSync());
-    showToast(isRtl ? `تم تسجيل "${newComp.nameAr}" وتثبيت هيكل المساهمين والمستندات بنجاح` : 'Company registered successfully');
+    showToast(isRtl ? `تم تسجيل "${newComp.nameAr}" وتثبيت هيكل المساهمين بنجاح` : 'Company registered successfully');
   };
 
   const handleUpdateCompany = async (updated: CompanyEntity) => {
     await companyStorage.saveCompany(updated, userName);
     setCompanies(companyStorage.getCompaniesSync());
-    await syncCompanyToLicenses(updated, userName);
-    setDocuments(licenseStorage.getLicensesSync());
-    showToast(isRtl ? `تم تحديث بيانات "${updated.nameAr}" وهيكل الملكية والمستندات` : 'Company updated successfully');
+    showToast(isRtl ? `تم تحديث بيانات "${updated.nameAr}" وهيكل المساهمين` : 'Company updated successfully');
   };
 
   const handleDeleteCompany = async (id: string) => {
@@ -277,29 +169,30 @@ export const CompaniesModule: React.FC<CompaniesModuleProps> = ({ activeSubItemI
   };
 
 
-  // --- Signatories CRUD ---
-  const handleAddSignatory = (newSig: AuthorizedSignatory) => {
-    setSignatories(prev => [newSig, ...prev]);
+  // --- Signatories CRUD with Real Persistence & Audit Log ---
+  const handleAddSignatory = async (newSig: AuthorizedSignatory) => {
+    await signatoryStorage.saveSignatory(newSig, userName);
+    setSignatories(signatoryStorage.getSignatoriesSync());
     showToast(isRtl ? `تم اعتماد وتفويض "${newSig.nameAr}" رسمياً` : 'Signatory added');
   };
 
-  const handleUpdateSignatory = (updated: AuthorizedSignatory) => {
-    setSignatories(prev => prev.map(s => (s.id === updated.id ? updated : s)));
-    showToast(isRtl ? `تم تحديث مصفوفة صلاحيات "${updated.nameAr}"` : 'Signatory permissions updated');
+  const handleUpdateSignatory = async (updated: AuthorizedSignatory) => {
+    await signatoryStorage.saveSignatory(updated, userName);
+    setSignatories(signatoryStorage.getSignatoriesSync());
+    showToast(isRtl ? `تم تحديث بيانات وصلاحيات "${updated.nameAr}"` : 'Signatory permissions updated');
   };
 
-  const handleDeleteSignatory = (id: string) => {
-    setSignatories(prev => prev.filter(s => s.id !== id));
-    showToast(isRtl ? 'تم حذف المفوض من السجل' : 'Signatory removed');
+  const handleDeleteSignatory = async (id: string) => {
+    const sig = signatories.find(s => s.id === id);
+    await signatoryStorage.deleteSignatory(id, userName);
+    setSignatories(signatoryStorage.getSignatoriesSync());
+    showToast(isRtl ? `تم حذف المفوض "${sig?.nameAr || ''}" من السجل` : 'Signatory removed');
   };
 
-  const handleToggleRevoke = (id: string) => {
-    setSignatories(prev =>
-      prev.map(s =>
-        s.id === id ? { ...s, status: s.status === 'active' ? 'revoked' : 'active' } : s
-      )
-    );
-    showToast(isRtl ? 'تم تعديل حالة سريان التفويض' : 'Delegation status toggled');
+  const handleToggleRevoke = async (id: string) => {
+    const updated = await signatoryStorage.toggleRevoke(id, userName);
+    setSignatories(signatoryStorage.getSignatoriesSync());
+    showToast(isRtl ? (updated.status === 'active' ? 'تمت إعادة تفعيل سريان التفويض' : 'تم إلغاء سريان التفويض رسمياً') : 'Delegation status toggled');
   };
 
   return (
@@ -323,6 +216,7 @@ export const CompaniesModule: React.FC<CompaniesModuleProps> = ({ activeSubItemI
       {currentTab === 'comp_directory' && (
         <CompanyDirectoryTab
           companies={companies}
+          documents={documents}
           onAddCompany={handleAddCompany}
           onUpdateCompany={handleUpdateCompany}
           onDeleteCompany={handleDeleteCompany}

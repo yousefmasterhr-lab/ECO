@@ -14,7 +14,6 @@ import {
   ShieldCheck,
   X,
   AlertCircle,
-  UploadCloud,
   Clock,
   User,
   History,
@@ -24,13 +23,14 @@ import {
 import {
   CompanyEntity,
   Shareholder,
+  SmartDocument,
   CompanyDocumentAttachment
 } from './types';
-import { getFormattedAuditTimestamp } from './companyStorage';
 import { formatCurrency, formatNumber } from '../../../utils/formatters';
 
 interface CompanyDirectoryTabProps {
   companies: CompanyEntity[];
+  documents: SmartDocument[];
   onAddCompany: (comp: CompanyEntity) => void;
   onUpdateCompany: (comp: CompanyEntity) => void;
   onDeleteCompany: (id: string) => void;
@@ -52,13 +52,14 @@ function formatBytes(bytes: number): string {
 const SpotlightCompanyCard: React.FC<{
   company: CompanyEntity;
   index: number;
+  docsCount: number;
   onView: (comp: CompanyEntity) => void;
   onEdit: (comp: CompanyEntity) => void;
   onOpenDocs: (comp: CompanyEntity) => void;
   onDelete: (comp: CompanyEntity) => void;
   onToggleStatus: (id: string) => void;
   onOpenAudit: (comp: CompanyEntity) => void;
-}> = ({ company, index, onView, onEdit, onOpenDocs, onDelete, onToggleStatus, onOpenAudit }) => {
+}> = ({ company, index, docsCount, onView, onEdit, onOpenDocs, onDelete, onToggleStatus, onOpenAudit }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const [mousePos, setMousePos] = useState({ x: -1000, y: -1000 });
   const [isHovered, setIsHovered] = useState(false);
@@ -80,7 +81,6 @@ const SpotlightCompanyCard: React.FC<{
   };
 
   const formattedCapital = formatCurrency(company.issuedCapital);
-  const docsCount = company.documents?.length || 0;
   const auditCount = company.auditLogs?.length || 0;
 
   return (
@@ -251,6 +251,7 @@ const SpotlightCompanyCard: React.FC<{
 // -------------------------------------------------------------
 export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
   companies,
+  documents,
   onAddCompany,
   onUpdateCompany,
   onDeleteCompany,
@@ -276,12 +277,6 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
   const [taxNumber, setTaxNumber] = useState('');
   const [ceoAr, setCeoAr] = useState('');
   const [establishedYear, setEstablishedYear] = useState(String(new Date().getFullYear()));
-
-  // Document Uploads State in Registration/Edit Modal
-  const [attachedDocs, setAttachedDocs] = useState<CompanyDocumentAttachment[]>([]);
-  const [selectedUploadDocType, setSelectedUploadDocType] = useState<string>('السجل التجاري');
-  const [isDragOver, setIsDragOver] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Shareholders Repeater State
   const [shareholders, setShareholders] = useState<Shareholder[]>([
@@ -313,7 +308,6 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
     setTaxNumber('');
     setCeoAr('');
     setEstablishedYear(String(new Date().getFullYear()));
-    setAttachedDocs([]);
     setShareholders([
       {
         id: `sh_${Date.now()}_1`,
@@ -339,7 +333,6 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
     setTaxNumber(comp.taxNumber);
     setCeoAr(comp.ceoAr);
     setEstablishedYear(comp.establishedYear);
-    setAttachedDocs(comp.documents ? comp.documents.map(d => ({ ...d })) : []);
     setShareholders(
       comp.shareholders && comp.shareholders.length > 0
         ? comp.shareholders.map(s => ({ ...s }))
@@ -355,31 +348,6 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
           ]
     );
     setModalOpen(true);
-  };
-
-  // File Upload Handlers
-  const processFiles = (files: FileList | null) => {
-    if (!files || files.length === 0) return;
-    Array.from(files).forEach(file => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const newAttachment: CompanyDocumentAttachment = {
-          id: `doc_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-          name: file.name,
-          docType: selectedUploadDocType,
-          sizeBytes: file.size,
-          mimeType: file.type || 'application/octet-stream',
-          uploadedAt: getFormattedAuditTimestamp(),
-          dataUrl: reader.result as string
-        };
-        setAttachedDocs(prev => [newAttachment, ...prev]);
-      };
-      reader.readAsDataURL(file);
-    });
-  };
-
-  const handleRemoveDoc = (id: string) => {
-    setAttachedDocs(prev => prev.filter(d => d.id !== id));
   };
 
   // Shareholders Repeater Handlers
@@ -451,7 +419,7 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
         ceoAr: ceoAr.trim(),
         establishedYear,
         shareholders,
-        documents: attachedDocs
+        documents: editingCompany.documents || []
       };
       onUpdateCompany(updated);
     } else {
@@ -472,7 +440,7 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
         projectsCount: 0,
         status: 'active',
         shareholders,
-        documents: attachedDocs
+        documents: []
       };
       onAddCompany(newComp);
     }
@@ -540,15 +508,10 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
               key={comp.id}
               company={comp}
               index={idx}
+              docsCount={documents.filter(d => d.companyId === comp.id).length}
               onView={setViewDetailsCompany}
               onEdit={handleOpenEditModal}
-              onOpenDocs={(comp) => {
-                if (onOpenAddDocumentForCompany) {
-                  onOpenAddDocumentForCompany(comp);
-                } else {
-                  setDocsModalCompany(comp);
-                }
-              }}
+              onOpenDocs={(comp) => setDocsModalCompany(comp)}
               onDelete={setCompanyToDelete}
               onToggleStatus={onToggleStatus}
               onOpenAudit={setAuditLogCompany}
@@ -691,134 +654,7 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
                   </div>
                 </div>
 
-                {/* 2. Company Documents Upload Engine */}
-                <div className="pt-3 border-t border-slate-200 dark:border-[#243628] space-y-3">
-                  <h4 className="text-xs font-black uppercase text-amber-600 dark:text-amber-400 tracking-wider flex items-center gap-1.5">
-                    <FileText className="w-3.5 h-3.5" />
-                    <span>وثائق ومستندات الكيان الرسمية</span>
-                  </h4>
-
-                  <div className="flex flex-col sm:flex-row items-center gap-2">
-                    <div className="w-full sm:w-1/2">
-                      <label className="block text-[11px] font-semibold text-slate-600 dark:text-[#8FA392] mb-1">
-                        نوع المستند المراد إرفاقه:
-                      </label>
-                      <select
-                        value={selectedUploadDocType}
-                        onChange={e => setSelectedUploadDocType(e.target.value)}
-                        className="w-full min-h-[40px] px-3 py-1.5 rounded-xl border border-slate-300 dark:border-[#243628] bg-slate-50 dark:bg-[#17231A] text-slate-900 dark:text-[#F3EFE6]"
-                      >
-                        <option value="السجل التجاري">السجل التجاري</option>
-                        <option value="البطاقة الضريبية">البطاقة الضريبية</option>
-                        <option value="عقد التأسيس">عقد التأسيس</option>
-                        <option value="شهادة تسجيل القيمة المضافة">شهادة تسجيل القيمة المضافة</option>
-                        <option value="تراخيص مزاولة النشاط">تراخيص مزاولة النشاط</option>
-                      </select>
-                    </div>
-
-                    <div className="w-full sm:w-1/2 flex items-end">
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        multiple
-                        accept=".pdf,image/png,image/jpeg,image/jpg"
-                        onChange={e => processFiles(e.target.files)}
-                        className="hidden"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="w-full min-h-[40px] px-3 py-1.5 rounded-xl border border-dashed border-amber-500 bg-amber-50/60 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 font-bold flex items-center justify-center gap-2 hover:bg-amber-100 transition-colors"
-                      >
-                        <UploadCloud className="w-4 h-4" />
-                        <span>اختر ملفات (PDF / صور)</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Drag and Drop Zone */}
-                  <div
-                    onDragOver={e => {
-                      e.preventDefault();
-                      setIsDragOver(true);
-                    }}
-                    onDragLeave={() => setIsDragOver(false)}
-                    onDrop={e => {
-                      e.preventDefault();
-                      setIsDragOver(false);
-                      processFiles(e.dataTransfer.files);
-                    }}
-                    onClick={() => fileInputRef.current?.click()}
-                    className={`p-4 rounded-xl border-2 border-dashed text-center cursor-pointer transition-all ${
-                      isDragOver
-                        ? 'border-amber-500 bg-amber-500/10'
-                        : 'border-slate-200 dark:border-[#243628] hover:border-amber-400 bg-slate-50/50 dark:bg-[#0E1610]'
-                    }`}
-                  >
-                    <UploadCloud className="w-6 h-6 text-slate-400 mx-auto mb-1" />
-                    <p className="text-[11px] font-bold text-slate-700 dark:text-[#E0D9CB]">
-                      اسحب الملفات وأفلتها هنا أو اضغط للاستعراض
-                    </p>
-                    <span className="text-[10px] text-slate-400">
-                      يدعم ملفات PDF وصور JPG و PNG
-                    </span>
-                  </div>
-
-                  {/* Attached Documents List */}
-                  {attachedDocs.length > 0 && (
-                    <div className="space-y-1.5 max-h-40 overflow-y-auto">
-                      {attachedDocs.map(doc => (
-                        <div
-                          key={doc.id}
-                          className="flex items-center justify-between p-2 rounded-xl bg-slate-50 dark:bg-[#121B14] border border-slate-200 dark:border-[#243628] text-[11px]"
-                        >
-                          <div className="flex items-center gap-2 min-w-0">
-                            {doc.mimeType?.includes('pdf') ? (
-                              <FileText className="w-4 h-4 text-rose-500 shrink-0" />
-                            ) : (
-                              <ImageIcon className="w-4 h-4 text-blue-500 shrink-0" />
-                            )}
-                            <div className="truncate">
-                              <span className="font-bold text-slate-800 dark:text-[#F3EFE6] block truncate">
-                                {doc.name}
-                              </span>
-                              <div className="flex items-center gap-2 text-[10px] text-slate-500">
-                                <span className="text-amber-600 font-bold">{doc.docType}</span>
-                                <span>•</span>
-                                <span>{formatBytes(doc.sizeBytes)}</span>
-                                <span>•</span>
-                                <span>{doc.uploadedAt}</span>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-1 shrink-0">
-                            {doc.dataUrl && (
-                              <button
-                                type="button"
-                                onClick={() => setPreviewDocument(doc)}
-                                className="p-1 rounded-lg text-slate-500 hover:text-amber-600 hover:bg-slate-200 dark:hover:bg-white/10"
-                                title="معاينة المستند"
-                              >
-                                <Eye className="w-3.5 h-3.5" />
-                              </button>
-                            )}
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveDoc(doc.id)}
-                              className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20"
-                              title="حذف المستند"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* 3. Shareholders & Equity Engine */}
+                {/* 2. Shareholders & Equity Engine */}
                 <div className="pt-3 border-t border-slate-200 dark:border-[#243628] space-y-3">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <h4 className="text-xs font-black uppercase text-amber-600 dark:text-amber-400 tracking-wider flex items-center gap-1.5">
@@ -1172,7 +1008,7 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
       </AnimatePresence>
 
       {/* ============================================================= */}
-      {/* Modal 3: إدارة مستندات وملفات الشركة المحددة                  */}
+      {/* Modal 3: عارض المستندات والتراخيص الرسمية المعتمدة (Read-Only) */}
       {/* ============================================================= */}
       <AnimatePresence>
         {docsModalCompany && (
@@ -1181,152 +1017,162 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-xl bg-white dark:bg-[#0E1610] rounded-2xl border border-slate-200 dark:border-[#243628] shadow-2xl overflow-hidden p-5 text-start"
+              className="w-full max-w-2xl bg-white dark:bg-[#0E1610] rounded-2xl border border-slate-200 dark:border-[#243628] shadow-2xl overflow-hidden p-5 sm:p-6 text-start flex flex-col max-h-[90vh]"
             >
-              <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-[#243628] mb-4">
+              <div className="flex items-center justify-between pb-3.5 border-b border-slate-200 dark:border-[#243628] mb-4 shrink-0">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-blue-500/15 text-blue-600 flex items-center justify-center border border-blue-500/20">
+                  <div className="w-10 h-10 rounded-xl bg-blue-500/15 text-blue-600 flex items-center justify-center border border-blue-500/20">
                     <FileText className="w-5 h-5" />
                   </div>
                   <div>
                     <h3 className="text-sm font-black text-slate-900 dark:text-[#F3EFE6]">
-                      مستندات: {docsModalCompany.nameAr}
+                      السجلات والتراخيص المعتمدة: {docsModalCompany.nameAr}
                     </h3>
                     <span className="text-xs text-slate-500 dark:text-[#8FA392]">
-                      السجلات الرسمية، البطاقات الضريبية، وعقود التأسيس
+                      عرض المستندات والوثائق الرسمية المستمدة من سجل التراخيص الموحد
                     </span>
                   </div>
                 </div>
-                <button
-                  onClick={() => setDocsModalCompany(null)}
-                  className="min-h-[40px] min-w-[40px] flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-white/10"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
 
-              {/* Upload New Document Directly */}
-              <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#17231A] border border-slate-200 dark:border-[#243628] mb-4 space-y-2.5">
-                <span className="font-bold text-xs text-slate-800 dark:text-[#F3EFE6] block">
-                  إرفاق مستند جديد للشركة:
-                </span>
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <select
-                    value={selectedUploadDocType}
-                    onChange={e => setSelectedUploadDocType(e.target.value)}
-                    className="min-h-[40px] px-3 py-1.5 rounded-xl border border-slate-300 dark:border-[#243628] bg-white dark:bg-[#0E1610] text-xs text-slate-900 dark:text-[#F3EFE6]"
-                  >
-                    <option value="السجل التجاري">السجل التجاري</option>
-                    <option value="البطاقة الضريبية">البطاقة الضريبية</option>
-                    <option value="عقد التأسيس">عقد التأسيس</option>
-                    <option value="شهادة تسجيل القيمة المضافة">شهادة تسجيل القيمة المضافة</option>
-                    <option value="تراخيص مزاولة النشاط">تراخيص مزاولة النشاط</option>
-                  </select>
-
-                  <input
-                    id="docsModalFileInput"
-                    type="file"
-                    multiple
-                    accept=".pdf,image/png,image/jpeg,image/jpg"
-                    onChange={e => {
-                      const files = e.target.files;
-                      if (!files || files.length === 0 || !docsModalCompany) return;
-                      Array.from(files).forEach(file => {
-                        const reader = new FileReader();
-                        reader.onload = () => {
-                          const newAttachment: CompanyDocumentAttachment = {
-                            id: `doc_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-                            name: file.name,
-                            docType: selectedUploadDocType,
-                            sizeBytes: file.size,
-                            mimeType: file.type || 'application/octet-stream',
-                            uploadedAt: getFormattedAuditTimestamp(),
-                            dataUrl: reader.result as string
-                          };
-                          const updated = {
-                            ...docsModalCompany,
-                            documents: [newAttachment, ...(docsModalCompany.documents || [])]
-                          };
-                          onUpdateCompany(updated);
-                          setDocsModalCompany(updated);
-                        };
-                        reader.readAsDataURL(file);
-                      });
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      const target = docsModalCompany;
+                      setDocsModalCompany(null);
+                      onOpenAddDocumentForCompany(target);
                     }}
-                    className="hidden"
-                  />
-                  <label
-                    htmlFor="docsModalFileInput"
-                    className="flex-1 min-h-[40px] px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-colors shadow-xs"
+                    className="min-h-[38px] px-3.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs flex items-center gap-1.5 transition-colors shadow-xs"
                   >
-                    <UploadCloud className="w-4 h-4" />
-                    <span>رفع ملفات (PDF / صور)</span>
-                  </label>
+                    <Plus className="w-4 h-4" />
+                    <span>+ إضافة مستند جديد للشركة</span>
+                  </button>
+                  <button
+                    onClick={() => setDocsModalCompany(null)}
+                    className="min-h-[38px] min-w-[38px] flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-white/10"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
                 </div>
               </div>
 
-              {/* Documents List */}
-              <div className="space-y-2 max-h-64 overflow-y-auto">
-                {!docsModalCompany.documents || docsModalCompany.documents.length === 0 ? (
-                  <div className="py-8 text-center text-slate-400">
-                    <FileText className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                    <p className="text-xs">لم يتم رفع أي مستندات لهذه الشركة بعد</p>
-                  </div>
-                ) : (
-                  docsModalCompany.documents.map(doc => (
-                    <div
-                      key={doc.id}
-                      className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-[#121B14] border border-slate-200 dark:border-[#243628] text-xs"
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        {doc.mimeType?.includes('pdf') ? (
-                          <FileText className="w-5 h-5 text-rose-500 shrink-0" />
-                        ) : (
-                          <ImageIcon className="w-5 h-5 text-blue-500 shrink-0" />
-                        )}
-                        <div className="truncate">
-                          <span className="font-bold text-slate-800 dark:text-[#F3EFE6] block truncate">
-                            {doc.name}
-                          </span>
-                          <div className="flex items-center gap-2 text-[10px] text-slate-500">
-                            <span className="text-amber-600 font-bold">{doc.docType}</span>
-                            <span>•</span>
-                            <span>{formatBytes(doc.sizeBytes)}</span>
-                            <span>•</span>
-                            <span>{doc.uploadedAt}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        {doc.dataUrl && (
-                          <button
-                            onClick={() => setPreviewDocument(doc)}
-                            className="p-2 rounded-lg bg-slate-200/80 dark:bg-[#1F2E23] text-slate-700 dark:text-[#E0D9CB] hover:text-amber-600 transition-colors"
-                            title="معاينة"
-                          >
-                            <Eye className="w-3.5 h-3.5" />
-                          </button>
-                        )}
+              {/* Verified Documents List from licenses store */}
+              <div className="space-y-2.5 overflow-y-auto flex-1 pr-1">
+                {(() => {
+                  const companyDocs = documents.filter(d => d.companyId === docsModalCompany.id);
+                  if (companyDocs.length === 0) {
+                    return (
+                      <div className="py-12 text-center text-slate-400">
+                        <FileText className="w-10 h-10 mx-auto mb-3 opacity-40 text-amber-500" />
+                        <h4 className="text-sm font-bold text-slate-800 dark:text-[#F3EFE6] mb-1">
+                          لا توجد مستندات أو تراخيص مسجلة لهذه الشركة بعد
+                        </h4>
+                        <p className="text-xs text-slate-500 dark:text-[#8FA392] max-w-sm mx-auto mb-4">
+                          جميع السجلات التجارية والبطاقات الضريبية والتراخيص تُدار حصرياً من خلال وحدة &quot;السجلات والتراخيص&quot;.
+                        </p>
                         <button
                           onClick={() => {
-                            const updatedDocs = (docsModalCompany.documents || []).filter(d => d.id !== doc.id);
-                            const updated = { ...docsModalCompany, documents: updatedDocs };
-                            onUpdateCompany(updated);
-                            setDocsModalCompany(updated);
+                            const target = docsModalCompany;
+                            setDocsModalCompany(null);
+                            onOpenAddDocumentForCompany(target);
                           }}
-                          className="p-2 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-colors"
-                          title="حذف المستند"
+                          className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-sm"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Plus className="w-4 h-4" />
+                          <span>تسجيل أول مستند للشركة الآن</span>
                         </button>
                       </div>
-                    </div>
-                  ))
-                )}
+                    );
+                  }
+
+                  return companyDocs.map(doc => {
+                    const isExpired = doc.expiryDate && new Date(doc.expiryDate) < new Date();
+                    const daysRemaining = doc.expiryDate
+                      ? Math.ceil((new Date(doc.expiryDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+                      : 999;
+                    const isExpiringSoon = daysRemaining > 0 && daysRemaining <= 30;
+
+                    return (
+                      <div
+                        key={doc.id}
+                        className="p-3.5 rounded-xl bg-slate-50/80 dark:bg-[#121B14] border border-slate-200 dark:border-[#243628] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+                      >
+                        <div className="flex items-start gap-3 min-w-0">
+                          <div className="w-9 h-9 rounded-xl bg-slate-200/70 dark:bg-[#1F2E23] flex items-center justify-center shrink-0 text-slate-700 dark:text-[#E0D9CB]">
+                            {doc.fileAttachment?.mimeType?.includes('pdf') ? (
+                              <FileText className="w-5 h-5 text-rose-500" />
+                            ) : (
+                              <ImageIcon className="w-5 h-5 text-blue-500" />
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                              <span className="font-bold text-slate-900 dark:text-[#F3EFE6] text-xs">
+                                {doc.titleAr}
+                              </span>
+                              <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/40">
+                                {doc.docType}
+                              </span>
+                              {isExpired ? (
+                                <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                                  منتهي الصلاحية
+                                </span>
+                              ) : isExpiringSoon ? (
+                                <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                  ينتهي خلال {daysRemaining} يوم
+                                </span>
+                              ) : (
+                                <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                  ساري ومعتمد
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="flex items-center gap-3 text-[11px] text-slate-500 dark:text-[#8FA392] flex-wrap">
+                              <span>رقم المستند: <strong className="font-mono text-slate-700 dark:text-slate-300">{doc.docNumber}</strong></span>
+                              <span>•</span>
+                              <span>الجهة: {doc.issuerAr}</span>
+                              {doc.expiryDate && (
+                                <>
+                                  <span>•</span>
+                                  <span>الانتهاء: {doc.expiryDate}</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Actions: Preview & Download */}
+                        <div className="flex items-center gap-1.5 shrink-0 justify-end">
+                          {doc.fileAttachment?.dataUrl && (
+                            <button
+                              type="button"
+                              onClick={() => setPreviewDocument(doc.fileAttachment!)}
+                              className="min-h-[34px] px-2.5 py-1 rounded-lg bg-slate-200/80 dark:bg-[#1F2E23] text-slate-700 dark:text-[#E0D9CB] hover:text-amber-600 transition-colors flex items-center gap-1 text-[11px] font-bold"
+                              title="معاينة المستند"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                              <span>معاينة</span>
+                            </button>
+                          )}
+                          {doc.fileAttachment?.dataUrl && (
+                            <a
+                              href={doc.fileAttachment.dataUrl}
+                              download={doc.fileAttachment.name}
+                              className="min-h-[34px] px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 transition-colors flex items-center gap-1 text-[11px] font-bold border border-emerald-200 dark:border-emerald-800/40"
+                              title="تحميل الملف"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                              <span>تحميل</span>
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
               </div>
 
-              <div className="flex justify-end pt-4 border-t border-slate-200 dark:border-[#243628] mt-4">
+              <div className="flex justify-end pt-3.5 border-t border-slate-200 dark:border-[#243628] mt-4 shrink-0">
                 <button
                   onClick={() => setDocsModalCompany(null)}
                   className="min-h-[40px] px-5 py-2 rounded-xl bg-slate-800 text-white font-bold text-xs hover:bg-slate-900"
