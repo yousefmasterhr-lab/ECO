@@ -4,20 +4,19 @@ import { useLanguage } from '../../../context/LanguageContext';
 import { useNavigation } from '../../../context/NavigationContext';
 import { CheckCircle2 } from 'lucide-react';
 import {
-  INITIAL_DEPARTMENTS,
-  INITIAL_COST_CENTERS,
   INITIAL_SIGNATORIES
 } from './mockData';
 import {
   CompanyEntity,
   SmartDocument,
   BranchLocation,
-  CostCenter,
+  DepartmentOrg,
   AuthorizedSignatory
 } from './types';
 import { companyStorage } from './companyStorage';
 import { licenseStorage } from './licenseStorage';
 import { branchStorage } from './branchStorage';
+import { departmentStorage } from './departmentStorage';
 import { CompanyDirectoryTab } from './CompanyDirectoryTab';
 import { CompanyLicensesTab } from './CompanyLicensesTab';
 import { CompanyBranchesTab } from './CompanyBranchesTab';
@@ -39,8 +38,7 @@ export const CompaniesModule: React.FC<CompaniesModuleProps> = ({ activeSubItemI
   const [companies, setCompanies] = useState<CompanyEntity[]>(() => companyStorage.getCompaniesSync());
   const [documents, setDocuments] = useState<SmartDocument[]>(() => licenseStorage.getLicensesSync());
   const [branches, setBranches] = useState<BranchLocation[]>(() => branchStorage.getBranchesSync());
-  const [departments] = useState(INITIAL_DEPARTMENTS);
-  const [costCenters, setCostCenters] = useState<CostCenter[]>(INITIAL_COST_CENTERS);
+  const [departments, setDepartments] = useState<DepartmentOrg[]>(() => departmentStorage.getDepartmentsSync());
   const [signatories, setSignatories] = useState<AuthorizedSignatory[]>(INITIAL_SIGNATORIES);
 
   // Load from persistent storage & API sync on mount
@@ -53,6 +51,9 @@ export const CompaniesModule: React.FC<CompaniesModuleProps> = ({ activeSubItemI
     });
     branchStorage.getBranches().then(loaded => {
       setBranches(loaded);
+    });
+    departmentStorage.getDepartments().then(loaded => {
+      setDepartments(loaded);
     });
   }, []);
 
@@ -248,21 +249,33 @@ export const CompaniesModule: React.FC<CompaniesModuleProps> = ({ activeSubItemI
     showToast(isRtl ? `تم حذف الموقع "${branch?.nameAr || 'المقر'}" نهائياً` : 'Branch deleted');
   };
 
-  // --- Cost Centers CRUD ---
-  const handleAddCostCenter = (newCC: CostCenter) => {
-    setCostCenters(prev => [newCC, ...prev]);
-    showToast(isRtl ? `تم تسجيل مركز التكلفة "${newCC.code} - ${newCC.nameAr}"` : 'Cost center added');
+  // --- Departments CRUD with Real Persistence & Audit Log ---
+  const handleAddDepartment = async (newDept: Partial<DepartmentOrg> & { nameAr: string; code: string }) => {
+    await departmentStorage.saveDepartment(newDept, userName);
+    setDepartments(departmentStorage.getDepartmentsSync());
+    showToast(isRtl ? `تمت إضافة الإدارة "${newDept.nameAr}" إلى الهيكل التنظيمي بنجاح` : 'Department added successfully');
   };
 
-  const handleUpdateCostCenter = (updated: CostCenter) => {
-    setCostCenters(prev => prev.map(cc => (cc.id === updated.id ? updated : cc)));
-    showToast(isRtl ? `تم تحديث ميزانية المركز "${updated.code}"` : 'Cost center updated');
+  const handleUpdateDepartment = async (updated: Partial<DepartmentOrg> & { nameAr: string; code: string }) => {
+    await departmentStorage.saveDepartment(updated, userName);
+    setDepartments(departmentStorage.getDepartmentsSync());
+    showToast(isRtl ? `تم تحديث بيانات "${updated.nameAr}" وتسجيل التعديلات بالهيكل التنظيمي` : 'Department updated successfully');
   };
 
-  const handleDeleteCostCenter = (id: string) => {
-    setCostCenters(prev => prev.filter(cc => cc.id !== id));
-    showToast(isRtl ? 'تم حذف مركز التكلفة' : 'Cost center deleted');
+  const handleDeleteDepartment = async (id: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const dept = departments.find(d => d.id === id);
+      await departmentStorage.deleteDepartment(id, userName);
+      setDepartments(departmentStorage.getDepartmentsSync());
+      showToast(isRtl ? `تم حذف الإدارة "${dept?.nameAr || ''}" نهائياً من الهيكل` : 'Department deleted');
+      return { success: true };
+    } catch (err: any) {
+      const msg = err.message || 'حدث خطأ أثناء حذف الإدارة';
+      showToast(msg);
+      return { success: false, error: msg };
+    }
   };
+
 
   // --- Signatories CRUD ---
   const handleAddSignatory = (newSig: AuthorizedSignatory) => {
@@ -341,15 +354,15 @@ export const CompaniesModule: React.FC<CompaniesModuleProps> = ({ activeSubItemI
         />
       )}
 
-      {/* Sub-Route Tab 4: الهيكل التنظيمي ومراكز التكلفة */}
+      {/* Sub-Route Tab 4: الهيكل التنظيمي وشجرة الإدارات */}
       {currentTab === 'comp_structure' && (
         <CompanyOrgStructureTab
           departments={departments}
-          costCenters={costCenters}
           companies={companies}
-          onAddCostCenter={handleAddCostCenter}
-          onUpdateCostCenter={handleUpdateCostCenter}
-          onDeleteCostCenter={handleDeleteCostCenter}
+          branches={branches}
+          onAddDepartment={handleAddDepartment}
+          onUpdateDepartment={handleUpdateDepartment}
+          onDeleteDepartment={handleDeleteDepartment}
         />
       )}
 

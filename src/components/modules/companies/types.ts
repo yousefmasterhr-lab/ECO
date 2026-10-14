@@ -135,14 +135,41 @@ export interface BranchLocation {
   updatedAt?: string;
 }
 
+export interface DepartmentAuditChange {
+  field: string;
+  fieldLabel: string;
+  oldValue: string;
+  newValue: string;
+}
+
+export interface DepartmentAuditLogEntry {
+  id: string;
+  departmentId: string;
+  timestamp: string; // Exact date and time (YYYY-MM-DD HH:mm:ss)
+  userName: string;
+  action: 'create' | 'update' | 'delete' | 'reparent';
+  actionLabelAr: string;
+  changes: DepartmentAuditChange[];
+  notes?: string;
+}
+
 export interface DepartmentOrg {
   id: string;
   nameAr: string;
   code: string;
   headAr: string;
   staffCount: number;
-  subUnits: string[];
-  responsibilities: string;
+  subUnits?: string[];
+  responsibilities?: string;
+  parentId?: string | null; // For hierarchical org tree (null = root)
+  companyId?: string;
+  companyNameAr?: string;
+  branchId?: string;
+  branchNameAr?: string;
+  costCenterCode?: string; // Structural Cost Center Mapping
+  auditLogs?: DepartmentAuditLogEntry[];
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface CostCenter {
