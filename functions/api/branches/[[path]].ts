@@ -145,7 +145,7 @@ export const onRequestPut: PagesFunction = async (context) => {
       return errorResponse('معرف المقر غير محدد', 400);
     }
 
-    const existing = await env.DB.prepare('SELECT * FROM branches_sites WHERE id = ?').bind(id).first();
+    const existing: any = await env.DB.prepare('SELECT * FROM branches_sites WHERE id = ?').bind(id).first();
     if (!existing) {
       return errorResponse(`المقر غير موجود (معرف: ${id})`, 404);
     }
@@ -212,7 +212,7 @@ export const onRequestDelete: PagesFunction = async (context) => {
       return errorResponse('معرف المقر مطلوب للحذف', 400);
     }
 
-    const existing = await env.DB.prepare('SELECT * FROM branches_sites WHERE id = ?').bind(id).first();
+    const existing: any = await env.DB.prepare('SELECT * FROM branches_sites WHERE id = ?').bind(id).first();
     if (!existing) {
       return errorResponse(`المقر غير موجود (معرف: ${id})`, 404);
     }

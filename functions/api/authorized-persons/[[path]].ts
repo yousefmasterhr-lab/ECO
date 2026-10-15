@@ -148,7 +148,7 @@ export const onRequestPut: PagesFunction = async (context) => {
       return errorResponse('معرف المفوض غير محدد', 400);
     }
 
-    const existing = await env.DB.prepare('SELECT * FROM authorized_persons WHERE id = ?').bind(id).first();
+    const existing: any = await env.DB.prepare('SELECT * FROM authorized_persons WHERE id = ?').bind(id).first();
     if (!existing) {
       return errorResponse(`المفوض غير موجود (معرف: ${id})`, 404);
     }

@@ -37,8 +37,13 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const { request } = event;
 
-  // Ignore non-GET requests or chrome-extension URLs
-  if (request.method !== 'GET' || !request.url.startsWith('http')) {
+  // Ignore non-GET requests, API requests, or version.json
+  if (
+    request.method !== 'GET' ||
+    !request.url.startsWith('http') ||
+    request.url.includes('/api/') ||
+    request.url.includes('version.json')
+  ) {
     return;
   }
 

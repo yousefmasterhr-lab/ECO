@@ -8,7 +8,8 @@ import {
   EyeOff,
   CheckCircle2,
   Loader2,
-  Building2
+  Building2,
+  Sparkles
 } from 'lucide-react';
 
 interface LuxuryLoginPageProps {
@@ -27,6 +28,18 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [shakeCard, setShakeCard] = useState(false);
   const [welcomeUser, setWelcomeUser] = useState<any | null>(null);
+  const [updateNotice, setUpdateNotice] = useState<{ title: string; message: string } | null>(null);
+
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem('eco_update_notice');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        setUpdateNotice(parsed);
+        sessionStorage.removeItem('eco_update_notice');
+      }
+    } catch {}
+  }, []);
 
   // Background Canvas for Interactive Floating Stardust & Ambient Gold Particles
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -218,6 +231,17 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
             <h2 className="text-2xl font-black text-slate-100 text-center tracking-tight">شركة ترابط للمقاولات والتجارة</h2>
             <p className="text-xs font-semibold text-amber-400/90 text-center mt-1">منظومة إدارة الموارد المؤسسية الذكية ECO</p>
           </div>
+
+          {/* System Update Notification Banner */}
+          {updateNotice && (
+            <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-emerald-950/80 to-teal-950/80 border border-emerald-500/40 text-emerald-200 text-xs flex items-start gap-3 shadow-[0_0_25px_rgba(16,185,129,0.25)] animate-in fade-in slide-in-from-top-2 duration-300">
+              <Sparkles className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5 animate-pulse" />
+              <div className="text-right">
+                <div className="font-bold text-white text-xs mb-1">{updateNotice.title}</div>
+                <div className="text-emerald-100/90 leading-relaxed text-[11px]">{updateNotice.message}</div>
+              </div>
+            </div>
+          )}
 
           {/* Form with Explicit Visible Styling */}
           <form onSubmit={handleSubmit} className="space-y-4">

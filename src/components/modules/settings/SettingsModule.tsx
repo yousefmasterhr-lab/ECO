@@ -4,11 +4,13 @@ import { RBACView } from './RBACView';
 import { UserManagementView } from './UserManagementView';
 import { AuditLogsView } from './AuditLogsView';
 import { DatabaseFederationHub } from './DatabaseFederationHub';
+import { CloudUpgradesView } from './CloudUpgradesView';
 import {
   ShieldCheck,
   Users,
   ScrollText,
-  Database
+  Database,
+  CloudUpload
 } from 'lucide-react';
 
 interface SettingsModuleProps {
@@ -17,10 +19,11 @@ interface SettingsModuleProps {
 
 export const SettingsModule: React.FC<SettingsModuleProps> = ({ activeSubItemId }) => {
   const { t } = useLanguage();
-  const [activeTab, setActiveTab] = useState<'rbac' | 'users' | 'audit' | 'system'>(() => {
+  const [activeTab, setActiveTab] = useState<'rbac' | 'users' | 'audit' | 'system' | 'upgrades'>(() => {
     if (activeSubItemId === 'set_users') return 'users';
     if (activeSubItemId === 'set_audit') return 'audit';
     if (activeSubItemId === 'set_integrations' || activeSubItemId === 'set_databases') return 'system';
+    if (activeSubItemId === 'set_upgrades') return 'upgrades';
     return 'rbac';
   });
 
@@ -87,6 +90,18 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({ activeSubItemId 
           <Database className="w-3.5 h-3.5" />
           <span>{t('ربط وتكامل قواعد البيانات', 'Database Federation')}</span>
         </button>
+
+        <button
+          onClick={() => setActiveTab('upgrades')}
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+            activeTab === 'upgrades'
+              ? 'bg-[#1C291E] dark:bg-[#EBB34D] text-[#F3EFE6] dark:text-[#0E1610] shadow-xs'
+              : 'bg-[#F3EFE6] dark:bg-[#17231A] text-[#5C665E] dark:text-[#8FA392] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23] border border-[#E0D9CB] dark:border-[#243628]'
+          }`}
+        >
+          <CloudUpload className="w-3.5 h-3.5 text-emerald-400" />
+          <span>{t('الترقيات والصيانة السحابية', 'Cloud Upgrades & Maintenance')}</span>
+        </button>
       </div>
 
       {/* Tab Content */}
@@ -94,6 +109,7 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({ activeSubItemId 
       {activeTab === 'users' && <UserManagementView />}
       {activeTab === 'audit' && <AuditLogsView />}
       {activeTab === 'system' && <DatabaseFederationHub />}
+      {activeTab === 'upgrades' && <CloudUpgradesView />}
     </div>
   );
 };

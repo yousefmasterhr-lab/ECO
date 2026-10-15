@@ -13,6 +13,7 @@ import { PWAProvider } from './context/PWAContext';
 import { ToastProvider } from './components/common/Toast';
 import { ShellLayout } from './components/layout/ShellLayout';
 import { LuxuryLoginPage } from './components/auth/LuxuryLoginPage';
+import { CinematicUpdateOverlay } from './components/common/CinematicUpdateOverlay';
 
 const AuthenticatedApp: React.FC = () => {
   return (
@@ -66,6 +67,7 @@ export const App: React.FC = () => {
           <PWAProvider>
             <ToastProvider>
               <AppContent />
+              <CinematicUpdateOverlay />
             </ToastProvider>
           </PWAProvider>
         </AuthProvider>

@@ -2,6 +2,8 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { fileURLToPath, URL } from 'node:url';
 import { createRequire } from 'node:module';
+import fs from 'node:fs';
+import path from 'node:path';
 
 const require = createRequire(import.meta.url);
 
@@ -880,8 +882,44 @@ function sqlServerBridgePlugin() {
   };
 }
 
+function autoVersionPlugin() {
+  const buildTimestamp = Date.now();
+  const buildDateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  const versionStr = `1.1.0-build.${buildDateStr}.${Math.floor(buildTimestamp / 1000) % 100000}`;
+
+  return {
+    name: 'auto-version-plugin',
+    buildStart() {
+      try {
+        const rootDir = process.cwd();
+        const publicDir = path.resolve(rootDir, 'public');
+        if (!fs.existsSync(publicDir)) {
+          fs.mkdirSync(publicDir, { recursive: true });
+        }
+        const versionPath = path.resolve(publicDir, 'version.json');
+        const versionData = {
+          version: versionStr,
+          buildTimestamp,
+          buildTime: new Date().toISOString(),
+          gitCommit: 'latest'
+        };
+        fs.writeFileSync(versionPath, JSON.stringify(versionData, null, 2), 'utf-8');
+      } catch (err) {
+        console.warn('[autoVersionPlugin] Notice:', err);
+      }
+    }
+  };
+}
+
+const currentBuildTime = Date.now();
+const currentBuildVersion = `1.1.0-build.${new Date().toISOString().slice(0, 10).replace(/-/g, '')}`;
+
 export default defineConfig({
-  plugins: [react(), sqlServerBridgePlugin()],
+  plugins: [react(), sqlServerBridgePlugin(), autoVersionPlugin()],
+  define: {
+    __APP_BUILD_TIME__: currentBuildTime,
+    __APP_VERSION__: JSON.stringify(currentBuildVersion),
+  },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
