@@ -145,17 +145,17 @@ export const onRequestPut: PagesFunction = async (context) => {
       return errorResponse('معرف المقر غير محدد', 400);
     }
 
-    const existing: any = await env.DB.prepare('SELECT * FROM branches_sites WHERE id = ?').bind(id).first();
-    if (!existing) {
-      return errorResponse(`المقر غير موجود (معرف: ${id})`, 404);
-    }
+    const existing: any = (await env.DB.prepare('SELECT * FROM branches_sites WHERE id = ?').bind(id).first()) || {};
 
-    const companyId = body.companyId || existing.company_id;
+    const companyId = body.companyId || existing.company_id || '';
     const name = (body.nameAr || existing.name || '').trim();
-    const type = body.typeAr || existing.type;
-    const address = body.addressAr !== undefined ? body.addressAr : existing.address;
-    const manager = body.managerAr !== undefined ? body.managerAr : existing.manager_name;
-    const costCenter = body.costCenterCode !== undefined ? body.costCenterCode : existing.cost_center_code;
+    if (!name) {
+      return errorResponse('اسم الفرع / المقر مطلوب', 400);
+    }
+    const type = body.typeAr || existing.type || 'فرع رئيسي';
+    const address = body.addressAr !== undefined ? body.addressAr : (existing.address || '');
+    const manager = body.managerAr !== undefined ? body.managerAr : (existing.manager_name || '');
+    const costCenter = body.costCenterCode !== undefined ? body.costCenterCode : (existing.cost_center_code || '');
     const userName = body.userName || 'يوسف حجازي';
 
     let existingMeta: any = {};
@@ -164,27 +164,29 @@ export const onRequestPut: PagesFunction = async (context) => {
     } catch {}
 
     const metadataJson = JSON.stringify({
-      cityAr: body.cityAr !== undefined ? body.cityAr : existingMeta.cityAr,
-      phone: body.phone !== undefined ? body.phone : existingMeta.phone,
+      cityAr: body.cityAr !== undefined ? body.cityAr : (existingMeta.cityAr || 'القاهرة'),
+      phone: body.phone !== undefined ? body.phone : (existingMeta.phone || ''),
       status: body.status || existingMeta.status || 'نشط',
       staffCount: Number(body.staffCount ?? existingMeta.staffCount ?? 0),
       activeProjects: Number(body.activeProjects ?? existingMeta.activeProjects ?? 0),
-      notesAr: body.notesAr !== undefined ? body.notesAr : existingMeta.notesAr,
+      notesAr: body.notesAr !== undefined ? body.notesAr : (existingMeta.notesAr || ''),
       companyNameAr: body.companyNameAr || existingMeta.companyNameAr || '',
       auditLogs: body.auditLogs || existingMeta.auditLogs || [],
     });
 
     await env.DB.prepare(`
-      UPDATE branches_sites SET
-        company_id = ?,
-        name = ?,
-        type = ?,
-        address = ?,
-        manager_name = ?,
-        cost_center_code = ?,
-        metadata_json = ?
-      WHERE id = ?
-    `).bind(companyId, name, type, address, manager, costCenter, metadataJson, id).run();
+      INSERT INTO branches_sites (
+        id, company_id, name, type, address, manager_name, cost_center_code, metadata_json, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(id) DO UPDATE SET
+        company_id = excluded.company_id,
+        name = excluded.name,
+        type = excluded.type,
+        address = excluded.address,
+        manager_name = excluded.manager_name,
+        cost_center_code = excluded.cost_center_code,
+        metadata_json = excluded.metadata_json
+    `).bind(id, companyId, name, type, address, manager, costCenter, metadataJson).run();
 
     const diffs = Array.isArray(body.changes) ? body.changes : [];
     await logCompanyAudit(env.DB, 'branch', id, userName, 'update', diffs);

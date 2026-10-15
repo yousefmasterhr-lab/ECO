@@ -142,18 +142,18 @@ export const onRequestPut: PagesFunction = async (context) => {
       return errorResponse('معرف الشركة غير محدد', 400);
     }
 
-    const existing: any = await env.DB.prepare('SELECT * FROM companies WHERE id = ?').bind(id).first();
-    if (!existing) {
-      return errorResponse(`الشركة غير موجودة (معرف: ${id})`, 404);
-    }
+    const existing: any = (await env.DB.prepare('SELECT * FROM companies WHERE id = ?').bind(id).first()) || {};
 
-    const name = (body.nameAr || existing.name || '').trim();
+    const name = (body.nameAr || existing.name || body.name || '').trim();
+    if (!name) {
+      return errorResponse('اسم الشركة مطلوب', 400);
+    }
     const legalForm = body.legalType || existing.legal_form || 'ش.م.م';
     const capital = Number(body.issuedCapital ?? body.capital ?? existing.capital ?? 0);
-    const cr = body.crNumber !== undefined ? body.crNumber : existing.commercial_register;
-    const tax = body.taxNumber !== undefined ? body.taxNumber : existing.tax_id;
-    const manager = body.ceoAr !== undefined ? body.ceoAr : existing.manager_name;
-    const address = body.crOffice !== undefined ? body.crOffice : existing.address;
+    const cr = body.crNumber !== undefined ? body.crNumber : (existing.commercial_register || '');
+    const tax = body.taxNumber !== undefined ? body.taxNumber : (existing.tax_id || '');
+    const manager = body.ceoAr !== undefined ? body.ceoAr : (existing.manager_name || '');
+    const address = body.crOffice !== undefined ? body.crOffice : (existing.address || '');
     const userName = body.userName || 'يوسف حجازي';
 
     let existingMeta: any = {};
@@ -165,7 +165,7 @@ export const onRequestPut: PagesFunction = async (context) => {
       paidCapital: Number(body.paidCapital ?? existingMeta.paidCapital ?? capital),
       totalShares: Number(body.totalShares ?? existingMeta.totalShares ?? 1000000),
       nominalShareValue: Number(body.nominalShareValue ?? existingMeta.nominalShareValue ?? 100),
-      crOffice: body.crOffice !== undefined ? body.crOffice : existingMeta.crOffice,
+      crOffice: body.crOffice !== undefined ? body.crOffice : (existingMeta.crOffice || ''),
       establishedYear: body.establishedYear || existingMeta.establishedYear || String(new Date().getFullYear()),
       branchesCount: Number(body.branchesCount ?? existingMeta.branchesCount ?? 0),
       projectsCount: Number(body.projectsCount ?? existingMeta.projectsCount ?? 0),
@@ -176,18 +176,20 @@ export const onRequestPut: PagesFunction = async (context) => {
     });
 
     await env.DB.prepare(`
-      UPDATE companies SET
-        name = ?,
-        legal_form = ?,
-        capital = ?,
-        commercial_register = ?,
-        tax_id = ?,
-        manager_name = ?,
-        address = ?,
-        metadata_json = ?,
+      INSERT INTO companies (
+        id, name, legal_form, capital, commercial_register, tax_id, manager_name, address, metadata_json, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      ON CONFLICT(id) DO UPDATE SET
+        name = excluded.name,
+        legal_form = excluded.legal_form,
+        capital = excluded.capital,
+        commercial_register = excluded.commercial_register,
+        tax_id = excluded.tax_id,
+        manager_name = excluded.manager_name,
+        address = excluded.address,
+        metadata_json = excluded.metadata_json,
         updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `).bind(name, legalForm, capital, cr, tax, manager, address, metadataJson, id).run();
+    `).bind(id, name, legalForm, capital, cr, tax, manager, address, metadataJson).run();
 
     // Log update audit
     const diffs = Array.isArray(body.changes) ? body.changes : [];

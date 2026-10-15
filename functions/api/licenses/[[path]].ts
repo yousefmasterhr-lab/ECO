@@ -146,19 +146,16 @@ export const onRequestPut: PagesFunction = async (context) => {
       return errorResponse('معرف المستند غير محدد', 400);
     }
 
-    const existing: any = await env.DB.prepare('SELECT * FROM company_licenses WHERE id = ?').bind(id).first();
-    if (!existing) {
-      return errorResponse(`المستند غير موجود (معرف: ${id})`, 404);
-    }
+    const existing: any = (await env.DB.prepare('SELECT * FROM company_licenses WHERE id = ?').bind(id).first()) || {};
 
-    const companyId = body.companyId || existing.company_id;
-    const docType = body.docTypeAr || existing.doc_type;
-    const docNumber = body.docNumber !== undefined ? body.docNumber : existing.doc_number;
-    const issuingAuthority = body.issuingAuthorityAr !== undefined ? body.issuingAuthorityAr : existing.issuing_authority;
-    const issueDate = body.issueDate !== undefined ? body.issueDate : existing.issue_date;
-    const expiryDate = body.isOpenEnded ? '' : (body.expiryDate !== undefined ? body.expiryDate : existing.expiry_date);
-    const fileUrl = body.attachment?.dataUrl || body.fileUrl || existing.file_url;
-    const status = body.status || existing.status;
+    const companyId = body.companyId || existing.company_id || '';
+    const docType = body.docTypeAr || existing.doc_type || 'سجل تجاري';
+    const docNumber = body.docNumber !== undefined ? body.docNumber : (existing.doc_number || '');
+    const issuingAuthority = body.issuingAuthorityAr !== undefined ? body.issuingAuthorityAr : (existing.issuing_authority || '');
+    const issueDate = body.issueDate !== undefined ? body.issueDate : (existing.issue_date || '');
+    const expiryDate = body.isOpenEnded ? '' : (body.expiryDate !== undefined ? body.expiryDate : (existing.expiry_date || ''));
+    const fileUrl = body.attachment?.dataUrl || body.fileUrl || existing.file_url || '';
+    const status = body.status || existing.status || 'active';
     const userName = body.userName || 'يوسف حجازي';
 
     let existingMeta: any = {};
@@ -177,18 +174,20 @@ export const onRequestPut: PagesFunction = async (context) => {
     });
 
     await env.DB.prepare(`
-      UPDATE company_licenses SET
-        company_id = ?,
-        doc_type = ?,
-        doc_number = ?,
-        issuing_authority = ?,
-        issue_date = ?,
-        expiry_date = ?,
-        file_url = ?,
-        status = ?,
-        metadata_json = ?
-      WHERE id = ?
-    `).bind(companyId, docType, docNumber, issuingAuthority, issueDate, expiryDate, fileUrl, status, metadataJson, id).run();
+      INSERT INTO company_licenses (
+        id, company_id, doc_type, doc_number, issuing_authority, issue_date, expiry_date, file_url, status, metadata_json, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(id) DO UPDATE SET
+        company_id = excluded.company_id,
+        doc_type = excluded.doc_type,
+        doc_number = excluded.doc_number,
+        issuing_authority = excluded.issuing_authority,
+        issue_date = excluded.issue_date,
+        expiry_date = excluded.expiry_date,
+        file_url = excluded.file_url,
+        status = excluded.status,
+        metadata_json = excluded.metadata_json
+    `).bind(id, companyId, docType, docNumber, issuingAuthority, issueDate, expiryDate, fileUrl, status, metadataJson).run();
 
     const diffs = Array.isArray(body.changes) ? body.changes : [];
     await logCompanyAudit(env.DB, 'license', id, userName, 'update', diffs);

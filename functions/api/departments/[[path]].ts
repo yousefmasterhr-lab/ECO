@@ -133,17 +133,17 @@ export const onRequestPut: PagesFunction = async (context) => {
       return errorResponse('معرف الإدارة غير محدد', 400);
     }
 
-    const existing: any = await env.DB.prepare('SELECT * FROM departments WHERE id = ?').bind(id).first();
-    if (!existing) {
-      return errorResponse(`الإدارة غير موجودة (معرف: ${id})`, 404);
-    }
+    const existing: any = (await env.DB.prepare('SELECT * FROM departments WHERE id = ?').bind(id).first()) || {};
 
-    const companyId = body.companyId !== undefined ? body.companyId : existing.company_id;
-    const branchId = body.branchId !== undefined ? body.branchId : existing.branch_id;
-    const parentId = body.parentId !== undefined ? body.parentId : existing.parent_id;
+    const companyId = body.companyId !== undefined ? body.companyId : (existing.company_id || '');
+    const branchId = body.branchId !== undefined ? body.branchId : (existing.branch_id || '');
+    const parentId = body.parentId !== undefined ? body.parentId : (existing.parent_id || null);
     const name = (body.nameAr || existing.name || '').trim();
-    const manager = body.headAr !== undefined ? body.headAr : existing.manager_name;
-    const costCenter = body.costCenterCode !== undefined ? body.costCenterCode : existing.cost_center_code;
+    if (!name) {
+      return errorResponse('اسم الإدارة مطلوب', 400);
+    }
+    const manager = body.headAr !== undefined ? body.headAr : (existing.manager_name || '');
+    const costCenter = body.costCenterCode !== undefined ? body.costCenterCode : (existing.cost_center_code || '');
     const userName = body.userName || 'يوسف حجازي';
 
     let existingMeta: any = {};
@@ -162,16 +162,18 @@ export const onRequestPut: PagesFunction = async (context) => {
     });
 
     await env.DB.prepare(`
-      UPDATE departments SET
-        company_id = ?,
-        branch_id = ?,
-        parent_id = ?,
-        name = ?,
-        manager_name = ?,
-        cost_center_code = ?,
-        metadata_json = ?
-      WHERE id = ?
-    `).bind(companyId, branchId, parentId, name, manager, costCenter, metadataJson, id).run();
+      INSERT INTO departments (
+        id, company_id, branch_id, parent_id, name, manager_name, cost_center_code, metadata_json, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(id) DO UPDATE SET
+        company_id = excluded.company_id,
+        branch_id = excluded.branch_id,
+        parent_id = excluded.parent_id,
+        name = excluded.name,
+        manager_name = excluded.manager_name,
+        cost_center_code = excluded.cost_center_code,
+        metadata_json = excluded.metadata_json
+    `).bind(id, companyId, branchId, parentId, name, manager, costCenter, metadataJson).run();
 
     const diffs = Array.isArray(body.changes) ? body.changes : [];
     await logCompanyAudit(env.DB, 'department', id, userName, 'update', diffs);

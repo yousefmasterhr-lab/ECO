@@ -155,7 +155,7 @@ const SpotlightCompanyCard: React.FC<{
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 my-3 p-3 rounded-xl bg-slate-50 dark:bg-[#0E1610] text-xs border border-slate-200/80 dark:border-[#243628]">
           <div>
             <span className="text-[11px] text-slate-500 dark:text-[#8FA392] block">رأس المال المصدر:</span>
-            <strong className="text-slate-900 dark:text-[#F3EFE6] font-bold text-xs">{formattedCapital} ج.م</strong>
+            <strong className="text-slate-900 dark:text-[#F3EFE6] font-bold text-xs">{formattedCapital}</strong>
           </div>
           <div>
             <span className="text-[11px] text-slate-500 dark:text-[#8FA392] block">السجل التجاري:</span>

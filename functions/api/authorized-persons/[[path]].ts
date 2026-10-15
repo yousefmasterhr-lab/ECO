@@ -148,19 +148,19 @@ export const onRequestPut: PagesFunction = async (context) => {
       return errorResponse('معرف المفوض غير محدد', 400);
     }
 
-    const existing: any = await env.DB.prepare('SELECT * FROM authorized_persons WHERE id = ?').bind(id).first();
-    if (!existing) {
-      return errorResponse(`المفوض غير موجود (معرف: ${id})`, 404);
-    }
+    const existing: any = (await env.DB.prepare('SELECT * FROM authorized_persons WHERE id = ?').bind(id).first()) || {};
 
-    const companyId = body.companyId || existing.company_id;
+    const companyId = body.companyId || existing.company_id || '';
     const name = (body.nameAr || existing.name || '').trim();
-    const title = body.roleAr || existing.title;
-    const poaNumber = body.poaNumber !== undefined ? body.poaNumber : existing.poa_number;
-    const notaryOffice = body.notaryOfficeAr !== undefined ? body.notaryOfficeAr : existing.notary_office;
-    const issueDate = body.issueDate !== undefined ? body.issueDate : existing.issue_date;
-    const expiryDate = body.isOpenEnded ? '' : (body.expiryDate !== undefined ? body.expiryDate : existing.expiry_date);
-    const status = body.status || existing.status;
+    if (!name) {
+      return errorResponse('اسم المفوض مطلوب', 400);
+    }
+    const title = body.roleAr || existing.title || '';
+    const poaNumber = body.poaNumber !== undefined ? body.poaNumber : (existing.poa_number || '');
+    const notaryOffice = body.notaryOfficeAr !== undefined ? body.notaryOfficeAr : (existing.notary_office || '');
+    const issueDate = body.issueDate !== undefined ? body.issueDate : (existing.issue_date || '');
+    const expiryDate = body.isOpenEnded ? '' : (body.expiryDate !== undefined ? body.expiryDate : (existing.expiry_date || ''));
+    const status = body.status || existing.status || 'active';
     const userName = body.userName || 'يوسف حجازي';
 
     let existingPowers: any = {};
@@ -181,18 +181,20 @@ export const onRequestPut: PagesFunction = async (context) => {
     });
 
     await env.DB.prepare(`
-      UPDATE authorized_persons SET
-        company_id = ?,
-        name = ?,
-        title = ?,
-        poa_number = ?,
-        notary_office = ?,
-        issue_date = ?,
-        expiry_date = ?,
-        powers_json = ?,
-        status = ?
-      WHERE id = ?
-    `).bind(companyId, name, title, poaNumber, notaryOffice, issueDate, expiryDate, powersJson, status, id).run();
+      INSERT INTO authorized_persons (
+        id, company_id, name, title, poa_number, notary_office, issue_date, expiry_date, powers_json, status, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(id) DO UPDATE SET
+        company_id = excluded.company_id,
+        name = excluded.name,
+        title = excluded.title,
+        poa_number = excluded.poa_number,
+        notary_office = excluded.notary_office,
+        issue_date = excluded.issue_date,
+        expiry_date = excluded.expiry_date,
+        powers_json = excluded.powers_json,
+        status = excluded.status
+    `).bind(id, companyId, name, title, poaNumber, notaryOffice, issueDate, expiryDate, powersJson, status).run();
 
     const diffs = Array.isArray(body.changes) ? body.changes : [];
     await logCompanyAudit(env.DB, 'authorized_person', id, userName, 'update', diffs);

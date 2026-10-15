@@ -1,100 +1,103 @@
 // Cloudflare Pages Functions - Company Management Database Helpers & Schema Auto-Init
 import { D1Database } from './_utils';
 
-let schemaInitialized = false;
-
 /**
  * Ensures all required Company Management tables exist in Cloudflare D1.
- * Idempotent: runs CREATE TABLE IF NOT EXISTS once per worker instance.
+ * Uses atomic db.batch with individual single-statement prepare calls.
  */
 export async function ensureCompanySchema(db: D1Database): Promise<void> {
-  if (schemaInitialized) return;
-
   try {
-    const ddl = `
-      CREATE TABLE IF NOT EXISTS companies (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        legal_form TEXT,
-        capital REAL DEFAULT 0,
-        commercial_register TEXT,
-        tax_id TEXT,
-        manager_name TEXT,
-        address TEXT,
-        metadata_json TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE TABLE IF NOT EXISTS company_licenses (
-        id TEXT PRIMARY KEY,
-        company_id TEXT NOT NULL,
-        doc_type TEXT NOT NULL,
-        doc_number TEXT,
-        issuing_authority TEXT,
-        issue_date TEXT,
-        expiry_date TEXT,
-        file_url TEXT,
-        status TEXT DEFAULT 'active',
-        metadata_json TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE TABLE IF NOT EXISTS branches_sites (
-        id TEXT PRIMARY KEY,
-        company_id TEXT NOT NULL,
-        name TEXT NOT NULL,
-        type TEXT NOT NULL,
-        address TEXT,
-        manager_name TEXT,
-        cost_center_code TEXT,
-        metadata_json TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE TABLE IF NOT EXISTS departments (
-        id TEXT PRIMARY KEY,
-        company_id TEXT,
-        branch_id TEXT,
-        parent_id TEXT,
-        name TEXT NOT NULL,
-        manager_name TEXT,
-        cost_center_code TEXT,
-        metadata_json TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE TABLE IF NOT EXISTS authorized_persons (
-        id TEXT PRIMARY KEY,
-        company_id TEXT NOT NULL,
-        name TEXT NOT NULL,
-        title TEXT NOT NULL,
-        poa_number TEXT,
-        notary_office TEXT,
-        issue_date TEXT,
-        expiry_date TEXT,
-        powers_json TEXT,
-        status TEXT DEFAULT 'active',
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE TABLE IF NOT EXISTS company_audit_logs (
-        id TEXT PRIMARY KEY,
-        entity_type TEXT NOT NULL,
-        entity_id TEXT NOT NULL,
-        user_name TEXT NOT NULL,
-        action TEXT NOT NULL,
-        field_diffs_json TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      );
-    `;
-
-    // Execute schema statements in batch
-    await db.exec(ddl);
-    schemaInitialized = true;
+    await db.batch([
+      db.prepare(`
+        CREATE TABLE IF NOT EXISTS companies (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          legal_form TEXT,
+          capital REAL DEFAULT 0,
+          commercial_register TEXT,
+          tax_id TEXT,
+          manager_name TEXT,
+          address TEXT,
+          metadata_json TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `),
+      db.prepare(`
+        CREATE TABLE IF NOT EXISTS company_licenses (
+          id TEXT PRIMARY KEY,
+          company_id TEXT NOT NULL,
+          doc_type TEXT NOT NULL,
+          doc_number TEXT,
+          issuing_authority TEXT,
+          issue_date TEXT,
+          expiry_date TEXT,
+          file_url TEXT,
+          status TEXT DEFAULT 'active',
+          metadata_json TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `),
+      db.prepare(`
+        CREATE TABLE IF NOT EXISTS branches_sites (
+          id TEXT PRIMARY KEY,
+          company_id TEXT NOT NULL,
+          name TEXT NOT NULL,
+          type TEXT NOT NULL,
+          address TEXT,
+          manager_name TEXT,
+          cost_center_code TEXT,
+          metadata_json TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `),
+      db.prepare(`
+        CREATE TABLE IF NOT EXISTS departments (
+          id TEXT PRIMARY KEY,
+          company_id TEXT,
+          branch_id TEXT,
+          parent_id TEXT,
+          name TEXT NOT NULL,
+          manager_name TEXT,
+          cost_center_code TEXT,
+          metadata_json TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `),
+      db.prepare(`
+        CREATE TABLE IF NOT EXISTS authorized_persons (
+          id TEXT PRIMARY KEY,
+          company_id TEXT NOT NULL,
+          name TEXT NOT NULL,
+          title TEXT NOT NULL,
+          poa_number TEXT,
+          notary_office TEXT,
+          issue_date TEXT,
+          expiry_date TEXT,
+          powers_json TEXT,
+          status TEXT DEFAULT 'active',
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `),
+      db.prepare(`
+        CREATE TABLE IF NOT EXISTS company_audit_logs (
+          id TEXT PRIMARY KEY,
+          entity_type TEXT NOT NULL,
+          entity_id TEXT NOT NULL,
+          user_name TEXT NOT NULL,
+          action TEXT NOT NULL,
+          field_diffs_json TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `),
+      db.prepare(`CREATE INDEX IF NOT EXISTS idx_companies_cr ON companies(commercial_register)`),
+      db.prepare(`CREATE INDEX IF NOT EXISTS idx_licenses_comp ON company_licenses(company_id)`),
+      db.prepare(`CREATE INDEX IF NOT EXISTS idx_branches_comp ON branches_sites(company_id)`),
+      db.prepare(`CREATE INDEX IF NOT EXISTS idx_depts_comp ON departments(company_id)`),
+      db.prepare(`CREATE INDEX IF NOT EXISTS idx_sigs_comp ON authorized_persons(company_id)`)
+    ]);
   } catch (err) {
-    console.warn('[ensureCompanySchema] Warning during schema check:', err);
-    // Even if exec fails due to partial permissions or concurrency, continue
+    console.warn('[ensureCompanySchema] Schema batch check notice:', err);
   }
 }
 
