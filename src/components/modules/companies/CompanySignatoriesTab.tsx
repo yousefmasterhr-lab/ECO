@@ -88,8 +88,8 @@ export const CompanySignatoriesTab: React.FC<CompanySignatoriesTabProps> = ({
   const [formAttachment, setFormAttachment] = useState<CompanyDocumentAttachment | undefined>(undefined);
 
   // Banking limits form
-  const [singleLimit, setSingleLimit] = useState<number>(0);
-  const [jointLimit, setJointLimit] = useState<number>(0);
+  const [singleLimit, setSingleLimit] = useState<string | number>('');
+  const [jointLimit, setJointLimit] = useState<string | number>('');
   const [allowLG, setAllowLG] = useState(false);
   const [allowLC, setAllowLC] = useState(false);
   const [allowOpenAcc, setAllowOpenAcc] = useState(false);
@@ -131,8 +131,8 @@ export const CompanySignatoriesTab: React.FC<CompanySignatoriesTabProps> = ({
     setFormDriveDocUrl('');
     setFormAttachment(undefined);
 
-    setSingleLimit(0);
-    setJointLimit(0);
+    setSingleLimit('');
+    setJointLimit('');
     setAllowLG(false);
     setAllowLC(false);
     setAllowOpenAcc(false);
@@ -165,8 +165,8 @@ export const CompanySignatoriesTab: React.FC<CompanySignatoriesTabProps> = ({
     setFormDriveDocUrl(sig.driveDocUrl || '');
     setFormAttachment(sig.poaAttachment);
 
-    setSingleLimit(sig.bankingLimits.singleLimit);
-    setJointLimit(sig.bankingLimits.jointLimit);
+    setSingleLimit(sig.bankingLimits.singleLimit ? sig.bankingLimits.singleLimit : '');
+    setJointLimit(sig.bankingLimits.jointLimit ? sig.bankingLimits.jointLimit : '');
     setAllowLG(sig.bankingLimits.allowLettersOfGuarantee);
     setAllowLC(sig.bankingLimits.allowLettersOfCredit);
     setAllowOpenAcc(sig.bankingLimits.allowOpenAccounts);
@@ -228,8 +228,8 @@ export const CompanySignatoriesTab: React.FC<CompanySignatoriesTabProps> = ({
         driveDocUrl: formDriveDocUrl.trim(),
         poaAttachment: formAttachment,
         bankingLimits: {
-          singleLimit,
-          jointLimit,
+          singleLimit: Number(singleLimit) || 0,
+          jointLimit: Number(jointLimit) || 0,
           allowLettersOfGuarantee: allowLG,
           allowLettersOfCredit: allowLC,
           allowOpenAccounts: allowOpenAcc,
@@ -266,8 +266,8 @@ export const CompanySignatoriesTab: React.FC<CompanySignatoriesTabProps> = ({
         poaAttachment: formAttachment,
         status: 'active',
         bankingLimits: {
-          singleLimit,
-          jointLimit,
+          singleLimit: Number(singleLimit) || 0,
+          jointLimit: Number(jointLimit) || 0,
           allowLettersOfGuarantee: allowLG,
           allowLettersOfCredit: allowLC,
           allowOpenAccounts: allowOpenAcc,
@@ -806,7 +806,6 @@ export const CompanySignatoriesTab: React.FC<CompanySignatoriesTabProps> = ({
               {/* Card Footer: Strictly Icon-Only Action Buttons with Rich Tooltips */}
               <div className="pt-3 border-t border-slate-200/80 dark:border-[#243628] flex items-center justify-between">
                 <div className="text-xs text-slate-500 dark:text-[#8FA392] flex items-center gap-2">
-                  <span className="font-mono text-[11px]">معرف: {sig.id}</span>
                   {sig.poaAttachment && (
                     <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 text-[10px] font-bold border border-emerald-200 dark:border-emerald-800">
                       مرفق موثق ({sig.poaAttachment.name})
@@ -861,7 +860,7 @@ export const CompanySignatoriesTab: React.FC<CompanySignatoriesTabProps> = ({
       {/* Modal 1: إضافة / تعديل مفوض (Add/Edit Delegate Modal) */}
       <AnimatePresence>
         {modalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-xs overflow-y-auto">
+          <div className="fixed inset-0 !m-0 !top-0 !left-0 !right-0 !bottom-0 w-screen h-screen z-[999] flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-xs overflow-y-auto">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -1026,7 +1025,7 @@ export const CompanySignatoriesTab: React.FC<CompanySignatoriesTabProps> = ({
                             type="checkbox"
                             checked={formIsOpenEnded}
                             onChange={e => setFormIsOpenEnded(e.target.checked)}
-                            className="rounded text-amber-600 focus:ring-amber-500"
+                            className="w-4 h-4 rounded bg-white dark:bg-stone-800 border-2 border-slate-300 dark:border-stone-600 text-amber-600 focus:ring-amber-500 cursor-pointer"
                           />
                           <span>توكيل غير محدد المدة / ساري حتى الإلغاء</span>
                         </label>
@@ -1038,65 +1037,47 @@ export const CompanySignatoriesTab: React.FC<CompanySignatoriesTabProps> = ({
                         required={!formIsOpenEnded}
                         value={formIsOpenEnded ? '' : formExpiryDate}
                         onChange={e => setFormExpiryDate(e.target.value)}
-                        className={`w-full min-h-[42px] px-3.5 py-2 rounded-xl border border-slate-200 dark:border-[#243628] bg-slate-50/50 dark:bg-[#17231A] text-slate-900 dark:text-[#F3EFE6] focus:outline-none focus:border-amber-500 ${
+                        className={`w-full min-h-[42px] px-3.5 py-2 rounded-xl border border-slate-200 dark:border-[#243628] bg-slate-50/50 dark:bg-[#17231A] text-slate-900 dark:text-[#F3EFE6] cursor-text caret-slate-900 dark:caret-amber-400 focus:outline-none focus:border-amber-500 ${
                           formIsOpenEnded ? 'opacity-40 cursor-not-allowed bg-slate-100 dark:bg-stone-900' : ''
                         }`}
                       />
                     </div>
                   </div>
 
-                  {/* Attachment Upload & Google Drive Link */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                    <div>
-                      <label className="block font-bold text-slate-800 dark:text-[#F3EFE6] mb-1">
-                        إرفاق صورة التوكيل الموثق (PDF أو صور عالية الجودة)
-                      </label>
-                      <div className="relative border-2 border-dashed border-slate-200 dark:border-[#243628] hover:border-amber-500 rounded-xl p-3 bg-slate-50/50 dark:bg-[#17231A] text-center transition-colors">
-                        <input
-                          type="file"
-                          accept=".pdf,image/*"
-                          onChange={handleFileUpload}
-                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                        />
-                        <div className="flex flex-col items-center gap-1.5">
-                          <UploadCloud className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-                          <span className="text-[11px] font-bold text-slate-700 dark:text-[#D1DDD3]">
-                            {formAttachment ? formAttachment.name : 'انقر أو اسحب الملف هنا للرفع'}
-                          </span>
-                          {formAttachment && (
-                            <span className="text-[10px] text-emerald-600 font-bold">
-                              الحجم: {formatAttachmentSize(formAttachment.sizeBytes)} • تم التحميل بنجاح
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      {formAttachment && (
-                        <button
-                          type="button"
-                          onClick={() => setFormAttachment(undefined)}
-                          className="mt-1 text-[11px] text-rose-500 hover:underline flex items-center gap-1"
-                        >
-                          <X className="w-3 h-3" />
-                          <span>إلغاء المرفق</span>
-                        </button>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="block font-bold text-slate-800 dark:text-[#F3EFE6] mb-1">
-                        رابط الأرشفة الإلكترونية (Google Drive اختياري)
-                      </label>
+                  {/* Attachment Upload (Direct File Upload Active) */}
+                  <div className="pt-1">
+                    <label className="block font-bold text-slate-800 dark:text-[#F3EFE6] mb-1">
+                      إرفاق صورة التوكيل الموثق (PDF أو صور عالية الجودة)
+                    </label>
+                    <div className="relative border-2 border-dashed border-slate-200 dark:border-[#243628] hover:border-amber-500 rounded-xl p-4 bg-slate-50/50 dark:bg-[#17231A] text-center transition-colors">
                       <input
-                        type="url"
-                        value={formDriveDocUrl}
-                        onChange={e => setFormDriveDocUrl(e.target.value)}
-                        placeholder="https://drive.google.com/file/d/..."
-                        className="w-full min-h-[42px] px-3.5 py-2 rounded-xl border border-slate-200 dark:border-[#243628] bg-slate-50/50 dark:bg-[#17231A] text-slate-900 dark:text-[#F3EFE6] font-mono text-[11px] placeholder:text-slate-400 focus:outline-none focus:border-amber-500"
+                        type="file"
+                        accept=".pdf,image/*"
+                        onChange={handleFileUpload}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                       />
-                      <span className="text-[10px] text-slate-400 mt-1 block">
-                        يمكن إدراج رابط مجلد الأرشفة السحابية للتوكيل كمرجع إضافي
-                      </span>
+                      <div className="flex flex-col items-center gap-1.5">
+                        <UploadCloud className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+                        <span className="text-xs font-bold text-slate-700 dark:text-[#D1DDD3]">
+                          {formAttachment ? formAttachment.name : 'انقر أو اسحب الملف هنا للرفع المباشر'}
+                        </span>
+                        {formAttachment && (
+                          <span className="text-[10px] text-emerald-600 font-bold">
+                            الحجم: {formatAttachmentSize(formAttachment.sizeBytes)} • تم التحميل بنجاح
+                          </span>
+                        )}
+                      </div>
                     </div>
+                    {formAttachment && (
+                      <button
+                        type="button"
+                        onClick={() => setFormAttachment(undefined)}
+                        className="mt-1 text-[11px] text-rose-500 hover:underline flex items-center gap-1"
+                      >
+                        <X className="w-3 h-3" />
+                        <span>إلغاء المرفق</span>
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -1116,28 +1097,30 @@ export const CompanySignatoriesTab: React.FC<CompanySignatoriesTabProps> = ({
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-slate-600 dark:text-[#8FA392] mb-1">
-                          سقف التوقيع المنفرد (ج.م) [0 = غير مصرح]:
+                        <label className="block text-slate-600 dark:text-[#8FA392] mb-1 font-bold">
+                          سقف التوقيع المنفرد (ج.م):
                         </label>
                         <input
                           type="number"
                           min="0"
                           value={singleLimit}
-                          onChange={e => setSingleLimit(Number(e.target.value) || 0)}
-                          className="w-full min-h-[38px] px-3 py-1.5 rounded-lg border border-slate-200 dark:border-[#243628] bg-white dark:bg-[#0E1610] text-slate-900 dark:text-[#F3EFE6] font-mono focus:outline-none focus:border-amber-500"
+                          onChange={e => setSingleLimit(e.target.value === '' ? '' : Number(e.target.value))}
+                          placeholder="أدخل الحد الأقصى بالجنيه أو اتركه فارغاً لغير المصرح"
+                          className="w-full min-h-[42px] px-3.5 py-2 rounded-xl border border-slate-300 dark:border-[#243628] bg-white dark:bg-[#0E1610] text-slate-900 dark:text-[#F3EFE6] font-mono cursor-text caret-slate-900 dark:caret-amber-400 focus:outline-none focus:border-amber-500"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-slate-600 dark:text-[#8FA392] mb-1">
-                          سقف التوقيع المشترك (ج.م) [0 = بدون حد أقصى]:
+                        <label className="block text-slate-600 dark:text-[#8FA392] mb-1 font-bold">
+                          سقف التوقيع المشترك (ج.م):
                         </label>
                         <input
                           type="number"
                           min="0"
                           value={jointLimit}
-                          onChange={e => setJointLimit(Number(e.target.value) || 0)}
-                          className="w-full min-h-[38px] px-3 py-1.5 rounded-lg border border-slate-200 dark:border-[#243628] bg-white dark:bg-[#0E1610] text-slate-900 dark:text-[#F3EFE6] font-mono focus:outline-none focus:border-amber-500"
+                          onChange={e => setJointLimit(e.target.value === '' ? '' : Number(e.target.value))}
+                          placeholder="أدخل الحد الأقصى بالجنيه أو اتركه فارغاً لبدون حد أقصى"
+                          className="w-full min-h-[42px] px-3.5 py-2 rounded-xl border border-slate-300 dark:border-[#243628] bg-white dark:bg-[#0E1610] text-slate-900 dark:text-[#F3EFE6] font-mono cursor-text caret-slate-900 dark:caret-amber-400 focus:outline-none focus:border-amber-500"
                         />
                       </div>
                     </div>
@@ -1148,7 +1131,7 @@ export const CompanySignatoriesTab: React.FC<CompanySignatoriesTabProps> = ({
                           type="checkbox"
                           checked={allowLG}
                           onChange={e => setAllowLG(e.target.checked)}
-                          className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500"
+                          className="w-4 h-4 rounded bg-white dark:bg-stone-800 border-2 border-slate-300 dark:border-stone-600 text-amber-600 focus:ring-amber-500 cursor-pointer"
                         />
                         <span>إصدار خطابات الضمان (LG)</span>
                       </label>
@@ -1158,7 +1141,7 @@ export const CompanySignatoriesTab: React.FC<CompanySignatoriesTabProps> = ({
                           type="checkbox"
                           checked={allowLC}
                           onChange={e => setAllowLC(e.target.checked)}
-                          className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500"
+                          className="w-4 h-4 rounded bg-white dark:bg-stone-800 border-2 border-slate-300 dark:border-stone-600 text-amber-600 focus:ring-amber-500 cursor-pointer"
                         />
                         <span>فتح الاعتمادات المستندية (LC)</span>
                       </label>
@@ -1168,7 +1151,7 @@ export const CompanySignatoriesTab: React.FC<CompanySignatoriesTabProps> = ({
                           type="checkbox"
                           checked={allowOpenAcc}
                           onChange={e => setAllowOpenAcc(e.target.checked)}
-                          className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500"
+                          className="w-4 h-4 rounded bg-white dark:bg-stone-800 border-2 border-slate-300 dark:border-stone-600 text-amber-600 focus:ring-amber-500 cursor-pointer"
                         />
                         <span>فتح وغلق الحسابات البنكية</span>
                       </label>
@@ -1179,7 +1162,7 @@ export const CompanySignatoriesTab: React.FC<CompanySignatoriesTabProps> = ({
                       value={bankingNotes}
                       onChange={e => setBankingNotes(e.target.value)}
                       placeholder="شروط بنكية إضافية أو بنوك محددة..."
-                      className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-[#243628] bg-white dark:bg-[#0E1610] text-slate-900 dark:text-[#F3EFE6] focus:outline-none focus:border-amber-500"
+                      className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-[#243628] bg-white dark:bg-[#0E1610] text-slate-900 dark:text-[#F3EFE6] cursor-text caret-slate-900 dark:caret-amber-400 focus:outline-none focus:border-amber-500"
                     />
                   </div>
 
@@ -1196,7 +1179,7 @@ export const CompanySignatoriesTab: React.FC<CompanySignatoriesTabProps> = ({
                           type="checkbox"
                           checked={allowContracts}
                           onChange={e => setAllowContracts(e.target.checked)}
-                          className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500"
+                          className="w-4 h-4 rounded bg-white dark:bg-stone-800 border-2 border-slate-300 dark:border-stone-600 text-amber-600 focus:ring-amber-500 cursor-pointer"
                         />
                         <span>توقيع عقود المقاولات والتوريدات</span>
                       </label>
@@ -1206,7 +1189,7 @@ export const CompanySignatoriesTab: React.FC<CompanySignatoriesTabProps> = ({
                           type="checkbox"
                           checked={allowTenders}
                           onChange={e => setAllowTenders(e.target.checked)}
-                          className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500"
+                          className="w-4 h-4 rounded bg-white dark:bg-stone-800 border-2 border-slate-300 dark:border-stone-600 text-amber-600 focus:ring-amber-500 cursor-pointer"
                         />
                         <span>دخول المناقصات والمزايدات الحكومية</span>
                       </label>
@@ -1216,7 +1199,7 @@ export const CompanySignatoriesTab: React.FC<CompanySignatoriesTabProps> = ({
                           type="checkbox"
                           checked={allowAssetTrade}
                           onChange={e => setAllowAssetTrade(e.target.checked)}
-                          className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500"
+                          className="w-4 h-4 rounded bg-white dark:bg-stone-800 border-2 border-slate-300 dark:border-stone-600 text-amber-600 focus:ring-amber-500 cursor-pointer"
                         />
                         <span>بيع وشراء الأصول الثابتة والمعدات</span>
                       </label>
@@ -1227,7 +1210,7 @@ export const CompanySignatoriesTab: React.FC<CompanySignatoriesTabProps> = ({
                       value={contractualNotes}
                       onChange={e => setContractualNotes(e.target.value)}
                       placeholder="شروط تعاقدية إضافية..."
-                      className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-[#243628] bg-white dark:bg-[#0E1610] text-slate-900 dark:text-[#F3EFE6] focus:outline-none focus:border-amber-500"
+                      className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-[#243628] bg-white dark:bg-[#0E1610] text-slate-900 dark:text-[#F3EFE6] cursor-text caret-slate-900 dark:caret-amber-400 focus:outline-none focus:border-amber-500"
                     />
                   </div>
 
@@ -1244,7 +1227,7 @@ export const CompanySignatoriesTab: React.FC<CompanySignatoriesTabProps> = ({
                           type="checkbox"
                           checked={allowCourt}
                           onChange={e => setAllowCourt(e.target.checked)}
-                          className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500"
+                          className="w-4 h-4 rounded bg-white dark:bg-stone-800 border-2 border-slate-300 dark:border-stone-600 text-amber-600 focus:ring-amber-500 cursor-pointer"
                         />
                         <span>المرافعة والتمثيل القضائي أمام كافة المحاكم</span>
                       </label>
@@ -1254,7 +1237,7 @@ export const CompanySignatoriesTab: React.FC<CompanySignatoriesTabProps> = ({
                           type="checkbox"
                           checked={allowGov}
                           onChange={e => setAllowGov(e.target.checked)}
-                          className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500"
+                          className="w-4 h-4 rounded bg-white dark:bg-stone-800 border-2 border-slate-300 dark:border-stone-600 text-amber-600 focus:ring-amber-500 cursor-pointer"
                         />
                         <span>التمثيل أمام الهيئات والدوائر الحكومية والضرائب</span>
                       </label>
@@ -1264,7 +1247,7 @@ export const CompanySignatoriesTab: React.FC<CompanySignatoriesTabProps> = ({
                           type="checkbox"
                           checked={allowDispute}
                           onChange={e => setAllowDispute(e.target.checked)}
-                          className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500"
+                          className="w-4 h-4 rounded bg-white dark:bg-stone-800 border-2 border-slate-300 dark:border-stone-600 text-amber-600 focus:ring-amber-500 cursor-pointer"
                         />
                         <span>تسوية المنازعات ومجالس التحكيم</span>
                       </label>
@@ -1275,7 +1258,7 @@ export const CompanySignatoriesTab: React.FC<CompanySignatoriesTabProps> = ({
                       value={judicialNotes}
                       onChange={e => setJudicialNotes(e.target.value)}
                       placeholder="شروط وملاحظات التمثيل القضائي..."
-                      className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-[#243628] bg-white dark:bg-[#0E1610] text-slate-900 dark:text-[#F3EFE6] focus:outline-none focus:border-amber-500"
+                      className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-[#243628] bg-white dark:bg-[#0E1610] text-slate-900 dark:text-[#F3EFE6] cursor-text caret-slate-900 dark:caret-amber-400 focus:outline-none focus:border-amber-500"
                     />
                   </div>
                 </div>
@@ -1305,7 +1288,7 @@ export const CompanySignatoriesTab: React.FC<CompanySignatoriesTabProps> = ({
       {/* Modal 2: سجل تعديلات التفويض والصلاحيات (Interactive Change Audit Log) */}
       <AnimatePresence>
         {auditModalSig && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-xs overflow-y-auto">
+          <div className="fixed inset-0 !m-0 !top-0 !left-0 !right-0 !bottom-0 w-screen h-screen z-[999] flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-xs overflow-y-auto">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -1420,7 +1403,7 @@ export const CompanySignatoriesTab: React.FC<CompanySignatoriesTabProps> = ({
       {/* Modal 3: معاينة صورة التوكيل المؤرشف (Document Lightbox / Viewer) */}
       <AnimatePresence>
         {docPreviewSig && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-xs overflow-y-auto">
+          <div className="fixed inset-0 !m-0 !top-0 !left-0 !right-0 !bottom-0 w-screen h-screen z-[999] flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-xs overflow-y-auto">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -1568,7 +1551,7 @@ export const CompanySignatoriesTab: React.FC<CompanySignatoriesTabProps> = ({
       {/* Modal 4: تأكيد إلغاء أو حذف التفويض (Delete / Revoke Confirmation) */}
       <AnimatePresence>
         {deleteConfirmSig && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-xs">
+          <div className="fixed inset-0 !m-0 !top-0 !left-0 !right-0 !bottom-0 w-screen h-screen z-[999] flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-xs">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}

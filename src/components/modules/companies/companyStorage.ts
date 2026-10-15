@@ -138,6 +138,9 @@ export const companyStorage = {
   saveCompaniesSync(companies: CompanyEntity[]): void {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(companies));
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('eco-companies-updated'));
+      }
     } catch (err) {
       console.warn('[companyStorage] Failed to cache companies locally:', err);
     }

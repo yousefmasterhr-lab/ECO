@@ -1,6 +1,8 @@
-import React, { createContext, useContext, useState, useMemo } from 'react';
+import React, { createContext, useContext, useState, useMemo, useEffect } from 'react';
 import { Company } from '../types';
 import { TaxJurisdiction, TaxJurisdictionConfig, TAX_JURISDICTIONS } from '../utils/taxEngine';
+import { companyStorage } from '../components/modules/companies/companyStorage';
+import { CompanyEntity } from '../components/modules/companies/types';
 
 export const COMPANIES_LIST: Company[] = [
   {
@@ -65,6 +67,24 @@ export const COMPANIES_LIST: Company[] = [
   },
 ];
 
+function mapEntitiesToCompanies(entities: CompanyEntity[]): Company[] {
+  if (!entities || entities.length === 0) return COMPANIES_LIST;
+  return entities.map((c, idx) => ({
+    id: c.id,
+    code: c.crNumber || `COMP-${idx + 1}`,
+    nameAr: c.nameAr,
+    nameEn: c.nameAr,
+    badgeAr: c.legalType || 'شركة مسجلة',
+    badgeEn: c.legalType || 'Registered Company',
+    logoColor: idx % 4 === 0 ? '#3B7A57' : idx % 4 === 1 ? '#0D9488' : idx % 4 === 2 ? '#B45309' : '#D99B26',
+    jurisdiction: 'EGYPT',
+    taxNo: c.taxNumber,
+    commercialReg: c.crNumber ? `س.ت: ${c.crNumber} ${c.crOffice || ''}`.trim() : undefined,
+    currency: 'EGP',
+    currencySymbol: 'ج.م',
+  }));
+}
+
 interface TenantContextType {
   companies: Company[];
   selectedCompanyIds: string[];
@@ -86,12 +106,64 @@ interface TenantContextType {
 const TenantContext = createContext<TenantContextType | undefined>(undefined);
 
 export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [companies, setCompanies] = useState<Company[]>(() => {
+    try {
+      const cached = companyStorage.getCompaniesSync();
+      return cached.length > 0 ? mapEntitiesToCompanies(cached) : COMPANIES_LIST;
+    } catch {
+      return COMPANIES_LIST;
+    }
+  });
+
   // Default to selecting all companies
   const [selectedCompanyIds, setSelectedCompanyIds] = useState<string[]>(() =>
-    COMPANIES_LIST.map(c => c.id)
+    companies.map(c => c.id)
   );
 
-  const isAllSelected = selectedCompanyIds.length === COMPANIES_LIST.length;
+  // Sync with live Cloudflare D1 companies count and updates
+  useEffect(() => {
+    let isMounted = true;
+
+    const syncLiveCompanies = async () => {
+      try {
+        const liveEntities = await companyStorage.getCompanies();
+        if (isMounted && liveEntities && liveEntities.length > 0) {
+          const mapped = mapEntitiesToCompanies(liveEntities);
+          setCompanies(mapped);
+          setSelectedCompanyIds(prev => {
+            const valid = prev.filter(id => mapped.some(c => c.id === id));
+            return valid.length > 0 ? valid : mapped.map(c => c.id);
+          });
+        }
+      } catch (err) {
+        console.warn('[TenantContext] Error fetching live D1 companies:', err);
+      }
+    };
+
+    syncLiveCompanies();
+
+    const handleUpdate = () => {
+      const cached = companyStorage.getCompaniesSync();
+      if (cached && cached.length > 0) {
+        const mapped = mapEntitiesToCompanies(cached);
+        setCompanies(mapped);
+        setSelectedCompanyIds(prev => {
+          const valid = prev.filter(id => mapped.some(c => c.id === id));
+          return valid.length > 0 ? valid : mapped.map(c => c.id);
+        });
+      }
+    };
+
+    window.addEventListener('eco-companies-updated', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+    return () => {
+      isMounted = false;
+      window.removeEventListener('eco-companies-updated', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+    };
+  }, []);
+
+  const isAllSelected = selectedCompanyIds.length === companies.length;
 
   const toggleCompany = (id: string) => {
     setSelectedCompanyIds(prev => {
@@ -106,12 +178,12 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const selectAllCompanies = () => {
-    setSelectedCompanyIds(COMPANIES_LIST.map(c => c.id));
+    setSelectedCompanyIds(companies.map(c => c.id));
   };
 
   const deselectAllCompanies = () => {
     // Keep at least the primary company
-    setSelectedCompanyIds([COMPANIES_LIST[0]!.id]);
+    setSelectedCompanyIds([companies[0]?.id || COMPANIES_LIST[0]!.id]);
   };
 
   const toggleSelectAll = () => {
@@ -122,8 +194,8 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   };
 
-  const selectedCompanies = COMPANIES_LIST.filter(c => selectedCompanyIds.includes(c.id));
-  const activeCompany = selectedCompanies[0] || COMPANIES_LIST[0]!;
+  const selectedCompanies = companies.filter(c => selectedCompanyIds.includes(c.id));
+  const activeCompany = selectedCompanies[0] || companies[0] || COMPANIES_LIST[0]!;
 
   // Explicit jurisdiction override or defaulting to active company jurisdiction
   const [overrideJurisdiction, setOverrideJurisdiction] = useState<TaxJurisdiction | null>(null);
@@ -149,9 +221,9 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   let selectionSummaryAr = '';
   let selectionSummaryEn = '';
 
-  if (selectedCompanyIds.length === COMPANIES_LIST.length) {
-    selectionSummaryAr = `جميع الشركات (${COMPANIES_LIST.length})`;
-    selectionSummaryEn = `All Companies (${COMPANIES_LIST.length})`;
+  if (selectedCompanyIds.length === companies.length) {
+    selectionSummaryAr = `جميع الشركات (${companies.length})`;
+    selectionSummaryEn = `All Companies (${companies.length})`;
   } else if (selectedCompanyIds.length === 1) {
     selectionSummaryAr = activeCompany.nameAr;
     selectionSummaryEn = activeCompany.nameEn;
@@ -163,7 +235,7 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   return (
     <TenantContext.Provider
       value={{
-        companies: COMPANIES_LIST,
+        companies,
         selectedCompanyIds,
         selectedCompanies,
         isAllSelected,

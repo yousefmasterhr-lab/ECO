@@ -1,0 +1,33 @@
+# ECO ERP - Agent Governance & Memory Protocol (.cursorrules)
+
+## 0. Mandatory Step 0 Protocol (MUST READ BEFORE DOING ANYTHING)
+Before planning, analyzing, refactoring, or writing any code in this repository:
+1. **READ `MISTAKES.md`:** Review all logged mistakes and strict preventative rules to guarantee zero regression on:
+   - Cloudflare D1 persistence vs LocalStorage traps (`db.batch` for tables, UPSERT on `PUT`).
+   - Modal backdrop positioning (`!m-0 !top-0 !left-0 !right-0 !bottom-0 w-screen h-screen z-[999]` with zero white gaps).
+   - Input hygiene (no default `0`, empty string `''` init, descriptive placeholders, no native spinners, visible caret and cursor-text).
+   - Light mode contrast (crisp white checkboxes, slate-900 text, no charcoal solid blocks).
+   - UI hygiene (no raw IDs `sig_...`, no duplicate/fluff inputs).
+2. **READ `SKILLS.md`:** Adhere strictly to the verified technical execution patterns:
+   - Cloudflare D1 Pages Functions (`functions/api/...` + `isCloudflareEdgeRoute`).
+   - Audit Trail Diff Engine with reverse-chronological change tracking.
+   - Icon-only action bar with tooltips and touch-safe targets.
+   - Dual-theme tokens (Royal Olive/Emerald dark mode vs High-contrast Slate/White light mode).
+   - Framer Motion smooth micro-animations.
+3. **READ `PROMPTS.md`:** Apply the Global Golden Standards Checklist whenever developing or refactoring any module ("اعمل في قسم كذا زي ما عملنا في قسم كذا").
+4. **READ `README.md`:** Understand the living product catalog, business logic, module inter-linkages, D1 schemas, and endpoints.
+
+---
+
+## 1. Strict Architectural Isolation Boundary (CRITICAL INVARIANT)
+- **Financial Module Protection:** NEVER modify, touch, edit, reformat, or recompile ANY file inside `src/pages/finance/`, general ledger, balance sheets, journal vouchers, or financial endpoints unless explicitly instructed.
+- Always check `git status` before committing to verify that 0 files in `src/pages/finance/` were touched.
+
+---
+
+## 2. Post-Task Protocol (MUST UPDATE AFTER EVERY TASK)
+Whenever a bug is fixed, a technical rule established, or a module upgraded:
+1. Append the new lesson / avoided mistake to `MISTAKES.md`.
+2. Update technical execution patterns in `SKILLS.md` if new architectures were introduced.
+3. Update module specifications in `PROMPTS.md`.
+4. Update the catalog in `README.md` if tables, sub-modules, or capabilities expanded.

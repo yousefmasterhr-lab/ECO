@@ -61,8 +61,8 @@ export const CompanyBranchesTab: React.FC<CompanyBranchesTabProps> = ({
   const [formGoogleMapsUrl, setFormGoogleMapsUrl] = useState('');
   const [formManagerAr, setFormManagerAr] = useState('');
   const [formPhone, setFormPhone] = useState('');
-  const [formStaffCount, setFormStaffCount] = useState<number>(10);
-  const [formActiveProjects, setFormActiveProjects] = useState<number>(1);
+  const [formStaffCount, setFormStaffCount] = useState<string | number>('');
+  const [formActiveProjects, setFormActiveProjects] = useState<string | number>('');
   const [formCostCenterCode, setFormCostCenterCode] = useState('');
   const [formStartDate, setFormStartDate] = useState('');
   const [formExpectedDeliveryDate, setFormExpectedDeliveryDate] = useState('');
@@ -99,8 +99,8 @@ export const CompanyBranchesTab: React.FC<CompanyBranchesTabProps> = ({
     setFormGoogleMapsUrl('');
     setFormManagerAr('');
     setFormPhone('');
-    setFormStaffCount(15);
-    setFormActiveProjects(1);
+    setFormStaffCount('');
+    setFormActiveProjects('');
     setFormCostCenterCode('');
     setFormStartDate(new Date().toISOString().slice(0, 10));
     setFormExpectedDeliveryDate('');
@@ -119,8 +119,8 @@ export const CompanyBranchesTab: React.FC<CompanyBranchesTabProps> = ({
     setFormGoogleMapsUrl(branch.googleMapsUrl || '');
     setFormManagerAr(branch.managerAr);
     setFormPhone(branch.phone);
-    setFormStaffCount(branch.staffCount);
-    setFormActiveProjects(branch.activeProjects);
+    setFormStaffCount(branch.staffCount ?? '');
+    setFormActiveProjects(branch.activeProjects ?? '');
     setFormCostCenterCode(branch.costCenterCode || '');
     setFormStartDate(branch.startDate || '');
     setFormExpectedDeliveryDate(branch.expectedDeliveryDate || '');
@@ -509,7 +509,7 @@ export const CompanyBranchesTab: React.FC<CompanyBranchesTabProps> = ({
       {/* ============================================================= */}
       <AnimatePresence>
         {modalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-xs overflow-y-auto">
+          <div className="fixed inset-0 !m-0 !top-0 !left-0 !right-0 !bottom-0 w-screen h-screen z-[999] flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-xs overflow-y-auto">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -683,8 +683,9 @@ export const CompanyBranchesTab: React.FC<CompanyBranchesTabProps> = ({
                       type="number"
                       min={0}
                       value={formStaffCount}
-                      onChange={e => setFormStaffCount(Number(e.target.value))}
-                      className="w-full min-h-[44px] px-3.5 py-2 rounded-xl border border-slate-300 dark:border-[#243628] bg-slate-50 dark:bg-[#17231A] text-slate-900 dark:text-[#F3EFE6] font-mono focus:outline-none focus:border-amber-500"
+                      onChange={e => setFormStaffCount(e.target.value === '' ? '' : Number(e.target.value))}
+                      placeholder="مثال: 15 موظف أو اتركه فارغاً"
+                      className="w-full min-h-[44px] px-3.5 py-2 rounded-xl border border-slate-300 dark:border-[#243628] bg-slate-50 dark:bg-[#17231A] text-slate-900 dark:text-[#F3EFE6] font-mono focus:outline-none focus:border-amber-500 cursor-text caret-slate-900 dark:caret-amber-400"
                     />
                   </div>
 
@@ -696,8 +697,9 @@ export const CompanyBranchesTab: React.FC<CompanyBranchesTabProps> = ({
                       type="number"
                       min={0}
                       value={formActiveProjects}
-                      onChange={e => setFormActiveProjects(Number(e.target.value))}
-                      className="w-full min-h-[44px] px-3.5 py-2 rounded-xl border border-slate-300 dark:border-[#243628] bg-slate-50 dark:bg-[#17231A] text-slate-900 dark:text-[#F3EFE6] font-mono focus:outline-none focus:border-amber-500"
+                      onChange={e => setFormActiveProjects(e.target.value === '' ? '' : Number(e.target.value))}
+                      placeholder="مثال: 1 أو اتركه فارغاً"
+                      className="w-full min-h-[44px] px-3.5 py-2 rounded-xl border border-slate-300 dark:border-[#243628] bg-slate-50 dark:bg-[#17231A] text-slate-900 dark:text-[#F3EFE6] font-mono focus:outline-none focus:border-amber-500 cursor-text caret-slate-900 dark:caret-amber-400"
                     />
                   </div>
 
@@ -799,7 +801,7 @@ export const CompanyBranchesTab: React.FC<CompanyBranchesTabProps> = ({
       {/* ============================================================= */}
       <AnimatePresence>
         {viewBranch && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-xs">
+          <div className="fixed inset-0 !m-0 !top-0 !left-0 !right-0 !bottom-0 w-screen h-screen z-[999] flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-xs">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -892,7 +894,7 @@ export const CompanyBranchesTab: React.FC<CompanyBranchesTabProps> = ({
       {/* ============================================================= */}
       <AnimatePresence>
         {auditBranch && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-xs">
+          <div className="fixed inset-0 !m-0 !top-0 !left-0 !right-0 !bottom-0 w-screen h-screen z-[999] flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-xs">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -988,7 +990,7 @@ export const CompanyBranchesTab: React.FC<CompanyBranchesTabProps> = ({
       {/* ============================================================= */}
       <AnimatePresence>
         {branchToDelete && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="fixed inset-0 !m-0 !top-0 !left-0 !right-0 !bottom-0 w-screen h-screen z-[999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}

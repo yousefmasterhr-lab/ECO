@@ -244,6 +244,87 @@ table[class*="border-separate"] {
 }
 
 /* ==========================================================================
+   Universal Form Controls, Spinners, Checkboxes & Modal Backdrop Standards
+   ========================================================================== */
+
+/* 1. Hide Native Number Spinners (Up/Down Arrows) Globally */
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none !important;
+  margin: 0 !important;
+}
+input[type='number'] {
+  -moz-appearance: textfield !important;
+}
+
+/* 2. Cursor & Caret Visibility Enforcement */
+input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="file"]),
+textarea {
+  cursor: text !important;
+  caret-color: #0f172a !important;
+  color: #0f172a;
+}
+
+.dark input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="file"]),
+.dark textarea {
+  caret-color: #fbbf24 !important;
+  color: #f1f5f9;
+}
+
+select,
+input[type="checkbox"],
+input[type="radio"],
+input[type="submit"],
+input[type="button"],
+button,
+[role="button"] {
+  cursor: pointer !important;
+}
+
+/* 3. Universal Clean Checkboxes for Light and Dark Modes */
+input[type="checkbox"] {
+  background-color: #ffffff;
+  border: 2px solid #cbd5e1;
+  border-radius: 0.25rem;
+  color: #d97706;
+  cursor: pointer;
+}
+
+.dark input[type="checkbox"] {
+  background-color: #17231a;
+  border-color: #3b503e;
+  color: #f59e0b;
+}
+
+input[type="checkbox"]:checked {
+  background-color: #d97706 !important;
+  border-color: #d97706 !important;
+}
+
+.dark input[type="checkbox"]:checked {
+  background-color: #f59e0b !important;
+  border-color: #f59e0b !important;
+}
+
+/* 4. Universal Fix for Fixed Modal Overlays inside space-y Containers (Zero Top White Gap) */
+.modal-backdrop-fixed,
+[class*="fixed"][class*="inset-0"] {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  margin: 0 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+}
+
+
+/* ==========================================================================
    Comprehensive Enterprise Multi-Page Print Stylesheet (@media print)
    ========================================================================== */
 @media print {

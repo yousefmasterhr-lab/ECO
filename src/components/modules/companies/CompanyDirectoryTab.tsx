@@ -270,8 +270,8 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
   // Form State
   const [nameAr, setNameAr] = useState('');
   const [legalType, setLegalType] = useState<CompanyEntity['legalType']>('ش.م.م');
-  const [totalShares, setTotalShares] = useState<number>(1000000);
-  const [nominalShareValue, setNominalShareValue] = useState<number>(100);
+  const [totalShares, setTotalShares] = useState<string | number>('');
+  const [nominalShareValue, setNominalShareValue] = useState<string | number>('');
   const [crNumber, setCrNumber] = useState('');
   const [crOffice, setCrOffice] = useState('');
   const [taxNumber, setTaxNumber] = useState('');
@@ -284,25 +284,27 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
       id: 'sh_temp_1',
       name: '',
       entityType: 'فرد',
-      sharesCount: 1000000,
+      sharesCount: '' as any,
       ownershipPercent: 100,
       nationality: 'مصري'
     }
   ]);
 
   // Derived Capital Calculations
-  const calculatedCapital = totalShares * nominalShareValue;
+  const numTotalShares = Number(totalShares) || 0;
+  const numNominalValue = Number(nominalShareValue) || 0;
+  const calculatedCapital = numTotalShares * numNominalValue;
   const totalAllocatedShares = shareholders.reduce((acc, sh) => acc + (Number(sh.sharesCount) || 0), 0);
   const totalOwnershipPercent = shareholders.reduce((acc, sh) => acc + (Number(sh.ownershipPercent) || 0), 0);
-  const remainingShares = totalShares - totalAllocatedShares;
+  const remainingShares = Math.max(0, numTotalShares - totalAllocatedShares);
 
   // Open Create Modal
   const handleOpenAddModal = () => {
     setEditingCompany(null);
     setNameAr('');
     setLegalType('ش.م.م');
-    setTotalShares(1000000);
-    setNominalShareValue(100);
+    setTotalShares('');
+    setNominalShareValue('');
     setCrNumber('');
     setCrOffice('');
     setTaxNumber('');
@@ -313,7 +315,7 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
         id: `sh_${Date.now()}_1`,
         name: '',
         entityType: 'فرد',
-        sharesCount: 1000000,
+        sharesCount: '' as any,
         ownershipPercent: 100,
         nationality: 'مصري'
       }
@@ -326,8 +328,8 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
     setEditingCompany(comp);
     setNameAr(comp.nameAr);
     setLegalType(comp.legalType);
-    setTotalShares(comp.totalShares || 1000000);
-    setNominalShareValue(comp.nominalShareValue || 100);
+    setTotalShares(comp.totalShares || '');
+    setNominalShareValue(comp.nominalShareValue || '');
     setCrNumber(comp.crNumber);
     setCrOffice(comp.crOffice);
     setTaxNumber(comp.taxNumber);
@@ -341,7 +343,7 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
               id: `sh_${Date.now()}_1`,
               name: '',
               entityType: 'فرد',
-              sharesCount: comp.totalShares || 1000000,
+              sharesCount: comp.totalShares || 0,
               ownershipPercent: 100,
               nationality: 'مصري'
             }
@@ -352,15 +354,15 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
 
   // Shareholders Repeater Handlers
   const handleAddShareholderRow = () => {
-    const unallocated = Math.max(0, totalShares - totalAllocatedShares);
-    const percent = totalShares > 0 ? (unallocated / totalShares) * 100 : 0;
+    const unallocated = Math.max(0, numTotalShares - totalAllocatedShares);
+    const percent = numTotalShares > 0 ? (unallocated / numTotalShares) * 100 : 0;
     setShareholders(prev => [
       ...prev,
       {
         id: `sh_${Date.now()}_${prev.length + 1}`,
         name: '',
         entityType: 'فرد',
-        sharesCount: unallocated,
+        sharesCount: unallocated > 0 ? unallocated : ('' as any),
         ownershipPercent: Number(percent.toFixed(2)),
         nationality: 'مصري'
       }
@@ -379,21 +381,22 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
         const updated = { ...sh, [field]: val };
         if (field === 'sharesCount') {
           const numShares = Number(val) || 0;
-          updated.sharesCount = numShares;
-          updated.ownershipPercent = totalShares > 0 ? Number(((numShares / totalShares) * 100).toFixed(2)) : 0;
+          updated.sharesCount = val as any;
+          updated.ownershipPercent = numTotalShares > 0 ? Number(((numShares / numTotalShares) * 100).toFixed(2)) : 0;
         }
         return updated;
       })
     );
   };
 
-  const handleTotalSharesChange = (newTotal: number) => {
-    setTotalShares(newTotal);
+  const handleTotalSharesChange = (val: string | number) => {
+    setTotalShares(val);
+    const newTotal = Number(val) || 0;
     if (newTotal > 0) {
       setShareholders(prev =>
         prev.map(sh => ({
           ...sh,
-          ownershipPercent: Number(((sh.sharesCount / newTotal) * 100).toFixed(2))
+          ownershipPercent: Number(((Number(sh.sharesCount || 0) / newTotal) * 100).toFixed(2))
         }))
       );
     }
@@ -404,13 +407,20 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
     e.preventDefault();
     if (!nameAr.trim()) return;
 
+    const finalTotalShares = Number(totalShares) || 0;
+    const finalNominal = Number(nominalShareValue) || 0;
+    const cleanedShareholders = shareholders.map(s => ({
+      ...s,
+      sharesCount: Number(s.sharesCount) || 0
+    }));
+
     if (editingCompany) {
       const updated: CompanyEntity = {
         ...editingCompany,
         nameAr: nameAr.trim(),
         legalType,
-        totalShares,
-        nominalShareValue,
+        totalShares: finalTotalShares,
+        nominalShareValue: finalNominal,
         issuedCapital: calculatedCapital,
         paidCapital: calculatedCapital,
         crNumber: crNumber.trim(),
@@ -418,7 +428,7 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
         taxNumber: taxNumber.trim(),
         ceoAr: ceoAr.trim(),
         establishedYear,
-        shareholders,
+        shareholders: cleanedShareholders,
         documents: editingCompany.documents || []
       };
       onUpdateCompany(updated);
@@ -427,8 +437,8 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
         id: `comp_${Date.now()}`,
         nameAr: nameAr.trim(),
         legalType,
-        totalShares,
-        nominalShareValue,
+        totalShares: finalTotalShares,
+        nominalShareValue: finalNominal,
         issuedCapital: calculatedCapital,
         paidCapital: calculatedCapital,
         crNumber: crNumber.trim(),
@@ -439,7 +449,7 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
         branchesCount: 1,
         projectsCount: 0,
         status: 'active',
-        shareholders,
+        shareholders: cleanedShareholders,
         documents: []
       };
       onAddCompany(newComp);
@@ -525,7 +535,7 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
       {/* ============================================================= */}
       <AnimatePresence>
         {modalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-xs overflow-y-auto">
+          <div className="fixed inset-0 !m-0 !top-0 !left-0 !right-0 !bottom-0 w-screen h-screen z-[999] flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-xs overflow-y-auto">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -574,7 +584,7 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
                       value={nameAr}
                       onChange={e => setNameAr(e.target.value)}
                       placeholder="أدخل الاسم التجاري الرسمي المسجل في السجل التجاري"
-                      className="w-full min-h-[44px] px-3.5 py-2 rounded-xl border border-slate-300 dark:border-[#243628] bg-slate-50/70 dark:bg-[#17231A] text-slate-900 dark:text-[#F3EFE6] focus:outline-none focus:border-amber-500 focus:bg-white dark:focus:bg-[#17231A] transition-colors"
+                      className="w-full min-h-[44px] px-3.5 py-2 rounded-xl border border-slate-300 dark:border-[#243628] bg-slate-50/70 dark:bg-[#17231A] text-slate-900 dark:text-[#F3EFE6] cursor-text caret-slate-900 dark:caret-amber-400 focus:outline-none focus:border-amber-500 focus:bg-white dark:focus:bg-[#17231A] transition-colors"
                     />
                   </div>
 
@@ -586,7 +596,7 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
                       <select
                         value={legalType}
                         onChange={e => setLegalType(e.target.value as CompanyEntity['legalType'])}
-                        className="w-full min-h-[44px] px-3 py-2 rounded-xl border border-slate-300 dark:border-[#243628] bg-slate-50/70 dark:bg-[#17231A] text-slate-900 dark:text-[#F3EFE6] focus:outline-none focus:border-amber-500"
+                        className="w-full min-h-[44px] px-3 py-2 rounded-xl border border-slate-300 dark:border-[#243628] bg-slate-50/70 dark:bg-[#17231A] text-slate-900 dark:text-[#F3EFE6] cursor-pointer focus:outline-none focus:border-amber-500"
                       >
                         <option value="ش.م.م">ش.م.م (شركة مساهمة مصرية)</option>
                         <option value="ذ.م.م">ذ.م.م (شركة ذات مسؤولية محدودة)</option>
@@ -605,7 +615,7 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
                         value={ceoAr}
                         onChange={e => setCeoAr(e.target.value)}
                         placeholder="الاسم الرباعي للمدير التنفيذي أو المفوض قانونياً"
-                        className="w-full min-h-[44px] px-3.5 py-2 rounded-xl border border-slate-300 dark:border-[#243628] bg-slate-50/70 dark:bg-[#17231A] text-slate-900 dark:text-[#F3EFE6] focus:outline-none focus:border-amber-500"
+                        className="w-full min-h-[44px] px-3.5 py-2 rounded-xl border border-slate-300 dark:border-[#243628] bg-slate-50/70 dark:bg-[#17231A] text-slate-900 dark:text-[#F3EFE6] cursor-text caret-slate-900 dark:caret-amber-400 focus:outline-none focus:border-amber-500"
                       />
                     </div>
                   </div>
@@ -621,7 +631,7 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
                         value={crNumber}
                         onChange={e => setCrNumber(e.target.value)}
                         placeholder="رقم القيد بالسجل التجاري وتاريخه"
-                        className="w-full min-h-[44px] px-3.5 py-2 rounded-xl border border-slate-300 dark:border-[#243628] bg-slate-50/70 dark:bg-[#17231A] text-slate-900 dark:text-[#F3EFE6] focus:outline-none focus:border-amber-500 font-mono"
+                        className="w-full min-h-[44px] px-3.5 py-2 rounded-xl border border-slate-300 dark:border-[#243628] bg-slate-50/70 dark:bg-[#17231A] text-slate-900 dark:text-[#F3EFE6] cursor-text caret-slate-900 dark:caret-amber-400 focus:outline-none focus:border-amber-500 font-mono"
                       />
                     </div>
 
@@ -634,7 +644,7 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
                         value={crOffice}
                         onChange={e => setCrOffice(e.target.value)}
                         placeholder="اسم مكتب السجل التجاري التابع له الكيان"
-                        className="w-full min-h-[44px] px-3.5 py-2 rounded-xl border border-slate-300 dark:border-[#243628] bg-slate-50/70 dark:bg-[#17231A] text-slate-900 dark:text-[#F3EFE6] focus:outline-none focus:border-amber-500"
+                        className="w-full min-h-[44px] px-3.5 py-2 rounded-xl border border-slate-300 dark:border-[#243628] bg-slate-50/70 dark:bg-[#17231A] text-slate-900 dark:text-[#F3EFE6] cursor-text caret-slate-900 dark:caret-amber-400 focus:outline-none focus:border-amber-500"
                       />
                     </div>
 
@@ -648,7 +658,7 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
                         value={taxNumber}
                         onChange={e => setTaxNumber(e.target.value)}
                         placeholder="رقم التسجيل الضريبي المكون من 9 أرقام"
-                        className="w-full min-h-[44px] px-3.5 py-2 rounded-xl border border-slate-300 dark:border-[#243628] bg-slate-50/70 dark:bg-[#17231A] text-slate-900 dark:text-[#F3EFE6] focus:outline-none focus:border-amber-500 font-mono"
+                        className="w-full min-h-[44px] px-3.5 py-2 rounded-xl border border-slate-300 dark:border-[#243628] bg-slate-50/70 dark:bg-[#17231A] text-slate-900 dark:text-[#F3EFE6] cursor-text caret-slate-900 dark:caret-amber-400 focus:outline-none focus:border-amber-500 font-mono"
                       />
                     </div>
                   </div>
@@ -677,10 +687,10 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
                       <input
                         type="number"
                         min="1"
-                        required
                         value={totalShares}
-                        onChange={e => handleTotalSharesChange(Number(e.target.value) || 0)}
-                        className="w-full min-h-[40px] px-3 py-1.5 rounded-lg border border-slate-300 dark:border-[#243628] bg-white dark:bg-[#0E1610] text-slate-900 dark:text-[#F3EFE6] font-bold font-mono"
+                        onChange={e => handleTotalSharesChange(e.target.value === '' ? '' : Number(e.target.value))}
+                        placeholder="أدخل عدد الأسهم (مثال: 1000000)"
+                        className="w-full min-h-[40px] px-3 py-1.5 rounded-lg border border-slate-300 dark:border-[#243628] bg-white dark:bg-[#0E1610] text-slate-900 dark:text-[#F3EFE6] font-bold font-mono cursor-text caret-slate-900 dark:caret-amber-400 focus:outline-none focus:border-amber-500"
                       />
                     </div>
 
@@ -691,10 +701,10 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
                       <input
                         type="number"
                         min="1"
-                        required
                         value={nominalShareValue}
-                        onChange={e => setNominalShareValue(Number(e.target.value) || 0)}
-                        className="w-full min-h-[40px] px-3 py-1.5 rounded-lg border border-slate-300 dark:border-[#243628] bg-white dark:bg-[#0E1610] text-slate-900 dark:text-[#F3EFE6] font-bold font-mono"
+                        onChange={e => setNominalShareValue(e.target.value === '' ? '' : Number(e.target.value))}
+                        placeholder="القيمة الاسمية (مثال: 100)"
+                        className="w-full min-h-[40px] px-3 py-1.5 rounded-lg border border-slate-300 dark:border-[#243628] bg-white dark:bg-[#0E1610] text-slate-900 dark:text-[#F3EFE6] font-bold font-mono cursor-text caret-slate-900 dark:caret-amber-400 focus:outline-none focus:border-amber-500"
                       />
                     </div>
 
@@ -764,10 +774,10 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
                                   <input
                                     type="number"
                                     min="0"
-                                    required
                                     value={sh.sharesCount}
-                                    onChange={e => handleShareholderChange(sh.id, 'sharesCount', Number(e.target.value) || 0)}
-                                    className="w-28 px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-[#243628] bg-slate-50 dark:bg-[#17231A] text-slate-900 dark:text-[#F3EFE6] text-xs font-mono font-bold"
+                                    onChange={e => handleShareholderChange(sh.id, 'sharesCount', e.target.value === '' ? '' : Number(e.target.value))}
+                                    placeholder="عدد الأسهم"
+                                    className="w-28 px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-[#243628] bg-slate-50 dark:bg-[#17231A] text-slate-900 dark:text-[#F3EFE6] text-xs font-mono font-bold cursor-text caret-slate-900 dark:caret-amber-400"
                                   />
                                 </td>
                                 <td className="p-2 font-mono font-bold text-xs text-amber-600 whitespace-nowrap">
@@ -794,7 +804,7 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
                     <div className="flex flex-wrap items-center justify-between p-2.5 rounded-xl bg-slate-100 dark:bg-[#1F2E23]/70 text-[11px] font-semibold">
                       <span className="flex items-center gap-1.5">
                         <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                        <span>إجمالي الأسهم الموزعة: <strong>{formatNumber(totalAllocatedShares)}</strong> من أصل <strong>{formatNumber(totalShares)}</strong></span>
+                        <span>إجمالي الأسهم الموزعة: <strong>{formatNumber(totalAllocatedShares)}</strong> من أصل <strong>{formatNumber(Number(totalShares) || 0)}</strong></span>
                       </span>
 
                       <span className={Math.abs(totalOwnershipPercent - 100) < 0.1 ? 'text-emerald-600 font-bold' : 'text-amber-600 font-bold flex items-center gap-1'}>
@@ -838,7 +848,7 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
       {/* ============================================================= */}
       <AnimatePresence>
         {viewDetailsCompany && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-xs overflow-y-auto">
+          <div className="fixed inset-0 !m-0 !top-0 !left-0 !right-0 !bottom-0 w-screen h-screen z-[999] flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-xs overflow-y-auto">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -1012,7 +1022,7 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
       {/* ============================================================= */}
       <AnimatePresence>
         {docsModalCompany && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-xs overflow-y-auto">
+          <div className="fixed inset-0 !m-0 !top-0 !left-0 !right-0 !bottom-0 w-screen h-screen z-[999] flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-xs overflow-y-auto">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -1190,7 +1200,7 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
       {/* ============================================================= */}
       <AnimatePresence>
         {auditLogCompany && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-xs overflow-y-auto">
+          <div className="fixed inset-0 !m-0 !top-0 !left-0 !right-0 !bottom-0 w-screen h-screen z-[999] flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-xs overflow-y-auto">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -1303,7 +1313,7 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
       {/* ============================================================= */}
       <AnimatePresence>
         {companyToDelete && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-xs">
+          <div className="fixed inset-0 !m-0 !top-0 !left-0 !right-0 !bottom-0 w-screen h-screen z-[999] flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-xs">
             <motion.div
               initial={{ opacity: 0, scale: 0.9, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -1347,7 +1357,7 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
       {/* ============================================================= */}
       <AnimatePresence>
         {previewDocument && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/75 backdrop-blur-sm">
+          <div className="fixed inset-0 !m-0 !top-0 !left-0 !right-0 !bottom-0 w-screen h-screen z-[999] flex items-center justify-center p-3 sm:p-5 bg-black/75 backdrop-blur-sm">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}

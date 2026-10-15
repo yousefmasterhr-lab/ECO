@@ -836,8 +836,10 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
   const [code, setCode] = useState(
     editingDept?.code || `DEPT-${Date.now().toString().slice(-4)}`
   );
-  const [headAr, setHeadAr] = useState(editingDept?.headAr || 'م. أحمد مصطفى الجوهري');
-  const [staffCount, setStaffCount] = useState<number>(editingDept?.staffCount || 10);
+  const [headAr, setHeadAr] = useState(editingDept?.headAr || '');
+  const [staffCount, setStaffCount] = useState<string | number>(
+    editingDept?.staffCount !== undefined ? editingDept.staffCount : ''
+  );
   const [companyId, setCompanyId] = useState(
     editingDept?.companyId || companies[0]?.id || ''
   );
@@ -851,7 +853,7 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
     editingDept?.costCenterCode || ''
   );
   const [subUnits, setSubUnits] = useState<string[]>(
-    editingDept?.subUnits || ['المكتب الفني والتصميمات', 'وحدة المتابعة والتوثيق']
+    editingDept?.subUnits || []
   );
   const [subUnitInput, setSubUnitInput] = useState('');
   const [responsibilities, setResponsibilities] = useState(
@@ -934,7 +936,7 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-xs overflow-y-auto">
+    <div className="fixed inset-0 !m-0 !top-0 !left-0 !right-0 !bottom-0 w-screen h-screen z-[999] flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-xs overflow-y-auto">
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -1087,15 +1089,14 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="sm:col-span-2">
               <label className="block font-bold text-slate-900 dark:text-[#F3EFE6] mb-1">
-                المدير المسؤول / رئيس الإدارة *
+                المدير المسؤول / رئيس الإدارة
               </label>
               <input
                 type="text"
-                required
                 value={headAr}
                 onChange={e => setHeadAr(e.target.value)}
-                placeholder="م. أحمد مصطفى الجوهري"
-                className="w-full min-h-[42px] px-3.5 py-2 rounded-xl border border-slate-300 dark:border-[#243628] bg-slate-50 dark:bg-[#17231A] text-slate-900 dark:text-[#F3EFE6] font-medium focus:outline-none focus:border-amber-500"
+                placeholder="مثال: م. أحمد مصطفى الجوهري أو اتركه فارغاً"
+                className="w-full min-h-[42px] px-3.5 py-2 rounded-xl border border-slate-300 dark:border-[#243628] bg-slate-50 dark:bg-[#17231A] text-slate-900 dark:text-[#F3EFE6] font-medium focus:outline-none focus:border-amber-500 cursor-text caret-slate-900 dark:caret-amber-400"
               />
             </div>
 
@@ -1107,8 +1108,9 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
                 type="number"
                 min="0"
                 value={staffCount}
-                onChange={e => setStaffCount(Number(e.target.value) || 0)}
-                className="w-full min-h-[42px] px-3.5 py-2 rounded-xl border border-slate-300 dark:border-[#243628] bg-slate-50 dark:bg-[#17231A] text-slate-900 dark:text-[#F3EFE6] font-mono font-bold focus:outline-none focus:border-amber-500"
+                onChange={e => setStaffCount(e.target.value === '' ? '' : Number(e.target.value))}
+                placeholder="مثال: 15 موظف أو اتركه فارغاً"
+                className="w-full min-h-[42px] px-3.5 py-2 rounded-xl border border-slate-300 dark:border-[#243628] bg-slate-50 dark:bg-[#17231A] text-slate-900 dark:text-[#F3EFE6] font-mono font-bold focus:outline-none focus:border-amber-500 cursor-text caret-slate-900 dark:caret-amber-400"
               />
             </div>
           </div>
@@ -1220,7 +1222,7 @@ const DepartmentAuditLogModal: React.FC<DepartmentAuditLogModalProps> = ({
   const auditLogs = department.auditLogs || [];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-xs overflow-y-auto">
+    <div className="fixed inset-0 !m-0 !top-0 !left-0 !right-0 !bottom-0 w-screen h-screen z-[999] flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-xs overflow-y-auto">
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -1379,7 +1381,7 @@ const DepartmentDeleteModal: React.FC<DepartmentDeleteModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-xs">
+    <div className="fixed inset-0 !m-0 !top-0 !left-0 !right-0 !bottom-0 w-screen h-screen z-[999] flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-xs">
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
