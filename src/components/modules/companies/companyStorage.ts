@@ -115,10 +115,11 @@ export function computeCompanyDiff(
 
 /**
  * Company Persistent Storage Repository
+ * Connected directly to Cloudflare D1 Remote Database with Offline Read-Only Cache
  */
 export const companyStorage = {
   /**
-   * Synchronously load companies from localStorage
+   * Synchronously load cached companies from localStorage (fallback / instant display)
    */
   getCompaniesSync(): CompanyEntity[] {
     try {
@@ -126,51 +127,45 @@ export const companyStorage = {
       if (!raw) return [];
       const parsed = JSON.parse(raw);
       return Array.isArray(parsed) ? parsed : [];
-    } catch (err) {
-      console.warn('[companyStorage] Failed to read from localStorage:', err);
+    } catch {
       return [];
     }
   },
 
   /**
-   * Save companies to localStorage
+   * Save companies to localStorage cache
    */
   saveCompaniesSync(companies: CompanyEntity[]): void {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(companies));
     } catch (err) {
-      console.error('[companyStorage] Failed to save to localStorage:', err);
+      console.warn('[companyStorage] Failed to cache companies locally:', err);
     }
   },
 
   /**
-   * Asynchronous load with API sync fallback
+   * Deterministic Remote Fetching from Cloudflare D1 Database
    */
   async getCompanies(): Promise<CompanyEntity[]> {
-    // 1. Try local storage first for instant response
-    const local = companyStorage.getCompaniesSync();
-
-    // 2. Optionally attempt to fetch from backend API if available
     try {
       const res = await fetch('/api/companies', {
         headers: { Accept: 'application/json' }
       });
       if (res.ok) {
         const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
-          companyStorage.saveCompaniesSync(data);
-          return data;
-        }
+        const list: CompanyEntity[] = Array.isArray(data) ? data : (data.companies || []);
+        companyStorage.saveCompaniesSync(list);
+        return list;
       }
-    } catch {
-      // Fallback cleanly to local storage without throwing
+    } catch (err) {
+      console.warn('[companyStorage] Remote fetch error from Cloudflare D1, falling back to cache:', err);
     }
 
-    return local;
+    return companyStorage.getCompaniesSync();
   },
 
   /**
-   * Create or update a company entity with audit trail diff
+   * Create or update a company entity with remote Cloudflare D1 mutation
    */
   async saveCompany(
     companyData: Partial<CompanyEntity> & { nameAr: string },
@@ -179,11 +174,15 @@ export const companyStorage = {
     const list = companyStorage.getCompaniesSync();
     const existingIndex = list.findIndex(c => c.id === companyData.id);
     const timestamp = getFormattedAuditTimestamp();
+    const isUpdate = existingIndex >= 0;
 
-    if (existingIndex >= 0) {
-      // UPDATE EXISTING
+    let targetComp: CompanyEntity;
+    let auditEntry: CompanyAuditLogEntry | undefined;
+    let changes: CompanyAuditChange[] = [];
+
+    if (isUpdate) {
       const oldComp = list[existingIndex];
-      const updatedComp: CompanyEntity = {
+      targetComp = {
         ...oldComp,
         ...companyData,
         id: oldComp.id,
@@ -192,43 +191,22 @@ export const companyStorage = {
         documents: companyData.documents || oldComp.documents || []
       };
 
-      // Compute field diff
-      const changes = computeCompanyDiff(oldComp, updatedComp);
-      let auditEntry: CompanyAuditLogEntry | undefined;
-
+      changes = computeCompanyDiff(oldComp, targetComp);
       if (changes.length > 0) {
         auditEntry = {
           id: `audit_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-          companyId: updatedComp.id,
+          companyId: targetComp.id,
           timestamp,
           userName,
           action: 'update',
           actionLabelAr: 'تحديث بيانات الكيان',
           changes
         };
-
-        updatedComp.auditLogs = [auditEntry, ...(oldComp.auditLogs || [])];
-      } else {
-        updatedComp.auditLogs = oldComp.auditLogs || [];
+        targetComp.auditLogs = [auditEntry, ...(oldComp.auditLogs || [])];
       }
-
-      list[existingIndex] = updatedComp;
-      companyStorage.saveCompaniesSync(list);
-
-      // Attempt background backend sync
-      try {
-        await fetch(`/api/companies/${updatedComp.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(updatedComp)
-        }).catch(() => {});
-      } catch {}
-
-      return { company: updatedComp, auditEntry };
     } else {
-      // CREATE NEW
       const newId = companyData.id || `comp_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-      const creationAuditEntry: CompanyAuditLogEntry = {
+      auditEntry = {
         id: `audit_${Date.now()}_init`,
         companyId: newId,
         timestamp,
@@ -241,17 +219,11 @@ export const companyStorage = {
             fieldLabel: FIELD_LABELS.nameAr,
             oldValue: '—',
             newValue: companyData.nameAr
-          },
-          {
-            field: 'legalType',
-            fieldLabel: FIELD_LABELS.legalType,
-            oldValue: '—',
-            newValue: companyData.legalType || 'ش.م.م'
           }
         ]
       };
 
-      const newComp: CompanyEntity = {
+      targetComp = {
         id: newId,
         nameAr: companyData.nameAr,
         legalType: companyData.legalType || 'ش.م.م',
@@ -269,43 +241,91 @@ export const companyStorage = {
         status: companyData.status || 'active',
         shareholders: companyData.shareholders || [],
         documents: companyData.documents || [],
-        auditLogs: [creationAuditEntry],
+        auditLogs: [auditEntry],
         createdAt: timestamp,
         updatedAt: timestamp
       };
-
-      list.unshift(newComp);
-      companyStorage.saveCompaniesSync(list);
-
-      // Attempt background backend sync
-      try {
-        await fetch('/api/companies', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(newComp)
-        }).catch(() => {});
-      } catch {}
-
-      return { company: newComp, auditEntry: creationAuditEntry };
     }
+
+    // Awaited Network Mutation to Cloudflare D1
+    try {
+      const endpoint = isUpdate ? `/api/companies/${targetComp.id}` : '/api/companies';
+      const method = isUpdate ? 'PUT' : 'POST';
+      const payload = isUpdate
+        ? { ...targetComp, changes, userName }
+        : { ...targetComp, userName };
+
+      const res = await fetch(endpoint, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        const json = await res.json();
+        if (json.company) {
+          targetComp = json.company;
+        }
+      } else {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || `فشل الحفظ في قاعدة بيانات D1 (${res.status})`);
+      }
+    } catch (err: any) {
+      console.warn('[companyStorage] Cloudflare mutation error:', err);
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        console.warn('[companyStorage] Operating in offline mode. Saved to cache.');
+      } else {
+        // In online mode, throw error so UI alerts user and doesn't silently trap in local storage
+        throw err;
+      }
+    }
+
+    // Update local cache
+    const currentList = companyStorage.getCompaniesSync();
+    const idx = currentList.findIndex(c => c.id === targetComp.id);
+    if (idx >= 0) {
+      currentList[idx] = targetComp;
+    } else {
+      currentList.unshift(targetComp);
+    }
+    companyStorage.saveCompaniesSync(currentList);
+
+    return { company: targetComp, auditEntry };
   },
 
   /**
-   * Delete a company permanently
+   * Delete a company permanently via Cloudflare D1
    */
   async deleteCompany(id: string, userName = 'يوسف حجازي'): Promise<void> {
+    try {
+      const res = await fetch(`/api/companies/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ deletedBy: userName })
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || `فشل حذف الشركة من قاعدة بيانات D1 (${res.status})`);
+      }
+    } catch (err: any) {
+      console.warn('[companyStorage] Delete mutation error:', err);
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        console.warn('[companyStorage] Operating offline, deleted from cache only.');
+      } else {
+        throw err;
+      }
+    }
+
     const list = companyStorage.getCompaniesSync();
     const filtered = list.filter(c => c.id !== id);
     companyStorage.saveCompaniesSync(filtered);
-
-    // Attempt background backend delete
-    try {
-      await fetch(`/api/companies/${id}`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ deletedBy: userName })
-      }).catch(() => {});
-    } catch {}
   },
 
   /**
@@ -318,43 +338,6 @@ export const companyStorage = {
 
     const oldComp = list[index];
     const newStatus: 'active' | 'inactive' = oldComp.status === 'active' ? 'inactive' : 'active';
-    const timestamp = getFormattedAuditTimestamp();
-
-    const auditEntry: CompanyAuditLogEntry = {
-      id: `audit_${Date.now()}_status`,
-      companyId: id,
-      timestamp,
-      userName,
-      action: 'status_change',
-      actionLabelAr: 'تعديل حالة تفعيل الشركة',
-      changes: [
-        {
-          field: 'status',
-          fieldLabel: FIELD_LABELS.status,
-          oldValue: oldComp.status === 'active' ? 'نشطة' : 'معطلة',
-          newValue: newStatus === 'active' ? 'نشطة' : 'معطلة'
-        }
-      ]
-    };
-
-    const updatedComp: CompanyEntity = {
-      ...oldComp,
-      status: newStatus,
-      updatedAt: timestamp,
-      auditLogs: [auditEntry, ...(oldComp.auditLogs || [])]
-    };
-
-    list[index] = updatedComp;
-    companyStorage.saveCompaniesSync(list);
-
-    try {
-      await fetch(`/api/companies/${id}/status`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus, updatedBy: userName })
-      }).catch(() => {});
-    } catch {}
-
-    return updatedComp;
+    return (await companyStorage.saveCompany({ ...oldComp, status: newStatus }, userName)).company;
   }
 };

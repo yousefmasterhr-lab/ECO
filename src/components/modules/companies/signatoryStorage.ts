@@ -247,30 +247,29 @@ export const signatoryStorage = {
 
   /**
    * Asynchronous load with optional backend sync
+  /**
+   * Deterministic Remote Fetching from Cloudflare D1 Database
    */
   async getSignatories(): Promise<AuthorizedSignatory[]> {
-    const local = signatoryStorage.getSignatoriesSync();
-
     try {
       const res = await fetch('/api/authorized-persons', {
         headers: { Accept: 'application/json' }
       });
       if (res.ok) {
         const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
-          signatoryStorage.saveSignatoriesSync(data);
-          return data;
-        }
+        const list: AuthorizedSignatory[] = Array.isArray(data) ? data : (data.signatories || []);
+        signatoryStorage.saveSignatoriesSync(list);
+        return list;
       }
-    } catch {
-      // Non-blocking fallback
+    } catch (err) {
+      console.warn('[signatoryStorage] Remote fetch error from Cloudflare D1, falling back to cache:', err);
     }
 
-    return local;
+    return signatoryStorage.getSignatoriesSync();
   },
 
   /**
-   * Create or update an authorized signatory with audit trail
+   * Create or update an authorized signatory with remote Cloudflare D1 mutation
    */
   async saveSignatory(
     sigData: Partial<AuthorizedSignatory> & {
@@ -285,11 +284,15 @@ export const signatoryStorage = {
     const list = signatoryStorage.getSignatoriesSync();
     const existingIndex = list.findIndex(s => s.id === sigData.id);
     const timestamp = getFormattedAuditTimestamp();
+    const isUpdate = existingIndex >= 0;
 
-    if (existingIndex >= 0) {
-      // UPDATE EXISTING
+    let targetSig: AuthorizedSignatory;
+    let auditEntry: SignatoryAuditLogEntry | undefined;
+    let changes: SignatoryAuditChange[] = [];
+
+    if (isUpdate) {
       const oldSig = list[existingIndex];
-      const updatedSig: AuthorizedSignatory = {
+      targetSig = {
         ...oldSig,
         ...sigData,
         id: oldSig.id,
@@ -299,9 +302,7 @@ export const signatoryStorage = {
         updatedAt: timestamp
       };
 
-      const changes = computeSignatoryDiff(oldSig, updatedSig);
-      let auditEntry: SignatoryAuditLogEntry | undefined;
-
+      changes = computeSignatoryDiff(oldSig, targetSig);
       if (changes.length > 0) {
         auditEntry = {
           id: `audit_sig_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
@@ -312,29 +313,11 @@ export const signatoryStorage = {
           actionLabelAr: 'تحديث بيانات وصلاحيات المفوض',
           changes
         };
-        updatedSig.auditLogs = [auditEntry, ...(oldSig.auditLogs || [])];
-      } else {
-        updatedSig.auditLogs = oldSig.auditLogs || [];
+        targetSig.auditLogs = [auditEntry, ...(oldSig.auditLogs || [])];
       }
-
-      list[existingIndex] = updatedSig;
-      signatoryStorage.saveSignatoriesSync(list);
-
-      try {
-        await fetch(`/api/authorized-persons/${oldSig.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(updatedSig)
-        });
-      } catch {
-        // Non-blocking
-      }
-
-      return { signatory: updatedSig, auditEntry };
     } else {
-      // CREATE NEW
       const newId = sigData.id || `sig_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-      const initialAudit: SignatoryAuditLogEntry = {
+      auditEntry = {
         id: `audit_sig_${Date.now()}_init`,
         signatoryId: newId,
         timestamp,
@@ -369,7 +352,7 @@ export const signatoryStorage = {
         ]
       };
 
-      const newSig: AuthorizedSignatory = {
+      targetSig = {
         id: newId,
         nameAr: sigData.nameAr,
         roleAr: sigData.roleAr,
@@ -404,30 +387,62 @@ export const signatoryStorage = {
           notesAr: ''
         },
         poaAttachment: sigData.poaAttachment,
-        auditLogs: [initialAudit],
+        auditLogs: [auditEntry],
         createdAt: timestamp,
         updatedAt: timestamp
       };
-
-      const updatedList = [newSig, ...list];
-      signatoryStorage.saveSignatoriesSync(updatedList);
-
-      try {
-        await fetch('/api/authorized-persons', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(newSig)
-        });
-      } catch {
-        // Non-blocking
-      }
-
-      return { signatory: newSig, auditEntry: initialAudit };
     }
+
+    // Awaited Network Mutation to Cloudflare D1
+    try {
+      const endpoint = isUpdate ? `/api/authorized-persons/${targetSig.id}` : '/api/authorized-persons';
+      const method = isUpdate ? 'PUT' : 'POST';
+      const payload = isUpdate
+        ? { ...targetSig, changes, userName }
+        : { ...targetSig, userName };
+
+      const res = await fetch(endpoint, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        const json = await res.json();
+        if (json.signatory) {
+          targetSig = json.signatory;
+        }
+      } else {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || `فشل حفظ بيانات المفوض في Cloudflare D1 (${res.status})`);
+      }
+    } catch (err: any) {
+      console.warn('[signatoryStorage] Cloudflare mutation error:', err);
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        console.warn('[signatoryStorage] Operating in offline mode. Saved to cache.');
+      } else {
+        throw err;
+      }
+    }
+
+    // Update local cache
+    const currentList = signatoryStorage.getSignatoriesSync();
+    const idx = currentList.findIndex(s => s.id === targetSig.id);
+    if (idx >= 0) {
+      currentList[idx] = targetSig;
+    } else {
+      currentList.unshift(targetSig);
+    }
+    signatoryStorage.saveSignatoriesSync(currentList);
+
+    return { signatory: targetSig, auditEntry };
   },
 
   /**
-   * Toggle revoke/activate status with audit entry
+   * Toggle revoke/activate status with audit entry via Cloudflare D1
    */
   async toggleRevoke(id: string, userName = 'يوسف حجازي'): Promise<AuthorizedSignatory> {
     const list = signatoryStorage.getSignatoriesSync();
@@ -436,64 +451,39 @@ export const signatoryStorage = {
 
     const target = list[index];
     const newStatus: AuthorizedSignatory['status'] = target.status === 'active' ? 'revoked' : 'active';
-    const timestamp = getFormattedAuditTimestamp();
-
-    const auditEntry: SignatoryAuditLogEntry = {
-      id: `audit_sig_${Date.now()}_status`,
-      signatoryId: target.id,
-      timestamp,
-      userName,
-      action: newStatus === 'revoked' ? 'revoke' : 'activate',
-      actionLabelAr: newStatus === 'revoked' ? 'إلغاء سريان التفويض رسمياً (Revoke)' : 'إعادة تفعيل وسريان التفويض',
-      changes: [
-        {
-          field: 'status',
-          fieldLabel: SIGNATORY_FIELD_LABELS.status,
-          oldValue: target.status === 'active' ? 'ساري ومعتمد' : 'ملغى رسمياً',
-          newValue: newStatus === 'active' ? 'ساري ومعتمد' : 'ملغى رسمياً'
-        }
-      ]
-    };
-
-    const updated: AuthorizedSignatory = {
-      ...target,
-      status: newStatus,
-      auditLogs: [auditEntry, ...(target.auditLogs || [])],
-      updatedAt: timestamp
-    };
-
-    list[index] = updated;
-    signatoryStorage.saveSignatoriesSync(list);
-
-    try {
-      await fetch(`/api/authorized-persons/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updated)
-      });
-    } catch {
-      // Non-blocking
-    }
-
-    return updated;
+    return (await signatoryStorage.saveSignatory({ ...target, status: newStatus }, userName)).signatory;
   },
 
   /**
-   * Delete signatory permanently
+   * Delete signatory permanently via Cloudflare D1
    */
-  async deleteSignatory(id: string, _userName = 'يوسف حجازي'): Promise<boolean> {
+  async deleteSignatory(id: string, userName = 'يوسف حجازي'): Promise<boolean> {
+    try {
+      const res = await fetch(`/api/authorized-persons/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ deletedBy: userName })
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || `فشل حذف المفوض من Cloudflare D1 (${res.status})`);
+      }
+    } catch (err: any) {
+      console.warn('[signatoryStorage] Delete mutation error:', err);
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        console.warn('[signatoryStorage] Operating offline, deleted from cache only.');
+      } else {
+        throw err;
+      }
+    }
+
     const list = signatoryStorage.getSignatoriesSync();
     const filtered = list.filter(s => s.id !== id);
     signatoryStorage.saveSignatoriesSync(filtered);
-
-    try {
-      await fetch(`/api/authorized-persons/${id}`, {
-        method: 'DELETE'
-      });
-    } catch {
-      // Non-blocking
-    }
-
     return true;
   }
 };

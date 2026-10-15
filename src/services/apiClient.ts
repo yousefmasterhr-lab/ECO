@@ -92,7 +92,12 @@ export const isCloudflareEdgeRoute = (endpoint: string): boolean => {
     clean.startsWith('api/audit-logs') ||
     clean.startsWith('api/storage') ||
     clean.startsWith('api/system/settings') ||
-    clean.startsWith('api/settings')
+    clean.startsWith('api/settings') ||
+    clean.startsWith('api/companies') ||
+    clean.startsWith('api/licenses') ||
+    clean.startsWith('api/branches') ||
+    clean.startsWith('api/departments') ||
+    clean.startsWith('api/authorized-persons')
   );
 };
 

@@ -1,27 +1,22 @@
 import { BranchLocation, BranchAuditLogEntry, BranchAuditChange } from './types';
 
-const STORAGE_KEY = 'eco_branches_sites_v2';
+const STORAGE_KEY = 'eco_company_branches_v2';
 
 /**
  * Field Labels mapping in Arabic for branch audit diff presentation
  */
 export const BRANCH_FIELD_LABELS: Record<string, string> = {
   nameAr: 'اسم المقر / الموقع',
-  companyId: 'معرف الشركة',
-  companyNameAr: 'الشركة التابعة',
-  typeAr: 'نوع المقر / الموقع',
-  cityAr: 'المدينة',
+  typeAr: 'نوع الموقع',
+  companyNameAr: 'الشركة المالكة',
+  cityAr: 'المدينة / المحافظة',
   addressAr: 'العنوان التفصيلي',
-  googleMapsUrl: 'رابط الموقع الجغرافي (Google Maps)',
-  managerAr: 'المدير المسؤول عن الموقع',
+  managerAr: 'مدير الموقع',
   phone: 'رقم الهاتف',
-  staffCount: 'عدد الكادر الوظيفي',
-  activeProjects: 'عدد المشاريع الجارية',
-  costCenterCode: 'كود مركز التكلفة المرتبط',
-  startDate: 'تاريخ بدء الأعمال',
-  expectedDeliveryDate: 'تاريخ التسليم المتوقع',
-  status: 'حالة الموقع / المقر',
-  notesAr: 'ملاحظات'
+  staffCount: 'عدد العاملين بالموقع',
+  activeProjects: 'المشاريع الجارية',
+  costCenterCode: 'مركز التكلفة المرتبط',
+  status: 'حالة الموقع'
 };
 
 /**
@@ -49,20 +44,16 @@ export function computeBranchDiff(
 
   const scalarFields: (keyof BranchLocation)[] = [
     'nameAr',
-    'companyNameAr',
     'typeAr',
+    'companyNameAr',
     'cityAr',
     'addressAr',
-    'googleMapsUrl',
     'managerAr',
     'phone',
     'staffCount',
     'activeProjects',
     'costCenterCode',
-    'startDate',
-    'expectedDeliveryDate',
-    'status',
-    'notesAr'
+    'status'
   ];
 
   for (const field of scalarFields) {
@@ -70,11 +61,19 @@ export function computeBranchDiff(
     const newVal = newBranch[field];
 
     if (String(oldVal ?? '').trim() !== String(newVal ?? '').trim()) {
+      let displayOld = String(oldVal ?? '—');
+      let displayNew = String(newVal ?? '—');
+
+      if (field === 'status') {
+        displayOld = String(oldVal) === 'نشط' ? 'نشط' : String(oldVal || 'معطل');
+        displayNew = String(newVal) === 'نشط' ? 'نشط' : String(newVal || 'معطل');
+      }
+
       changes.push({
         field: String(field),
         fieldLabel: BRANCH_FIELD_LABELS[field] || String(field),
-        oldValue: String(oldVal ?? '—'),
-        newValue: String(newVal ?? '—')
+        oldValue: displayOld,
+        newValue: displayNew
       });
     }
   }
@@ -83,11 +82,11 @@ export function computeBranchDiff(
 }
 
 /**
- * Persistent Storage Repository for Branches & Sites
+ * Persistent Storage Repository for Branches & Sites (Cloudflare D1 Remote Persistence)
  */
 export const branchStorage = {
   /**
-   * Synchronously load branches from localStorage
+   * Synchronously load branches from localStorage cache
    */
   getBranchesSync(): BranchLocation[] {
     try {
@@ -95,49 +94,45 @@ export const branchStorage = {
       if (!raw) return [];
       const parsed = JSON.parse(raw);
       return Array.isArray(parsed) ? parsed : [];
-    } catch (err) {
-      console.warn('[branchStorage] Failed to read from localStorage:', err);
+    } catch {
       return [];
     }
   },
 
   /**
-   * Save branches to localStorage
+   * Save branches to localStorage cache
    */
   saveBranchesSync(branches: BranchLocation[]): void {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(branches));
     } catch (err) {
-      console.error('[branchStorage] Failed to save to localStorage:', err);
+      console.warn('[branchStorage] Failed to cache branches locally:', err);
     }
   },
 
   /**
-   * Asynchronous load with optional backend sync
+   * Deterministic Remote Fetching from Cloudflare D1 Database
    */
   async getBranches(): Promise<BranchLocation[]> {
-    const local = branchStorage.getBranchesSync();
-
     try {
       const res = await fetch('/api/branches', {
         headers: { Accept: 'application/json' }
       });
       if (res.ok) {
         const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
-          branchStorage.saveBranchesSync(data);
-          return data;
-        }
+        const list: BranchLocation[] = Array.isArray(data) ? data : (data.branches || []);
+        branchStorage.saveBranchesSync(list);
+        return list;
       }
-    } catch {
-      // Fallback cleanly to local storage without throwing
+    } catch (err) {
+      console.warn('[branchStorage] Remote fetch error from Cloudflare D1, falling back to cache:', err);
     }
 
-    return local;
+    return branchStorage.getBranchesSync();
   },
 
   /**
-   * Create or update a branch/site with audit trail
+   * Create or update a branch/site with remote Cloudflare D1 mutation
    */
   async saveBranch(
     branchData: Partial<BranchLocation> & { nameAr: string; companyId: string; companyNameAr: string },
@@ -146,21 +141,22 @@ export const branchStorage = {
     const list = branchStorage.getBranchesSync();
     const existingIndex = list.findIndex(b => b.id === branchData.id);
     const timestamp = getFormattedAuditTimestamp();
+    const isUpdate = existingIndex >= 0;
 
-    if (existingIndex >= 0) {
-      // UPDATE EXISTING
+    let targetBranch: BranchLocation;
+    let auditEntry: BranchAuditLogEntry | undefined;
+    let changes: BranchAuditChange[] = [];
+
+    if (isUpdate) {
       const oldBranch = list[existingIndex];
-      const updatedBranch: BranchLocation = {
+      targetBranch = {
         ...oldBranch,
         ...branchData,
         id: oldBranch.id,
         updatedAt: timestamp
       };
 
-      // Compute field diff
-      const changes = computeBranchDiff(oldBranch, updatedBranch);
-      let auditEntry: BranchAuditLogEntry | undefined;
-
+      changes = computeBranchDiff(oldBranch, targetBranch);
       if (changes.length > 0) {
         auditEntry = {
           id: `audit_br_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
@@ -171,37 +167,17 @@ export const branchStorage = {
           actionLabelAr: 'تحديث بيانات المقر / الموقع',
           changes
         };
-
-        updatedBranch.auditLogs = [auditEntry, ...(oldBranch.auditLogs || [])];
-      } else {
-        updatedBranch.auditLogs = oldBranch.auditLogs || [];
+        targetBranch.auditLogs = [auditEntry, ...(oldBranch.auditLogs || [])];
       }
-
-      list[existingIndex] = updatedBranch;
-      branchStorage.saveBranchesSync(list);
-
-      // Async backend sync if available
-      try {
-        await fetch(`/api/branches/${oldBranch.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(updatedBranch)
-        });
-      } catch {
-        // Non-blocking
-      }
-
-      return { branch: updatedBranch, auditEntry };
     } else {
-      // CREATE NEW
-      const newId = branchData.id || `branch_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-      const initialAudit: BranchAuditLogEntry = {
+      const newId = branchData.id || `loc_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+      auditEntry = {
         id: `audit_br_${Date.now()}_init`,
         branchId: newId,
         timestamp,
         userName,
         action: 'create',
-        actionLabelAr: 'تسجيل المقر / الموقع لأول مرة',
+        actionLabelAr: 'إضافة وتسجيل المقر لأول مرة',
         changes: [
           {
             field: 'nameAr',
@@ -214,73 +190,109 @@ export const branchStorage = {
             fieldLabel: BRANCH_FIELD_LABELS.companyNameAr,
             oldValue: '—',
             newValue: branchData.companyNameAr
-          },
-          {
-            field: 'typeAr',
-            fieldLabel: BRANCH_FIELD_LABELS.typeAr,
-            oldValue: '—',
-            newValue: branchData.typeAr || 'فرع إداري'
           }
         ]
       };
 
-      const newBranch: BranchLocation = {
+      targetBranch = {
         id: newId,
+        nameAr: branchData.nameAr,
+        typeAr: branchData.typeAr || 'فرع رئيسي',
         companyId: branchData.companyId,
         companyNameAr: branchData.companyNameAr,
-        nameAr: branchData.nameAr,
-        typeAr: branchData.typeAr || 'فرع إداري',
-        cityAr: branchData.cityAr || 'القاهرة',
         addressAr: branchData.addressAr || '',
-        googleMapsUrl: branchData.googleMapsUrl || '',
-        managerAr: branchData.managerAr || 'غير محدد',
+        cityAr: branchData.cityAr || 'القاهرة',
+        managerAr: branchData.managerAr || '',
         phone: branchData.phone || '',
-        staffCount: Number(branchData.staffCount) || 0,
-        activeProjects: Number(branchData.activeProjects) || 0,
-        costCenterCode: branchData.costCenterCode || '',
-        startDate: branchData.startDate || '',
-        expectedDeliveryDate: branchData.expectedDeliveryDate || '',
+        staffCount: Number(branchData.staffCount ?? 0),
+        activeProjects: Number(branchData.activeProjects ?? 0),
+        costCenterCode: branchData.costCenterCode,
         status: branchData.status || 'نشط',
-        notesAr: branchData.notesAr || '',
-        auditLogs: [initialAudit],
+        notesAr: branchData.notesAr,
+        auditLogs: [auditEntry],
         createdAt: timestamp,
         updatedAt: timestamp
       };
-
-      const updatedList = [newBranch, ...list];
-      branchStorage.saveBranchesSync(updatedList);
-
-      // Async backend sync if available
-      try {
-        await fetch('/api/branches', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(newBranch)
-        });
-      } catch {
-        // Non-blocking
-      }
-
-      return { branch: newBranch, auditEntry: initialAudit };
     }
+
+    // Awaited Network Mutation to Cloudflare D1
+    try {
+      const endpoint = isUpdate ? `/api/branches/${targetBranch.id}` : '/api/branches';
+      const method = isUpdate ? 'PUT' : 'POST';
+      const payload = isUpdate
+        ? { ...targetBranch, changes, userName }
+        : { ...targetBranch, userName };
+
+      const res = await fetch(endpoint, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        const json = await res.json();
+        if (json.branch) {
+          targetBranch = json.branch;
+        }
+      } else {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || `فشل حفظ المقر في Cloudflare D1 (${res.status})`);
+      }
+    } catch (err: any) {
+      console.warn('[branchStorage] Cloudflare mutation error:', err);
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        console.warn('[branchStorage] Operating in offline mode. Saved to cache.');
+      } else {
+        throw err;
+      }
+    }
+
+    // Update local cache
+    const currentList = branchStorage.getBranchesSync();
+    const idx = currentList.findIndex(b => b.id === targetBranch.id);
+    if (idx >= 0) {
+      currentList[idx] = targetBranch;
+    } else {
+      currentList.unshift(targetBranch);
+    }
+    branchStorage.saveBranchesSync(currentList);
+
+    return { branch: targetBranch, auditEntry };
   },
 
   /**
-   * Delete a branch permanently
+   * Delete a branch permanently via Cloudflare D1
    */
-  async deleteBranch(id: string, _userName = 'يوسف حجازي'): Promise<boolean> {
+  async deleteBranch(id: string, userName = 'يوسف حجازي'): Promise<boolean> {
+    try {
+      const res = await fetch(`/api/branches/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ deletedBy: userName })
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || `فشل حذف المقر من Cloudflare D1 (${res.status})`);
+      }
+    } catch (err: any) {
+      console.warn('[branchStorage] Delete mutation error:', err);
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        console.warn('[branchStorage] Operating offline, deleted from cache only.');
+      } else {
+        throw err;
+      }
+    }
+
     const list = branchStorage.getBranchesSync();
     const filtered = list.filter(b => b.id !== id);
     branchStorage.saveBranchesSync(filtered);
-
-    try {
-      await fetch(`/api/branches/${id}`, {
-        method: 'DELETE'
-      });
-    } catch {
-      // Non-blocking
-    }
-
     return true;
   }
 };

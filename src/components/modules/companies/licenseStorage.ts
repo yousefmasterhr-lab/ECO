@@ -84,11 +84,11 @@ export function computeLicenseDiff(
 }
 
 /**
- * Persistent Storage Repository for Licenses & Documents
+ * Persistent Storage Repository for Licenses & Documents (Cloudflare D1 Remote Persistence)
  */
 export const licenseStorage = {
   /**
-   * Synchronously load licenses from localStorage
+   * Synchronously load licenses from localStorage cache
    */
   getLicensesSync(): SmartDocument[] {
     try {
@@ -96,49 +96,45 @@ export const licenseStorage = {
       if (!raw) return [];
       const parsed = JSON.parse(raw);
       return Array.isArray(parsed) ? parsed : [];
-    } catch (err) {
-      console.warn('[licenseStorage] Failed to read from localStorage:', err);
+    } catch {
       return [];
     }
   },
 
   /**
-   * Save licenses to localStorage
+   * Save licenses to localStorage cache
    */
   saveLicensesSync(licenses: SmartDocument[]): void {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(licenses));
     } catch (err) {
-      console.error('[licenseStorage] Failed to save to localStorage:', err);
+      console.warn('[licenseStorage] Failed to cache licenses locally:', err);
     }
   },
 
   /**
-   * Asynchronous load with optional backend sync
+   * Deterministic Remote Fetching from Cloudflare D1 Database
    */
   async getLicenses(): Promise<SmartDocument[]> {
-    const local = licenseStorage.getLicensesSync();
-
     try {
       const res = await fetch('/api/licenses', {
         headers: { Accept: 'application/json' }
       });
       if (res.ok) {
         const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
-          licenseStorage.saveLicensesSync(data);
-          return data;
-        }
+        const list: SmartDocument[] = Array.isArray(data) ? data : (data.licenses || []);
+        licenseStorage.saveLicensesSync(list);
+        return list;
       }
-    } catch {
-      // Fallback cleanly to local storage without throwing
+    } catch (err) {
+      console.warn('[licenseStorage] Remote fetch error from Cloudflare D1, falling back to cache:', err);
     }
 
-    return local;
+    return licenseStorage.getLicensesSync();
   },
 
   /**
-   * Create or update a document/license with audit trail
+   * Create or update a document/license with remote Cloudflare D1 mutation
    */
   async saveLicense(
     docData: Partial<SmartDocument> & { titleAr: string; companyId: string; companyNameAr: string },
@@ -147,21 +143,22 @@ export const licenseStorage = {
     const list = licenseStorage.getLicensesSync();
     const existingIndex = list.findIndex(d => d.id === docData.id);
     const timestamp = getFormattedAuditTimestamp();
+    const isUpdate = existingIndex >= 0;
 
-    if (existingIndex >= 0) {
-      // UPDATE EXISTING
+    let targetDoc: SmartDocument;
+    let auditEntry: DocumentAuditLogEntry | undefined;
+    let changes: DocumentAuditChange[] = [];
+
+    if (isUpdate) {
       const oldDoc = list[existingIndex];
-      const updatedDoc: SmartDocument = {
+      targetDoc = {
         ...oldDoc,
         ...docData,
         id: oldDoc.id,
         updatedAt: timestamp
       };
 
-      // Compute field diff
-      const changes = computeLicenseDiff(oldDoc, updatedDoc);
-      let auditEntry: DocumentAuditLogEntry | undefined;
-
+      changes = computeLicenseDiff(oldDoc, targetDoc);
       if (changes.length > 0) {
         auditEntry = {
           id: `audit_lic_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
@@ -172,31 +169,11 @@ export const licenseStorage = {
           actionLabelAr: 'تحديث بيانات المستند / الترخيص',
           changes
         };
-
-        updatedDoc.auditLogs = [auditEntry, ...(oldDoc.auditLogs || [])];
-      } else {
-        updatedDoc.auditLogs = oldDoc.auditLogs || [];
+        targetDoc.auditLogs = [auditEntry, ...(oldDoc.auditLogs || [])];
       }
-
-      list[existingIndex] = updatedDoc;
-      licenseStorage.saveLicensesSync(list);
-
-      // Async backend sync if available
-      try {
-        await fetch(`/api/licenses/${oldDoc.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(updatedDoc)
-        });
-      } catch {
-        // Non-blocking
-      }
-
-      return { license: updatedDoc, auditEntry };
     } else {
-      // CREATE NEW
       const newId = docData.id || `doc_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-      const initialAudit: DocumentAuditLogEntry = {
+      auditEntry = {
         id: `audit_lic_${Date.now()}_init`,
         documentId: newId,
         timestamp,
@@ -225,7 +202,7 @@ export const licenseStorage = {
         ]
       };
 
-      const newDoc: SmartDocument = {
+      targetDoc = {
         id: newId,
         companyId: docData.companyId,
         companyNameAr: docData.companyNameAr,
@@ -238,45 +215,90 @@ export const licenseStorage = {
         driveUrl: docData.driveUrl || '',
         notesAr: docData.notesAr || '',
         fileAttachment: docData.fileAttachment,
-        auditLogs: [initialAudit],
+        auditLogs: [auditEntry],
         createdAt: timestamp,
         updatedAt: timestamp
       };
-
-      const updatedList = [newDoc, ...list];
-      licenseStorage.saveLicensesSync(updatedList);
-
-      // Async backend sync if available
-      try {
-        await fetch('/api/licenses', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(newDoc)
-        });
-      } catch {
-        // Non-blocking
-      }
-
-      return { license: newDoc, auditEntry: initialAudit };
     }
+
+    // Awaited Network Mutation to Cloudflare D1
+    try {
+      const endpoint = isUpdate ? `/api/licenses/${targetDoc.id}` : '/api/licenses';
+      const method = isUpdate ? 'PUT' : 'POST';
+      const payload = isUpdate
+        ? { ...targetDoc, changes, userName }
+        : { ...targetDoc, userName };
+
+      const res = await fetch(endpoint, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        const json = await res.json();
+        if (json.license) {
+          targetDoc = json.license;
+        }
+      } else {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || `فشل حفظ الترخيص في Cloudflare D1 (${res.status})`);
+      }
+    } catch (err: any) {
+      console.warn('[licenseStorage] Cloudflare mutation error:', err);
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        console.warn('[licenseStorage] Operating in offline mode. Saved to cache.');
+      } else {
+        throw err;
+      }
+    }
+
+    // Update local cache
+    const currentList = licenseStorage.getLicensesSync();
+    const idx = currentList.findIndex(d => d.id === targetDoc.id);
+    if (idx >= 0) {
+      currentList[idx] = targetDoc;
+    } else {
+      currentList.unshift(targetDoc);
+    }
+    licenseStorage.saveLicensesSync(currentList);
+
+    return { license: targetDoc, auditEntry };
   },
 
   /**
-   * Delete a license permanently
+   * Delete a license permanently via Cloudflare D1
    */
-  async deleteLicense(id: string, _userName = 'يوسف حجازي'): Promise<boolean> {
+  async deleteLicense(id: string, userName = 'يوسف حجازي'): Promise<boolean> {
+    try {
+      const res = await fetch(`/api/licenses/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ deletedBy: userName })
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || `فشل حذف الترخيص من Cloudflare D1 (${res.status})`);
+      }
+    } catch (err: any) {
+      console.warn('[licenseStorage] Delete mutation error:', err);
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        console.warn('[licenseStorage] Operating offline, deleted from cache only.');
+      } else {
+        throw err;
+      }
+    }
+
     const list = licenseStorage.getLicensesSync();
     const filtered = list.filter(d => d.id !== id);
     licenseStorage.saveLicensesSync(filtered);
-
-    try {
-      await fetch(`/api/licenses/${id}`, {
-        method: 'DELETE'
-      });
-    } catch {
-      // Non-blocking
-    }
-
     return true;
   }
 };

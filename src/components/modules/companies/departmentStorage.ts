@@ -1,22 +1,19 @@
 import { DepartmentOrg, DepartmentAuditLogEntry, DepartmentAuditChange } from './types';
 
-const STORAGE_KEY = 'eco_departments_org_v2';
+const STORAGE_KEY = 'eco_company_departments_v2';
 
 /**
  * Field Labels mapping in Arabic for department audit diff presentation
  */
 export const DEPARTMENT_FIELD_LABELS: Record<string, string> = {
   nameAr: 'اسم الإدارة / القسم',
-  code: 'كود الإدارة التنظيمي',
-  headAr: 'المدير المسؤول / رئيس الإدارة',
-  staffCount: 'عدد الكادر الوظيفي',
-  parentId: 'التبعية الإدارية الهرمية',
-  companyId: 'معرف الشركة',
-  companyNameAr: 'الشركة التابعة',
-  branchId: 'معرف المقر / الموقع',
-  branchNameAr: 'المقر / الموقع التابع',
-  costCenterCode: 'كود مركز التكلفة المرتبط',
-  responsibilities: 'المسؤوليات والمهام الإدارية'
+  code: 'كود الإدارة',
+  headAr: 'المدير المسؤول',
+  staffCount: 'عدد الموظفين',
+  responsibilities: 'المهام والاختصاصات',
+  costCenterCode: 'مركز التكلفة المرتبط',
+  parentId: 'الإدارة الرئيسية التابعة لها',
+  branchNameAr: 'الفرع / الموقع التابع له'
 };
 
 /**
@@ -38,8 +35,7 @@ export function getFormattedAuditTimestamp(): string {
  */
 export function computeDepartmentDiff(
   oldDept: DepartmentOrg,
-  newDept: DepartmentOrg,
-  allDepts: DepartmentOrg[] = []
+  newDept: DepartmentOrg
 ): DepartmentAuditChange[] {
   const changes: DepartmentAuditChange[] = [];
 
@@ -48,10 +44,10 @@ export function computeDepartmentDiff(
     'code',
     'headAr',
     'staffCount',
-    'companyNameAr',
-    'branchNameAr',
+    'responsibilities',
     'costCenterCode',
-    'responsibilities'
+    'parentId',
+    'branchNameAr'
   ];
 
   for (const field of scalarFields) {
@@ -68,29 +64,15 @@ export function computeDepartmentDiff(
     }
   }
 
-  // Re-parenting Event Detection
-  const oldParentId = oldDept.parentId || null;
-  const newParentId = newDept.parentId || null;
-  if (oldParentId !== newParentId) {
-    const oldParent = allDepts.find(d => d.id === oldParentId)?.nameAr || 'إدارة عليا مستقلة (جذر الهيكل)';
-    const newParent = allDepts.find(d => d.id === newParentId)?.nameAr || 'إدارة عليا مستقلة (جذر الهيكل)';
-    changes.push({
-      field: 'parentId',
-      fieldLabel: 'التبعية الإدارية الهرمية',
-      oldValue: oldParent,
-      newValue: newParent
-    });
-  }
-
   return changes;
 }
 
 /**
- * Persistent Storage Repository for Departments & Organizational Hierarchy
+ * Persistent Storage Repository for Departments & Org Structure (Cloudflare D1 Remote Persistence)
  */
 export const departmentStorage = {
   /**
-   * Synchronously load departments from localStorage
+   * Synchronously load departments from localStorage cache
    */
   getDepartmentsSync(): DepartmentOrg[] {
     try {
@@ -98,49 +80,45 @@ export const departmentStorage = {
       if (!raw) return [];
       const parsed = JSON.parse(raw);
       return Array.isArray(parsed) ? parsed : [];
-    } catch (err) {
-      console.warn('[departmentStorage] Failed to read from localStorage:', err);
+    } catch {
       return [];
     }
   },
 
   /**
-   * Save departments to localStorage
+   * Save departments to localStorage cache
    */
   saveDepartmentsSync(departments: DepartmentOrg[]): void {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(departments));
     } catch (err) {
-      console.error('[departmentStorage] Failed to save to localStorage:', err);
+      console.warn('[departmentStorage] Failed to cache departments locally:', err);
     }
   },
 
   /**
-   * Asynchronous load with optional backend sync
+   * Deterministic Remote Fetching from Cloudflare D1 Database
    */
   async getDepartments(): Promise<DepartmentOrg[]> {
-    const local = departmentStorage.getDepartmentsSync();
-
     try {
       const res = await fetch('/api/departments', {
         headers: { Accept: 'application/json' }
       });
       if (res.ok) {
         const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
-          departmentStorage.saveDepartmentsSync(data);
-          return data;
-        }
+        const list: DepartmentOrg[] = Array.isArray(data) ? data : (data.departments || []);
+        departmentStorage.saveDepartmentsSync(list);
+        return list;
       }
-    } catch {
-      // Fallback cleanly to local storage without throwing
+    } catch (err) {
+      console.warn('[departmentStorage] Remote fetch error from Cloudflare D1, falling back to cache:', err);
     }
 
-    return local;
+    return departmentStorage.getDepartmentsSync();
   },
 
   /**
-   * Create or update a department with audit trail diff
+   * Create or update a department with remote Cloudflare D1 mutation
    */
   async saveDepartment(
     deptData: Partial<DepartmentOrg> & { nameAr: string; code: string },
@@ -149,66 +127,43 @@ export const departmentStorage = {
     const list = departmentStorage.getDepartmentsSync();
     const existingIndex = list.findIndex(d => d.id === deptData.id);
     const timestamp = getFormattedAuditTimestamp();
+    const isUpdate = existingIndex >= 0;
 
-    if (existingIndex >= 0) {
-      // UPDATE EXISTING
+    let targetDept: DepartmentOrg;
+    let auditEntry: DepartmentAuditLogEntry | undefined;
+    let changes: DepartmentAuditChange[] = [];
+
+    if (isUpdate) {
       const oldDept = list[existingIndex];
-      const updatedDept: DepartmentOrg = {
+      targetDept = {
         ...oldDept,
         ...deptData,
         id: oldDept.id,
         updatedAt: timestamp
       };
 
-      // Compute field diff including re-parenting
-      const changes = computeDepartmentDiff(oldDept, updatedDept, list);
-      let auditEntry: DepartmentAuditLogEntry | undefined;
-
-      const isReparent = (oldDept.parentId || null) !== (updatedDept.parentId || null);
-
+      changes = computeDepartmentDiff(oldDept, targetDept);
       if (changes.length > 0) {
         auditEntry = {
           id: `audit_dept_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
           departmentId: oldDept.id,
           timestamp,
           userName,
-          action: isReparent ? 'reparent' : 'update',
-          actionLabelAr: isReparent ? 'إعادة هيكلة ونقل تبعية الإدارة' : 'تحديث بيانات الإدارة',
+          action: 'update',
+          actionLabelAr: 'تعديل بيانات وتعيينات الإدارة',
           changes
         };
-
-        updatedDept.auditLogs = [auditEntry, ...(oldDept.auditLogs || [])];
-      } else {
-        updatedDept.auditLogs = oldDept.auditLogs || [];
+        targetDept.auditLogs = [auditEntry, ...(oldDept.auditLogs || [])];
       }
-
-      list[existingIndex] = updatedDept;
-      departmentStorage.saveDepartmentsSync(list);
-
-      // Async backend sync if available
-      try {
-        await fetch(`/api/departments/${oldDept.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(updatedDept)
-        });
-      } catch {
-        // Non-blocking
-      }
-
-      return { department: updatedDept, auditEntry };
     } else {
-      // CREATE NEW
       const newId = deptData.id || `dept_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-      const parentName = deptData.parentId ? list.find(d => d.id === deptData.parentId)?.nameAr || 'إدارة أعلى' : 'إدارة عليا مستقلة (جذر الهيكل)';
-
-      const initialAudit: DepartmentAuditLogEntry = {
+      auditEntry = {
         id: `audit_dept_${Date.now()}_init`,
         departmentId: newId,
         timestamp,
         userName,
         action: 'create',
-        actionLabelAr: 'تأسيس الإدارة وإدراجها بالهيكل التنظيمي لأول مرة',
+        actionLabelAr: 'إنشاء واستحداث إدارة في الهيكل',
         changes: [
           {
             field: 'nameAr',
@@ -221,76 +176,111 @@ export const departmentStorage = {
             fieldLabel: DEPARTMENT_FIELD_LABELS.code,
             oldValue: '—',
             newValue: deptData.code
-          },
-          {
-            field: 'parentId',
-            fieldLabel: 'التبعية الإدارية',
-            oldValue: '—',
-            newValue: parentName
           }
         ]
       };
 
-      const newDept: DepartmentOrg = {
+      targetDept = {
         id: newId,
-        nameAr: deptData.nameAr,
         code: deptData.code,
-        headAr: deptData.headAr || 'غير محدد',
-        staffCount: Number(deptData.staffCount) || 0,
+        nameAr: deptData.nameAr,
+        headAr: deptData.headAr || '',
+        staffCount: deptData.staffCount || 0,
         subUnits: deptData.subUnits || [],
         responsibilities: deptData.responsibilities || '',
-        parentId: deptData.parentId || null,
+        parentId: deptData.parentId !== undefined ? deptData.parentId : null,
         companyId: deptData.companyId,
         companyNameAr: deptData.companyNameAr,
         branchId: deptData.branchId,
         branchNameAr: deptData.branchNameAr,
-        costCenterCode: deptData.costCenterCode || '',
-        auditLogs: [initialAudit],
+        costCenterCode: deptData.costCenterCode,
+        auditLogs: [auditEntry],
         createdAt: timestamp,
         updatedAt: timestamp
       };
-
-      const updatedList = [newDept, ...list];
-      departmentStorage.saveDepartmentsSync(updatedList);
-
-      // Async backend sync if available
-      try {
-        await fetch('/api/departments', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(newDept)
-        });
-      } catch {
-        // Non-blocking
-      }
-
-      return { department: newDept, auditEntry: initialAudit };
     }
+
+    // Awaited Network Mutation to Cloudflare D1
+    try {
+      const endpoint = isUpdate ? `/api/departments/${targetDept.id}` : '/api/departments';
+      const method = isUpdate ? 'PUT' : 'POST';
+      const payload = isUpdate
+        ? { ...targetDept, changes, userName }
+        : { ...targetDept, userName };
+
+      const res = await fetch(endpoint, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        const json = await res.json();
+        if (json.department) {
+          targetDept = json.department;
+        }
+      } else {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || `فشل حفظ الإدارة في Cloudflare D1 (${res.status})`);
+      }
+    } catch (err: any) {
+      console.warn('[departmentStorage] Cloudflare mutation error:', err);
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        console.warn('[departmentStorage] Operating in offline mode. Saved to cache.');
+      } else {
+        throw err;
+      }
+    }
+
+    // Update local cache
+    const currentList = departmentStorage.getDepartmentsSync();
+    const idx = currentList.findIndex(d => d.id === targetDept.id);
+    if (idx >= 0) {
+      currentList[idx] = targetDept;
+    } else {
+      currentList.push(targetDept);
+    }
+    departmentStorage.saveDepartmentsSync(currentList);
+
+    return { department: targetDept, auditEntry };
   },
 
   /**
-   * Delete a department safely (checks if children exist)
+   * Delete a department permanently via Cloudflare D1
    */
-  async deleteDepartment(id: string, _userName = 'يوسف حجازي'): Promise<boolean> {
-    const list = departmentStorage.getDepartmentsSync();
-    
-    // Check if this department has active child sub-departments
-    const hasChildren = list.some(d => d.parentId === id);
-    if (hasChildren) {
-      throw new Error('لا يمكن حذف هذه الإدارة لوجود إدارات أو أقسام تابعة لها. يرجى نقل تبعيتها أولاً.');
-    }
-
-    const filtered = list.filter(d => d.id !== id);
-    departmentStorage.saveDepartmentsSync(filtered);
-
+  async deleteDepartment(id: string, userName = 'يوسف حجازي'): Promise<boolean> {
     try {
-      await fetch(`/api/departments/${id}`, {
-        method: 'DELETE'
+      const res = await fetch(`/api/departments/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ deletedBy: userName })
       });
-    } catch {
-      // Non-blocking
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || `فشل حذف الإدارة من Cloudflare D1 (${res.status})`);
+      }
+    } catch (err: any) {
+      console.warn('[departmentStorage] Delete mutation error:', err);
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        console.warn('[departmentStorage] Operating offline, deleted from cache only.');
+      } else {
+        throw err;
+      }
     }
 
+    const list = departmentStorage.getDepartmentsSync();
+    // Re-parent children to null (root)
+    const updated = list
+      .filter(d => d.id !== id)
+      .map(d => (d.parentId === id ? { ...d, parentId: null } : d));
+    departmentStorage.saveDepartmentsSync(updated);
     return true;
   }
 };
