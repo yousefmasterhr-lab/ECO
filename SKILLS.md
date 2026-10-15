@@ -281,4 +281,32 @@
   }
   ```
 
+### 8.8 نمط التخزين والاسترجاع الدائم لمصفوفة الصلاحيات (Cloudflare D1 RBAC Persistence & Hydration)
+1. **جدول `rbac_matrices` المخصص في D1:**
+   - جدول مستقل يربط كل مستخدم أو دور بمصفوفة صلاحياته المفصلة:
+     ```sql
+     CREATE TABLE IF NOT EXISTS rbac_matrices (
+       target_type TEXT,
+       target_id TEXT,
+       permissions_json TEXT,
+       updated_by TEXT,
+       updated_at TEXT,
+       PRIMARY KEY (target_type, target_id)
+     );
+     ```
+   - يدعم عمليات `UPSERT` عبر نقطة النهاية `/api/rbac`.
+2. **المزامنة الحية والحقن التلقائي عند بدء التشغيل (Hydration):**
+   - استدعاء `Promise.all([d1Client.fetchUsers(), d1Client.fetchRbacMatrices()])` في `AuthContext`.
+   - استدعاء `d1Client.fetchRbacMatrices()` في `RBACView` عند التحميل، لضمان عدم ضياع أي تعديلات للصلاحيات عند تحديث الصفحة (F5).
+   - إعطاء الصلاحيات المخزنة في D1 الأولوية المطلقة وعدم استبدالها بأي بذور أو قيم افتراضية ثابتة.
+
+### 8.9 معيار الهوية الكهرمانية الفاخرة في النمط الفاتح (Brand Amber Light Mode Identity)
+- استبدال أي تعبئة سوداء أو زيتونية داكنة في النمط الفاتح (`bg-[#0D1F17]`, `bg-[#1C291E]`, `bg-slate-900`) بتدرجات الكهرمان الدافئة:
+  - **التبويبات النشطة:** `bg-gradient-to-l from-amber-600 to-amber-500 text-white shadow-md shadow-amber-500/20 font-bold`.
+  - **القطاعات والبطاقات النشطة:** `bg-amber-50/90 border-2 border-amber-500 text-amber-950 shadow-sm ring-2 ring-amber-500/15 font-bold`.
+  - **أزرار الحفظ والإجراءات الرئيسية:** `bg-gradient-to-l from-amber-600 to-amber-500 hover:from-amber-700 hover:to-amber-600 text-white shadow-md shadow-amber-500/20 font-bold`.
+  - **مبدل الفئات (Segmented Switcher):** `bg-amber-500 text-white shadow-sm font-bold`.
+  - **قوائم الاختيار `<select>`:** `bg-white text-slate-900 border-slate-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20`.
+
+
 

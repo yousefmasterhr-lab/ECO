@@ -10,6 +10,7 @@ import {
   SubModuleMatrixRow,
 } from '../../../types/rbac';
 import { UserRole } from '../../../types/auth';
+import { d1Client } from '../../../services/d1Client';
 import {
   ShieldCheck,
   Check,
@@ -165,7 +166,26 @@ export const RBACView: React.FC = () => {
     return repo;
   });
 
-  // Sync users from managedUsers into permissionsRepo
+  // Hydrate permissionsRepo from Cloudflare D1 on mount
+  useEffect(() => {
+    d1Client.fetchRbacMatrices().then(matrices => {
+      if (Array.isArray(matrices) && matrices.length > 0) {
+        setPermissionsRepo(prev => {
+          const next = { ...prev };
+          matrices.forEach(m => {
+            if (m.targetType && m.targetId && Array.isArray(m.permissions)) {
+              next[`${m.targetType}:${m.targetId}`] = new Set(m.permissions);
+            }
+          });
+          return next;
+        });
+      }
+    }).catch(err => {
+      console.warn('Failed to load RBAC matrices from D1:', err);
+    });
+  }, []);
+
+  // Sync users from managedUsers into permissionsRepo without overwriting D1 data
   useEffect(() => {
     if (!managedUsers || managedUsers.length === 0) return;
 
@@ -179,9 +199,6 @@ export const RBACView: React.FC = () => {
           changed = true;
           if (Array.isArray(u.permissions) && u.permissions.length > 0) {
             next[uKey] = new Set(u.permissions);
-          } else if (u.role === 'SUPER_ADMIN' || u.id === 'usr_root_csuite_01') {
-            const allKeys = ALL_12_ERP_MODULES.flatMap(m => m.allPermissionKeys);
-            next[uKey] = new Set(allKeys);
           } else {
             const roleKey = `role:${u.role}`;
             next[uKey] = new Set(prev[roleKey] || []);
@@ -302,8 +319,22 @@ export const RBACView: React.FC = () => {
   const handleSave = async () => {
     setIsSaving(true);
     const permArray = Array.from(activePermissions);
+    const targetId = targetType === 'user' ? (currentTargetUser?.id || selectedUserId) : selectedRole;
 
     try {
+      // 1. Persist directly to Cloudflare D1 rbac_matrices table
+      const d1Res = await d1Client.saveRbacMatrix(
+        targetType,
+        targetId,
+        permArray,
+        user?.nameAr || 'مدير النظام'
+      );
+
+      if (!d1Res.success) {
+        throw new Error(d1Res.error || 'فشل حفظ الصلاحيات في قاعدة البيانات السحابية');
+      }
+
+      // 2. Update user state if target is user
       if (targetType === 'user' && currentTargetUser) {
         await updateUserPermissions(currentTargetUser.id, permArray);
 
@@ -322,12 +353,12 @@ export const RBACView: React.FC = () => {
           actionAr: `تحديث مصفوفة صلاحيات دور (${EXECUTIVE_ROLES.find(r => r.id === selectedRole)?.titleAr || selectedRole})`,
           actionEn: `Updated RBAC Role Matrix for ${selectedRole}`,
           category: 'RBAC',
-          detailsAr: `تم تحديث وتثبيت ${permArray.length} صلاحية لدور ${selectedRole}`,
-          detailsEn: `Saved ${permArray.length} permissions for role ${selectedRole}`,
+          detailsAr: `تم تحديث وتثبيت ${permArray.length} صلاحية لدور ${selectedRole} في Cloudflare D1`,
+          detailsEn: `Saved ${permArray.length} permissions for role ${selectedRole} in Cloudflare D1`,
           status: 'SUCCESS',
         });
 
-        // Also update any managed users having this role if they have not overridden custom permissions
+        // Also update any managed users having this role
         managedUsers.forEach(u => {
           if (u.role === selectedRole) {
             updateUserPermissions(u.id, permArray).catch(() => {});
@@ -336,7 +367,7 @@ export const RBACView: React.FC = () => {
       }
 
       setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 2800);
+      setTimeout(() => setSaveSuccess(false), 3000);
     } catch (err) {
       console.error('Failed to save permissions matrix', err);
     } finally {
@@ -409,8 +440,8 @@ export const RBACView: React.FC = () => {
                 onClick={() => setTargetType('user')}
                 className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                   targetType === 'user'
-                    ? 'bg-white dark:bg-[#1C2E24] text-slate-900 dark:text-[#F3EFE6] shadow-xs'
-                    : 'text-slate-500 dark:text-[#8FA392] hover:text-slate-900 dark:hover:text-white'
+                    ? 'bg-amber-500 text-white shadow-sm font-bold dark:bg-amber-500 dark:text-slate-950'
+                    : 'text-slate-600 dark:text-[#8FA392] hover:text-amber-800 dark:hover:text-white'
                 }`}
               >
                 <User className="w-3.5 h-3.5" />
@@ -422,8 +453,8 @@ export const RBACView: React.FC = () => {
                 onClick={() => setTargetType('role')}
                 className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                   targetType === 'role'
-                    ? 'bg-white dark:bg-[#1C2E24] text-slate-900 dark:text-[#F3EFE6] shadow-xs'
-                    : 'text-slate-500 dark:text-[#8FA392] hover:text-slate-900 dark:hover:text-white'
+                    ? 'bg-amber-500 text-white shadow-sm font-bold dark:bg-amber-500 dark:text-slate-950'
+                    : 'text-slate-600 dark:text-[#8FA392] hover:text-amber-800 dark:hover:text-white'
                 }`}
               >
                 <Users className="w-3.5 h-3.5" />
@@ -436,16 +467,16 @@ export const RBACView: React.FC = () => {
               type="button"
               onClick={handleSave}
               disabled={isSaving}
-              className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shadow-sm cursor-pointer ${
+              className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shadow-md shadow-amber-500/20 cursor-pointer ${
                 saveSuccess
                   ? 'bg-emerald-600 text-white'
-                  : 'bg-slate-900 hover:bg-slate-800 dark:bg-amber-500 dark:hover:bg-amber-400 text-white dark:text-slate-950 active:scale-95'
+                  : 'bg-gradient-to-l from-amber-600 to-amber-500 hover:from-amber-700 hover:to-amber-600 text-white dark:from-amber-500 dark:to-amber-600 dark:text-slate-950 active:scale-95'
               }`}
             >
               {saveSuccess ? (
                 <>
                   <Check className="w-4 h-4 stroke-[2.5]" />
-                  <span>{t('تم الحفظ والمزامنة المباشرة', 'Saved & Synced Live!')}</span>
+                  <span>{t('تم حفظ مصفوفة الصلاحيات في قاعدة البيانات السحابية بنجاح', 'Saved & Synced to Cloudflare D1!')}</span>
                 </>
               ) : (
                 <>
@@ -471,10 +502,10 @@ export const RBACView: React.FC = () => {
                   <select
                     value={selectedUserId}
                     onChange={e => setSelectedUserId(e.target.value)}
-                    className="w-full appearance-none pl-10 pr-4 py-2 rounded-xl text-xs font-bold bg-slate-50 dark:bg-[#07130E] border border-slate-200 dark:border-[#1A3327] text-slate-900 dark:text-[#F3EFE6] focus:outline-none focus:border-amber-500 cursor-pointer"
+                    className="w-full appearance-none pl-10 pr-4 py-2 rounded-xl text-xs font-bold bg-white dark:bg-[#07130E] border border-slate-200 dark:border-[#1A3327] text-slate-900 dark:text-[#F3EFE6] focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 cursor-pointer"
                   >
                     {managedUsers.map(u => (
-                      <option key={u.id} value={u.id}>
+                      <option key={u.id} value={u.id} className="bg-white dark:bg-[#0E1610] text-slate-900 dark:text-[#F3EFE6]">
                         {u.nameAr} — {u.jobTitleAr || u.role} ({u.email})
                       </option>
                     ))}
@@ -527,15 +558,15 @@ export const RBACView: React.FC = () => {
                       onClick={() => setSelectedRole(role.id)}
                       className={`p-3 rounded-xl border text-start transition-all cursor-pointer flex flex-col justify-between ${
                         isSelected
-                          ? 'bg-[#0D1F17] dark:bg-amber-500 text-white dark:text-slate-950 border-transparent shadow-md ring-2 ring-amber-500/40 font-bold'
-                          : 'bg-slate-50 dark:bg-[#07130E] border-slate-200 dark:border-[#1A3327] text-slate-700 dark:text-[#8FA392] hover:bg-slate-100 dark:hover:bg-[#14261C]'
+                          ? 'bg-amber-50/90 border-2 border-amber-500 text-amber-950 shadow-sm ring-2 ring-amber-500/15 font-bold dark:bg-[#132A1F] dark:border-amber-500/80 dark:text-amber-300'
+                          : 'bg-white border border-slate-200/80 text-slate-700 hover:bg-amber-50/40 hover:border-amber-300 dark:bg-[#07130E] dark:border-[#1A3327] dark:text-[#8FA392]'
                       }`}
                     >
                       <div className="flex items-center justify-between w-full mb-1">
                         <span className="text-[11px] font-bold truncate block">
                           {isRtl ? role.titleAr : role.titleEn}
                         </span>
-                        {isSelected && <Check className="w-3.5 h-3.5 shrink-0 stroke-[3]" />}
+                        {isSelected && <Check className="w-3.5 h-3.5 shrink-0 stroke-[3] text-amber-600 dark:text-amber-400" />}
                       </div>
                       <span className={`text-[10px] line-clamp-1 opacity-75`}>
                         {role.descriptionAr}
@@ -577,14 +608,16 @@ export const RBACView: React.FC = () => {
                   onClick={() => setActiveModuleId(mod.id)}
                   className={`w-full py-2 px-2.5 rounded-xl border text-start transition-all cursor-pointer flex items-center justify-between gap-2.5 ${
                     isActive
-                      ? 'bg-[#0D1F17] text-white dark:bg-amber-500 dark:text-slate-950 border-transparent shadow-md ring-2 ring-amber-500/40 font-bold'
-                      : 'bg-white/80 dark:bg-[#0D1F17] border-slate-200 dark:border-[#1A3327] text-slate-700 dark:text-[#C5D6C9] hover:bg-slate-50 dark:hover:bg-[#14261C]'
+                      ? 'bg-amber-50/90 border-2 border-amber-500 text-amber-950 shadow-sm ring-2 ring-amber-500/15 font-bold dark:bg-[#132A1F] dark:border-amber-500/80 dark:text-amber-300'
+                      : 'bg-white border border-slate-200/80 text-slate-700 hover:bg-amber-50/40 hover:border-amber-300 dark:bg-[#0D1F17] dark:border-[#1A3327] dark:text-[#C5D6C9]'
                   }`}
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
                     <div
-                      className="w-7 h-7 rounded-lg flex items-center justify-center text-white shrink-0 shadow-xs"
-                      style={{ backgroundColor: mod.colorVar }}
+                      className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 shadow-xs ${
+                        isActive ? 'bg-amber-500 text-white' : 'text-white'
+                      }`}
+                      style={!isActive ? { backgroundColor: mod.colorVar } : undefined}
                     >
                       <Icon className="w-3.5 h-3.5" />
                     </div>
@@ -596,15 +629,15 @@ export const RBACView: React.FC = () => {
 
                       {/* Animated Mini Progress Bar */}
                       <div className="flex items-center gap-1.5 mt-0.5">
-                        <div className="w-16 h-1 rounded-full bg-slate-100 dark:bg-black/20 overflow-hidden">
+                        <div className="w-16 h-1 rounded-full bg-slate-200/60 dark:bg-black/30 overflow-hidden">
                           <motion.div
-                            className={`h-full rounded-full ${isActive ? 'bg-amber-400 dark:bg-slate-950' : 'bg-emerald-500'}`}
+                            className={`h-full rounded-full ${isActive ? 'bg-amber-500 dark:bg-amber-400' : 'bg-emerald-500'}`}
                             initial={{ width: 0 }}
                             animate={{ width: `${percentage}%` }}
                             transition={{ duration: 0.3 }}
                           />
                         </div>
-                        <span className={`text-[9.5px] font-mono ${isActive ? 'text-amber-200 dark:text-slate-800' : 'text-slate-400 dark:text-[#8FA392]'}`}>
+                        <span className={`text-[9.5px] font-mono ${isActive ? 'text-amber-800 dark:text-amber-300 font-bold' : 'text-slate-400 dark:text-[#8FA392]'}`}>
                           {granted}/{total}
                         </span>
                       </div>
@@ -615,7 +648,7 @@ export const RBACView: React.FC = () => {
                     <span
                       className={`text-[9.5px] font-mono font-bold px-1.5 py-0.5 rounded ${
                         isActive
-                          ? 'bg-white/20 dark:bg-black/20 text-white dark:text-slate-950'
+                          ? 'bg-amber-500/15 text-amber-900 font-bold dark:bg-amber-500/20 dark:text-amber-300'
                           : percentage === 100
                           ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
                           : percentage > 0

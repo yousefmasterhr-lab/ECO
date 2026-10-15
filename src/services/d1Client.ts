@@ -180,22 +180,65 @@ export const d1Client = {
   },
 
   /**
-   * Save User Permissions in D1
+   * Fetch All RBAC Matrices from Cloudflare D1
    */
-  saveUserPermissions: async (userId: string, permissions: string[], userName?: string): Promise<{ success: boolean; error?: string }> => {
+  fetchRbacMatrices: async (): Promise<Array<{
+    targetType: 'user' | 'role';
+    targetId: string;
+    permissions: string[];
+    updatedBy?: string;
+    updatedAt?: string;
+  }>> => {
     try {
-      const response = await fetch('/api/permissions', {
+      const response = await fetch('/api/rbac', {
+        headers: getAuthHeaders(),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && Array.isArray(data.matrices)) {
+          return data.matrices;
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to fetch RBAC matrices from D1 API:', e);
+    }
+    return [];
+  },
+
+  /**
+   * Save RBAC Permission Matrix in Cloudflare D1
+   */
+  saveRbacMatrix: async (
+    targetType: 'user' | 'role',
+    targetId: string,
+    permissions: string[],
+    updatedBy?: string
+  ): Promise<{ success: boolean; message?: string; error?: string }> => {
+    try {
+      const response = await fetch('/api/rbac', {
         method: 'PUT',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ userId, permissions, userName }),
+        body: JSON.stringify({ targetType, targetId, permissions, updatedBy }),
       });
 
       const data = await response.json();
       if (!response.ok || !data.success) {
-        return { success: false, error: data.error || 'فشل حفظ الصلاحيات' };
+        return { success: false, error: data.error || 'فشل حفظ مصفوفة الصلاحيات' };
       }
 
-      return { success: true };
+      return { success: true, message: data.message };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
+  },
+
+  /**
+   * Save User Permissions in D1
+   */
+  saveUserPermissions: async (userId: string, permissions: string[], userName?: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const res = await d1Client.saveRbacMatrix('user', userId, permissions, userName);
+      return res;
     } catch (err: any) {
       return { success: false, error: err.message };
     }

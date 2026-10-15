@@ -258,7 +258,7 @@ export const ConfigurationView: React.FC = () => {
 
         <button
           onClick={handleOpenAdd}
-          className="px-4 py-2.5 rounded-xl bg-[#1C291E] dark:bg-[#EBB34D] text-[#F3EFE6] dark:text-[#0E1610] font-bold text-xs flex items-center gap-2 transition-all shadow-sm hover:opacity-90 active:scale-95 cursor-pointer self-start sm:self-center shrink-0"
+          className="px-4 py-2.5 rounded-xl bg-gradient-to-l from-amber-600 to-amber-500 hover:from-amber-700 hover:to-amber-600 text-white shadow-md shadow-amber-500/20 font-bold text-xs flex items-center gap-2 transition-all active:scale-95 cursor-pointer self-start sm:self-center shrink-0 dark:from-amber-500 dark:to-amber-600 dark:text-slate-950"
         >
           <Plus className="w-4 h-4 stroke-[2.5]" />
           <span>{t(`إضافة في "${activeMeta.titleAr}"`, `Add to ${activeMeta.titleEn}`)}</span>
@@ -282,15 +282,15 @@ export const ConfigurationView: React.FC = () => {
               }}
               className={`p-3 rounded-2xl border text-start transition-all cursor-pointer flex flex-col justify-between gap-2 ${
                 isSelected
-                  ? 'bg-[#1C291E] dark:bg-[#EBB34D] text-white dark:text-slate-950 border-transparent shadow-md ring-2 ring-amber-500/40 font-bold'
-                  : 'bg-white dark:bg-[#0D1F17] border-slate-200 dark:border-[#1A3327] text-slate-700 dark:text-[#8FA392] hover:bg-slate-50 dark:hover:bg-[#14261C]'
+                  ? 'bg-amber-50/90 border-2 border-amber-500 text-amber-950 shadow-sm ring-2 ring-amber-500/15 font-bold dark:bg-[#132A1F] dark:border-amber-500/80 dark:text-amber-300'
+                  : 'bg-white dark:bg-[#0D1F17] border-slate-200 dark:border-[#1A3327] text-slate-700 dark:text-[#8FA392] hover:bg-amber-50/40 hover:border-amber-300 dark:hover:bg-[#14261C]'
               }`}
             >
               <div className="flex items-center justify-between w-full">
                 <div
                   className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
                     isSelected
-                      ? 'bg-white/20 text-white dark:text-slate-950'
+                      ? 'bg-amber-500 text-white dark:bg-amber-500 dark:text-slate-950'
                       : 'bg-amber-500/10 text-[#D99B26] dark:text-[#EBB34D]'
                   }`}
                 >
@@ -299,7 +299,7 @@ export const ConfigurationView: React.FC = () => {
                 <span
                   className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold ${
                     isSelected
-                      ? 'bg-white/20 text-white dark:text-slate-950'
+                      ? 'bg-amber-500/15 text-amber-900 font-bold dark:bg-amber-500/20 dark:text-amber-300'
                       : 'bg-slate-100 dark:bg-[#1A3327] text-slate-600 dark:text-[#8FA392]'
                   }`}
                 >

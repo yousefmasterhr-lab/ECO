@@ -56,13 +56,13 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({ activeSubItemId 
   return (
     <div className="w-full space-y-5 animate-in fade-in duration-200">
       {/* Sub Tabs Bar for RBAC / User Accounts / Dynamic Config / Audit Logs / Database Hub */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 border-b border-[#E0D9CB]/60 dark:border-[#243628]/60">
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 border-b border-slate-200/80 dark:border-[#243628]/60">
         <button
           onClick={() => setActiveTab('rbac')}
           className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
             activeTab === 'rbac'
-              ? 'bg-[#1C291E] dark:bg-[#EBB34D] text-[#F3EFE6] dark:text-[#0E1610] shadow-xs'
-              : 'bg-[#F3EFE6] dark:bg-[#17231A] text-[#5C665E] dark:text-[#8FA392] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23] border border-[#E0D9CB] dark:border-[#243628]'
+              ? 'bg-gradient-to-l from-amber-600 to-amber-500 text-white shadow-md shadow-amber-500/20 border-transparent font-bold dark:from-amber-500 dark:to-amber-600 dark:text-slate-950'
+              : 'bg-white text-slate-700 border border-slate-200/80 hover:bg-amber-50/60 hover:text-amber-800 hover:border-amber-300 dark:bg-[#17231A] dark:text-[#8FA392] dark:border-[#243628] dark:hover:bg-[#1F2E23]'
           }`}
         >
           <ShieldCheck className="w-3.5 h-3.5" />
@@ -73,8 +73,8 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({ activeSubItemId 
           onClick={() => setActiveTab('users')}
           className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
             activeTab === 'users'
-              ? 'bg-[#1C291E] dark:bg-[#EBB34D] text-[#F3EFE6] dark:text-[#0E1610] shadow-xs'
-              : 'bg-[#F3EFE6] dark:bg-[#17231A] text-[#5C665E] dark:text-[#8FA392] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23] border border-[#E0D9CB] dark:border-[#243628]'
+              ? 'bg-gradient-to-l from-amber-600 to-amber-500 text-white shadow-md shadow-amber-500/20 border-transparent font-bold dark:from-amber-500 dark:to-amber-600 dark:text-slate-950'
+              : 'bg-white text-slate-700 border border-slate-200/80 hover:bg-amber-50/60 hover:text-amber-800 hover:border-amber-300 dark:bg-[#17231A] dark:text-[#8FA392] dark:border-[#243628] dark:hover:bg-[#1F2E23]'
           }`}
         >
           <Users className="w-3.5 h-3.5" />
@@ -85,8 +85,8 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({ activeSubItemId 
           onClick={() => setActiveTab('configurations')}
           className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
             activeTab === 'configurations'
-              ? 'bg-[#1C291E] dark:bg-[#EBB34D] text-[#F3EFE6] dark:text-[#0E1610] shadow-xs'
-              : 'bg-[#F3EFE6] dark:bg-[#17231A] text-[#5C665E] dark:text-[#8FA392] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23] border border-[#E0D9CB] dark:border-[#243628]'
+              ? 'bg-gradient-to-l from-amber-600 to-amber-500 text-white shadow-md shadow-amber-500/20 border-transparent font-bold dark:from-amber-500 dark:to-amber-600 dark:text-slate-950'
+              : 'bg-white text-slate-700 border border-slate-200/80 hover:bg-amber-50/60 hover:text-amber-800 hover:border-amber-300 dark:bg-[#17231A] dark:text-[#8FA392] dark:border-[#243628] dark:hover:bg-[#1F2E23]'
           }`}
         >
           <Sliders className="w-3.5 h-3.5 text-amber-500" />
@@ -97,8 +97,8 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({ activeSubItemId 
           onClick={() => setActiveTab('audit')}
           className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
             activeTab === 'audit'
-              ? 'bg-[#1C291E] dark:bg-[#EBB34D] text-[#F3EFE6] dark:text-[#0E1610] shadow-xs'
-              : 'bg-[#F3EFE6] dark:bg-[#17231A] text-[#5C665E] dark:text-[#8FA392] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23] border border-[#E0D9CB] dark:border-[#243628]'
+              ? 'bg-gradient-to-l from-amber-600 to-amber-500 text-white shadow-md shadow-amber-500/20 border-transparent font-bold dark:from-amber-500 dark:to-amber-600 dark:text-slate-950'
+              : 'bg-white text-slate-700 border border-slate-200/80 hover:bg-amber-50/60 hover:text-amber-800 hover:border-amber-300 dark:bg-[#17231A] dark:text-[#8FA392] dark:border-[#243628] dark:hover:bg-[#1F2E23]'
           }`}
         >
           <ScrollText className="w-3.5 h-3.5" />
@@ -109,8 +109,8 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({ activeSubItemId 
           onClick={() => setActiveTab('system')}
           className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
             activeTab === 'system'
-              ? 'bg-[#1C291E] dark:bg-[#EBB34D] text-[#F3EFE6] dark:text-[#0E1610] shadow-xs'
-              : 'bg-[#F3EFE6] dark:bg-[#17231A] text-[#5C665E] dark:text-[#8FA392] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23] border border-[#E0D9CB] dark:border-[#243628]'
+              ? 'bg-gradient-to-l from-amber-600 to-amber-500 text-white shadow-md shadow-amber-500/20 border-transparent font-bold dark:from-amber-500 dark:to-amber-600 dark:text-slate-950'
+              : 'bg-white text-slate-700 border border-slate-200/80 hover:bg-amber-50/60 hover:text-amber-800 hover:border-amber-300 dark:bg-[#17231A] dark:text-[#8FA392] dark:border-[#243628] dark:hover:bg-[#1F2E23]'
           }`}
         >
           <Database className="w-3.5 h-3.5" />
@@ -121,8 +121,8 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({ activeSubItemId 
           onClick={() => setActiveTab('upgrades')}
           className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
             activeTab === 'upgrades'
-              ? 'bg-[#1C291E] dark:bg-[#EBB34D] text-[#F3EFE6] dark:text-[#0E1610] shadow-xs'
-              : 'bg-[#F3EFE6] dark:bg-[#17231A] text-[#5C665E] dark:text-[#8FA392] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23] border border-[#E0D9CB] dark:border-[#243628]'
+              ? 'bg-gradient-to-l from-amber-600 to-amber-500 text-white shadow-md shadow-amber-500/20 border-transparent font-bold dark:from-amber-500 dark:to-amber-600 dark:text-slate-950'
+              : 'bg-white text-slate-700 border border-slate-200/80 hover:bg-amber-50/60 hover:text-amber-800 hover:border-amber-300 dark:bg-[#17231A] dark:text-[#8FA392] dark:border-[#243628] dark:hover:bg-[#1F2E23]'
           }`}
         >
           <CloudUpload className="w-3.5 h-3.5 text-emerald-400" />

@@ -200,6 +200,25 @@
   2. إلغاء شارات ومستويات الصلاحية (Level 1 - 4) كلياً من بطاقات ونماذج المستخدمين، والاعتماد الحصري على مصفوفة الصلاحيات التفصيلية (RBAC Matrix).
   3. تزويد كل بطاقة مستخدم بشريط الإجراءات الأيقوني الذهبي مع نافذة سجل التدقيق المنبثقة التفصيلية (!).
 
+### ❌ الخطأ 3.10: استخدام ألوان سوداء داكنة للعناصر النشطة في النمط الفاتح (Harsh Black/Dark-Olive Selection in Light Mode)
+- **وصف المشكلة:** استخدام ألوان داكنة جداً مثل `bg-[#0D1F17]` أو `bg-[#1C291E]` أو `bg-slate-900` لتمييز التبويبات النشطة (Active Tabs)، وبطاقات القطاعات المختارة، وأزرار الحفظ في النمط الفاتح (Light Mode)، مما يشوه الهوية البصرية الدافئة والفخمة لمنظومة ECO ERP.
+- **القاعدة الصارمة:**
+  - حظر استخدام الخلفيات السوداء أو الزيتونية الداكنة للعناصر النشطة أو التبويبات في النمط الفاتح.
+  - الاعتماد التام على تدرجات ولون الكهرمان المؤسسي (Brand Amber Palette):
+    - **التبويبات النشطة:** `bg-gradient-to-l from-amber-600 to-amber-500 text-white shadow-md shadow-amber-500/20 font-bold`.
+    - **البطاقات والقطاعات النشطة:** `bg-amber-50/90 border-2 border-amber-500 text-amber-950 shadow-sm ring-2 ring-amber-500/15 font-bold` مع أيقونة `bg-amber-500 text-white` وشارة `bg-amber-500/15 text-amber-900 font-bold`.
+    - **أزرار الحفظ والإجراءات الرئيسية:** `bg-gradient-to-l from-amber-600 to-amber-500 hover:from-amber-700 hover:to-amber-600 text-white shadow-md shadow-amber-500/20 font-bold`.
+    - **مبدل الفئات والخيارات (Segmented Switcher):** `bg-amber-500 text-white shadow-sm font-bold`.
+    - **قوائم `<select>`:** خلفية بيضاء `bg-white text-slate-900 border-slate-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20`.
+
+### ❌ الخطأ 3.11: إعادة ضبط مصفوفة الصلاحيات بالقيم الافتراضية عند تحديث الصفحة (RBAC Reset on Page Reload)
+- **وصف المشكلة:** ضياع الصلاحيات المعدلة وعودتها للقيم الافتراضية عند عمل تحديث للمتصفح (F5/Refresh)، بسبب عدم تسجيل مسارات `/api/rbac` و `/api/configurations` في `isCloudflareEdgeRoute`، أو قيام `AuthContext` / `RBACView` بإعادة تعيين الصلاحيات من البذور الثابتة (Seed Defaults) بدلاً من استرجاع مصفوفة D1 الحقيقية.
+- **القاعدة الصارمة:**
+  1. إدراج كافة مسارات الصلاحيات والتعريفات (`api/rbac`, `api/permissions`, `api/configurations`) صراحةً داخل دالة `isCloudflareEdgeRoute` في `src/services/apiClient.ts`.
+  2. إنشاء جدول مخصص `rbac_matrices` في Cloudflare D1 ذو مفتاح رئيسي `(target_type, target_id)` وحفظ الصلاحيات عبر `UPSERT`.
+  3. استرجاع وحقن مصفوفة الصلاحيات (Hydration) فور إقلاع التطبيق ومكون RBAC عبر `GET /api/rbac` وتطبيقها فوراً على `user.permissions` و `hasPermission()`.
+  4. حظر كتابة أي كود يتجاوز مصفوفة D1 المحفوظة ليعيد فرض بذور ثابتة لحساب الإدارة أو أي مستخدم آخر.
+
 ---
 
 ## 4. ملخص البروتوكول الإلزامي قبل كتابة أي كود جديد

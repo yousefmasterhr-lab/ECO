@@ -141,29 +141,85 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Sync with Cloudflare D1 Edge database
   useEffect(() => {
-    d1Client.fetchUsers().then(liveUsers => {
+    // Sync with Cloudflare D1 Edge database: fetch users & RBAC matrices
+    Promise.all([
+      d1Client.fetchUsers(),
+      d1Client.fetchRbacMatrices(),
+    ]).then(([liveUsers, liveMatrices]) => {
+      // Build lookup map for stored matrices
+      const matrixMap = new Map<string, string[]>();
+      if (Array.isArray(liveMatrices)) {
+        liveMatrices.forEach(m => {
+          if (m.targetType && m.targetId && Array.isArray(m.permissions)) {
+            matrixMap.set(`${m.targetType}:${m.targetId}`, m.permissions);
+          }
+        });
+      }
+
       if (liveUsers && liveUsers.length > 0) {
-        setManagedUsers(liveUsers);
-        // Automatically sync current logged-in user profile & permissions if updated in D1
+        // Hydrate each user with their persisted D1 permissions
+        const mergedUsers = liveUsers.map(u => {
+          const userPerms = matrixMap.get(`user:${u.id}`);
+          const rolePerms = matrixMap.get(`role:${u.role}`);
+          const perms = userPerms || u.permissions || rolePerms || [];
+          return {
+            ...u,
+            permissions: perms,
+            customPermissions: perms,
+          };
+        });
+
+        setManagedUsers(mergedUsers);
+
+        // Automatically sync current logged-in user profile & permissions from D1
         setUser(currentUser => {
           if (!currentUser) return null;
-          const matched = liveUsers.find(
+          const matched = mergedUsers.find(
             u => u.id === currentUser.id || u.email.toLowerCase() === currentUser.email.toLowerCase()
           );
-          if (matched) {
-            return {
-              ...currentUser,
-              nameAr: matched.nameAr || currentUser.nameAr,
-              nameEn: matched.nameEn || currentUser.nameEn,
-              jobTitleAr: matched.jobTitleAr || currentUser.jobTitleAr,
-              phone: matched.phone || currentUser.phone,
-              permissions: matched.permissions || currentUser.permissions,
-            };
+
+          // Priority: direct user matrix in D1 > matched user permissions > role matrix in D1 > existing
+          const d1UserPerms = matrixMap.get(`user:${currentUser.id}`) ||
+                              (matched?.id ? matrixMap.get(`user:${matched.id}`) : undefined) ||
+                              matched?.permissions ||
+                              matrixMap.get(`role:${currentUser.role}`);
+
+          const finalPerms = d1UserPerms && Array.isArray(d1UserPerms) && d1UserPerms.length > 0
+            ? d1UserPerms
+            : (currentUser.permissions || []);
+
+          const updated = {
+            ...currentUser,
+            nameAr: matched?.nameAr || currentUser.nameAr,
+            nameEn: matched?.nameEn || currentUser.nameEn,
+            jobTitleAr: matched?.jobTitleAr || currentUser.jobTitleAr,
+            phone: matched?.phone || currentUser.phone,
+            permissions: finalPerms,
+          };
+
+          try {
+            localStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify(updated));
+          } catch {}
+
+          return updated;
+        });
+      } else if (liveMatrices && liveMatrices.length > 0) {
+        setUser(currentUser => {
+          if (!currentUser) return null;
+          const d1UserPerms = matrixMap.get(`user:${currentUser.id}`) || matrixMap.get(`role:${currentUser.role}`);
+          if (d1UserPerms && Array.isArray(d1UserPerms)) {
+            const updated = { ...currentUser, permissions: d1UserPerms };
+            try {
+              localStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify(updated));
+            } catch {}
+            return updated;
           }
           return currentUser;
         });
       }
-    }).catch(() => {});
+    }).catch(err => {
+      console.warn('Failed to sync users and RBAC matrices on startup:', err);
+    });
 
     d1Client.fetchAuditLogs().then(liveLogs => {
       if (liveLogs && liveLogs.length > 0) {
@@ -260,11 +316,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               ? (parsed.jobTitleAr || 'مدير النظام العام / رئيس مجلس الإدارة')
               : parsed.jobTitleAr,
             phone: isRoot ? (parsed.phone || '+20 100 000 0000') : parsed.phone,
-            permissions: isRoot
-              ? (parsed.permissions && parsed.permissions.length > 0
-                  ? parsed.permissions
-                  : [...ALL_COMPANY_PERMISSIONS])
-              : (parsed.permissions || []),
+            permissions: Array.isArray(parsed.permissions) && parsed.permissions.length > 0
+              ? parsed.permissions
+              : (isRoot ? [...ALL_COMPANY_PERMISSIONS] : []),
             allowedModuleIds: config?.allowedModuleIds || parsed.allowedModuleIds || [],
           });
         }
