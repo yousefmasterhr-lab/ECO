@@ -219,3 +219,39 @@
    - الحفظ الفوري في Cloudflare D1 (`/api/permissions`) باستخدام `db.batch` و `UPSERT`.
    - بث حدث المتصفح المخصص `eco-permissions-updated` لتطبيق التغييرات لحظياً عبر السايدبار، التبويبات، والأزرار.
 
+### 8.5 دقة الواجهات وثنائية الاتجاه (RTL Precision & Toggle Switch Architecture)
+1. **معيار مفاتيح التبديل الحتمية المقاومة للـ RTL (Deterministic Flexbox Toggles):**
+   - حظر تام لاستخدام `translate-x` لتحريك دوائر مفاتيح التبديل داخل عناصر `overflow-hidden` أو الحاويات الكبسولية في الواجهات المعربة.
+   - الاعتماد الحصري على محاذاة Flexbox (`justify-start` عند الإلغاء و `justify-end` عند التفعيل) مع خاصية `layout` من Framer Motion:
+     ```tsx
+     <button
+       type="button"
+       role="switch"
+       aria-checked={checked}
+       onClick={onChange}
+       className={`w-11 h-6 rounded-full p-0.5 flex items-center transition-colors duration-200 cursor-pointer ${
+         checked
+           ? 'bg-emerald-600 dark:bg-emerald-500 justify-end'
+           : 'bg-slate-200 dark:bg-stone-700 justify-start'
+       }`}
+     >
+       <motion.span
+         layout
+         transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+         className="w-5 h-5 rounded-full bg-white shadow-md block pointer-events-none"
+       />
+     </button>
+     ```
+2. **منع التزييف في خلايا الصلاحيات غير المطبقة (Non-Applicable Permissions):**
+   - عدم رسم مفاتيح تبديل وهمية للإجراءات غير المعرفة في الموديول الفرعي، واستبدالها برمز شرطة أنيق ومحايد (`—`).
+   - احتساب العداد الإجمالي ونسب الصلاحيات `X / Y` بناءً على الصلاحيات الحقيقية المطبقة فقط.
+3. **تطهير معلمات الرابط عند التنقل بين الموديولات (URL Query Sanitization):**
+   - عند تبديل القطاع أو الموديول الرئيسي عبر `NavigationContext`، يجب تنظيف المعلمات العالقة (مثل `?tab=statement&accountId=...`) باستخدام:
+     ```typescript
+     if (typeof window !== 'undefined' && window.location.search) {
+       window.history.replaceState({}, '', window.location.pathname);
+     }
+     ```
+4. **منع اقتطاع النصوص في حقول القوائم المنسدلة RTL:**
+   - تطبيق حشوة آمنة `pl-10 pr-4 py-2 min-w-[320px]` مع وضع أيقونة السهم في `left-3` لمنع اقتطاع أول حرف من الأسماء أو الإيميلات.
+

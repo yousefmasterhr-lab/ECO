@@ -20,7 +20,6 @@ import {
   Building2,
   Users,
   User,
-  Info,
   CheckCheck,
   ChevronDown
 } from 'lucide-react';
@@ -86,7 +85,7 @@ export const RBACView: React.FC = () => {
   // Selected Target Role
   const [selectedRole, setSelectedRole] = useState<UserRole>('SUPER_ADMIN');
 
-  // Active module in the 12-sector matrix
+  // Active module in the 12-sector matrix (Defaults to 1st sector at top: Companies Management)
   const [activeModuleId, setActiveModuleId] = useState<DepartmentKey>('companies');
 
   // Search filter
@@ -181,11 +180,9 @@ export const RBACView: React.FC = () => {
           if (Array.isArray(u.permissions) && u.permissions.length > 0) {
             next[uKey] = new Set(u.permissions);
           } else if (u.role === 'SUPER_ADMIN' || u.id === 'usr_root_csuite_01') {
-            // Full permissions for super admin
             const allKeys = ALL_12_ERP_MODULES.flatMap(m => m.allPermissionKeys);
             next[uKey] = new Set(allKeys);
           } else {
-            // Inherit from role template
             const roleKey = `role:${u.role}`;
             next[uKey] = new Set(prev[roleKey] || []);
           }
@@ -348,7 +345,7 @@ export const RBACView: React.FC = () => {
     });
   }, [activeModule, searchQuery]);
 
-  // Calculate grant counts for any module
+  // Calculate grant counts for any module strictly based on applicable permissions
   const getModuleStats = (mod: (typeof ALL_12_ERP_MODULES)[number]) => {
     const total = mod.allPermissionKeys.length;
     let granted = 0;
@@ -452,29 +449,31 @@ export const RBACView: React.FC = () => {
         <div className="mt-4 pt-4 border-t border-slate-100 dark:border-[#1A3327]">
           {targetType === 'user' ? (
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="flex items-center gap-2 min-w-0">
+              <div className="flex items-center gap-2.5 min-w-0">
                 <span className="text-xs font-bold text-slate-700 dark:text-[#C5D6C9] shrink-0">
                   {t('المستخدم المستهدف:', 'Target User:')}
                 </span>
 
-                <div className="relative flex-1 sm:w-80">
+                {/* Generous Padding to Prevent Email Truncation in RTL */}
+                <div className="relative flex-1 min-w-[320px] max-w-md">
                   <select
                     value={selectedUserId}
                     onChange={e => setSelectedUserId(e.target.value)}
-                    className="w-full appearance-none ps-3 pe-8 py-2 rounded-xl text-xs font-bold bg-slate-50 dark:bg-[#07130E] border border-slate-200 dark:border-[#1A3327] text-slate-900 dark:text-[#F3EFE6] focus:outline-none focus:border-amber-500 cursor-pointer"
+                    className="w-full appearance-none pl-10 pr-4 py-2 rounded-xl text-xs font-bold bg-slate-50 dark:bg-[#07130E] border border-slate-200 dark:border-[#1A3327] text-slate-900 dark:text-[#F3EFE6] focus:outline-none focus:border-amber-500 cursor-pointer"
                   >
                     {managedUsers.map(u => (
                       <option key={u.id} value={u.id}>
-                        {u.nameAr} ({u.jobTitleAr || u.role}) - {u.email}
+                        {u.nameAr} — {u.jobTitleAr || u.role} ({u.email})
                       </option>
                     ))}
                   </select>
-                  <ChevronDown className="w-4 h-4 text-slate-400 absolute inset-y-0 end-2.5 my-auto pointer-events-none" />
+                  <ChevronDown className="w-4 h-4 text-slate-400 absolute inset-y-0 left-3 my-auto pointer-events-none" />
                 </div>
               </div>
 
+              {/* Compact User Info & Super Admin Badge */}
               {currentTargetUser && (
-                <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-[#8FA392]">
+                <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-[#8FA392]">
                   <span className="font-semibold text-slate-700 dark:text-[#C5D6C9]">
                     {currentTargetUser.nameAr}
                   </span>
@@ -483,14 +482,28 @@ export const RBACView: React.FC = () => {
                   <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#1A2E22] text-[10.5px] font-mono">
                     {activePermissions.size} {t('صلاحية مفعلة', 'Active Permissions')}
                   </span>
+                  {isSuperAdminTarget && (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 text-[10.5px] font-bold">
+                      <Sparkles className="w-3 h-3 text-amber-500 shrink-0" />
+                      <span>{t('إدارة عليا (C-Suite) — صلاحيات شاملة قابلة للتخصيص', 'C-Suite — Full Access (Customizable)')}</span>
+                    </span>
+                  )}
                 </div>
               )}
             </div>
           ) : (
             <div>
-              <div className="text-xs font-bold text-slate-700 dark:text-[#C5D6C9] mb-2 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                <span>{t('اختر الدور الوظيفي لتعديل صلاحياته النموذجية:', 'Select Job Role to Edit Permissions:')}</span>
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <div className="text-xs font-bold text-slate-700 dark:text-[#C5D6C9] flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                  <span>{t('اختر الدور الوظيفي لتعديل صلاحياته النموذجية:', 'Select Job Role to Edit Permissions:')}</span>
+                </div>
+                {isSuperAdminTarget && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 text-[10.5px] font-bold">
+                    <Sparkles className="w-3 h-3 text-amber-500 shrink-0" />
+                    <span>{t('دور إدارة عليا — صلاحيات شاملة قابلة للتخصيص', 'C-Suite Role — Full Access (Customizable)')}</span>
+                  </span>
+                )}
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
                 {EXECUTIVE_ROLES.map(role => {
@@ -502,7 +515,7 @@ export const RBACView: React.FC = () => {
                       onClick={() => setSelectedRole(role.id)}
                       className={`p-3 rounded-xl border text-start transition-all cursor-pointer flex flex-col justify-between ${
                         isSelected
-                          ? 'bg-slate-900 dark:bg-amber-500 text-white dark:text-slate-950 border-transparent shadow-sm font-bold'
+                          ? 'bg-[#0D1F17] dark:bg-amber-500 text-white dark:text-slate-950 border-transparent shadow-md ring-2 ring-amber-500/40 font-bold'
                           : 'bg-slate-50 dark:bg-[#07130E] border-slate-200 dark:border-[#1A3327] text-slate-700 dark:text-[#8FA392] hover:bg-slate-100 dark:hover:bg-[#14261C]'
                       }`}
                     >
@@ -522,37 +535,24 @@ export const RBACView: React.FC = () => {
             </div>
           )}
         </div>
-
-        {/* Single Executive Super Admin Banner (Zero Repetition!) */}
-        {isSuperAdminTarget && (
-          <div className="mt-3.5 p-3 rounded-xl bg-amber-500/10 dark:bg-amber-400/10 border border-amber-500/20 flex items-center gap-2.5 text-xs text-amber-800 dark:text-amber-300">
-            <Info className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400" />
-            <span>
-              {t(
-                'حساب إدارة عليا (Super Admin) - الصلاحيات مفعلة بالكامل افتراضياً، مع إمكانية التخصيص والاستثناء المباشر لأي صلاحية أو قطاع.',
-                'Super Admin Account: All permissions are enabled by default, with real-time ability to customize or revoke any specific permission.'
-              )}
-            </span>
-          </div>
-        )}
       </div>
 
       {/* ============================================================================== */}
-      {/* 2. Main 2-Column Layout: Right (12 Modules List) | Left (Active Matrix Table)  */}
+      {/* 2. Main Rebalanced Layout: Right (Compact 12 Modules) | Left (Wider Matrix)   */}
       {/* ============================================================================== */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-        {/* Right Column: 12 Modules Navigation List */}
-        <div className="lg:col-span-4 space-y-2">
-          <div className="flex items-center justify-between px-1">
+      <div className="flex flex-col lg:flex-row gap-5 items-start w-full">
+        {/* Right Column: Compact 12 Modules Navigation List (All visible without scrolling) */}
+        <div className="w-full lg:w-[260px] shrink-0 space-y-1">
+          <div className="flex items-center justify-between px-1 mb-1">
             <span className="text-xs font-black text-slate-800 dark:text-[#F3EFE6] uppercase tracking-wider">
               {t('قطاعات المنظومة (12)', 'ERP Sectors (12)')}
             </span>
-            <span className="text-[11px] text-slate-400 dark:text-[#8FA392]">
-              {t('اختر القطاع للتعديل', 'Select Sector')}
+            <span className="text-[10.5px] text-slate-400 dark:text-[#8FA392]">
+              {t('اختر القطاع', 'Select Sector')}
             </span>
           </div>
 
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             {ALL_12_ERP_MODULES.map(mod => {
               const isActive = activeModuleId === mod.id;
               const Icon = mod.icon || Building2;
@@ -563,38 +563,36 @@ export const RBACView: React.FC = () => {
                   key={mod.id}
                   type="button"
                   onClick={() => setActiveModuleId(mod.id)}
-                  className={`w-full p-3 rounded-xl border text-start transition-all cursor-pointer flex items-center justify-between gap-3 ${
+                  className={`w-full py-2 px-2.5 rounded-xl border text-start transition-all cursor-pointer flex items-center justify-between gap-2.5 ${
                     isActive
-                      ? 'bg-white dark:bg-[#122419] border-amber-500/50 shadow-sm ring-1 ring-amber-500/30'
-                      : 'bg-white/70 dark:bg-[#0D1F17] border-slate-200 dark:border-[#1A3327] hover:bg-slate-50 dark:hover:bg-[#14261C]'
+                      ? 'bg-[#0D1F17] text-white dark:bg-amber-500 dark:text-slate-950 border-transparent shadow-md ring-2 ring-amber-500/40 font-bold'
+                      : 'bg-white/80 dark:bg-[#0D1F17] border-slate-200 dark:border-[#1A3327] text-slate-700 dark:text-[#C5D6C9] hover:bg-slate-50 dark:hover:bg-[#14261C]'
                   }`}
                 >
-                  <div className="flex items-center gap-3 min-w-0">
+                  <div className="flex items-center gap-2.5 min-w-0">
                     <div
-                      className="w-8 h-8 rounded-lg flex items-center justify-center text-white shrink-0 shadow-xs"
+                      className="w-7 h-7 rounded-lg flex items-center justify-center text-white shrink-0 shadow-xs"
                       style={{ backgroundColor: mod.colorVar }}
                     >
-                      <Icon className="w-4 h-4" />
+                      <Icon className="w-3.5 h-3.5" />
                     </div>
 
                     <div className="min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-bold text-slate-900 dark:text-[#F3EFE6] truncate block">
-                          {isRtl ? mod.titleAr : mod.titleEn}
-                        </span>
-                      </div>
+                      <span className="text-xs font-bold truncate block">
+                        {isRtl ? mod.titleAr : mod.titleEn}
+                      </span>
 
                       {/* Animated Mini Progress Bar */}
-                      <div className="flex items-center gap-2 mt-1">
-                        <div className="w-20 h-1.5 rounded-full bg-slate-100 dark:bg-[#1A3327] overflow-hidden">
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <div className="w-16 h-1 rounded-full bg-slate-100 dark:bg-black/20 overflow-hidden">
                           <motion.div
-                            className="h-full bg-emerald-500 rounded-full"
+                            className={`h-full rounded-full ${isActive ? 'bg-amber-400 dark:bg-slate-950' : 'bg-emerald-500'}`}
                             initial={{ width: 0 }}
                             animate={{ width: `${percentage}%` }}
                             transition={{ duration: 0.3 }}
                           />
                         </div>
-                        <span className="text-[10px] text-slate-400 dark:text-[#8FA392] font-mono">
+                        <span className={`text-[9.5px] font-mono ${isActive ? 'text-amber-200 dark:text-slate-800' : 'text-slate-400 dark:text-[#8FA392]'}`}>
                           {granted}/{total}
                         </span>
                       </div>
@@ -603,8 +601,10 @@ export const RBACView: React.FC = () => {
 
                   <div className="shrink-0">
                     <span
-                      className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md ${
-                        percentage === 100
+                      className={`text-[9.5px] font-mono font-bold px-1.5 py-0.5 rounded ${
+                        isActive
+                          ? 'bg-white/20 dark:bg-black/20 text-white dark:text-slate-950'
+                          : percentage === 100
                           ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
                           : percentage > 0
                           ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400'
@@ -621,7 +621,7 @@ export const RBACView: React.FC = () => {
         </div>
 
         {/* Left Column: Structured Sub-Module Permission Matrix Table */}
-        <div className="lg:col-span-8 space-y-4">
+        <div className="flex-1 min-w-0 space-y-4">
           <AnimatePresence mode="wait">
             <motion.div
               key={activeModule.id}
@@ -650,7 +650,7 @@ export const RBACView: React.FC = () => {
                           {activeStats.granted} / {activeStats.total} {t('صلاحية', 'Perms')}
                         </span>
                       </div>
-                      <p className="text-xs text-slate-500 dark:text-[#8FA392] truncate mt-0.5">
+                      <p className="text-xs text-slate-500 dark:text-[#8FA392] mt-0.5 leading-relaxed whitespace-normal">
                         {activeModule.descriptionAr}
                       </p>
                     </div>
@@ -691,13 +691,13 @@ export const RBACView: React.FC = () => {
                 </div>
               </div>
 
-              {/* Crisp Matrix Table */}
+              {/* Crisp Matrix Table with Natural Text Wrapping & Bulletproof RTL Switches */}
               <div className="bg-white dark:bg-[#0D1F17] rounded-2xl border border-slate-200 dark:border-[#1A3327] shadow-xs overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-start border-collapse text-xs">
                     <thead>
                       <tr className="bg-slate-50 dark:bg-[#0A1811] border-b border-slate-200 dark:border-[#1A3327]">
-                        <th className="py-3 px-4 text-start font-bold text-slate-700 dark:text-[#C5D6C9] min-w-[200px]">
+                        <th className="py-3 px-4 text-start font-bold text-slate-700 dark:text-[#C5D6C9] w-[32%] min-w-[240px]">
                           {t('القسم الفرعي', 'Sub-Module')}
                         </th>
                         {MATRIX_ACTIONS.map(action => (
@@ -728,12 +728,12 @@ export const RBACView: React.FC = () => {
                             key={subModule.id}
                             className="hover:bg-slate-50/80 dark:hover:bg-[#122419] transition-colors"
                           >
-                            {/* Sub Module Name & Description */}
-                            <td className="py-3.5 px-4 align-middle">
+                            {/* Sub Module Name & Description (Wraps naturally across 2 lines without truncation) */}
+                            <td className="py-3 px-4 align-middle">
                               <span className="font-bold text-slate-900 dark:text-[#F3EFE6] block">
                                 {isRtl ? subModule.titleAr : subModule.titleEn}
                               </span>
-                              <span className="text-[11px] text-slate-500 dark:text-[#8FA392] line-clamp-1 mt-0.5">
+                              <span className="text-[11px] text-slate-500 dark:text-[#8FA392] line-clamp-2 whitespace-normal leading-relaxed mt-0.5 block">
                                 {subModule.descriptionAr}
                               </span>
                             </td>
@@ -744,7 +744,9 @@ export const RBACView: React.FC = () => {
                               if (!actionDef) {
                                 return (
                                   <td key={action.id} className="py-3 px-2 text-center align-middle">
-                                    <span className="text-slate-300 dark:text-[#1A3327] select-none text-xs">-</span>
+                                    <span className="inline-flex items-center justify-center w-7 h-5 rounded text-xs font-semibold text-slate-300 dark:text-[#243628] select-none bg-slate-50 dark:bg-[#07130E] border border-dashed border-slate-200 dark:border-[#1A3327]">
+                                      —
+                                    </span>
                                   </td>
                                 );
                               }
@@ -753,24 +755,26 @@ export const RBACView: React.FC = () => {
 
                               return (
                                 <td key={action.id} className="py-3 px-2 text-center align-middle">
-                                  <button
-                                    type="button"
-                                    onClick={() => handleTogglePermission(actionDef.key)}
-                                    title={actionDef.labelAr || action.labelAr}
-                                    className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                                      isChecked
-                                        ? 'bg-emerald-600 dark:bg-emerald-500'
-                                        : 'bg-slate-200 dark:bg-[#1A2E22]'
-                                    }`}
-                                    role="switch"
-                                    aria-checked={isChecked}
-                                  >
-                                    <span
-                                      className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
-                                        isChecked ? 'translate-x-4 dark:translate-x-4' : 'translate-x-0'
+                                  <div className="flex items-center justify-center">
+                                    <button
+                                      type="button"
+                                      role="switch"
+                                      aria-checked={isChecked}
+                                      onClick={() => handleTogglePermission(actionDef.key)}
+                                      title={actionDef.labelAr || action.labelAr}
+                                      className={`w-11 h-6 rounded-full p-0.5 flex items-center transition-colors duration-200 cursor-pointer ${
+                                        isChecked
+                                          ? 'bg-emerald-600 dark:bg-emerald-500 justify-end'
+                                          : 'bg-slate-200 dark:bg-stone-700 justify-start'
                                       }`}
-                                    />
-                                  </button>
+                                    >
+                                      <motion.span
+                                        layout
+                                        transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                                        className="w-5 h-5 rounded-full bg-white shadow-md block pointer-events-none"
+                                      />
+                                    </button>
+                                  </div>
                                 </td>
                               );
                             })}

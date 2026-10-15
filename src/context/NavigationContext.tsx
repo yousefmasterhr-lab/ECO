@@ -347,6 +347,11 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   };
 
   const selectItem = (catId: string, subId?: string) => {
+    // Strip stale URL query parameters when switching main modules
+    if (typeof window !== 'undefined' && window.location.search) {
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+
     if (catId && catId !== '') {
       if (!checkModuleAccess(catId)) {
         // Intercepted by RBAC Route Guard
