@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { DepartmentNavCategory, NavSubItem } from '../../types';
 import { useLanguage } from '../../context/LanguageContext';
 import { useNavigation } from '../../context/NavigationContext';
+import { useAuth } from '../../context/AuthContext';
 import {
   HardHat,
   Scale,
@@ -163,7 +164,32 @@ export const SidebarItem: React.FC<SidebarItemProps> = ({ category }) => {
     selectItem,
   } = useNavigation();
 
+  const { hasPermission } = useAuth();
+
   const [expandedSubItems, setExpandedSubItems] = useState<string[]>(['leg_contracts']);
+
+  // Filter sub-items based on Granular Action-Level RBAC for Company Management
+  const visibleSubItems = React.useMemo(() => {
+    if (category.id !== 'companies') return category.subItems;
+
+    const COMPANY_TAB_PERMS: Record<string, string> = {
+      comp_directory: 'companies.directory.view',
+      comp_licenses: 'companies.licenses.view',
+      comp_branches: 'companies.branches.view',
+      comp_structure: 'companies.org.view',
+      comp_signatories: 'companies.signatories.view',
+    };
+
+    return category.subItems.filter(sub => {
+      const permKey = COMPANY_TAB_PERMS[sub.id];
+      return permKey ? hasPermission(permKey) : true;
+    });
+  }, [category.id, category.subItems, hasPermission]);
+
+  // Hide the entire Companies Management category if user has zero view permissions across all 5 tabs
+  if (category.id === 'companies' && visibleSubItems.length === 0) {
+    return null;
+  }
 
   // Auto-expand parent sub-item if a nested child is active
   React.useEffect(() => {
@@ -193,7 +219,7 @@ export const SidebarItem: React.FC<SidebarItemProps> = ({ category }) => {
     return (
       <div className="w-full flex items-center justify-center py-1">
         <button
-          onClick={() => selectItem(category.id, category.subItems[0]?.id)}
+          onClick={() => selectItem(category.id, visibleSubItems[0]?.id)}
           className={`w-11 h-11 rounded-xl mx-auto flex items-center justify-center transition-all duration-200 relative shrink-0 ${
             isCategoryActive
               ? 'bg-[#D99B26]/20 text-[#D99B26] dark:text-[#EBB34D] shadow-xs'
@@ -332,7 +358,7 @@ export const SidebarItem: React.FC<SidebarItemProps> = ({ category }) => {
               }}
               className={`space-y-0.5 py-1 ${isRtl ? 'pr-4 pl-1' : 'pl-4 pr-1'}`}
             >
-              {category.subItems.map((sub, idx) => {
+              {visibleSubItems.map((sub, idx) => {
                 const hasChildren = Boolean(sub.children && sub.children.length > 0);
                 const isChildActive = Boolean(sub.children?.some(c => c.id === activeSubItemId));
                 const isSubActive = (isCategoryActive && activeSubItemId === sub.id) || isChildActive;

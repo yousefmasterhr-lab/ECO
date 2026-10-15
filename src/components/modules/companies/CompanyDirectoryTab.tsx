@@ -27,6 +27,7 @@ import {
   CompanyDocumentAttachment
 } from './types';
 import { formatCurrency, formatNumber } from '../../../utils/formatters';
+import { useAuth } from '../../../context/AuthContext';
 
 interface CompanyDirectoryTabProps {
   companies: CompanyEntity[];
@@ -60,6 +61,7 @@ const SpotlightCompanyCard: React.FC<{
   onToggleStatus: (id: string) => void;
   onOpenAudit: (comp: CompanyEntity) => void;
 }> = ({ company, index, docsCount, onView, onEdit, onOpenDocs, onDelete, onToggleStatus, onOpenAudit }) => {
+  const { hasPermission } = useAuth();
   const cardRef = useRef<HTMLDivElement>(null);
   const [mousePos, setMousePos] = useState({ x: -1000, y: -1000 });
   const [isHovered, setIsHovered] = useState(false);
@@ -137,18 +139,20 @@ const SpotlightCompanyCard: React.FC<{
           </div>
 
           {/* Interactive Change Audit Log ("!" Exclamation Icon) */}
-          <div className="relative shrink-0">
-            <button
-              onClick={() => onOpenAudit(company)}
-              title="سجل تعديلات الكيان (Audit Trail)"
-              className="group/audit relative p-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/50 text-amber-600 dark:text-amber-400 hover:bg-amber-500 hover:text-white transition-all shadow-xs"
-            >
-              <AlertCircle className="w-4 h-4 transition-transform group-hover/audit:scale-110" />
-              {auditCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-amber-500 ring-2 ring-white dark:ring-[#17231A] animate-pulse" />
-              )}
-            </button>
-          </div>
+          {hasPermission('companies.directory.view_audit') && (
+            <div className="relative shrink-0">
+              <button
+                onClick={() => onOpenAudit(company)}
+                title="سجل تعديلات الكيان (Audit Trail)"
+                className="group/audit relative p-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/50 text-amber-600 dark:text-amber-400 hover:bg-amber-500 hover:text-white transition-all shadow-xs"
+              >
+                <AlertCircle className="w-4 h-4 transition-transform group-hover/audit:scale-110" />
+                {auditCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-amber-500 ring-2 ring-white dark:ring-[#17231A] animate-pulse" />
+                )}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Vital Metadata Grid */}
@@ -197,50 +201,58 @@ const SpotlightCompanyCard: React.FC<{
           </button>
 
           {/* 2. تعديل البيانات */}
-          <button
-            onClick={() => onEdit(company)}
-            title="تعديل بيانات الشركة وهيكل المساهمين"
-            className="p-2.5 rounded-xl bg-slate-100 dark:bg-[#1F2E23] hover:bg-amber-500/20 hover:text-amber-600 dark:hover:text-amber-400 text-slate-700 dark:text-[#E0D9CB] transition-all border border-slate-200/60 dark:border-transparent"
-          >
-            <Pencil className="w-4 h-4" />
-          </button>
+          {hasPermission('companies.directory.edit') && (
+            <button
+              onClick={() => onEdit(company)}
+              title="تعديل بيانات الشركة وهيكل المساهمين"
+              className="p-2.5 rounded-xl bg-slate-100 dark:bg-[#1F2E23] hover:bg-amber-500/20 hover:text-amber-600 dark:hover:text-amber-400 text-slate-700 dark:text-[#E0D9CB] transition-all border border-slate-200/60 dark:border-transparent"
+            >
+              <Pencil className="w-4 h-4" />
+            </button>
+          )}
 
           {/* 3. المستندات والملفات */}
-          <button
-            onClick={() => onOpenDocs(company)}
-            title="المستندات والملفات المرفقة"
-            className="relative p-2.5 rounded-xl bg-slate-100 dark:bg-[#1F2E23] hover:bg-blue-500/20 hover:text-blue-600 dark:hover:text-blue-400 text-slate-700 dark:text-[#E0D9CB] transition-all border border-slate-200/60 dark:border-transparent"
-          >
-            <FileText className="w-4 h-4" />
-            {docsCount > 0 && (
-              <span className="absolute -top-1 -right-1 px-1.5 py-0.2 rounded-full text-[9px] font-black bg-blue-600 text-white">
-                {docsCount}
-              </span>
-            )}
-          </button>
+          {hasPermission('companies.directory.view_docs') && (
+            <button
+              onClick={() => onOpenDocs(company)}
+              title="المستندات والملفات المرفقة"
+              className="relative p-2.5 rounded-xl bg-slate-100 dark:bg-[#1F2E23] hover:bg-blue-500/20 hover:text-blue-600 dark:hover:text-blue-400 text-slate-700 dark:text-[#E0D9CB] transition-all border border-slate-200/60 dark:border-transparent"
+            >
+              <FileText className="w-4 h-4" />
+              {docsCount > 0 && (
+                <span className="absolute -top-1 -right-1 px-1.5 py-0.2 rounded-full text-[9px] font-black bg-blue-600 text-white">
+                  {docsCount}
+                </span>
+              )}
+            </button>
+          )}
 
           {/* 4. تفعيل / تعطيل الكيان */}
-          <button
-            onClick={() => onToggleStatus(company.id)}
-            title={company.status === 'active' ? 'تعطيل الكيان مؤقتاً' : 'تفعيل الكيان رسمياً'}
-            className={`p-2.5 rounded-xl transition-all border ${
-              company.status === 'active'
-                ? 'bg-slate-100 dark:bg-[#1F2E23] text-emerald-600 hover:bg-emerald-500/20 border-slate-200/60 dark:border-transparent'
-                : 'bg-rose-50 dark:bg-rose-950/30 text-rose-600 border-rose-200 dark:border-rose-900/50'
-            }`}
-          >
-            <Power className="w-4 h-4" />
-          </button>
+          {hasPermission('companies.directory.toggle_status') && (
+            <button
+              onClick={() => onToggleStatus(company.id)}
+              title={company.status === 'active' ? 'تعطيل الكيان مؤقتاً' : 'تفعيل الكيان رسمياً'}
+              className={`p-2.5 rounded-xl transition-all border ${
+                company.status === 'active'
+                  ? 'bg-slate-100 dark:bg-[#1F2E23] text-emerald-600 hover:bg-emerald-500/20 border-slate-200/60 dark:border-transparent'
+                  : 'bg-rose-50 dark:bg-rose-950/30 text-rose-600 border-rose-200 dark:border-rose-900/50'
+              }`}
+            >
+              <Power className="w-4 h-4" />
+            </button>
+          )}
         </div>
 
         {/* 5. حذف الكيان */}
-        <button
-          onClick={() => onDelete(company)}
-          title="حذف الكيان نهائياً"
-          className="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/30 hover:bg-rose-500 hover:text-white text-rose-600 dark:text-rose-400 transition-all border border-rose-200/60 dark:border-rose-900/40"
-        >
-          <Trash2 className="w-4 h-4 text-rose-500 hover:text-white" />
-        </button>
+        {hasPermission('companies.directory.delete') && (
+          <button
+            onClick={() => onDelete(company)}
+            title="حذف الكيان نهائياً"
+            className="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/30 hover:bg-rose-500 hover:text-white text-rose-600 dark:text-rose-400 transition-all border border-rose-200/60 dark:border-rose-900/40"
+          >
+            <Trash2 className="w-4 h-4 text-rose-500 hover:text-white" />
+          </button>
+        )}
       </div>
     </motion.div>
   );
@@ -258,6 +270,7 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
   onToggleStatus,
   onOpenAddDocumentForCompany
 }) => {
+  const { hasPermission } = useAuth();
   // Modal Visibility States
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCompany, setEditingCompany] = useState<CompanyEntity | null>(null);
@@ -477,13 +490,15 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
           </p>
         </div>
 
-        <button
-          onClick={handleOpenAddModal}
-          className="min-h-[44px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-all shadow-sm hover:shadow-md shrink-0"
-        >
-          <Plus className="w-4 h-4" />
-          <span>+ إضافة شركة جديدة</span>
-        </button>
+        {hasPermission('companies.directory.create') && (
+          <button
+            onClick={handleOpenAddModal}
+            className="min-h-[44px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-all shadow-sm hover:shadow-md shrink-0"
+          >
+            <Plus className="w-4 h-4" />
+            <span>+ إضافة شركة جديدة</span>
+          </button>
+        )}
       </div>
 
       {/* Empty State when no companies exist */}
@@ -502,13 +517,15 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
           <p className="text-xs text-slate-500 dark:text-[#8FA392] max-w-md mb-6 leading-relaxed">
             ابدأ بتسجيل شركتك الأولى لتوثيق الهيكل القانوني ورأس المال وتوزيع الحصص ورفع الوثائق الرسمية
           </p>
-          <button
-            onClick={handleOpenAddModal}
-            className="flex items-center gap-2 px-6 py-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-md hover:shadow-lg transition-all"
-          >
-            <Plus className="w-4 h-4" />
-            <span>تسجيل أول شركة الآن</span>
-          </button>
+          {hasPermission('companies.directory.create') && (
+            <button
+              onClick={handleOpenAddModal}
+              className="flex items-center gap-2 px-6 py-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-md hover:shadow-lg transition-all"
+            >
+              <Plus className="w-4 h-4" />
+              <span>تسجيل أول شركة الآن</span>
+            </button>
+          )}
         </motion.div>
       ) : (
         /* Grid of Company Cards (Fluid Responsive) */

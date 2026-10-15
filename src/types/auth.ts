@@ -7,12 +7,140 @@ export type UserRole =
   | 'LEGAL_COUNSEL'
   | 'RECEPTION_SECURITY';
 
+// ==============================================================================
+// Granular Permission Keys Schema for Company Management (إدارة الشركات)
+// ==============================================================================
+export const ALL_COMPANY_PERMISSIONS = [
+  // 1. دليل الشركات
+  'companies.directory.view',
+  'companies.directory.create',
+  'companies.directory.edit',
+  'companies.directory.toggle_status',
+  'companies.directory.view_docs',
+  'companies.directory.view_audit',
+  'companies.directory.delete',
+
+  // 2. السجلات والتراخيص
+  'companies.licenses.view',
+  'companies.licenses.create',
+  'companies.licenses.edit',
+  'companies.licenses.download',
+  'companies.licenses.view_audit',
+  'companies.licenses.delete',
+
+  // 3. الفروع والمواقع
+  'companies.branches.view',
+  'companies.branches.create',
+  'companies.branches.edit',
+  'companies.branches.view_audit',
+  'companies.branches.delete',
+
+  // 4. الهيكل ومراكز التكلفة
+  'companies.org.view',
+  'companies.org.create',
+  'companies.org.edit',
+  'companies.org.view_audit',
+  'companies.org.delete',
+
+  // 5. المفوضون والصلاحيات
+  'companies.signatories.view',
+  'companies.signatories.create',
+  'companies.signatories.edit',
+  'companies.signatories.download_poa',
+  'companies.signatories.view_audit',
+  'companies.signatories.delete',
+] as const;
+
+export type CompanyPermissionKey = (typeof ALL_COMPANY_PERMISSIONS)[number];
+
+export interface SubModulePermissionDef {
+  id: string;
+  tabKey: string;
+  titleAr: string;
+  descriptionAr: string;
+  view: CompanyPermissionKey;
+  create: CompanyPermissionKey;
+  edit: CompanyPermissionKey;
+  special: {
+    key: CompanyPermissionKey;
+    labelAr: string;
+  };
+  audit: CompanyPermissionKey;
+  delete: CompanyPermissionKey;
+}
+
+export const COMPANY_SUBMODULE_PERMISSIONS: SubModulePermissionDef[] = [
+  {
+    id: 'directory',
+    tabKey: 'comp_directory',
+    titleAr: 'دليل الشركات',
+    descriptionAr: 'بيانات الشركات والكيانات القانونية وهيكل المساهمين ورؤوس الأموال',
+    view: 'companies.directory.view',
+    create: 'companies.directory.create',
+    edit: 'companies.directory.edit',
+    special: { key: 'companies.directory.toggle_status', labelAr: 'تغيير الحالة والمستندات' },
+    audit: 'companies.directory.view_audit',
+    delete: 'companies.directory.delete',
+  },
+  {
+    id: 'licenses',
+    tabKey: 'comp_licenses',
+    titleAr: 'السجلات والتراخيص',
+    descriptionAr: 'السجل التجاري والبطاقة الضريبية والتأمينات والوثائق ومواعيد التجديد',
+    view: 'companies.licenses.view',
+    create: 'companies.licenses.create',
+    edit: 'companies.licenses.edit',
+    special: { key: 'companies.licenses.download', labelAr: 'معاينة وتحميل المرفقات' },
+    audit: 'companies.licenses.view_audit',
+    delete: 'companies.licenses.delete',
+  },
+  {
+    id: 'branches',
+    tabKey: 'comp_branches',
+    titleAr: 'الفروع والمواقع',
+    descriptionAr: 'المقرات الإدارية، المستودعات، الورش ومواقع المشروعات الميدانية',
+    view: 'companies.branches.view',
+    create: 'companies.branches.create',
+    edit: 'companies.branches.edit',
+    special: { key: 'companies.branches.view', labelAr: 'إدارة الموقع' },
+    audit: 'companies.branches.view_audit',
+    delete: 'companies.branches.delete',
+  },
+  {
+    id: 'org_structure',
+    tabKey: 'comp_structure',
+    titleAr: 'الهيكل ومراكز التكلفة',
+    descriptionAr: 'الشجرة الهرمية للإدارات والأقسام وربط مراكز التكلفة والمسؤوليات',
+    view: 'companies.org.view',
+    create: 'companies.org.create',
+    edit: 'companies.org.edit',
+    special: { key: 'companies.org.view', labelAr: 'تعديل التبعية' },
+    audit: 'companies.org.view_audit',
+    delete: 'companies.org.delete',
+  },
+  {
+    id: 'signatories',
+    tabKey: 'comp_signatories',
+    titleAr: 'المفوضون والصلاحيات',
+    descriptionAr: 'التوكيلات الرسمية بالشهر العقاري وأسقف التوقيع البنكية والتعاقدية',
+    view: 'companies.signatories.view',
+    create: 'companies.signatories.create',
+    edit: 'companies.signatories.edit',
+    special: { key: 'companies.signatories.download_poa', labelAr: 'تحميل ملف التوكيل' },
+    audit: 'companies.signatories.view_audit',
+    delete: 'companies.signatories.delete',
+  },
+];
+
 export interface AuthUser {
   id: string;
   email: string;
   username: string;
   nameAr: string;
   nameEn: string;
+  jobTitleAr?: string;
+  jobTitleEn?: string;
+  phone?: string;
   role: UserRole;
   roleLabelAr: string;
   roleLabelEn: string;
@@ -23,6 +151,7 @@ export interface AuthUser {
   clearanceNameEn: string;
   avatarUrl?: string;
   allowedModuleIds: string[];
+  permissions?: string[];
   lastLogin?: string;
 }
 
@@ -45,13 +174,13 @@ export interface RoleConfig {
 export const ROLE_CONFIGURATIONS: Record<UserRole, RoleConfig> = {
   SUPER_ADMIN: {
     role: 'SUPER_ADMIN',
-    titleAr: 'الرئيس التنفيذي للعمليات (الإدارة العليا)',
-    titleEn: 'Chief Operating Officer (C-Suite)',
+    titleAr: 'مدير النظام العام / رئيس مجلس الإدارة',
+    titleEn: 'System Administrator / CEO',
     badgeAr: 'C-Suite',
     badgeEn: 'C-Suite',
     clearanceLevel: 4,
-    clearanceNameAr: 'المستوى 4 - إدارة عليا',
-    clearanceNameEn: 'Level 4 - C-Suite Governance',
+    clearanceNameAr: 'إدارة عليا وحوكمة',
+    clearanceNameEn: 'C-Suite Governance',
     departmentAr: 'الإدارة العليا والاستراتيجية',
     departmentEn: 'Executive Management & Strategy',
     allowedModuleIds: [
@@ -189,140 +318,6 @@ export const ROLE_CONFIGURATIONS: Record<UserRole, RoleConfig> = {
   },
 };
 
-export interface SeedAccount {
-  user: AuthUser;
-  passwordHash: string; // Plaintext or token verification for local seed
-}
-
-export const PRECONFIGURED_SEED_USERS: SeedAccount[] = [
-  {
-    user: {
-      id: 'usr_csuite_01',
-      email: 'admin@hrsup.com',
-      username: 'admin',
-      nameAr: 'م. أحمد مصطفى',
-      nameEn: 'Eng. Ahmed Mostafa',
-      role: 'SUPER_ADMIN',
-      roleLabelAr: 'الرئيس التنفيذي للعمليات (COO)',
-      roleLabelEn: 'Chief Operating Officer (COO)',
-      departmentAr: 'الإدارة العليا والاستراتيجية',
-      departmentEn: 'Executive Management',
-      clearanceLevel: 4,
-      clearanceNameAr: 'المستوى 4 - إدارة عليا',
-      clearanceNameEn: 'Level 4 - C-Suite Governance',
-      avatarUrl: '',
-      allowedModuleIds: ROLE_CONFIGURATIONS.SUPER_ADMIN.allowedModuleIds,
-      lastLogin: '2026-10-10 08:30',
-    },
-    passwordHash: 'admin123',
-  },
-  {
-    user: {
-      id: 'usr_finance_01',
-      email: 'finance@hrsup.com',
-      username: 'finance',
-      nameAr: 'أ. إبراهيم خليل',
-      nameEn: 'Mr. Ibrahim Khalil',
-      role: 'FINANCE_OFFICER',
-      roleLabelAr: 'المدير المالي التنفيذي (CFO)',
-      roleLabelEn: 'Chief Financial Officer (CFO)',
-      departmentAr: 'الشؤون المالية والخزينة',
-      departmentEn: 'Financial Affairs',
-      clearanceLevel: 3,
-      clearanceNameAr: 'المستوى 3 - شؤون مالية',
-      clearanceNameEn: 'Level 3 - Financial Management',
-      avatarUrl: '',
-      allowedModuleIds: ROLE_CONFIGURATIONS.FINANCE_OFFICER.allowedModuleIds,
-      lastLogin: '2026-10-10 09:15',
-    },
-    passwordHash: 'finance123',
-  },
-  {
-    user: {
-      id: 'usr_hr_01',
-      email: 'hr@hrsup.com',
-      username: 'hr',
-      nameAr: 'أ. دينا محمود الشناوي',
-      nameEn: 'Mrs. Dina El-Shennawy',
-      role: 'HR_MANAGER',
-      roleLabelAr: 'مدير الموارد البشرية (HR Director)',
-      roleLabelEn: 'HR Director',
-      departmentAr: 'إدارة الموارد البشرية',
-      departmentEn: 'Human Resources',
-      clearanceLevel: 3,
-      clearanceNameAr: 'المستوى 3 - إدارة الموارد البشرية',
-      clearanceNameEn: 'Level 3 - HR Director',
-      avatarUrl: '',
-      allowedModuleIds: ROLE_CONFIGURATIONS.HR_MANAGER.allowedModuleIds,
-      lastLogin: '2026-10-10 08:45',
-    },
-    passwordHash: 'hr123',
-  },
-  {
-    user: {
-      id: 'usr_eng_01',
-      email: 'engineer@hrsup.com',
-      username: 'engineer',
-      nameAr: 'م. طارق مصطفى سالم',
-      nameEn: 'Eng. Tarek Salem',
-      role: 'PROJECTS_ENGINEER',
-      roleLabelAr: 'مدير المكتب الفني والمشاريع',
-      roleLabelEn: 'Technical Office Director',
-      departmentAr: 'المكتب الفني',
-      departmentEn: 'Technical Office',
-      clearanceLevel: 3,
-      clearanceNameAr: 'المستوى 3 - المكتب الفني',
-      clearanceNameEn: 'Level 3 - Technical Office',
-      avatarUrl: '',
-      allowedModuleIds: ROLE_CONFIGURATIONS.PROJECTS_ENGINEER.allowedModuleIds,
-      lastLogin: '2026-10-09 16:20',
-    },
-    passwordHash: 'eng123',
-  },
-  {
-    user: {
-      id: 'usr_legal_01',
-      email: 'legal@hrsup.com',
-      username: 'legal',
-      nameAr: 'المستشار. فاروق الدسوقي',
-      nameEn: 'Counsellor Farouk El-Desouky',
-      role: 'LEGAL_COUNSEL',
-      roleLabelAr: 'المستشار القانوني العام',
-      roleLabelEn: 'General Legal Counsel',
-      departmentAr: 'الشؤون القانونية',
-      departmentEn: 'Legal Affairs',
-      clearanceLevel: 3,
-      clearanceNameAr: 'المستوى 3 - الشؤون القانونية',
-      clearanceNameEn: 'Level 3 - Legal Affairs',
-      avatarUrl: '',
-      allowedModuleIds: ROLE_CONFIGURATIONS.LEGAL_COUNSEL.allowedModuleIds,
-      lastLogin: '2026-10-08 14:10',
-    },
-    passwordHash: 'legal123',
-  },
-  {
-    user: {
-      id: 'usr_sec_01',
-      email: 'security@hrsup.com',
-      username: 'security',
-      nameAr: 'أ. عادل عبد السلام',
-      nameEn: 'Adel Abdel-Salam',
-      role: 'RECEPTION_SECURITY',
-      roleLabelAr: 'مسؤول الاستقبال والأمن',
-      roleLabelEn: 'Front Desk & Security Officer',
-      departmentAr: 'الاستقبال والخدمات الإدارية',
-      departmentEn: 'Front Desk & Security',
-      clearanceLevel: 2,
-      clearanceNameAr: 'المستوى 2 - الاستقبال والأمن',
-      clearanceNameEn: 'Level 2 - Reception & Security',
-      avatarUrl: '',
-      allowedModuleIds: ROLE_CONFIGURATIONS.RECEPTION_SECURITY.allowedModuleIds,
-      lastLogin: '2026-10-10 07:50',
-    },
-    passwordHash: 'security123',
-  },
-];
-
 export interface ManagedUser {
   id: string;
   nameAr: string;
@@ -330,6 +325,9 @@ export interface ManagedUser {
   nationalId: string;
   email: string;
   username: string;
+  jobTitleAr?: string;
+  jobTitleEn?: string;
+  phone?: string;
   departmentAr: string;
   departmentEn: string;
   departmentId: string;
@@ -344,6 +342,7 @@ export interface ManagedUser {
   createdAt: string;
   lastLogin?: string;
   customPermissions?: string[];
+  permissions?: string[];
 }
 
 export interface AuditLogEntry {
@@ -363,24 +362,61 @@ export interface AuditLogEntry {
 
 export const INITIAL_ROOT_ADMIN: ManagedUser = {
   id: 'usr_root_csuite_01',
-  nameAr: 'م. أحمد مصطفى',
-  nameEn: 'Eng. Ahmed Mostafa',
+  nameAr: 'يوسف حجازي',
+  nameEn: 'Yousef Hegazy',
   nationalId: '29001010100000',
   email: 'admin@hrsup.com',
   username: 'admin',
+  jobTitleAr: 'مدير النظام العام / رئيس مجلس الإدارة',
+  jobTitleEn: 'System Administrator / CEO',
+  phone: '+20 100 000 0000',
   departmentAr: 'الإدارة العليا والاستراتيجية',
   departmentEn: 'Executive Management & Strategy',
   departmentId: 'executive',
   role: 'SUPER_ADMIN',
-  roleLabelAr: 'الرئيس التنفيذي للعمليات (COO)',
-  roleLabelEn: 'Chief Operating Officer (COO)',
+  roleLabelAr: 'مدير النظام العام / رئيس مجلس الإدارة',
+  roleLabelEn: 'System Administrator / CEO',
   clearanceLevel: 4,
-  clearanceNameAr: 'المستوى 4 - إدارة عليا',
-  clearanceNameEn: 'Level 4 - C-Suite Governance',
+  clearanceNameAr: 'إدارة عليا وحوكمة',
+  clearanceNameEn: 'C-Suite Governance',
   status: 'ACTIVE',
   passwordHash: 'admin123',
   createdAt: '2026-01-01',
   lastLogin: '2026-10-10 08:30',
-  customPermissions: [],
+  customPermissions: [...ALL_COMPANY_PERMISSIONS],
+  permissions: [...ALL_COMPANY_PERMISSIONS],
 };
+
+export interface SeedAccount {
+  user: AuthUser;
+  passwordHash: string; // Plaintext or token verification for local seed
+}
+
+export const PRECONFIGURED_SEED_USERS: SeedAccount[] = [
+  {
+    user: {
+      id: INITIAL_ROOT_ADMIN.id,
+      email: INITIAL_ROOT_ADMIN.email,
+      username: INITIAL_ROOT_ADMIN.username,
+      nameAr: INITIAL_ROOT_ADMIN.nameAr,
+      nameEn: INITIAL_ROOT_ADMIN.nameEn,
+      jobTitleAr: INITIAL_ROOT_ADMIN.jobTitleAr,
+      jobTitleEn: INITIAL_ROOT_ADMIN.jobTitleEn,
+      phone: INITIAL_ROOT_ADMIN.phone,
+      role: INITIAL_ROOT_ADMIN.role,
+      roleLabelAr: INITIAL_ROOT_ADMIN.roleLabelAr,
+      roleLabelEn: INITIAL_ROOT_ADMIN.roleLabelEn,
+      departmentAr: INITIAL_ROOT_ADMIN.departmentAr,
+      departmentEn: INITIAL_ROOT_ADMIN.departmentEn,
+      clearanceLevel: INITIAL_ROOT_ADMIN.clearanceLevel,
+      clearanceNameAr: INITIAL_ROOT_ADMIN.clearanceNameAr,
+      clearanceNameEn: INITIAL_ROOT_ADMIN.clearanceNameEn,
+      avatarUrl: '',
+      allowedModuleIds: ROLE_CONFIGURATIONS.SUPER_ADMIN.allowedModuleIds,
+      permissions: [...ALL_COMPANY_PERMISSIONS],
+      lastLogin: '2026-10-10 08:30',
+    },
+    passwordHash: INITIAL_ROOT_ADMIN.passwordHash,
+  },
+];
 

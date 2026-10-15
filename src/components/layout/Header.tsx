@@ -13,13 +13,19 @@ import {
   Bell,
   Check,
   Menu,
-  Shield,
   X,
   Sun,
   Moon,
   LogOut,
-  KeyRound
+  User,
+  Lock,
+  History,
+  SlidersHorizontal
 } from 'lucide-react';
+import { UserProfileModal } from '../modules/auth/UserProfileModal';
+import { ChangePasswordModal } from '../modules/auth/ChangePasswordModal';
+import { UserActivityDrawer } from '../modules/auth/UserActivityDrawer';
+import { PermissionsManagerModal } from '../modules/auth/PermissionsManagerModal';
 
 export const Header: React.FC = () => {
   const {
@@ -35,13 +41,19 @@ export const Header: React.FC = () => {
   const { isRtl, t } = useLanguage();
   const { currentUser, toggleMobileDrawer, setSearchModalOpen } = useNavigation();
   const { isDark, toggleTheme } = useTheme();
-  const { user, logout, switchUserRole, seedUsers } = useAuth();
+  const { user, logout } = useAuth();
 
   const [companyDropdownOpen, setCompanyDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const userDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Executive Account Modals
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false);
+  const [activityDrawerOpen, setActivityDrawerOpen] = useState(false);
+  const [permissionsModalOpen, setPermissionsModalOpen] = useState(false);
 
   // Close dropdowns on click outside
   useEffect(() => {
@@ -394,18 +406,19 @@ export const Header: React.FC = () => {
             <button
               onClick={() => setUserDropdownOpen(prev => !prev)}
               className="flex items-center gap-2 ps-1 pe-2.5 py-1 rounded-xl bg-[#F3EFE6] dark:bg-[#17231A] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23] border border-[#E0D9CB] dark:border-[#243628] transition-all cursor-pointer shadow-xs touch-target"
-              title={t('ملف المستخدم والصلاحيات', 'User Profile & Permissions')}
+              title={t('ملف المستخدم وإعدادات الحساب', 'User Profile & Account Settings')}
             >
               <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-[#1C291E] to-[#D99B26] flex items-center justify-center text-[#FBF9F5] text-xs font-black shadow-xs shrink-0">
-                {currentUser.nameAr.charAt(0)}
+                {(user?.nameAr || currentUser.nameAr).charAt(0)}
               </div>
               <div className="hidden sm:block text-start leading-tight">
                 <div className="text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6] truncate max-w-[130px]">
-                  {isRtl ? currentUser.nameAr : currentUser.nameEn}
+                  {isRtl ? (user?.nameAr || currentUser.nameAr) : (user?.nameEn || currentUser.nameEn)}
                 </div>
                 <div className="flex items-center gap-1 text-[10px] font-semibold text-[#D99B26] dark:text-[#EBB34D]">
-                  <Shield className="w-3 h-3 shrink-0" />
-                  <span className="truncate max-w-[110px]">{isRtl ? currentUser.clearanceNameAr : currentUser.clearanceNameEn}</span>
+                  <span className="truncate max-w-[120px]">
+                    {user?.jobTitleAr || currentUser.jobTitleAr || 'مدير النظام العام'}
+                  </span>
                 </div>
               </div>
               <ChevronDown
@@ -418,79 +431,94 @@ export const Header: React.FC = () => {
             {/* User Profile Popover Dropdown */}
             {userDropdownOpen && (
               <div
-                className="absolute top-full mt-2.5 w-80 sm:w-88 max-w-[calc(100vw-16px)] left-2 sm:left-4 origin-top-left rounded-2xl bg-[#F3EFE6] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] shadow-2xl p-3.5 z-50 animate-in fade-in-50 zoom-in-95 duration-150 text-start"
+                className="absolute top-full mt-2.5 w-80 sm:w-88 max-w-[calc(100vw-16px)] left-2 sm:left-4 origin-top-left rounded-2xl bg-[#F3EFE6] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] shadow-2xl p-3 z-50 animate-in fade-in-50 zoom-in-95 duration-150 text-start"
               >
-                {/* User Header Summary */}
+                {/* 1. Executive User Header Card */}
                 <div className="p-3 rounded-xl bg-[#EAE4D7] dark:bg-[#121B14] border border-[#E0D9CB] dark:border-[#243628] flex items-center gap-3">
                   <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-[#1C291E] to-[#D99B26] text-white flex items-center justify-center font-black text-base shadow-sm shrink-0">
-                    {currentUser.nameAr.charAt(0)}
+                    {(user?.nameAr || currentUser.nameAr).charAt(0)}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <h4 className="text-xs font-black text-[#1A241C] dark:text-[#F3EFE6] truncate">
-                      {isRtl ? currentUser.nameAr : currentUser.nameEn}
-                    </h4>
-                    <p className="text-[11px] text-[#5C665E] dark:text-[#8FA392] truncate">
-                      {currentUser.email || 'admin@hrsup.com'}
-                    </p>
-                    <div className="mt-1 flex items-center gap-1.5 flex-wrap">
-                      <span className="px-2 py-0.5 rounded-md bg-amber-500/15 text-[#D99B26] dark:text-[#EBB34D] text-[10px] font-bold border border-amber-500/30">
-                        {isRtl ? currentUser.roleAr : currentUser.roleEn}
-                      </span>
+                    <div className="flex items-center justify-between gap-1">
+                      <h4 className="text-xs font-black text-[#1A241C] dark:text-[#F3EFE6] truncate">
+                        {isRtl ? (user?.nameAr || currentUser.nameAr) : (user?.nameEn || currentUser.nameEn)}
+                      </h4>
+                      <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 shrink-0">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                        <span>{t('متصل', 'Online')}</span>
+                      </div>
                     </div>
+                    <p className="text-[11px] font-medium text-[#D99B26] dark:text-[#EBB34D] truncate mt-0.5">
+                      {user?.jobTitleAr || currentUser.jobTitleAr || 'مدير النظام العام / رئيس مجلس الإدارة'}
+                    </p>
+                    <p className="text-[10px] text-[#5C665E] dark:text-[#8FA392] truncate mt-0.5 font-mono">
+                      {user?.email || currentUser.email || 'admin@hrsup.com'}
+                    </p>
                   </div>
                 </div>
 
-                {/* Role Switcher Grid */}
-                <div className="mt-3 pt-2.5 border-t border-[#E0D9CB] dark:border-[#243628]">
-                  <div className="px-1 pb-2 flex items-center justify-between text-[11px] font-bold text-[#5C665E] dark:text-[#8FA392]">
-                    <span className="flex items-center gap-1.5">
-                      <KeyRound className="w-3.5 h-3.5 text-[#D99B26] dark:text-[#EBB34D]" />
-                      <span>{t('الأدوار والصلاحيات', 'Roles & Permissions')}</span>
-                    </span>
-                    <span className="text-[10px] text-[#D99B26] dark:text-[#EBB34D] font-mono">
-                      {seedUsers.length} {t('حسابات', 'Accounts')}
-                    </span>
-                  </div>
+                {/* 2. Functional Action Menu Items */}
+                <div className="mt-2.5 pt-1 space-y-1">
+                  {/* My Profile */}
+                  <button
+                    onClick={() => {
+                      setUserDropdownOpen(false);
+                      setProfileModalOpen(true);
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23] transition-colors"
+                  >
+                    <User className="w-4 h-4 text-[#D99B26] dark:text-[#EBB34D]" />
+                    <span className="flex-1 text-start">{t('الملف الشخصي وإعدادات الحساب', 'My Profile & Account')}</span>
+                  </button>
 
-                  <div className="grid grid-cols-2 gap-2 max-h-52 overflow-y-auto p-0.5">
-                    {seedUsers.map(acc => {
-                      const isActive = user?.role === acc.user.role;
-                      return (
-                        <button
-                          key={acc.user.id}
-                          onClick={() => {
-                            switchUserRole(acc.user.role);
-                            setUserDropdownOpen(false);
-                          }}
-                          className={`p-2.5 rounded-xl text-start text-xs transition-all flex flex-col justify-between border cursor-pointer ${
-                            isActive
-                              ? 'bg-amber-500/15 border-amber-500/80 text-[#D99B26] dark:text-[#EBB34D] font-bold shadow-xs'
-                              : 'bg-[#FBF9F5] dark:bg-[#121B14] border-[#E0D9CB] dark:border-[#243628] text-[#5C665E] dark:text-[#8FA392] hover:text-[#1A241C] dark:hover:text-[#F3EFE6] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23]'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between w-full mb-1">
-                            <span className="truncate font-bold">
-                              {isRtl ? acc.user.roleLabelAr.split(' ')[0] : acc.user.role}
-                            </span>
-                            {isActive && <Check className="w-3.5 h-3.5 text-[#D99B26] dark:text-[#EBB34D] shrink-0" />}
-                          </div>
-                          <span className="text-[10px] opacity-75 truncate">
-                            {isRtl ? acc.user.nameAr.split(' ')[1] || acc.user.nameAr : acc.user.nameEn}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
+                  {/* Security & Password */}
+                  <button
+                    onClick={() => {
+                      setUserDropdownOpen(false);
+                      setPasswordModalOpen(true);
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23] transition-colors"
+                  >
+                    <Lock className="w-4 h-4 text-[#D99B26] dark:text-[#EBB34D]" />
+                    <span className="flex-1 text-start">{t('الأمان وتغيير كلمة المرور', 'Security & Password')}</span>
+                  </button>
+
+                  {/* My Activity Log */}
+                  <button
+                    onClick={() => {
+                      setUserDropdownOpen(false);
+                      setActivityDrawerOpen(true);
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23] transition-colors"
+                  >
+                    <History className="w-4 h-4 text-[#D99B26] dark:text-[#EBB34D]" />
+                    <span className="flex-1 text-start">{t('سجل نشاطي وحركاتي', 'My Activity Log')}</span>
+                  </button>
+
+                  {/* Users & Permissions Matrix (Quick Manager) */}
+                  <button
+                    onClick={() => {
+                      setUserDropdownOpen(false);
+                      setPermissionsModalOpen(true);
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23] transition-colors"
+                  >
+                    <SlidersHorizontal className="w-4 h-4 text-[#D99B26] dark:text-[#EBB34D]" />
+                    <span className="flex-1 text-start">{t('إدارة المستخدمين ومصفوفة الصلاحيات', 'Users & Permissions Matrix')}</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#1C291E] text-white">
+                      {t('إدارة', 'Admin')}
+                    </span>
+                  </button>
                 </div>
 
-                {/* Sign Out Trigger */}
-                <div className="mt-3 pt-2.5 border-t border-[#E0D9CB] dark:border-[#243628]">
+                {/* 3. Sign Out Trigger */}
+                <div className="mt-2.5 pt-2 border-t border-[#E0D9CB] dark:border-[#243628]">
                   <button
                     onClick={() => {
                       setUserDropdownOpen(false);
                       logout();
                     }}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 active:scale-98 transition-colors text-xs font-bold cursor-pointer"
+                    className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 active:scale-98 transition-colors text-xs font-bold cursor-pointer"
                   >
                     <LogOut className="w-3.5 h-3.5" />
                     <span>{t('تسجيل الخروج', 'Sign Out')}</span>
@@ -501,6 +529,24 @@ export const Header: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Render the 4 Executive Modals */}
+      <UserProfileModal
+        isOpen={profileModalOpen}
+        onClose={() => setProfileModalOpen(false)}
+      />
+      <ChangePasswordModal
+        isOpen={passwordModalOpen}
+        onClose={() => setPasswordModalOpen(false)}
+      />
+      <UserActivityDrawer
+        isOpen={activityDrawerOpen}
+        onClose={() => setActivityDrawerOpen(false)}
+      />
+      <PermissionsManagerModal
+        isOpen={permissionsModalOpen}
+        onClose={() => setPermissionsModalOpen(false)}
+      />
     </header>
   );
 };

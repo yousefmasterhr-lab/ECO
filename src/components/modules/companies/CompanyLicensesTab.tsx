@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { SmartDocument, CompanyEntity, CompanyDocumentAttachment } from './types';
 import { getFormattedAuditTimestamp } from './licenseStorage';
+import { useAuth } from '../../../context/AuthContext';
 
 interface CompanyLicensesTabProps {
   documents: SmartDocument[];
@@ -49,6 +50,8 @@ export const CompanyLicensesTab: React.FC<CompanyLicensesTabProps> = ({
   onDeleteDocument,
   preselectedCompanyId
 }) => {
+  const { hasPermission } = useAuth();
+
   // Filter States
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>(preselectedCompanyId || 'ALL');
@@ -289,13 +292,15 @@ export const CompanyLicensesTab: React.FC<CompanyLicensesTabProps> = ({
           </p>
         </div>
 
-        <button
-          onClick={() => handleOpenAddModal()}
-          className="min-h-[44px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-all shadow-md hover:shadow-lg shrink-0 cursor-pointer active:scale-95"
-        >
-          <Plus className="w-4 h-4" />
-          <span>إضافة مستند / ترخيص</span>
-        </button>
+        {hasPermission('companies.licenses.create') && (
+          <button
+            onClick={() => handleOpenAddModal()}
+            className="min-h-[44px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-all shadow-md hover:shadow-lg shrink-0 cursor-pointer active:scale-95"
+          >
+            <Plus className="w-4 h-4" />
+            <span>إضافة مستند / ترخيص</span>
+          </button>
+        )}
       </div>
 
       {/* Dynamic 3-Card KPI Strip */}
@@ -473,13 +478,15 @@ export const CompanyLicensesTab: React.FC<CompanyLicensesTabProps> = ({
           <p className="text-xs text-slate-500 dark:text-[#8FA392] max-w-md mx-auto mb-6">
             ابدأ بإضافة المستند الأول لشركتك لتتبع مواعيد الانتهاء وسجلات التعديل وأرشفة الملفات الرسمية بأمان.
           </p>
-          <button
-            onClick={() => handleOpenAddModal()}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            <span>إضافة المستند الأول الآن</span>
-          </button>
+          {hasPermission('companies.licenses.create') && (
+            <button
+              onClick={() => handleOpenAddModal()}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>إضافة المستند الأول الآن</span>
+            </button>
+          )}
         </div>
       ) : (
         <div className="rounded-2xl border border-slate-200 dark:border-[#243628] overflow-hidden bg-white dark:bg-[#17231A] shadow-xs">
@@ -613,7 +620,7 @@ export const CompanyLicensesTab: React.FC<CompanyLicensesTabProps> = ({
                         <td className="p-3.5 text-center whitespace-nowrap">
                           <div className="flex items-center justify-center gap-1">
                             {/* 1. Preview / Download Document */}
-                            {(doc.fileAttachment || doc.driveUrl) && (
+                            {hasPermission('companies.licenses.download') && (doc.fileAttachment || doc.driveUrl) && (
                               <button
                                 onClick={() => setPreviewDoc({
                                   title: doc.titleAr,
@@ -628,34 +635,40 @@ export const CompanyLicensesTab: React.FC<CompanyLicensesTabProps> = ({
                             )}
 
                             {/* 2. Edit Document */}
-                            <button
-                              onClick={() => handleOpenEditModal(doc)}
-                              className="min-h-[36px] min-w-[36px] p-2 rounded-xl text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-950/50 transition-colors cursor-pointer"
-                              title="تعديل بيانات الترخيص"
-                            >
-                              <Pencil className="w-4 h-4" />
-                            </button>
+                            {hasPermission('companies.licenses.edit') && (
+                              <button
+                                onClick={() => handleOpenEditModal(doc)}
+                                className="min-h-[36px] min-w-[36px] p-2 rounded-xl text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-950/50 transition-colors cursor-pointer"
+                                title="تعديل بيانات الترخيص"
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </button>
+                            )}
 
                             {/* 3. Audit Log Exclamation Icon */}
-                            <button
-                              onClick={() => setAuditDoc(doc)}
-                              className="min-h-[36px] min-w-[36px] p-2 rounded-xl text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/50 transition-colors cursor-pointer relative"
-                              title="سجل التعديلات (Audit Trail)"
-                            >
-                              <AlertCircle className="w-4 h-4" />
-                              {doc.auditLogs && doc.auditLogs.length > 1 && (
-                                <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-                              )}
-                            </button>
+                            {hasPermission('companies.licenses.view_audit') && (
+                              <button
+                                onClick={() => setAuditDoc(doc)}
+                                className="min-h-[36px] min-w-[36px] p-2 rounded-xl text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/50 transition-colors cursor-pointer relative"
+                                title="سجل التعديلات (Audit Trail)"
+                              >
+                                <AlertCircle className="w-4 h-4" />
+                                {doc.auditLogs && doc.auditLogs.length > 1 && (
+                                  <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                                )}
+                              </button>
+                            )}
 
                             {/* 4. Delete Document */}
-                            <button
-                              onClick={() => setDocToDelete(doc)}
-                              className="min-h-[36px] min-w-[36px] p-2 rounded-xl text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/50 transition-colors cursor-pointer"
-                              title="حذف المستند نهائياً"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                            {hasPermission('companies.licenses.delete') && (
+                              <button
+                                onClick={() => setDocToDelete(doc)}
+                                className="min-h-[36px] min-w-[36px] p-2 rounded-xl text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/50 transition-colors cursor-pointer"
+                                title="حذف المستند نهائياً"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>

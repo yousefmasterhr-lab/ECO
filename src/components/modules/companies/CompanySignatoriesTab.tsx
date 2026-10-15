@@ -31,6 +31,7 @@ import {
   CompanyDocumentAttachment
 } from './types';
 import { formatCurrency } from '../../../utils/formatters';
+import { useAuth } from '../../../context/AuthContext';
 
 const formatAttachmentSize = (bytes?: number) => {
   if (!bytes) return '—';
@@ -56,6 +57,8 @@ export const CompanySignatoriesTab: React.FC<CompanySignatoriesTabProps> = ({
   onDeleteSignatory,
   onToggleRevoke
 }) => {
+  const { hasPermission } = useAuth();
+
   // Filters & Search
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('all');
@@ -372,13 +375,15 @@ export const CompanySignatoriesTab: React.FC<CompanySignatoriesTabProps> = ({
           </p>
         </div>
 
-        <button
-          onClick={handleOpenAdd}
-          className="min-h-[44px] flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-all shadow-sm hover:shadow active:scale-98 shrink-0 cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          <span>+ إضافة مفوض جديد</span>
-        </button>
+        {hasPermission('companies.signatories.create') && (
+          <button
+            onClick={handleOpenAdd}
+            className="min-h-[44px] flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-all shadow-sm hover:shadow active:scale-98 shrink-0 cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>+ إضافة مفوض جديد</span>
+          </button>
+        )}
       </div>
 
       {/* KPI Summary Cards */}
@@ -533,13 +538,15 @@ export const CompanySignatoriesTab: React.FC<CompanySignatoriesTabProps> = ({
           <p className="text-xs text-slate-500 dark:text-[#8FA392] max-w-md mx-auto mb-5">
             ابدأ بإضافة المفوض الأول واعتماد الصلاحيات المصرفية والتعاقدية والقضائية الموثقة بالشهر العقاري.
           </p>
-          <button
-            onClick={handleOpenAdd}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-colors shadow-sm"
-          >
-            <Plus className="w-4 h-4" />
-            <span>تسجيل المفوض الأول</span>
-          </button>
+          {hasPermission('companies.signatories.create') && (
+            <button
+              onClick={handleOpenAdd}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-colors shadow-sm"
+            >
+              <Plus className="w-4 h-4" />
+              <span>تسجيل المفوض الأول</span>
+            </button>
+          )}
         </div>
       )}
 
@@ -816,40 +823,48 @@ export const CompanySignatoriesTab: React.FC<CompanySignatoriesTabProps> = ({
                 {/* Sleek Icon-Only Buttons */}
                 <div className="flex items-center gap-1.5">
                   {/* 1. معاينة / تحميل صورة التوكيل */}
-                  <button
-                    onClick={() => setDocPreviewSig(sig)}
-                    title="معاينة / تحميل صورة التوكيل الموثق"
-                    className="min-h-[38px] min-w-[38px] flex items-center justify-center rounded-xl bg-slate-100 hover:bg-emerald-50 text-emerald-600 hover:text-emerald-700 dark:bg-[#111A13] dark:hover:bg-emerald-950/40 dark:text-emerald-400 dark:hover:text-emerald-300 border border-slate-200/70 dark:border-[#243628] transition-all cursor-pointer shadow-2xs"
-                  >
-                    <FileText className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                  </button>
+                  {hasPermission('companies.signatories.download_poa') && (
+                    <button
+                      onClick={() => setDocPreviewSig(sig)}
+                      title="معاينة / تحميل صورة التوكيل الموثق"
+                      className="min-h-[38px] min-w-[38px] flex items-center justify-center rounded-xl bg-slate-100 hover:bg-emerald-50 text-emerald-600 hover:text-emerald-700 dark:bg-[#111A13] dark:hover:bg-emerald-950/40 dark:text-emerald-400 dark:hover:text-emerald-300 border border-slate-200/70 dark:border-[#243628] transition-all cursor-pointer shadow-2xs"
+                    >
+                      <FileText className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                    </button>
+                  )}
 
                   {/* 2. تعديل بيانات وصلاحيات المفوض */}
-                  <button
-                    onClick={() => handleOpenEdit(sig)}
-                    title="تعديل بيانات وصلاحيات المفوض"
-                    className="min-h-[38px] min-w-[38px] flex items-center justify-center rounded-xl bg-slate-100 hover:bg-amber-50 text-amber-600 hover:text-amber-700 dark:bg-[#111A13] dark:hover:bg-amber-950/40 dark:text-amber-400 dark:hover:text-amber-300 border border-slate-200/70 dark:border-[#243628] transition-all cursor-pointer shadow-2xs"
-                  >
-                    <Pencil className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                  </button>
+                  {hasPermission('companies.signatories.edit') && (
+                    <button
+                      onClick={() => handleOpenEdit(sig)}
+                      title="تعديل بيانات وصلاحيات المفوض"
+                      className="min-h-[38px] min-w-[38px] flex items-center justify-center rounded-xl bg-slate-100 hover:bg-amber-50 text-amber-600 hover:text-amber-700 dark:bg-[#111A13] dark:hover:bg-amber-950/40 dark:text-amber-400 dark:hover:text-amber-300 border border-slate-200/70 dark:border-[#243628] transition-all cursor-pointer shadow-2xs"
+                    >
+                      <Pencil className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                    </button>
+                  )}
 
                   {/* 3. سجل التعديلات (Audit Log) */}
-                  <button
-                    onClick={() => setAuditModalSig(sig)}
-                    title="سجل تعديلات التفويض والصلاحيات"
-                    className="min-h-[38px] min-w-[38px] flex items-center justify-center rounded-xl bg-slate-100 hover:bg-blue-50 text-blue-600 hover:text-blue-700 dark:bg-[#111A13] dark:hover:bg-blue-950/40 dark:text-blue-400 dark:hover:text-blue-300 border border-slate-200/70 dark:border-[#243628] transition-all cursor-pointer shadow-2xs"
-                  >
-                    <AlertCircle className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                  </button>
+                  {hasPermission('companies.signatories.view_audit') && (
+                    <button
+                      onClick={() => setAuditModalSig(sig)}
+                      title="سجل تعديلات التفويض والصلاحيات"
+                      className="min-h-[38px] min-w-[38px] flex items-center justify-center rounded-xl bg-slate-100 hover:bg-blue-50 text-blue-600 hover:text-blue-700 dark:bg-[#111A13] dark:hover:bg-blue-950/40 dark:text-blue-400 dark:hover:text-blue-300 border border-slate-200/70 dark:border-[#243628] transition-all cursor-pointer shadow-2xs"
+                    >
+                      <AlertCircle className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                    </button>
+                  )}
 
                   {/* 4. إلغاء التفويض / حذف */}
-                  <button
-                    onClick={() => setDeleteConfirmSig(sig)}
-                    title="إلغاء التفويض أو حذف السجل"
-                    className="min-h-[38px] min-w-[38px] flex items-center justify-center rounded-xl bg-slate-100 hover:bg-rose-50 text-rose-600 hover:text-rose-700 dark:bg-[#111A13] dark:hover:bg-rose-950/40 dark:text-rose-400 dark:hover:text-rose-300 border border-slate-200/70 dark:border-[#243628] transition-all cursor-pointer shadow-2xs"
-                  >
-                    <Trash2 className="w-4 h-4 text-rose-600 dark:text-rose-400" />
-                  </button>
+                  {hasPermission('companies.signatories.delete') && (
+                    <button
+                      onClick={() => setDeleteConfirmSig(sig)}
+                      title="إلغاء التفويض أو حذف السجل"
+                      className="min-h-[38px] min-w-[38px] flex items-center justify-center rounded-xl bg-slate-100 hover:bg-rose-50 text-rose-600 hover:text-rose-700 dark:bg-[#111A13] dark:hover:bg-rose-950/40 dark:text-rose-400 dark:hover:text-rose-300 border border-slate-200/70 dark:border-[#243628] transition-all cursor-pointer shadow-2xs"
+                    >
+                      <Trash2 className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+                    </button>
+                  )}
                 </div>
               </div>
             </motion.div>

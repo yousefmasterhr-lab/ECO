@@ -23,6 +23,7 @@ import {
   Wrench
 } from 'lucide-react';
 import { BranchLocation, CompanyEntity } from './types';
+import { useAuth } from '../../../context/AuthContext';
 
 interface CompanyBranchesTabProps {
   branches: BranchLocation[];
@@ -39,6 +40,8 @@ export const CompanyBranchesTab: React.FC<CompanyBranchesTabProps> = ({
   onUpdateBranch,
   onDeleteBranch
 }) => {
+  const { hasPermission } = useAuth();
+
   // Search & Filter States
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('ALL');
@@ -233,13 +236,15 @@ export const CompanyBranchesTab: React.FC<CompanyBranchesTabProps> = ({
           </p>
         </div>
 
-        <button
-          onClick={handleOpenAdd}
-          className="min-h-[44px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-all shadow-md hover:shadow-lg shrink-0 cursor-pointer active:scale-95"
-        >
-          <Plus className="w-4 h-4" />
-          <span>إضافة مقر / موقع جديد</span>
-        </button>
+        {hasPermission('companies.branches.create') && (
+          <button
+            onClick={handleOpenAdd}
+            className="min-h-[44px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-all shadow-md hover:shadow-lg shrink-0 cursor-pointer active:scale-95"
+          >
+            <Plus className="w-4 h-4" />
+            <span>إضافة مقر / موقع جديد</span>
+          </button>
+        )}
       </div>
 
       {/* Advanced Filter Bar */}
@@ -336,13 +341,15 @@ export const CompanyBranchesTab: React.FC<CompanyBranchesTabProps> = ({
           <p className="text-xs text-slate-500 dark:text-[#8FA392] max-w-md mx-auto mb-6">
             ابدأ بإضافة المقر أو الموقع الأول لربطه بشركتك وتتبع الكوادر ومراكز التكلفة والمشروعات الميدانية.
           </p>
-          <button
-            onClick={handleOpenAdd}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            <span>إضافة المقر الأول الآن</span>
-          </button>
+          {hasPermission('companies.branches.create') && (
+            <button
+              onClick={handleOpenAdd}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>إضافة المقر الأول الآن</span>
+            </button>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 w-full">
@@ -376,13 +383,15 @@ export const CompanyBranchesTab: React.FC<CompanyBranchesTabProps> = ({
                     {getStatusBadge(branch.status)}
 
                     {/* Exclamation Audit Icon */}
-                    <button
-                      onClick={() => setAuditBranch(branch)}
-                      title="سجل تعديلات الموقع (Audit Trail)"
-                      className="p-1 rounded-lg text-amber-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 transition-colors cursor-pointer"
-                    >
-                      <AlertCircle className="w-4 h-4 animate-pulse" />
-                    </button>
+                    {hasPermission('companies.branches.view_audit') && (
+                      <button
+                        onClick={() => setAuditBranch(branch)}
+                        title="سجل تعديلات الموقع (Audit Trail)"
+                        className="p-1 rounded-lg text-amber-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 transition-colors cursor-pointer"
+                      >
+                        <AlertCircle className="w-4 h-4 animate-pulse" />
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -473,31 +482,37 @@ export const CompanyBranchesTab: React.FC<CompanyBranchesTabProps> = ({
                 )}
 
                 {/* 3. Edit */}
-                <button
-                  onClick={() => handleOpenEdit(branch)}
-                  title="تعديل بيانات الموقع"
-                  className="min-h-[36px] min-w-[36px] p-2 rounded-xl text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-950/50 transition-colors cursor-pointer"
-                >
-                  <Pencil className="w-4 h-4" />
-                </button>
+                {hasPermission('companies.branches.edit') && (
+                  <button
+                    onClick={() => handleOpenEdit(branch)}
+                    title="تعديل بيانات الموقع"
+                    className="min-h-[36px] min-w-[36px] p-2 rounded-xl text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-950/50 transition-colors cursor-pointer"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                )}
 
                 {/* 4. Audit Log */}
-                <button
-                  onClick={() => setAuditBranch(branch)}
-                  title="سجل التعديلات (Audit Trail)"
-                  className="min-h-[36px] min-w-[36px] p-2 rounded-xl text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/50 transition-colors cursor-pointer"
-                >
-                  <AlertCircle className="w-4 h-4" />
-                </button>
+                {hasPermission('companies.branches.view_audit') && (
+                  <button
+                    onClick={() => setAuditBranch(branch)}
+                    title="سجل التعديلات (Audit Trail)"
+                    className="min-h-[36px] min-w-[36px] p-2 rounded-xl text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/50 transition-colors cursor-pointer"
+                  >
+                    <AlertCircle className="w-4 h-4" />
+                  </button>
+                )}
 
                 {/* 5. Delete */}
-                <button
-                  onClick={() => setBranchToDelete(branch)}
-                  title="حذف الموقع نهائياً"
-                  className="min-h-[36px] min-w-[36px] p-2 rounded-xl text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/50 transition-colors cursor-pointer"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                {hasPermission('companies.branches.delete') && (
+                  <button
+                    onClick={() => setBranchToDelete(branch)}
+                    title="حذف الموقع نهائياً"
+                    className="min-h-[36px] min-w-[36px] p-2 rounded-xl text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/50 transition-colors cursor-pointer"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             </motion.div>
           ))}

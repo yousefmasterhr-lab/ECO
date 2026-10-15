@@ -31,6 +31,10 @@ export interface UserProfile {
   avatarUrl?: string;
   role?: string;
   email?: string;
+  jobTitleAr?: string;
+  jobTitleEn?: string;
+  phone?: string;
+  permissions?: string[];
   departmentAr?: string;
   departmentEn?: string;
   allowedModuleIds?: string[];

@@ -23,6 +23,7 @@ import {
   Minimize2
 } from 'lucide-react';
 import { DepartmentOrg, CompanyEntity, BranchLocation, DepartmentAuditLogEntry } from './types';
+import { useAuth } from '../../../context/AuthContext';
 
 interface CompanyOrgStructureTabProps {
   departments: DepartmentOrg[];
@@ -57,6 +58,8 @@ export const CompanyOrgStructureTab: React.FC<CompanyOrgStructureTabProps> = ({
   onUpdateDepartment,
   onDeleteDepartment
 }) => {
+  const { hasPermission } = useAuth();
+
   // Dual View Mode: 'tree' (الهيكل الشجري) vs 'cards' (البطاقات الذكية)
   const [activeView, setActiveView] = useState<'tree' | 'cards'>('tree');
 
@@ -246,13 +249,15 @@ export const CompanyOrgStructureTab: React.FC<CompanyOrgStructureTabProps> = ({
             </div>
           )}
 
-          <button
-            onClick={() => handleOpenAdd(null)}
-            className="min-h-[40px] flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-colors shadow-xs"
-          >
-            <Plus className="w-4 h-4" />
-            <span>+ إضافة إدارة جديدة</span>
-          </button>
+          {hasPermission('companies.org.create') && (
+            <button
+              onClick={() => handleOpenAdd(null)}
+              className="min-h-[40px] flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-colors shadow-xs"
+            >
+              <Plus className="w-4 h-4" />
+              <span>+ إضافة إدارة جديدة</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -268,13 +273,15 @@ export const CompanyOrgStructureTab: React.FC<CompanyOrgStructureTabProps> = ({
           <p className="text-xs text-slate-500 dark:text-[#8FA392] max-w-md mx-auto mb-5 leading-relaxed">
             ابدأ بتأسيس الإدارة العليا أو الإدارة الأولى لربط الفروع، الكوادر الإدارية، ومراكز التكلفة الهيكلية بسهولة.
           </p>
-          <button
-            onClick={() => handleOpenAdd(null)}
-            className="min-h-[44px] inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-all shadow-md"
-          >
-            <Plus className="w-4 h-4" />
-            <span>تأسيس الإدارة الأولى بالهيكل التنظيمي</span>
-          </button>
+          {hasPermission('companies.org.create') && (
+            <button
+              onClick={() => handleOpenAdd(null)}
+              className="min-h-[44px] inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-all shadow-md"
+            >
+              <Plus className="w-4 h-4" />
+              <span>تأسيس الإدارة الأولى بالهيكل التنظيمي</span>
+            </button>
+          )}
         </div>
       ) : (
         <>
@@ -467,37 +474,45 @@ export const CompanyOrgStructureTab: React.FC<CompanyOrgStructureTabProps> = ({
 
                           {/* Icon-Only Action Group */}
                           <div className="flex items-center gap-1.5">
-                            <button
-                              onClick={() => handleOpenAdd(dept.id)}
-                              className="min-h-[36px] min-w-[36px] p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-colors flex items-center justify-center"
-                              title="إضافة قسم تابع"
-                            >
-                              <Plus className="w-4 h-4 text-emerald-600 dark:text-emerald-400 hover:text-emerald-500" />
-                            </button>
+                            {hasPermission('companies.org.create') && (
+                              <button
+                                onClick={() => handleOpenAdd(dept.id)}
+                                className="min-h-[36px] min-w-[36px] p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-colors flex items-center justify-center"
+                                title="إضافة قسم تابع"
+                              >
+                                <Plus className="w-4 h-4 text-emerald-600 dark:text-emerald-400 hover:text-emerald-500" />
+                              </button>
+                            )}
 
-                            <button
-                              onClick={() => handleOpenEdit(dept)}
-                              className="min-h-[36px] min-w-[36px] p-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/60 dark:border-amber-800/40 hover:bg-amber-100 dark:hover:bg-amber-900/60 transition-colors flex items-center justify-center"
-                              title="تعديل بيانات الإدارة"
-                            >
-                              <Pencil className="w-4 h-4 text-amber-600 dark:text-amber-400 hover:text-amber-500" />
-                            </button>
+                            {hasPermission('companies.org.edit') && (
+                              <button
+                                onClick={() => handleOpenEdit(dept)}
+                                className="min-h-[36px] min-w-[36px] p-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/60 dark:border-amber-800/40 hover:bg-amber-100 dark:hover:bg-amber-900/60 transition-colors flex items-center justify-center"
+                                title="تعديل بيانات الإدارة"
+                              >
+                                <Pencil className="w-4 h-4 text-amber-600 dark:text-amber-400 hover:text-amber-500" />
+                              </button>
+                            )}
 
-                            <button
-                              onClick={() => handleOpenAudit(dept)}
-                              className="min-h-[36px] min-w-[36px] p-2 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-800/40 hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors flex items-center justify-center"
-                              title="سجل تعديلات الإدارة"
-                            >
-                              <AlertCircle className="w-4 h-4 text-blue-600 dark:text-blue-400 hover:text-blue-500" />
-                            </button>
+                            {hasPermission('companies.org.view_audit') && (
+                              <button
+                                onClick={() => handleOpenAudit(dept)}
+                                className="min-h-[36px] min-w-[36px] p-2 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-800/40 hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors flex items-center justify-center"
+                                title="سجل تعديلات الإدارة"
+                              >
+                                <AlertCircle className="w-4 h-4 text-blue-600 dark:text-blue-400 hover:text-blue-500" />
+                              </button>
+                            )}
 
-                            <button
-                              onClick={() => handleOpenDelete(dept)}
-                              className="min-h-[36px] min-w-[36px] p-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200/60 dark:border-rose-800/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 transition-colors flex items-center justify-center"
-                              title="حذف الإدارة"
-                            >
-                              <Trash2 className="w-4 h-4 text-rose-600 dark:text-rose-400 hover:text-rose-500" />
-                            </button>
+                            {hasPermission('companies.org.delete') && (
+                              <button
+                                onClick={() => handleOpenDelete(dept)}
+                                className="min-h-[36px] min-w-[36px] p-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200/60 dark:border-rose-800/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 transition-colors flex items-center justify-center"
+                                title="حذف الإدارة"
+                              >
+                                <Trash2 className="w-4 h-4 text-rose-600 dark:text-rose-400 hover:text-rose-500" />
+                              </button>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -589,6 +604,8 @@ const OrgTreeNode: React.FC<OrgTreeNodeProps> = ({
   onDeleteDept,
   level
 }) => {
+  const { hasPermission } = useAuth();
+
   const children = useMemo(() => {
     return allDepartments.filter(d => d.parentId === department.id);
   }, [allDepartments, department.id]);
@@ -691,37 +708,45 @@ const OrgTreeNode: React.FC<OrgTreeNodeProps> = ({
         <div className="pt-2 border-t border-slate-200 dark:border-[#243628] flex items-center justify-between">
           {/* Quick Action Micro-buttons */}
           <div className="flex items-center gap-1">
-            <button
-              onClick={() => onAddSubDept(department.id)}
-              className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-colors"
-              title="إضافة قسم تابع"
-            >
-              <Plus className="w-4 h-4 text-emerald-600 dark:text-emerald-400 hover:text-emerald-500" />
-            </button>
+            {hasPermission('companies.org.create') && (
+              <button
+                onClick={() => onAddSubDept(department.id)}
+                className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-colors"
+                title="إضافة قسم تابع"
+              >
+                <Plus className="w-4 h-4 text-emerald-600 dark:text-emerald-400 hover:text-emerald-500" />
+              </button>
+            )}
 
-            <button
-              onClick={() => onEditDept(department)}
-              className="p-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/60 transition-colors"
-              title="تعديل الإدارة"
-            >
-              <Pencil className="w-4 h-4 text-amber-600 dark:text-amber-400 hover:text-amber-500" />
-            </button>
+            {hasPermission('companies.org.edit') && (
+              <button
+                onClick={() => onEditDept(department)}
+                className="p-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/60 transition-colors"
+                title="تعديل الإدارة"
+              >
+                <Pencil className="w-4 h-4 text-amber-600 dark:text-amber-400 hover:text-amber-500" />
+              </button>
+            )}
 
-            <button
-              onClick={() => onViewAudit(department)}
-              className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors"
-              title="سجل التعديلات"
-            >
-              <AlertCircle className="w-4 h-4 text-blue-600 dark:text-blue-400 hover:text-blue-500" />
-            </button>
+            {hasPermission('companies.org.view_audit') && (
+              <button
+                onClick={() => onViewAudit(department)}
+                className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors"
+                title="سجل التعديلات"
+              >
+                <AlertCircle className="w-4 h-4 text-blue-600 dark:text-blue-400 hover:text-blue-500" />
+              </button>
+            )}
 
-            <button
-              onClick={() => onDeleteDept(department)}
-              className="p-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 transition-colors"
-              title="حذف الإدارة"
-            >
-              <Trash2 className="w-4 h-4 text-rose-600 dark:text-rose-400 hover:text-rose-500" />
-            </button>
+            {hasPermission('companies.org.delete') && (
+              <button
+                onClick={() => onDeleteDept(department)}
+                className="p-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 transition-colors"
+                title="حذف الإدارة"
+              >
+                <Trash2 className="w-4 h-4 text-rose-600 dark:text-rose-400 hover:text-rose-500" />
+              </button>
+            )}
           </div>
 
           {/* Expand/Collapse Button for Branches */}

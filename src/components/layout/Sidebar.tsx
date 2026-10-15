@@ -117,11 +117,9 @@ export const Sidebar: React.FC = () => {
               <div className="px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-between text-[10.5px] text-amber-700 dark:text-amber-400 font-bold">
                 <span className="flex items-center gap-1.5 truncate">
                   <Shield className="w-3 h-3 shrink-0" />
-                  <span className="truncate">{isRtl ? user.roleLabelAr : user.roleLabelEn}</span>
+                  <span className="truncate">{user.jobTitleAr || (isRtl ? user.roleLabelAr : user.roleLabelEn)}</span>
                 </span>
-                <span className="px-1.5 py-0.5 bg-amber-500/20 rounded font-mono text-[9.5px] shrink-0">
-                  L{user.clearanceLevel}
-                </span>
+                <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" title={t('متصل', 'Active')} />
               </div>
             )}
             <div className="px-3 py-1.5 rounded-xl bg-[#F3EFE6] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] flex items-center justify-between text-[10px] text-[#5C665E] dark:text-[#8FA392] font-medium">

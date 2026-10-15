@@ -2,15 +2,21 @@ import React, { createContext, useContext, useState, useEffect, useMemo } from '
 import { DepartmentNavCategory, UserProfile } from '../types';
 import { useAuth } from './AuthContext';
 
+import { ALL_COMPANY_PERMISSIONS } from '../types/auth';
+
 export const CURRENT_USER: UserProfile = {
-  id: 'usr_csuite_01',
-  nameAr: 'م. أحمد مصطفى',
-  nameEn: 'Eng. Ahmed Mostafa',
-  roleAr: 'الرئيس التنفيذي للعمليات',
-  roleEn: 'Chief Operating Officer (COO)',
+  id: 'usr_root_csuite_01',
+  nameAr: 'يوسف حجازي',
+  nameEn: 'Yousef Hegazy',
+  roleAr: 'مدير النظام العام / رئيس مجلس الإدارة',
+  roleEn: 'System Administrator / CEO',
+  jobTitleAr: 'مدير النظام العام / رئيس مجلس الإدارة',
   clearanceLevel: 4,
-  clearanceNameAr: 'المستوى 4 - إدارة عليا',
-  clearanceNameEn: 'Level 4 - C-Suite',
+  clearanceNameAr: 'إدارة عليا وحوكمة',
+  clearanceNameEn: 'C-Suite Governance',
+  email: 'admin@hrsup.com',
+  phone: '+20 100 000 0000',
+  permissions: [...ALL_COMPANY_PERMISSIONS],
 };
 
 export const DEPARTMENT_CATEGORIES: DepartmentNavCategory[] = [
@@ -259,8 +265,11 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         id: user.id,
         nameAr: user.nameAr,
         nameEn: user.nameEn,
-        roleAr: user.roleLabelAr,
-        roleEn: user.roleLabelEn,
+        roleAr: user.jobTitleAr || user.roleLabelAr,
+        roleEn: user.jobTitleEn || user.roleLabelEn,
+        jobTitleAr: user.jobTitleAr || user.roleLabelAr,
+        jobTitleEn: user.jobTitleEn || user.roleLabelEn,
+        phone: user.phone,
         clearanceLevel: user.clearanceLevel,
         clearanceNameAr: user.clearanceNameAr,
         clearanceNameEn: user.clearanceNameEn,
@@ -270,6 +279,7 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         departmentAr: user.departmentAr,
         departmentEn: user.departmentEn,
         allowedModuleIds: user.allowedModuleIds,
+        permissions: user.permissions || [],
       };
     }
     return CURRENT_USER;

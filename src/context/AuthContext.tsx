@@ -7,7 +7,8 @@ import {
   SeedAccount,
   ManagedUser,
   AuditLogEntry,
-  INITIAL_ROOT_ADMIN
+  INITIAL_ROOT_ADMIN,
+  ALL_COMPANY_PERMISSIONS
 } from '../types/auth';
 import { d1Client, clearSessionToken, setSessionToken } from '../services/d1Client';
 
@@ -26,6 +27,22 @@ interface AuthContextType {
   switchUserRole: (role: UserRole) => void;
   checkModuleAccess: (moduleId: string) => boolean;
   hasRole: (roles: UserRole | UserRole[]) => boolean;
+  hasPermission: (key: string) => boolean;
+  updateUserProfile: (updates: {
+    nameAr?: string;
+    jobTitleAr?: string;
+    email?: string;
+    phone?: string;
+    avatarUrl?: string;
+  }) => Promise<{ success: boolean; error?: string }>;
+  changePassword: (
+    currentPassword: string,
+    newPassword: string
+  ) => Promise<{ success: boolean; error?: string }>;
+  updateUserPermissions: (
+    userId: string,
+    permissions: string[]
+  ) => Promise<{ success: boolean; error?: string }>;
   currentPath: string;
   navigate: (path: string) => void;
   seedUsers: SeedAccount[];
@@ -91,7 +108,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       {
         id: 'log_boot_01',
         timestamp: '2026-10-10 08:30:15',
-        actorName: 'م. أحمد مصطفى',
+        actorName: 'يوسف حجازي',
         actorEmail: 'admin@hrsup.com',
         actorRole: 'SUPER_ADMIN',
         actionAr: 'إعدادات النظام',
@@ -127,6 +144,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     d1Client.fetchUsers().then(liveUsers => {
       if (liveUsers && liveUsers.length > 0) {
         setManagedUsers(liveUsers);
+        // Automatically sync current logged-in user profile & permissions if updated in D1
+        setUser(currentUser => {
+          if (!currentUser) return null;
+          const matched = liveUsers.find(
+            u => u.id === currentUser.id || u.email.toLowerCase() === currentUser.email.toLowerCase()
+          );
+          if (matched) {
+            return {
+              ...currentUser,
+              nameAr: matched.nameAr || currentUser.nameAr,
+              nameEn: matched.nameEn || currentUser.nameEn,
+              jobTitleAr: matched.jobTitleAr || currentUser.jobTitleAr,
+              phone: matched.phone || currentUser.phone,
+              permissions: matched.permissions || currentUser.permissions,
+            };
+          }
+          return currentUser;
+        });
       }
     }).catch(() => {});
 
@@ -185,8 +220,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const parsed = JSON.parse(activeData) as AuthUser;
         if (parsed && parsed.id && parsed.role) {
           const config = ROLE_CONFIGURATIONS[parsed.role];
+          const isRoot =
+            parsed.id === INITIAL_ROOT_ADMIN.id ||
+            parsed.id === 'usr_root_csuite_01' ||
+            parsed.id === 'usr_root_csuite' ||
+            parsed.role === 'SUPER_ADMIN';
+
           setUser({
             ...parsed,
+            nameAr: isRoot ? 'يوسف حجازي' : (parsed.nameAr || 'يوسف حجازي'),
+            nameEn: isRoot ? 'Yousef Hegazy' : (parsed.nameEn || 'Yousef Hegazy'),
+            jobTitleAr: isRoot
+              ? (parsed.jobTitleAr || 'مدير النظام العام / رئيس مجلس الإدارة')
+              : parsed.jobTitleAr,
+            phone: isRoot ? (parsed.phone || '+20 100 000 0000') : parsed.phone,
+            permissions: isRoot
+              ? (parsed.permissions && parsed.permissions.length > 0
+                  ? parsed.permissions
+                  : [...ALL_COMPANY_PERMISSIONS])
+              : (parsed.permissions || []),
             allowedModuleIds: config?.allowedModuleIds || parsed.allowedModuleIds || [],
           });
         }
@@ -238,21 +290,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const edgeRes = await d1Client.login(cleanInput, password);
         if (edgeRes.success && edgeRes.user) {
           const config = ROLE_CONFIGURATIONS[edgeRes.user.role as UserRole];
+          const isRoot =
+            edgeRes.user.role === 'SUPER_ADMIN' ||
+            edgeRes.user.id === INITIAL_ROOT_ADMIN.id ||
+            edgeRes.user.id === 'usr_root_csuite_01';
+
           const authenticatedUser: AuthUser = {
             id: edgeRes.user.id,
             email: edgeRes.user.email,
             username: edgeRes.user.username,
-            nameAr: edgeRes.user.nameAr || (edgeRes.user as any).fullName || edgeRes.user.nameEn,
-            nameEn: edgeRes.user.nameEn || edgeRes.user.username,
+            nameAr: isRoot ? 'يوسف حجازي' : (edgeRes.user.nameAr || (edgeRes.user as any).fullName || edgeRes.user.nameEn),
+            nameEn: isRoot ? 'Yousef Hegazy' : (edgeRes.user.nameEn || edgeRes.user.username),
+            jobTitleAr: edgeRes.user.jobTitleAr || (edgeRes.user as any).job_title || (isRoot ? 'مدير النظام العام / رئيس مجلس الإدارة' : undefined),
+            jobTitleEn: edgeRes.user.jobTitleEn,
+            phone: edgeRes.user.phone || (isRoot ? '+20 100 000 0000' : undefined),
             role: (edgeRes.user.role as UserRole) || 'SUPER_ADMIN',
             roleLabelAr: config?.titleAr || edgeRes.user.role,
             roleLabelEn: config?.titleEn || edgeRes.user.role,
-            departmentAr: edgeRes.user.departmentAr || (edgeRes.user as any).department || 'الإدارة العليا',
+            departmentAr: edgeRes.user.departmentAr || (edgeRes.user as any).department || 'الإدارة العليا والاستراتيجية',
             departmentEn: edgeRes.user.departmentEn || (edgeRes.user as any).department || 'Executive Management',
             clearanceLevel: (edgeRes.user.clearanceLevel as 1 | 2 | 3 | 4) || 4,
-            clearanceNameAr: config?.clearanceNameAr || 'المستوى 4 - إدارة عليا',
+            clearanceNameAr: config?.clearanceNameAr || 'إدارة عليا وحوكمة',
             clearanceNameEn: config?.clearanceNameEn || 'Level 4 - C-Suite Governance',
             allowedModuleIds: config?.allowedModuleIds || [],
+            permissions: edgeRes.user.permissions || (edgeRes.user as any).permissions_json || (isRoot ? [...ALL_COMPANY_PERMISSIONS] : []),
             lastLogin: new Date().toISOString().replace('T', ' ').substring(0, 16),
           };
 
@@ -336,12 +397,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
 
         const config = ROLE_CONFIGURATIONS[foundInManaged.role];
+        const isRoot =
+          foundInManaged.role === 'SUPER_ADMIN' ||
+          foundInManaged.id === INITIAL_ROOT_ADMIN.id ||
+          foundInManaged.id === 'usr_root_csuite_01';
+
         authenticatedUser = {
           id: foundInManaged.id,
           email: foundInManaged.email,
           username: foundInManaged.username,
-          nameAr: foundInManaged.nameAr,
-          nameEn: foundInManaged.nameEn,
+          nameAr: isRoot ? 'يوسف حجازي' : foundInManaged.nameAr,
+          nameEn: isRoot ? 'Yousef Hegazy' : foundInManaged.nameEn,
+          jobTitleAr: foundInManaged.jobTitleAr || (isRoot ? 'مدير النظام العام / رئيس مجلس الإدارة' : undefined),
+          jobTitleEn: foundInManaged.jobTitleEn,
+          phone: foundInManaged.phone || (isRoot ? '+20 100 000 0000' : undefined),
           role: foundInManaged.role,
           roleLabelAr: foundInManaged.roleLabelAr,
           roleLabelEn: foundInManaged.roleLabelEn,
@@ -351,6 +420,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           clearanceNameAr: foundInManaged.clearanceNameAr,
           clearanceNameEn: foundInManaged.clearanceNameEn,
           allowedModuleIds: config?.allowedModuleIds || [],
+          permissions: foundInManaged.permissions || foundInManaged.customPermissions || (isRoot ? [...ALL_COMPANY_PERMISSIONS] : []),
           lastLogin: new Date().toISOString().replace('T', ' ').substring(0, 16),
         };
       } else if (foundInSeed) {
@@ -372,6 +442,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         authenticatedUser = {
           ...foundInSeed.user,
+          permissions: foundInSeed.user.permissions || (foundInSeed.user.role === 'SUPER_ADMIN' ? [...ALL_COMPANY_PERMISSIONS] : []),
           lastLogin: new Date().toISOString().replace('T', ' ').substring(0, 16),
         };
       }
@@ -487,6 +558,177 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     [user]
   );
 
+  // Granular Action-Level RBAC Checker
+  const hasPermission = useCallback(
+    (key: string): boolean => {
+      if (!user) return false;
+      // Super Admin and System Owner have full unrestricted permissions
+      if (
+        user.role === 'SUPER_ADMIN' ||
+        user.id === INITIAL_ROOT_ADMIN.id ||
+        user.id === 'usr_root_csuite_01' ||
+        user.id === 'usr_root_csuite'
+      ) {
+        return true;
+      }
+      if (!user.permissions || !Array.isArray(user.permissions)) {
+        return false;
+      }
+      return (
+        user.permissions.includes(key) ||
+        user.permissions.includes('*') ||
+        user.permissions.includes('companies.*')
+      );
+    },
+    [user]
+  );
+
+  // Real User Profile Editor (Syncs to Cloudflare D1 & Local Storage)
+  const updateUserProfile = useCallback(
+    async (updates: {
+      nameAr?: string;
+      jobTitleAr?: string;
+      email?: string;
+      phone?: string;
+      avatarUrl?: string;
+    }): Promise<{ success: boolean; error?: string }> => {
+      if (!user) return { success: false, error: 'المستخدم غير مسجل الدخول' };
+      try {
+        const updatedUser: AuthUser = {
+          ...user,
+          ...updates,
+        };
+        setUser(updatedUser);
+
+        if (rememberMe) {
+          localStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify(updatedUser));
+        } else {
+          sessionStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify(updatedUser));
+        }
+
+        // Update in managedUsers collection
+        setManagedUsers(prev =>
+          prev.map(u => (u.id === user.id ? { ...u, ...updates } : u))
+        );
+
+        // Sync with Cloudflare D1
+        await d1Client.updateUser(user.id, updates);
+
+        logAuditEvent({
+          actionAr: 'تحديث بيانات الملف الشخصي',
+          actionEn: 'Update Profile Information',
+          category: 'USER_MGMT',
+          detailsAr: `قام المستخدم ${updatedUser.nameAr} بتحديث بياناته الشخصية`,
+          detailsEn: `User ${updatedUser.nameEn || updatedUser.username} updated profile information`,
+          status: 'SUCCESS',
+        });
+
+        return { success: true };
+      } catch (err: any) {
+        console.error('Failed to update user profile in D1', err);
+        return { success: false, error: err?.message || 'فشل تحديث البيانات في الخادم' };
+      }
+    },
+    [user, rememberMe, logAuditEvent]
+  );
+
+  // Real Password Change Handler (Syncs to Cloudflare D1 & Local Storage)
+  const changePassword = useCallback(
+    async (
+      currentPassword: string,
+      newPassword: string
+    ): Promise<{ success: boolean; error?: string }> => {
+      if (!user) return { success: false, error: 'المستخدم غير مسجل الدخول' };
+      try {
+        // Validate current password against known records
+        const found = managedUsers.find(u => u.id === user.id);
+        if (found && found.passwordHash && found.passwordHash !== currentPassword) {
+          return { success: false, error: 'كلمة المرور الحالية غير صحيحة' };
+        }
+
+        // Sync new password to D1
+        await d1Client.updateUser(user.id, { password: newPassword });
+
+        // Update local state
+        setManagedUsers(prev =>
+          prev.map(u => (u.id === user.id ? { ...u, passwordHash: newPassword } : u))
+        );
+
+        logAuditEvent({
+          actionAr: 'تغيير كلمة المرور',
+          actionEn: 'Change Security Password',
+          category: 'SECURITY',
+          detailsAr: `قام المستخدم ${user.nameAr} بتغيير كلمة المرور بنجاح`,
+          detailsEn: `Security password changed for ${user.nameEn || user.username}`,
+          status: 'SUCCESS',
+        });
+
+        return { success: true };
+      } catch (err: any) {
+        console.error('Failed to change password in D1', err);
+        return { success: false, error: err?.message || 'فشل تغيير كلمة المرور' };
+      }
+    },
+    [user, managedUsers, logAuditEvent]
+  );
+
+  // Granular RBAC Permissions Matrix Updater (Syncs to D1 /api/permissions)
+  const updateUserPermissions = useCallback(
+    async (
+      userId: string,
+      permissions: string[]
+    ): Promise<{ success: boolean; error?: string }> => {
+      try {
+        const target = managedUsers.find(u => u.id === userId);
+        const targetName = target ? target.nameAr : userId;
+
+        // Update managedUsers in state
+        setManagedUsers(prev =>
+          prev.map(u =>
+            u.id === userId
+              ? { ...u, permissions, customPermissions: permissions }
+              : u
+          )
+        );
+
+        // If the updated user is currently logged in, update active user state immediately
+        if (user && user.id === userId) {
+          const updatedActive: AuthUser = {
+            ...user,
+            permissions,
+          };
+          setUser(updatedActive);
+          if (rememberMe) {
+            localStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify(updatedActive));
+          } else {
+            sessionStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify(updatedActive));
+          }
+        }
+
+        // Persist to Cloudflare D1
+        const res = await d1Client.saveUserPermissions(userId, permissions, targetName);
+        if (!res.success) {
+          throw new Error(res.error || 'Failed to save permissions to D1');
+        }
+
+        logAuditEvent({
+          actionAr: 'تعديل مصفوفة الصلاحيات',
+          actionEn: 'Update Permissions Matrix',
+          category: 'RBAC',
+          detailsAr: `تم تحديث صلاحيات المستخدم (${targetName}) بعدد ${permissions.length} صلاحية`,
+          detailsEn: `Updated permissions matrix for ${userId} (${permissions.length} permissions assigned)`,
+          status: 'SUCCESS',
+        });
+
+        return { success: true };
+      } catch (err: any) {
+        console.error('Failed to update permissions in D1', err);
+        return { success: false, error: err?.message || 'فشل حفظ الصلاحيات في قاعدة البيانات' };
+      }
+    },
+    [user, managedUsers, rememberMe, logAuditEvent]
+  );
+
   // User Management Actions (Synced with Cloudflare D1)
   const addManagedUser = useCallback(
     (userData: Omit<ManagedUser, 'id' | 'createdAt'>): ManagedUser => {
@@ -587,6 +829,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         switchUserRole,
         checkModuleAccess,
         hasRole,
+        hasPermission,
+        updateUserProfile,
+        changePassword,
+        updateUserPermissions,
         currentPath,
         navigate,
         seedUsers: PRECONFIGURED_SEED_USERS,

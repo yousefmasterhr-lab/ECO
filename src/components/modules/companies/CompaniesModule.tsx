@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '../../../context/LanguageContext';
 import { useNavigation } from '../../../context/NavigationContext';
-import { CheckCircle2, AlertTriangle, Loader2 } from 'lucide-react';
+import { useAuth } from '../../../context/AuthContext';
+import { CheckCircle2, AlertTriangle, Loader2, ShieldAlert } from 'lucide-react';
 
 import {
   CompanyEntity,
@@ -29,7 +30,21 @@ interface CompaniesModuleProps {
 export const CompaniesModule: React.FC<CompaniesModuleProps> = ({ activeSubItemId }) => {
   const { isRtl } = useLanguage();
   const { selectItem, currentUser } = useNavigation();
-  const currentTab = activeSubItemId || 'comp_directory';
+  const { hasPermission } = useAuth();
+
+  // Granular Action-Level RBAC: Calculate permitted tabs for current user
+  const permittedTabs = React.useMemo(() => [
+    { id: 'comp_directory', perm: 'companies.directory.view', titleAr: 'دليل الشركات' },
+    { id: 'comp_licenses', perm: 'companies.licenses.view', titleAr: 'السجلات والتراخيص' },
+    { id: 'comp_branches', perm: 'companies.branches.view', titleAr: 'الفروع والمواقع' },
+    { id: 'comp_structure', perm: 'companies.org.view', titleAr: 'الهيكل ومراكز التكلفة' },
+    { id: 'comp_signatories', perm: 'companies.signatories.view', titleAr: 'المفوضون والصلاحيات' },
+  ].filter(t => hasPermission(t.perm)), [hasPermission]);
+
+  const requestedTab = activeSubItemId || 'comp_directory';
+  const currentTab = permittedTabs.some(t => t.id === requestedTab)
+    ? requestedTab
+    : permittedTabs[0]?.id || null;
 
   const userName = (currentUser as any)?.displayName || currentUser?.nameAr || currentUser?.nameEn || 'يوسف حجازي';
 
@@ -357,10 +372,24 @@ export const CompaniesModule: React.FC<CompaniesModuleProps> = ({ activeSubItemI
             <div className="h-32 bg-slate-100 dark:bg-stone-900/60 rounded-2xl border border-slate-200/60 dark:border-stone-800" />
           </div>
         </div>
+      ) : permittedTabs.length === 0 ? (
+        <div className="p-8 sm:p-12 rounded-2xl bg-white dark:bg-[#121B14] border border-[#E0D9CB] dark:border-[#243628] text-center space-y-3 shadow-xs">
+          <div className="w-14 h-14 rounded-2xl bg-amber-500/10 text-[#D99B26] flex items-center justify-center mx-auto">
+            <ShieldAlert className="w-7 h-7" />
+          </div>
+          <h3 className="text-base font-extrabold text-[#1A241C] dark:text-[#F3EFE6]">
+            {isRtl ? 'غير مصرح بعرض موديول إدارة الشركات' : 'Access Restricted'}
+          </h3>
+          <p className="text-xs text-[#5C665E] dark:text-[#8FA392] max-w-md mx-auto">
+            {isRtl
+              ? 'حسابك الحالي لا يمتلك أي صلاحيات عرض لأقسام دليل الشركات أو التراخيص أو الفروع أو الهيكل أو المفوضين. يرجى التواصل مع الإدارة العليا أو مدير النظام لتخصيص الصلاحيات.'
+              : 'You do not have permission to view any submodules within Company Management. Please contact your system administrator.'}
+          </p>
+        </div>
       ) : (
         <>
           {/* Sub-Route Tab 1: دليل الشركات وهيكل المساهمين */}
-          {currentTab === 'comp_directory' && (
+          {currentTab === 'comp_directory' && hasPermission('companies.directory.view') && (
             <CompanyDirectoryTab
               companies={companies}
               documents={documents}
@@ -373,7 +402,7 @@ export const CompaniesModule: React.FC<CompaniesModuleProps> = ({ activeSubItemI
           )}
 
           {/* Sub-Route Tab 2: السجلات والتراخيص الذكية */}
-          {currentTab === 'comp_licenses' && (
+          {currentTab === 'comp_licenses' && hasPermission('companies.licenses.view') && (
             <CompanyLicensesTab
               documents={documents}
               companies={companies}
@@ -385,7 +414,7 @@ export const CompaniesModule: React.FC<CompaniesModuleProps> = ({ activeSubItemI
           )}
 
           {/* Sub-Route Tab 3: الفروع والمواقع الميدانية */}
-          {currentTab === 'comp_branches' && (
+          {currentTab === 'comp_branches' && hasPermission('companies.branches.view') && (
             <CompanyBranchesTab
               branches={branches}
               companies={companies}
@@ -396,7 +425,7 @@ export const CompaniesModule: React.FC<CompaniesModuleProps> = ({ activeSubItemI
           )}
 
           {/* Sub-Route Tab 4: الهيكل التنظيمي وشجرة الإدارات */}
-          {currentTab === 'comp_structure' && (
+          {currentTab === 'comp_structure' && hasPermission('companies.org.view') && (
             <CompanyOrgStructureTab
               departments={departments}
               companies={companies}
@@ -408,7 +437,7 @@ export const CompaniesModule: React.FC<CompaniesModuleProps> = ({ activeSubItemI
           )}
 
           {/* Sub-Route Tab 5: المفوضون ومصفوفة الصلاحيات */}
-          {currentTab === 'comp_signatories' && (
+          {currentTab === 'comp_signatories' && hasPermission('companies.signatories.view') && (
             <CompanySignatoriesTab
               signatories={signatories}
               companies={companies}

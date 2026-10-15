@@ -156,7 +156,10 @@ export const d1Client = {
   /**
    * Update User in D1
    */
-  updateUser: async (id: string, updates: Partial<ManagedUser>): Promise<{ success: boolean; error?: string }> => {
+  updateUser: async (
+    id: string,
+    updates: Partial<ManagedUser> & { password?: string }
+  ): Promise<{ success: boolean; error?: string }> => {
     try {
       const response = await fetch('/api/users', {
         method: 'PUT',
@@ -167,6 +170,28 @@ export const d1Client = {
       const data = await response.json();
       if (!response.ok || !data.success) {
         return { success: false, error: data.error || 'فشل تحديث المستخدم' };
+      }
+
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
+  },
+
+  /**
+   * Save User Permissions in D1
+   */
+  saveUserPermissions: async (userId: string, permissions: string[], userName?: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const response = await fetch('/api/permissions', {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ userId, permissions, userName }),
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        return { success: false, error: data.error || 'فشل حفظ الصلاحيات' };
       }
 
       return { success: true };
