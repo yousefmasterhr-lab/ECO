@@ -389,8 +389,10 @@ input[type="checkbox"]:checked::before {
   ::-webkit-scrollbar {
     display: none !important;
   }
-  * {
-    scrollbar-width: none !important;
+  @supports (scrollbar-width: none) {
+    * {
+      scrollbar-width: none !important;
+    }
   }
 
   /* 3. When printing from within a modal/portal, hide app background root */
@@ -700,6 +702,7 @@ input[type="number"]::-webkit-inner-spin-button {
   margin: 0;
 }
 input[type="number"] {
+  appearance: textfield;
   -moz-appearance: textfield;
 }
 
