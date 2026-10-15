@@ -735,21 +735,21 @@ export const CompanySignatoriesTab: React.FC<CompanySignatoriesTabProps> = ({
                     <div className="space-y-2 text-xs pt-2">
                       <div className="flex items-center gap-2">
                         <span className={`w-2 h-2 rounded-full ${sig.contractualLimits.allowContracts ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-stone-600'}`} />
-                        <span className={`font-medium ${sig.contractualLimits.allowContracts ? 'text-slate-900 dark:text-[#F3EFE6]' : 'text-slate-400 line-through'}`}>
+                        <span className={`font-medium ${sig.contractualLimits.allowContracts ? 'text-slate-900 dark:text-[#F3EFE6]' : 'text-slate-400 dark:text-stone-500'}`}>
                           توقيع عقود المقاولات والتوريدات
                         </span>
                       </div>
 
                       <div className="flex items-center gap-2">
                         <span className={`w-2 h-2 rounded-full ${sig.contractualLimits.allowTenders ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-stone-600'}`} />
-                        <span className={`font-medium ${sig.contractualLimits.allowTenders ? 'text-slate-900 dark:text-[#F3EFE6]' : 'text-slate-400 line-through'}`}>
+                        <span className={`font-medium ${sig.contractualLimits.allowTenders ? 'text-slate-900 dark:text-[#F3EFE6]' : 'text-slate-400 dark:text-stone-500'}`}>
                           دخول المناقصات والمزايدات الحكومية
                         </span>
                       </div>
 
                       <div className="flex items-center gap-2">
                         <span className={`w-2 h-2 rounded-full ${sig.contractualLimits.allowAssetTrade ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-stone-600'}`} />
-                        <span className={`font-medium ${sig.contractualLimits.allowAssetTrade ? 'text-slate-900 dark:text-[#F3EFE6]' : 'text-slate-400 line-through'}`}>
+                        <span className={`font-medium ${sig.contractualLimits.allowAssetTrade ? 'text-slate-900 dark:text-[#F3EFE6]' : 'text-slate-400 dark:text-stone-500'}`}>
                           شراء وبيع الأصول العقارية والآليات
                         </span>
                       </div>
@@ -774,21 +774,21 @@ export const CompanySignatoriesTab: React.FC<CompanySignatoriesTabProps> = ({
                     <div className="space-y-2 text-xs pt-2">
                       <div className="flex items-center gap-2">
                         <span className={`w-2 h-2 rounded-full ${sig.judicialLimits.allowCourtRepresentation ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-stone-600'}`} />
-                        <span className={`font-medium ${sig.judicialLimits.allowCourtRepresentation ? 'text-slate-900 dark:text-[#F3EFE6]' : 'text-slate-400 line-through'}`}>
+                        <span className={`font-medium ${sig.judicialLimits.allowCourtRepresentation ? 'text-slate-900 dark:text-[#F3EFE6]' : 'text-slate-400 dark:text-stone-500'}`}>
                           التمثيل القضائي أمام كافة المحاكم
                         </span>
                       </div>
 
                       <div className="flex items-center gap-2">
                         <span className={`w-2 h-2 rounded-full ${sig.judicialLimits.allowGovRepresentation ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-stone-600'}`} />
-                        <span className={`font-medium ${sig.judicialLimits.allowGovRepresentation ? 'text-slate-900 dark:text-[#F3EFE6]' : 'text-slate-400 line-through'}`}>
+                        <span className={`font-medium ${sig.judicialLimits.allowGovRepresentation ? 'text-slate-900 dark:text-[#F3EFE6]' : 'text-slate-400 dark:text-stone-500'}`}>
                           التمثيل أمام الهيئات والدوائر الحكومية
                         </span>
                       </div>
 
                       <div className="flex items-center gap-2">
                         <span className={`w-2 h-2 rounded-full ${sig.judicialLimits.allowDisputeResolution ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-stone-600'}`} />
-                        <span className={`font-medium ${sig.judicialLimits.allowDisputeResolution ? 'text-slate-900 dark:text-[#F3EFE6]' : 'text-slate-400 line-through'}`}>
+                        <span className={`font-medium ${sig.judicialLimits.allowDisputeResolution ? 'text-slate-900 dark:text-[#F3EFE6]' : 'text-slate-400 dark:text-stone-500'}`}>
                           هيئات التحكيم وتسوية المنازعات
                         </span>
                       </div>
