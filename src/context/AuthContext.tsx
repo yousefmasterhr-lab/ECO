@@ -170,6 +170,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setAuditLogs(liveLogs);
       }
     }).catch(() => {});
+
+    // Real-time synchronization event listener for permissions matrix updates
+    const handlePermissionsUpdated = (e: Event) => {
+      const ce = e as CustomEvent<{ userId?: string; permissions?: string[] }>;
+      if (ce.detail?.userId && Array.isArray(ce.detail?.permissions)) {
+        const { userId, permissions } = ce.detail;
+        setManagedUsers(prev =>
+          prev.map(u => (u.id === userId ? { ...u, permissions, customPermissions: permissions } : u))
+        );
+        setUser(currentUser => {
+          if (currentUser && currentUser.id === userId) {
+            const updated = { ...currentUser, permissions };
+            try {
+              localStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify(updated));
+            } catch {}
+            return updated;
+          }
+          return currentUser;
+        });
+      }
+    };
+
+    window.addEventListener('eco-permissions-updated', handlePermissionsUpdated);
+    return () => {
+      window.removeEventListener('eco-permissions-updated', handlePermissionsUpdated);
+    };
   }, []);
 
   // Dynamic audit event logger
@@ -558,11 +584,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     [user]
   );
 
-  // Granular Action-Level RBAC Checker
+  // Granular Action-Level RBAC Checker with live reactive enforcement
   const hasPermission = useCallback(
     (key: string): boolean => {
       if (!user) return false;
-      // Super Admin and System Owner have full unrestricted permissions
+      // If user has an explicit permissions list, enforce it with wildcard support
+      if (Array.isArray(user.permissions)) {
+        if (user.permissions.includes('*')) return true;
+        const parts = key.split('.');
+        if (parts.length > 1 && user.permissions.includes(`${parts[0]}.*`)) return true;
+        if (parts.length > 2 && user.permissions.includes(`${parts[0]}.${parts[1]}.*`)) return true;
+        return user.permissions.includes(key);
+      }
+      // Fallback for root admin if permissions list is not initialized
       if (
         user.role === 'SUPER_ADMIN' ||
         user.id === INITIAL_ROOT_ADMIN.id ||
@@ -571,14 +605,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       ) {
         return true;
       }
-      if (!user.permissions || !Array.isArray(user.permissions)) {
-        return false;
-      }
-      return (
-        user.permissions.includes(key) ||
-        user.permissions.includes('*') ||
-        user.permissions.includes('companies.*')
-      );
+      return false;
     },
     [user]
   );

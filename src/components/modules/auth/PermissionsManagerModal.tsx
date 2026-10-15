@@ -161,7 +161,6 @@ export const PermissionsManagerModal: React.FC<PermissionsManagerModalProps> = (
 
   // Toggle single permission key
   const togglePermission = (key: string) => {
-    if (isSuperAdminTarget) return; // Super admin permissions cannot be partially revoked
     setUserPermissions(prev =>
       prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
     );
@@ -169,7 +168,6 @@ export const PermissionsManagerModal: React.FC<PermissionsManagerModalProps> = (
 
   // Toggle entire row (submodule)
   const toggleRow = (row: MatrixRowConfig) => {
-    if (isSuperAdminTarget) return;
     const rowKeys = [
       row.viewKey,
       row.createKey,
@@ -189,17 +187,14 @@ export const PermissionsManagerModal: React.FC<PermissionsManagerModalProps> = (
 
   // Bulk actions
   const grantAll = () => {
-    if (isSuperAdminTarget) return;
     setUserPermissions([...ALL_COMPANY_PERMISSIONS]);
   };
 
   const revokeAll = () => {
-    if (isSuperAdminTarget) return;
     setUserPermissions([]);
   };
 
   const grantReadOnly = () => {
-    if (isSuperAdminTarget) return;
     const viewOnlyKeys = SUBMODULE_ROWS.map(r => r.viewKey);
     setUserPermissions(viewOnlyKeys);
   };
@@ -352,24 +347,21 @@ export const PermissionsManagerModal: React.FC<PermissionsManagerModalProps> = (
             <button
               type="button"
               onClick={grantAll}
-              disabled={isSuperAdminTarget}
-              className="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 transition-colors disabled:opacity-50"
+              className="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 transition-colors"
             >
               {t('منح الكل', 'Grant All')}
             </button>
             <button
               type="button"
               onClick={grantReadOnly}
-              disabled={isSuperAdminTarget}
-              className="px-2.5 py-1 rounded-lg text-xs font-bold bg-blue-500/10 hover:bg-blue-500/20 text-blue-700 dark:text-blue-400 border border-blue-500/30 transition-colors disabled:opacity-50"
+              className="px-2.5 py-1 rounded-lg text-xs font-bold bg-blue-500/10 hover:bg-blue-500/20 text-blue-700 dark:text-blue-400 border border-blue-500/30 transition-colors"
             >
               {t('عرض فقط', 'Read Only')}
             </button>
             <button
               type="button"
               onClick={revokeAll}
-              disabled={isSuperAdminTarget}
-              className="px-2.5 py-1 rounded-lg text-xs font-bold bg-rose-500/10 hover:bg-rose-500/20 text-rose-700 dark:text-rose-400 border border-rose-500/30 transition-colors disabled:opacity-50"
+              className="px-2.5 py-1 rounded-lg text-xs font-bold bg-rose-500/10 hover:bg-rose-500/20 text-rose-700 dark:text-rose-400 border border-rose-500/30 transition-colors"
             >
               {t('سحب الكل', 'Revoke All')}
             </button>
@@ -382,8 +374,8 @@ export const PermissionsManagerModal: React.FC<PermissionsManagerModalProps> = (
             <ShieldAlert className="w-5 h-5 shrink-0 text-[#D99B26]" />
             <span>
               {t(
-                'حساب مدير النظام العام / رئيس مجلس الإدارة يتمتع بصلاحيات كاملة غير مقيدة لكافة شاشات وأزرار النظام كجهة سيادية عليا.',
-                'Super Administrator holds permanent unrestricted access across all actions and views by sovereign mandate.'
+                'حساب إدارة عليا (Super Admin) - الصلاحيات مفعلة بالكامل مع إمكانية التخصيص والاستثناء المباشر.',
+                'Super Admin Account: Full permissions active with direct customization capability.'
               )}
             </span>
           </div>
@@ -482,7 +474,6 @@ export const PermissionsManagerModal: React.FC<PermissionsManagerModalProps> = (
                       <td className="p-2.5 text-center">
                         <CustomMatrixCheckbox
                           checked={userPermissions.includes(row.viewKey)}
-                          disabled={isSuperAdminTarget}
                           onChange={() => togglePermission(row.viewKey)}
                         />
                       </td>
@@ -491,7 +482,6 @@ export const PermissionsManagerModal: React.FC<PermissionsManagerModalProps> = (
                       <td className="p-2.5 text-center">
                         <CustomMatrixCheckbox
                           checked={userPermissions.includes(row.createKey)}
-                          disabled={isSuperAdminTarget}
                           onChange={() => togglePermission(row.createKey)}
                         />
                       </td>
@@ -500,7 +490,6 @@ export const PermissionsManagerModal: React.FC<PermissionsManagerModalProps> = (
                       <td className="p-2.5 text-center">
                         <CustomMatrixCheckbox
                           checked={userPermissions.includes(row.editKey)}
-                          disabled={isSuperAdminTarget}
                           onChange={() => togglePermission(row.editKey)}
                         />
                       </td>
@@ -516,7 +505,6 @@ export const PermissionsManagerModal: React.FC<PermissionsManagerModalProps> = (
                               >
                                 <CustomMatrixCheckbox
                                   checked={userPermissions.includes(special.key)}
-                                  disabled={isSuperAdminTarget}
                                   onChange={() => togglePermission(special.key)}
                                 />
                                 <span>{special.labelAr}</span>
@@ -532,7 +520,6 @@ export const PermissionsManagerModal: React.FC<PermissionsManagerModalProps> = (
                       <td className="p-2.5 text-center">
                         <CustomMatrixCheckbox
                           checked={userPermissions.includes(row.auditKey)}
-                          disabled={isSuperAdminTarget}
                           onChange={() => togglePermission(row.auditKey)}
                         />
                       </td>
@@ -541,7 +528,6 @@ export const PermissionsManagerModal: React.FC<PermissionsManagerModalProps> = (
                       <td className="p-2.5 text-center">
                         <CustomMatrixCheckbox
                           checked={userPermissions.includes(row.deleteKey)}
-                          disabled={isSuperAdminTarget}
                           onChange={() => togglePermission(row.deleteKey)}
                         />
                       </td>
@@ -551,7 +537,6 @@ export const PermissionsManagerModal: React.FC<PermissionsManagerModalProps> = (
                         <button
                           type="button"
                           onClick={() => toggleRow(row)}
-                          disabled={isSuperAdminTarget}
                           className={`px-2 py-1 rounded text-[10px] font-bold border transition-colors ${
                             isAllRowSelected
                               ? 'bg-[#1C291E] text-white border-[#1C291E]'
