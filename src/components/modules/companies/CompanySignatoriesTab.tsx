@@ -32,6 +32,7 @@ import {
 } from './types';
 import { formatCurrency } from '../../../utils/formatters';
 import { useAuth } from '../../../context/AuthContext';
+import { CreatableSelect } from '../../common/CreatableSelect';
 
 const formatAttachmentSize = (bytes?: number) => {
   if (!bytes) return '—';
@@ -930,16 +931,13 @@ export const CompanySignatoriesTab: React.FC<CompanySignatoriesTabProps> = ({
                     </div>
 
                     <div>
-                      <label className="block font-bold text-slate-800 dark:text-[#F3EFE6] mb-1">
-                        الصفة / المسمى الوظيفي *
-                      </label>
-                      <input
-                        type="text"
-                        required
+                      <CreatableSelect
+                        category="signatory_titles"
+                        label="الصفة / المسمى الوظيفي والتفويض *"
                         value={formRoleAr}
-                        onChange={e => setFormRoleAr(e.target.value)}
-                        placeholder="رئيس مجلس الإدارة، العضو المنتدب، مدير مالي، مستشار قانوني"
-                        className="w-full min-h-[42px] px-3.5 py-2 rounded-xl border border-slate-200 dark:border-[#243628] bg-slate-50/50 dark:bg-[#17231A] text-slate-900 dark:text-[#F3EFE6] placeholder:text-slate-400 focus:outline-none focus:border-amber-500"
+                        onChange={val => setFormRoleAr(val)}
+                        placeholder="اختر أو أضف صفة التفويض..."
+                        required
                       />
                     </div>
                   </div>

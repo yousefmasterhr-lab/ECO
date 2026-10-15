@@ -193,6 +193,18 @@ export const RBACView: React.FC = () => {
     });
   }, [managedUsers]);
 
+  // Listen to external request to open RBAC for a specific user
+  useEffect(() => {
+    const handleOpenRbac = (e: any) => {
+      if (e?.detail?.userId) {
+        setTargetType('user');
+        setSelectedUserId(e.detail.userId);
+      }
+    };
+    window.addEventListener('eco-open-rbac', handleOpenRbac as any);
+    return () => window.removeEventListener('eco-open-rbac', handleOpenRbac as any);
+  }, []);
+
   // Current target key in repo
   const currentTargetKey = targetType === 'user' ? `user:${selectedUserId}` : `role:${selectedRole}`;
 

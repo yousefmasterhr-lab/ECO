@@ -255,3 +255,30 @@
 4. **منع اقتطاع النصوص في حقول القوائم المنسدلة RTL:**
    - تطبيق حشوة آمنة `pl-10 pr-4 py-2 min-w-[320px]` مع وضع أيقونة السهم في `left-3` لمنع اقتطاع أول حرف من الأسماء أو الإيميلات.
 
+### 8.6 نمط محرك التعريفات والقوائم المرنة ومكون `<CreatableSelect />` السحابي
+1. **التعريفات المفتوحة وحفظها في Cloudflare D1:**
+   - إدارة خمسة تصنيفات مفتوحة في جدول `system_configurations` عبر `/api/configurations`:
+     - الأدوار والمسميات الوظيفية (`roles`)
+     - الأقسام والإدارات والتخصصات (`departments`)
+     - أنواع الوثائق والتراخيص (`doc_types`)
+     - أنواع المقرات والمواقع (`branch_types`)
+     - صفات التفويض والتوكيلات (`signatory_titles`)
+2. **بنية مكون `<CreatableSelect />` القابل للإضافة الفورية:**
+   - يدعم البحث السريع والفلترة الفورية مع إمكانية إضافة أي نص جديد غير موجود فوراً بزر:
+     `+ إضافة "[النص]" وحفظه في التعريفات فوراً`.
+   - يقوم المكون بحفظ العنصر عبر `d1Client.createConfiguration` وتحديث القائمة النشطة واختياره مباشرة في النموذج دون إعادة ضبطه أو إغلاق النافذة.
+
+### 8.7 معيار تثبيت مؤشر الفأرة الداكن (Guaranteed SVG Dark I-Beam Cursor Pattern)
+- تفادياً لمشاكل انعكاس الألوان في محركات المتصفحات وأنظمة التشغيل، يُلزم النظام باستخدام Data-URI SVG لمؤشر الكتابة في `src/index.css`:
+  ```css
+  html:not(.dark) input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="button"]):not([type="submit"]),
+  html:not(.dark) textarea,
+  html:not(.dark) [contenteditable="true"] {
+    cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='24' viewBox='0 0 16 24'><path d='M5 2h6M8 2v20M5 22h6' stroke='%230f172a' stroke-width='2.2' stroke-linecap='round'/></svg>") 8 12, text !important;
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    caret-color: #d97706 !important;
+  }
+  ```
+
+

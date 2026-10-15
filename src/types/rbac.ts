@@ -1134,6 +1134,21 @@ export const ERP_MODULES_MATRIX_CONFIG: Record<DepartmentKey, ERPModuleMatrixCon
         },
       },
       {
+        id: 'set_configurations',
+        titleAr: 'التعريفات والقوائم المرنة',
+        titleEn: 'Dynamic Configurations',
+        descriptionAr: 'إدارة وتخصيص المسميات الوظيفية، الأقسام، أنواع الوثائق والمقرات وصفات المفوضين',
+        actions: {
+          view: { key: 'set.configurations.view', labelAr: 'عرض التعريفات والقوائم' },
+          create: { key: 'set.configurations.create', labelAr: 'إضافة عنصر تعريف جديد' },
+          edit: { key: 'set.configurations.edit', labelAr: 'تعديل بيانات التعريف' },
+          docs: { key: 'set.configurations.docs', labelAr: 'تصدير القوائم المعيارية' },
+          status: { key: 'set.configurations.status', labelAr: 'تفعيل/إلغاء تفعيل العنصر' },
+          audit: { key: 'set.configurations.audit', labelAr: 'سجل تدقيق التعريفات' },
+          delete: { key: 'set.configurations.delete', labelAr: 'حذف عنصر من القوائم' },
+        },
+      },
+      {
         id: 'set_audit',
         titleAr: 'سجل العمليات والرقابة الأمنية',
         titleEn: 'Audit Log & Security Oversight',

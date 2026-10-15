@@ -24,6 +24,7 @@ import {
 import { SmartDocument, CompanyEntity, CompanyDocumentAttachment } from './types';
 import { getFormattedAuditTimestamp } from './licenseStorage';
 import { useAuth } from '../../../context/AuthContext';
+import { CreatableSelect } from '../../common/CreatableSelect';
 
 interface CompanyLicensesTabProps {
   documents: SmartDocument[];
@@ -744,21 +745,14 @@ export const CompanyLicensesTab: React.FC<CompanyLicensesTabProps> = ({
                 {/* 2. Doc Type & Title */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block font-bold text-slate-800 dark:text-[#F3EFE6] mb-1">
-                      نوع المستند *
-                    </label>
-                    <select
+                    <CreatableSelect
+                      category="doc_types"
+                      label="نوع المستند *"
                       value={formDocType}
-                      onChange={e => setFormDocType(e.target.value)}
-                      className="w-full min-h-[44px] px-3 py-2 rounded-xl border border-slate-300 dark:border-[#243628] bg-slate-50 dark:bg-[#17231A] text-slate-900 dark:text-[#F3EFE6] focus:outline-none focus:border-amber-500"
-                    >
-                      <option value="سجل تجاري">سجل تجاري</option>
-                      <option value="بطاقة ضريبية">بطاقة ضريبية</option>
-                      <option value="رخصة تشغيل">رخصة تشغيل ومطابقة</option>
-                      <option value="اتحاد مقاولين">اتحاد مقاولين</option>
-                      <option value="تأمينات اجتماعية">تأمينات اجتماعية</option>
-                      <option value="شهادة تصنيف">شهادة تصنيف واعتماد</option>
-                    </select>
+                      onChange={val => setFormDocType(val)}
+                      placeholder="اختر أو أضف نوع المستند..."
+                      required
+                    />
                   </div>
 
                   <div>

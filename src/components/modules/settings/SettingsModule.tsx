@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../../../context/LanguageContext';
 import { RBACView } from './RBACView';
 import { UserManagementView } from './UserManagementView';
+import { ConfigurationView } from './ConfigurationView';
 import { AuditLogsView } from './AuditLogsView';
 import { DatabaseFederationHub } from './DatabaseFederationHub';
 import { CloudUpgradesView } from './CloudUpgradesView';
 import {
   ShieldCheck,
   Users,
+  Sliders,
   ScrollText,
   Database,
   CloudUpload
@@ -19,8 +21,9 @@ interface SettingsModuleProps {
 
 export const SettingsModule: React.FC<SettingsModuleProps> = ({ activeSubItemId }) => {
   const { t } = useLanguage();
-  const [activeTab, setActiveTab] = useState<'rbac' | 'users' | 'audit' | 'system' | 'upgrades'>(() => {
+  const [activeTab, setActiveTab] = useState<'rbac' | 'users' | 'configurations' | 'audit' | 'system' | 'upgrades'>(() => {
     if (activeSubItemId === 'set_users') return 'users';
+    if (activeSubItemId === 'set_configurations') return 'configurations';
     if (activeSubItemId === 'set_audit') return 'audit';
     if (activeSubItemId === 'set_integrations' || activeSubItemId === 'set_databases') return 'system';
     if (activeSubItemId === 'set_upgrades') return 'upgrades';
@@ -30,6 +33,8 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({ activeSubItemId 
   useEffect(() => {
     if (activeSubItemId === 'set_users') {
       setActiveTab('users');
+    } else if (activeSubItemId === 'set_configurations') {
+      setActiveTab('configurations');
     } else if (activeSubItemId === 'set_audit') {
       setActiveTab('audit');
     } else if (activeSubItemId === 'set_integrations' || activeSubItemId === 'set_databases') {
@@ -39,9 +44,18 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({ activeSubItemId 
     }
   }, [activeSubItemId]);
 
+  // Listen to cross-module trigger to open RBAC matrix for a specific user
+  useEffect(() => {
+    const handleOpenRbac = () => {
+      setActiveTab('rbac');
+    };
+    window.addEventListener('eco-open-rbac', handleOpenRbac as any);
+    return () => window.removeEventListener('eco-open-rbac', handleOpenRbac as any);
+  }, []);
+
   return (
     <div className="w-full space-y-5 animate-in fade-in duration-200">
-      {/* Sub Tabs Bar for RBAC / User Accounts / Audit Logs / Database Hub */}
+      {/* Sub Tabs Bar for RBAC / User Accounts / Dynamic Config / Audit Logs / Database Hub */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1 border-b border-[#E0D9CB]/60 dark:border-[#243628]/60">
         <button
           onClick={() => setActiveTab('rbac')}
@@ -65,6 +79,18 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({ activeSubItemId 
         >
           <Users className="w-3.5 h-3.5" />
           <span>{t('إدارة المستخدمين', 'User Management')}</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('configurations')}
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+            activeTab === 'configurations'
+              ? 'bg-[#1C291E] dark:bg-[#EBB34D] text-[#F3EFE6] dark:text-[#0E1610] shadow-xs'
+              : 'bg-[#F3EFE6] dark:bg-[#17231A] text-[#5C665E] dark:text-[#8FA392] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23] border border-[#E0D9CB] dark:border-[#243628]'
+          }`}
+        >
+          <Sliders className="w-3.5 h-3.5 text-amber-500" />
+          <span>{t('التعريفات والقوائم المرنة', 'Configurations')}</span>
         </button>
 
         <button
@@ -107,6 +133,7 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({ activeSubItemId 
       {/* Tab Content */}
       {activeTab === 'rbac' && <RBACView />}
       {activeTab === 'users' && <UserManagementView />}
+      {activeTab === 'configurations' && <ConfigurationView />}
       {activeTab === 'audit' && <AuditLogsView />}
       {activeTab === 'system' && <DatabaseFederationHub />}
       {activeTab === 'upgrades' && <CloudUpgradesView />}

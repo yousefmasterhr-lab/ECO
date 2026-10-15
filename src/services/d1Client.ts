@@ -5,6 +5,7 @@
  */
 
 import { AuthUser, ManagedUser, AuditLogEntry } from '../types/auth';
+import { SystemConfigurationItem, ConfigurationCategory } from '../types/configurations';
 
 const TOKEN_KEY = 'eco_session_token';
 
@@ -266,6 +267,118 @@ export const d1Client = {
       });
     } catch (e) {
       console.warn('Failed to insert audit log to D1 API:', e);
+    }
+  },
+
+  /**
+   * Dynamic Configuration Engine (Cloudflare D1 Persistence)
+   */
+  fetchConfigurations: async (category?: ConfigurationCategory): Promise<SystemConfigurationItem[]> => {
+    try {
+      const url = category ? `/api/configurations?category=${encodeURIComponent(category)}` : '/api/configurations';
+      const response = await fetch(url, {
+        headers: getAuthHeaders(),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && Array.isArray(data.configurations)) {
+          return data.configurations.map((item: any) => ({
+            id: item.id,
+            category: item.category as ConfigurationCategory,
+            code: item.code,
+            nameAr: item.name_ar || item.nameAr,
+            nameEn: item.name_en || item.nameEn,
+            descriptionAr: item.description_ar || item.descriptionAr,
+            descriptionEn: item.description_en || item.descriptionEn,
+            colorVar: item.color_var || item.colorVar,
+            isSystem: item.is_system === 1 || item.isSystem === true,
+            isActive: item.is_active === 1 || item.isActive === true || item.is_active === undefined,
+            createdAt: item.created_at || item.createdAt,
+            updatedAt: item.updated_at || item.updatedAt,
+          }));
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to fetch configurations from D1:', e);
+    }
+    return [];
+  },
+
+  createConfiguration: async (
+    item: Partial<SystemConfigurationItem> & { category: ConfigurationCategory; nameAr: string }
+  ): Promise<{ success: boolean; item?: SystemConfigurationItem; error?: string }> => {
+    try {
+      const response = await fetch('/api/configurations', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(item),
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        return { success: false, error: data.error || 'فشل حفظ عنصر الإعدادات' };
+      }
+
+      const raw = data.item;
+      const mapped: SystemConfigurationItem = {
+        id: raw.id,
+        category: raw.category,
+        code: raw.code,
+        nameAr: raw.name_ar || raw.nameAr,
+        nameEn: raw.name_en || raw.nameEn,
+        descriptionAr: raw.description_ar || raw.descriptionAr,
+        descriptionEn: raw.description_en || raw.descriptionEn,
+        colorVar: raw.color_var || raw.colorVar,
+        isSystem: raw.is_system === 1 || raw.isSystem === true,
+        isActive: raw.is_active === 1 || raw.isActive === true,
+        createdAt: raw.created_at || raw.createdAt,
+        updatedAt: raw.updated_at || raw.updatedAt,
+      };
+
+      return { success: true, item: mapped };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
+  },
+
+  updateConfiguration: async (
+    id: string,
+    updates: Partial<SystemConfigurationItem>
+  ): Promise<{ success: boolean; item?: SystemConfigurationItem; error?: string }> => {
+    try {
+      const response = await fetch('/api/configurations', {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ id, ...updates }),
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        return { success: false, error: data.error || 'فشل تحديث عنصر الإعدادات' };
+      }
+
+      return { success: true, item: data.item };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
+  },
+
+  deleteConfiguration: async (id: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const response = await fetch(`/api/configurations?id=${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        return { success: false, error: data.error || 'فشل حذف عنصر الإعدادات' };
+      }
+
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message };
     }
   },
 };

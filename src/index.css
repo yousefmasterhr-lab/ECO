@@ -673,5 +673,33 @@ input[type="checkbox"]:checked::before {
   animation: progressFill 4.5s cubic-bezier(0.1, 0.7, 0.1, 1) forwards;
 }
 
+/* ============================================================================== */
+/* Guaranteed Dark I-Beam Cursor in Light Mode - Never turns white               */
+/* ============================================================================== */
+html:not(.dark) input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="button"]):not([type="submit"]),
+html:not(.dark) textarea,
+html:not(.dark) [contenteditable="true"] {
+  cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='24' viewBox='0 0 16 24'><path d='M5 2h6M8 2v20M5 22h6' stroke='%230f172a' stroke-width='2.2' stroke-linecap='round'/></svg>") 8 12, text !important;
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  caret-color: #d97706 !important;
+}
 
+/* Crisp Amber/White I-Beam Cursor in Dark Mode */
+html.dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="button"]):not([type="submit"]),
+html.dark textarea,
+html.dark [contenteditable="true"] {
+  cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='24' viewBox='0 0 16 24'><path d='M5 2h6M8 2v20M5 22h6' stroke='%23fbbf24' stroke-width='2.2' stroke-linecap='round'/></svg>") 8 12, text !important;
+  caret-color: #fbbf24 !important;
+}
+
+/* Hide native HTML5 number input spinners */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
 

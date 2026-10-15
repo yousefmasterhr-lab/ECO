@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { BranchLocation, CompanyEntity } from './types';
 import { useAuth } from '../../../context/AuthContext';
+import { CreatableSelect } from '../../common/CreatableSelect';
 
 interface CompanyBranchesTabProps {
   branches: BranchLocation[];
@@ -596,20 +597,14 @@ export const CompanyBranchesTab: React.FC<CompanyBranchesTabProps> = ({
                   </div>
 
                   <div>
-                    <label className="block font-bold text-slate-800 dark:text-[#F3EFE6] mb-1">
-                      نوع المقر / المنشأة *
-                    </label>
-                    <select
+                    <CreatableSelect
+                      category="branch_types"
+                      label="نوع المقر / المنشأة *"
                       value={formTypeAr}
-                      onChange={e => setFormTypeAr(e.target.value)}
-                      className="w-full min-h-[44px] px-3 py-2 rounded-xl border border-slate-300 dark:border-[#243628] bg-slate-50 dark:bg-[#17231A] text-slate-900 dark:text-[#F3EFE6] focus:outline-none focus:border-amber-500"
-                    >
-                      <option value="مقر رئيسي">مقر رئيسي</option>
-                      <option value="فرع إداري">فرع إداري</option>
-                      <option value="موقع إنشائي/مشروع">موقع إنشائي / مشروع</option>
-                      <option value="مخزن">مخزن / مستودع تشوين</option>
-                      <option value="ورشة مركزية">ورشة مركزية</option>
-                    </select>
+                      onChange={val => setFormTypeAr(val)}
+                      placeholder="اختر أو أضف نوع المقر..."
+                      required
+                    />
                   </div>
                 </div>
 

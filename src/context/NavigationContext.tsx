@@ -231,6 +231,7 @@ export const DEPARTMENT_CATEGORIES: DepartmentNavCategory[] = [
     subItems: [
       { id: 'set_rbac', titleAr: 'مصفوفة الصلاحيات (RBAC)', titleEn: 'Roles & Permissions (RBAC)' },
       { id: 'set_users', titleAr: 'إدارة المستخدمين', titleEn: 'User Management' },
+      { id: 'set_configurations', titleAr: 'التعريفات والقوائم المرنة', titleEn: 'Dynamic Configurations' },
       { id: 'set_audit', titleAr: 'سجل العمليات', titleEn: 'Audit Log' },
       { id: 'set_integrations', titleAr: 'ربط وتكامل قواعد البيانات (SQL Hub)', titleEn: 'Database Federation Hub (SQL)' },
     ],
@@ -297,10 +298,44 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     return localStorage.getItem('erp_portal_sidebar_collapsed') === 'true';
   });
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
-  const [activeSubItemId, setActiveSubItemId] = useState<string | null>(null);
-  const [expandedCategories, setExpandedCategories] = useState<string[]>(['executive']);
+
+  // Parse initial route from browser URL (e.g. /settings/set_users or /companies)
+  const initialRoute = useMemo(() => {
+    if (typeof window === 'undefined') return { catId: null, subId: null };
+    const path = window.location.pathname;
+    if (!path || path === '/' || path === '/login') return { catId: null, subId: null };
+    const parts = path.split('/').filter(Boolean);
+    if (parts.length > 0) {
+      return { catId: parts[0], subId: parts[1] || null };
+    }
+    return { catId: null, subId: null };
+  }, []);
+
+  const [activeCategoryId, setActiveCategoryId] = useState<string | null>(initialRoute.catId);
+  const [activeSubItemId, setActiveSubItemId] = useState<string | null>(initialRoute.subId);
+  const [expandedCategories, setExpandedCategories] = useState<string[]>(() => {
+    return initialRoute.catId ? ['executive', initialRoute.catId] : ['executive'];
+  });
   const [searchModalOpen, setSearchModalOpen] = useState(false);
+
+  // Listen to browser back/forward buttons (popstate)
+  useEffect(() => {
+    const handlePopState = () => {
+      const path = window.location.pathname;
+      if (!path || path === '/' || path === '/login') {
+        setActiveCategoryId(null);
+        setActiveSubItemId(null);
+        return;
+      }
+      const parts = path.split('/').filter(Boolean);
+      if (parts.length > 0) {
+        setActiveCategoryId(parts[0]);
+        setActiveSubItemId(parts[1] || null);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   // If role changes and activeCategoryId is not allowed, reset to overview
   useEffect(() => {
@@ -347,9 +382,18 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   };
 
   const selectItem = (catId: string, subId?: string) => {
-    // Strip stale URL query parameters when switching main modules
-    if (typeof window !== 'undefined' && window.location.search) {
-      window.history.replaceState({}, '', window.location.pathname);
+    // Cleanly sync browser URL with the selected module and sub-item
+    if (typeof window !== 'undefined') {
+      let targetPath = '/';
+      if (catId && catId !== '' && catId !== 'unauthorized') {
+        targetPath = `/${catId}`;
+        if (subId) {
+          targetPath += `/${subId}`;
+        }
+      }
+      if (window.location.pathname !== targetPath) {
+        window.history.pushState({}, '', targetPath);
+      }
     }
 
     if (catId && catId !== '') {
