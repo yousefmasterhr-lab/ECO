@@ -93,7 +93,7 @@ export const EditContractModal: React.FC<EditContractModalProps> = ({ isOpen, on
             onClick={() => setActiveTab('contract')}
             className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               activeTab === 'contract'
-                ? 'bg-[#1C291E] dark:bg-[#EBB34D] text-[#F3EFE6] dark:text-[#0E1610] shadow-sm'
+                ? 'bg-gradient-to-l from-amber-600 to-amber-500 text-white shadow-sm font-black'
                 : 'text-[#5C665E] dark:text-[#8FA392] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23]'
             }`}
           >
@@ -105,7 +105,7 @@ export const EditContractModal: React.FC<EditContractModalProps> = ({ isOpen, on
             onClick={() => setActiveTab('hr_attendance')}
             className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               activeTab === 'hr_attendance'
-                ? 'bg-[#1C291E] dark:bg-[#EBB34D] text-[#F3EFE6] dark:text-[#0E1610] shadow-sm'
+                ? 'bg-gradient-to-l from-amber-600 to-amber-500 text-white shadow-sm font-black'
                 : 'text-[#5C665E] dark:text-[#8FA392] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23]'
             }`}
           >
@@ -117,7 +117,7 @@ export const EditContractModal: React.FC<EditContractModalProps> = ({ isOpen, on
             onClick={() => setActiveTab('payroll')}
             className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               activeTab === 'payroll'
-                ? 'bg-[#1C291E] dark:bg-[#EBB34D] text-[#F3EFE6] dark:text-[#0E1610] shadow-sm'
+                ? 'bg-gradient-to-l from-amber-600 to-amber-500 text-white shadow-sm font-black'
                 : 'text-[#5C665E] dark:text-[#8FA392] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23]'
             }`}
           >
@@ -323,7 +323,7 @@ export const EditContractModal: React.FC<EditContractModalProps> = ({ isOpen, on
                         onClick={() => toggleWeekend(day)}
                         className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                           isSelected
-                            ? 'bg-[#1C291E] dark:bg-[#EBB34D] text-[#F3EFE6] dark:text-[#0E1610]'
+                            ? 'bg-gradient-to-l from-amber-600 to-amber-500 text-white shadow-xs font-black'
                             : 'bg-white dark:bg-[#17231A] text-[#5C665E] dark:text-[#8FA392] border border-[#E0D9CB] dark:border-[#243628]'
                         }`}
                       >
@@ -470,7 +470,7 @@ export const EditContractModal: React.FC<EditContractModalProps> = ({ isOpen, on
                     step="500"
                     value={salaryBasic}
                     onChange={(e) => setSalaryBasic(Number(e.target.value))}
-                    className="w-full ps-4 pe-14 py-2.5 rounded-xl text-base font-black font-mono bg-white dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6] focus:border-[#EBB34D] outline-none"
+                    className="w-full ps-4 pe-14 py-2.5 rounded-xl text-base font-black font-mono bg-white dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6] focus:border-[#EBB34D] outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     required
                   />
                   <span className="absolute end-4 top-1/2 -translate-y-1/2 text-xs font-bold text-[#D99B26] dark:text-[#EBB34D]">
@@ -478,7 +478,7 @@ export const EditContractModal: React.FC<EditContractModalProps> = ({ isOpen, on
                   </span>
                 </div>
                 <div className="text-xs text-[#5C665E] dark:text-[#8FA392]">
-                  صافي الراتب التقديري بعد البدلات: <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">{(salaryBasic + employee.salary.allowances - employee.salary.deductions).toLocaleString('en-US')} ج.م</span>
+                  صافي الراتب التقديري بعد البدلات: <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">{(salaryBasic + (employee.salary?.allowances || 0) - (employee.salary?.deductions || 0)).toLocaleString('en-US')} ج.م</span>
                 </div>
               </div>
 
@@ -505,7 +505,7 @@ export const EditContractModal: React.FC<EditContractModalProps> = ({ isOpen, on
             </button>
             <button
               type="submit"
-              className="flex items-center gap-1.5 px-5 py-2 rounded-xl bg-[#1C291E] dark:bg-[#EBB34D] text-[#F3EFE6] dark:text-[#0E1610] text-xs font-bold shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+              className="flex items-center gap-1.5 px-5 py-2 rounded-xl bg-gradient-to-l from-amber-600 to-amber-500 hover:from-amber-700 hover:to-amber-600 text-white text-xs font-bold shadow-md shadow-amber-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
             >
               <Save className="w-3.5 h-3.5" />
               <span>حفظ واعتماد التعديلات</span>

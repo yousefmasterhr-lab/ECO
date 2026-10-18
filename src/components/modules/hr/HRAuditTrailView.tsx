@@ -74,7 +74,7 @@ export const HRAuditTrailView: React.FC = () => {
               onClick={() => setSelectedActionType(act)}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                 selectedActionType === act
-                  ? 'bg-[#1C291E] dark:bg-[#EBB34D] text-white dark:text-[#0E1610]'
+                  ? 'bg-gradient-to-l from-amber-600 to-amber-500 text-white shadow-sm font-black'
                   : 'text-[#8FA392] hover:text-[#F3EFE6]'
               }`}
             >

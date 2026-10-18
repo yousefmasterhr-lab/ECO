@@ -40,7 +40,7 @@ export const HRSettingsView: React.FC = () => {
         <div>
           <h3 className="text-sm font-bold text-[#1A241C] dark:text-[#F3EFE6] flex items-center gap-2">
             <Sliders className="w-4 h-4 text-[#D99B26] dark:text-[#EBB34D]" />
-            <span>إعدادات وسياسات الموارد البشرية واللوائح التنظيمية (HR Configuration)</span>
+            <span>لوائح وسياسات العمل والورديات (Work Policies, Shifts & Regulations)</span>
           </h3>
           <p className="text-xs text-[#5C665E] dark:text-[#8FA392] mt-0.5">
             ضبط ساعات الورديات، مضاعفات الإضافي، شرائح التأمينات، وضوابط سلف العاملين
@@ -50,7 +50,7 @@ export const HRSettingsView: React.FC = () => {
         <button
           type="button"
           onClick={handleSave}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#EBB34D] text-[#0E1610] text-xs font-bold shadow-md hover:bg-[#d99b26] transition-all cursor-pointer"
+          className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-l from-amber-600 to-amber-500 hover:from-amber-700 hover:to-amber-600 text-white text-xs font-bold shadow-md shadow-amber-500/20 transition-all cursor-pointer"
         >
           <Save className="w-4 h-4" />
           <span>حفظ التعديلات</span>

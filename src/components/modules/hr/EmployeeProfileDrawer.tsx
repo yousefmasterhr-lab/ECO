@@ -149,7 +149,7 @@ export const EmployeeProfileDrawer: React.FC<EmployeeProfileDrawerProps> = ({ em
                   onClick={() => setActiveTab(tab.id as any)}
                   className={`px-3 py-1.5 rounded-lg whitespace-nowrap transition-all ${
                     activeTab === tab.id
-                      ? 'bg-[#1C291E] dark:bg-[#EBB34D] text-[#F3EFE6] dark:text-[#0E1610] shadow-xs'
+                      ? 'bg-gradient-to-l from-amber-600 to-amber-500 text-white shadow-xs font-black'
                       : 'text-[#5C665E] dark:text-[#8FA392] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23]'
                   }`}
                 >
@@ -475,7 +475,7 @@ export const EmployeeProfileDrawer: React.FC<EmployeeProfileDrawerProps> = ({ em
             </span>
             <button
               onClick={onClose}
-              className="px-4 py-2 rounded-xl bg-[#1C291E] dark:bg-[#EBB34D] text-[#F3EFE6] dark:text-[#0E1610] font-bold text-xs shadow-xs"
+              className="px-4 py-2 rounded-xl bg-gradient-to-l from-amber-600 to-amber-500 hover:from-amber-700 hover:to-amber-600 text-white font-bold text-xs shadow-md shadow-amber-500/20"
             >
               {t('إغلاق الملف', 'Close Dossier')}
             </button>

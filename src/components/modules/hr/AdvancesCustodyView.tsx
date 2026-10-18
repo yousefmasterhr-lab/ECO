@@ -130,13 +130,13 @@ export const AdvancesCustodyView: React.FC<AdvancesCustodyViewProps> = ({ defaul
             onClick={() => setActiveSection('advances')}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               activeSection === 'advances'
-                ? 'bg-[#1C291E] dark:bg-[#EBB34D] text-[#F3EFE6] dark:text-[#0E1610] shadow-sm'
+                ? 'bg-gradient-to-l from-amber-600 to-amber-500 text-white shadow-md shadow-amber-500/20 font-black'
                 : 'text-[#5C665E] dark:text-[#8FA392] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23]'
             }`}
           >
             <Coins className="w-4 h-4" />
             <span>{t('سلف وقروض الموظفين', 'Employee Advances')}</span>
-            <span className="font-mono text-[10.5px] px-1.5 py-0.2 rounded-md bg-[#0E1610]/20">
+            <span className="font-mono text-[10.5px] px-1.5 py-0.2 rounded-md bg-black/20 text-white font-black">
               {advances.filter(a => a.status === 'active').length}
             </span>
           </button>
@@ -145,13 +145,13 @@ export const AdvancesCustodyView: React.FC<AdvancesCustodyViewProps> = ({ defaul
             onClick={() => setActiveSection('custody')}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               activeSection === 'custody'
-                ? 'bg-[#1C291E] dark:bg-[#EBB34D] text-[#F3EFE6] dark:text-[#0E1610] shadow-sm'
+                ? 'bg-gradient-to-l from-amber-600 to-amber-500 text-white shadow-md shadow-amber-500/20 font-black'
                 : 'text-[#5C665E] dark:text-[#8FA392] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23]'
             }`}
           >
             <ShieldCheck className="w-4 h-4" />
             <span>{t('سجل العهد العينية والأصول', 'Asset Custody Ledger')}</span>
-            <span className="font-mono text-[10.5px] px-1.5 py-0.2 rounded-md bg-[#0E1610]/20">
+            <span className="font-mono text-[10.5px] px-1.5 py-0.2 rounded-md bg-black/20 text-white font-black">
               {custodyItems.filter(c => c.status === 'in_custody').length}
             </span>
           </button>
@@ -173,7 +173,7 @@ export const AdvancesCustodyView: React.FC<AdvancesCustodyViewProps> = ({ defaul
         {activeSection === 'advances' ? (
           <button
             onClick={() => setIsAddAdvanceModalOpen(true)}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#1C291E] dark:bg-[#EBB34D] text-[#F3EFE6] dark:text-[#0E1610] text-xs font-bold shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-l from-amber-600 to-amber-500 hover:from-amber-700 hover:to-amber-600 text-white text-xs font-bold shadow-md shadow-amber-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>{t('طلب سلفة جديدة', 'New Advance')}</span>
@@ -181,7 +181,7 @@ export const AdvancesCustodyView: React.FC<AdvancesCustodyViewProps> = ({ defaul
         ) : (
           <button
             onClick={() => setIsAddCustodyModalOpen(true)}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#1C291E] dark:bg-[#EBB34D] text-[#F3EFE6] dark:text-[#0E1610] text-xs font-bold shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-l from-amber-600 to-amber-500 hover:from-amber-700 hover:to-amber-600 text-white text-xs font-bold shadow-md shadow-amber-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>{t('تسليم عهدة جديدة', 'Issue New Custody')}</span>
@@ -434,7 +434,7 @@ export const AdvancesCustodyView: React.FC<AdvancesCustodyViewProps> = ({ defaul
             </button>
             <button
               type="submit"
-              className="px-5 py-2 rounded-xl bg-[#1C291E] dark:bg-[#EBB34D] text-[#F3EFE6] dark:text-[#0E1610] text-xs font-bold shadow-md cursor-pointer"
+              className="px-5 py-2 rounded-xl bg-gradient-to-l from-amber-600 to-amber-500 hover:from-amber-700 hover:to-amber-600 text-white text-xs font-bold shadow-md shadow-amber-500/20 cursor-pointer"
             >
               اعتماد السلفة وصرفها
             </button>
@@ -537,7 +537,7 @@ export const AdvancesCustodyView: React.FC<AdvancesCustodyViewProps> = ({ defaul
             </button>
             <button
               type="submit"
-              className="px-5 py-2 rounded-xl bg-[#1C291E] dark:bg-[#EBB34D] text-[#F3EFE6] dark:text-[#0E1610] text-xs font-bold shadow-md cursor-pointer"
+              className="px-5 py-2 rounded-xl bg-gradient-to-l from-amber-600 to-amber-500 hover:from-amber-700 hover:to-amber-600 text-white text-xs font-bold shadow-md shadow-amber-500/20 cursor-pointer"
             >
               تسليم وتوقيع العهدة
             </button>

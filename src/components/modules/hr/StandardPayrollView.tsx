@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useHR, PayrollItem } from '../../../context/HRContext';
 import { useTenant } from '../../../context/TenantContext';
 import { useLanguage } from '../../../context/LanguageContext';
@@ -20,6 +20,7 @@ import {
 export const StandardPayrollView: React.FC = () => {
   const { t } = useLanguage();
   const {
+    employees,
     payrollItems,
     currentPayrollPeriod,
     setCurrentPayrollPeriod,
@@ -36,8 +37,37 @@ export const StandardPayrollView: React.FC = () => {
   const [selectedSlip, setSelectedSlip] = useState<PayrollItem | null>(null);
   const [isBankExportOpen, setIsBankExportOpen] = useState(false);
 
+  // Compute live payroll from active employees if no explicit payroll run saved yet
+  const effectivePayroll = useMemo(() => {
+    if (payrollItems.length > 0) return payrollItems;
+    return employees
+      .filter(e => e.status === 'active' && e.lifecycleStatus === 'active')
+      .map(e => ({
+        id: `pay_${e.id}`,
+        employeeId: e.id,
+        employeeCode: e.employeeCode,
+        employeeName: e.nameAr,
+        jobTitle: e.jobTitleAr,
+        department: e.departmentAr,
+        companyId: e.companyId,
+        basicSalary: e.salary?.basic || 0,
+        housingAllowance: Math.round((e.salary?.allowances || 0) * 0.5),
+        transportAllowance: Math.round((e.salary?.allowances || 0) * 0.5),
+        siteBonus: 0,
+        grossSalary: (e.salary?.basic || 0) + (e.salary?.allowances || 0),
+        insuranceDeduction: Math.round((e.salary?.deductions || 0) * 0.6),
+        loanDeduction: 0,
+        taxDeduction: Math.round((e.salary?.deductions || 0) * 0.4),
+        totalDeductions: e.salary?.deductions || 0,
+        netSalary: (e.salary?.basic || 0) + (e.salary?.allowances || 0) - (e.salary?.deductions || 0),
+        bankName: e.bankName || 'تحويل بنكي',
+        bankAccount: e.bankAccount || '—',
+        status: 'pending' as const,
+      }));
+  }, [payrollItems, employees]);
+
   // Filtered Items
-  const filteredPayroll = payrollItems.filter(item => {
+  const filteredPayroll = effectivePayroll.filter((item: PayrollItem) => {
     const matchesSearch =
       item.employeeName.toLowerCase().includes(payrollSearch.toLowerCase()) ||
       item.employeeCode.toLowerCase().includes(payrollSearch.toLowerCase()) ||
@@ -47,10 +77,10 @@ export const StandardPayrollView: React.FC = () => {
   });
 
   // Totals
-  const totalBasic = filteredPayroll.reduce((a, b) => a + b.basicSalary, 0);
-  const totalAllowances = filteredPayroll.reduce((a, b) => a + (b.housingAllowance + b.transportAllowance + b.siteBonus), 0);
-  const totalDeductions = filteredPayroll.reduce((a, b) => a + b.totalDeductions, 0);
-  const totalNet = filteredPayroll.reduce((a, b) => a + b.netSalary, 0);
+  const totalBasic = filteredPayroll.reduce((a: number, b: PayrollItem) => a + b.basicSalary, 0);
+  const totalAllowances = filteredPayroll.reduce((a: number, b: PayrollItem) => a + (b.housingAllowance + b.transportAllowance + b.siteBonus), 0);
+  const totalDeductions = filteredPayroll.reduce((a: number, b: PayrollItem) => a + b.totalDeductions, 0);
+  const totalNet = filteredPayroll.reduce((a: number, b: PayrollItem) => a + b.netSalary, 0);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
@@ -168,7 +198,7 @@ export const StandardPayrollView: React.FC = () => {
 
           <button
             onClick={batchApprovePayroll}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#1C291E] dark:bg-[#EBB34D] text-[#F3EFE6] dark:text-[#0E1610] text-xs font-bold shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer whitespace-nowrap"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-l from-amber-600 to-amber-500 hover:from-amber-700 hover:to-amber-600 text-white text-xs font-bold shadow-md shadow-amber-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer whitespace-nowrap"
           >
             <CheckCircle2 className="w-3.5 h-3.5" />
             <span>{t('اعتماد وصرف المسير بالكامل', 'Approve All')}</span>
@@ -212,56 +242,64 @@ export const StandardPayrollView: React.FC = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-[#E0D9CB]/60 dark:divide-[#243628]/60">
-            {filteredPayroll.map(item => (
-              <tr key={item.id} className="hover:bg-[#EAE4D7]/40 dark:hover:bg-[#1F2E23]/60 transition-colors">
-                <td className="p-3.5 font-bold text-[#1A241C] dark:text-[#F3EFE6] whitespace-nowrap">
-                  {item.employeeName}
-                </td>
-                <td className="p-3.5">
-                  <span className="font-mono font-bold text-[#D99B26] dark:text-[#EBB34D]">{item.employeeCode}</span>
-                  <div className="text-[10.5px] text-[#5C665E] dark:text-[#8FA392]">{item.department}</div>
-                </td>
-                <td className="p-3.5 text-end font-mono">{item.basicSalary.toLocaleString('en-US')}</td>
-                <td className="p-3.5 text-end font-mono text-[#059669]">
-                  +{(item.housingAllowance + item.transportAllowance + item.siteBonus).toLocaleString('en-US')}
-                </td>
-                <td className="p-3.5 text-end font-mono font-semibold">{item.grossSalary.toLocaleString('en-US')}</td>
-                <td className="p-3.5 text-end font-mono text-rose-500">
-                  -{item.totalDeductions.toLocaleString('en-US')}
-                </td>
-                <td className="p-3.5 text-end font-mono font-black text-sm text-[#059669] dark:text-[#EBB34D]">
-                  {item.netSalary.toLocaleString('en-US')} ج.م
-                </td>
-                <td className="p-3.5">
-                  <div className="text-[11px] font-bold text-[#1A241C] dark:text-[#F3EFE6]">{item.bankName}</div>
-                  <div className="font-mono text-[9.5px] text-[#5C665E] dark:text-[#8FA392] truncate max-w-[120px]">{item.bankAccount}</div>
-                </td>
-                <td className="p-3.5 text-center">
-                  {item.status === 'paid' ? (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#2A3F30] text-[#A3CFAC]">
-                      <CheckCircle2 className="w-3 h-3" />
-                      <span>تم الصرف</span>
-                    </span>
-                  ) : (
-                    <button
-                      onClick={() => markPayrollItemPaid(item.id)}
-                      className="px-2 py-1 text-[10.5px] font-bold rounded-lg bg-[#D99B26]/15 hover:bg-[#D99B26]/25 text-[#D99B26] dark:text-[#EBB34D] transition-colors cursor-pointer"
-                    >
-                      تأكيد الصرف
-                    </button>
-                  )}
-                </td>
-                <td className="p-3.5 text-center">
-                  <button
-                    onClick={() => setSelectedSlip(item)}
-                    className="p-1.5 rounded-lg bg-[#EAE4D7] dark:bg-[#1F2E23] text-[#1A241C] dark:text-[#F3EFE6] hover:bg-[#D99B26] hover:text-[#0E1610] transition-colors cursor-pointer"
-                    title={t('عرض قسيمة الراتب', 'View Payslip')}
-                  >
-                    <FileText className="w-3.5 h-3.5" />
-                  </button>
+            {filteredPayroll.length === 0 ? (
+              <tr>
+                <td colSpan={10} className="p-8 text-center text-xs text-[#5C665E] dark:text-[#8FA392]">
+                  {t('لا توجد بيانات مسير رواتب مسجلة حالياً — ابدأ بإضافة موظفين واحتساب مسير الفترة', 'No payroll records registered for this period')}
                 </td>
               </tr>
-            ))}
+            ) : (
+              filteredPayroll.map((item: PayrollItem) => (
+                <tr key={item.id} className="hover:bg-[#EAE4D7]/40 dark:hover:bg-[#1F2E23]/60 transition-colors">
+                  <td className="p-3.5 font-bold text-[#1A241C] dark:text-[#F3EFE6] whitespace-nowrap">
+                    {item.employeeName}
+                  </td>
+                  <td className="p-3.5">
+                    <span className="font-mono font-bold text-[#D99B26] dark:text-[#EBB34D]">{item.employeeCode}</span>
+                    <div className="text-[10.5px] text-[#5C665E] dark:text-[#8FA392]">{item.department}</div>
+                  </td>
+                  <td className="p-3.5 text-end font-mono">{item.basicSalary.toLocaleString('en-US')}</td>
+                  <td className="p-3.5 text-end font-mono text-[#059669]">
+                    +{(item.housingAllowance + item.transportAllowance + item.siteBonus).toLocaleString('en-US')}
+                  </td>
+                  <td className="p-3.5 text-end font-mono font-semibold">{item.grossSalary.toLocaleString('en-US')}</td>
+                  <td className="p-3.5 text-end font-mono text-rose-500">
+                    -{item.totalDeductions.toLocaleString('en-US')}
+                  </td>
+                  <td className="p-3.5 text-end font-mono font-black text-sm text-[#059669] dark:text-[#EBB34D]">
+                    {item.netSalary.toLocaleString('en-US')} ج.م
+                  </td>
+                  <td className="p-3.5">
+                    <div className="text-[11px] font-bold text-[#1A241C] dark:text-[#F3EFE6]">{item.bankName}</div>
+                    <div className="font-mono text-[9.5px] text-[#5C665E] dark:text-[#8FA392] truncate max-w-[120px]">{item.bankAccount}</div>
+                  </td>
+                  <td className="p-3.5 text-center">
+                    {item.status === 'paid' ? (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#2A3F30] text-[#A3CFAC]">
+                        <CheckCircle2 className="w-3 h-3" />
+                        <span>تم الصرف</span>
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => markPayrollItemPaid(item.id)}
+                        className="px-2 py-1 text-[10.5px] font-bold rounded-lg bg-[#D99B26]/15 hover:bg-[#D99B26]/25 text-[#D99B26] dark:text-[#EBB34D] transition-colors cursor-pointer"
+                      >
+                        تأكيد الصرف
+                      </button>
+                    )}
+                  </td>
+                  <td className="p-3.5 text-center">
+                    <button
+                      onClick={() => setSelectedSlip(item)}
+                      className="p-1.5 rounded-lg bg-[#EAE4D7] dark:bg-[#1F2E23] text-[#1A241C] dark:text-[#F3EFE6] hover:bg-[#D99B26] hover:text-[#0E1610] transition-colors cursor-pointer"
+                      title={t('عرض قسيمة الراتب', 'View Payslip')}
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
@@ -344,7 +382,7 @@ export const StandardPayrollView: React.FC = () => {
               </button>
               <button
                 onClick={() => window.print()}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#1C291E] dark:bg-[#EBB34D] text-[#F3EFE6] dark:text-[#0E1610] text-xs font-bold shadow-xs cursor-pointer"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-l from-amber-600 to-amber-500 hover:from-amber-700 hover:to-amber-600 text-white text-xs font-bold shadow-md shadow-amber-500/20 cursor-pointer"
               >
                 <Printer className="w-3.5 h-3.5" />
                 <span>طباعة القسيمة</span>

@@ -119,14 +119,14 @@ export const HRApprovalsHubView: React.FC = () => {
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-1.5 p-1 rounded-xl bg-[#F3EFE6] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] w-fit">
+      <div className="flex items-center gap-1.5 p-1 rounded-xl bg-[#F3EFE6] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] w-fit overflow-x-auto select-none no-scrollbar">
         <button
           type="button"
           onClick={() => setActiveTab('all')}
           className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
             activeTab === 'all'
-              ? 'bg-[#1C291E] dark:bg-[#EBB34D] text-white dark:text-[#0E1610]'
-              : 'text-[#8FA392] hover:text-[#F3EFE6]'
+              ? 'bg-gradient-to-l from-amber-600 to-amber-500 text-white shadow-sm font-black'
+              : 'text-[#5C665E] dark:text-[#8FA392] hover:text-[#1A241C] dark:hover:text-[#F3EFE6]'
           }`}
         >
           كافة الطلبات ({requests.length})
@@ -136,8 +136,8 @@ export const HRApprovalsHubView: React.FC = () => {
           onClick={() => setActiveTab('leave')}
           className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
             activeTab === 'leave'
-              ? 'bg-[#1C291E] dark:bg-[#EBB34D] text-white dark:text-[#0E1610]'
-              : 'text-[#8FA392] hover:text-[#F3EFE6]'
+              ? 'bg-gradient-to-l from-amber-600 to-amber-500 text-white shadow-sm font-black'
+              : 'text-[#5C665E] dark:text-[#8FA392] hover:text-[#1A241C] dark:hover:text-[#F3EFE6]'
           }`}
         >
           الإجازات والأرصدة
@@ -147,8 +147,8 @@ export const HRApprovalsHubView: React.FC = () => {
           onClick={() => setActiveTab('advance')}
           className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
             activeTab === 'advance'
-              ? 'bg-[#1C291E] dark:bg-[#EBB34D] text-white dark:text-[#0E1610]'
-              : 'text-[#8FA392] hover:text-[#F3EFE6]'
+              ? 'bg-gradient-to-l from-amber-600 to-amber-500 text-white shadow-sm font-black'
+              : 'text-[#5C665E] dark:text-[#8FA392] hover:text-[#1A241C] dark:hover:text-[#F3EFE6]'
           }`}
         >
           السلف المالية
@@ -158,8 +158,8 @@ export const HRApprovalsHubView: React.FC = () => {
           onClick={() => setActiveTab('custody')}
           className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
             activeTab === 'custody'
-              ? 'bg-[#1C291E] dark:bg-[#EBB34D] text-white dark:text-[#0E1610]'
-              : 'text-[#8FA392] hover:text-[#F3EFE6]'
+              ? 'bg-gradient-to-l from-amber-600 to-amber-500 text-white shadow-sm font-black'
+              : 'text-[#5C665E] dark:text-[#8FA392] hover:text-[#1A241C] dark:hover:text-[#F3EFE6]'
           }`}
         >
           صرف العُهد والأجهزة

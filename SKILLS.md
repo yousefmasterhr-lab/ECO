@@ -402,6 +402,32 @@
    - ربط الظهور بـ `sessionStorage.setItem('eco_show_welcome_splash', 'true')` داخل `AuthContext.login()`، والتنظيف عبر `completeWelcomeSplash()`.
    - عزل وحماية الشاشة من مقاطعة كاشف التحديثات `systemUpdateService`.
 
+### 8.14 معمارية محرك الموارد البشرية السحابي (Cloudflare D1 HRMS Engine & Reactive Storage)
+1. **المخطط العلائقي المتكامل (Relational Schema):**
+   - تمكين 7 جداول مترابطة بمفاتيح خارجية وفهارس تسريع في Cloudflare D1 (`migrations/0005_hr_management.sql`):
+     - `hr_employees`: الملف الرئيسي للكوادر والبيانات الشخصية والوظيفية والمالية.
+     - `hr_contracts`: العقود وبنود العمل والبدلات وتفاصيل التأمينات.
+     - `hr_attendance`: سجلات الحضور والانصراف والورديات وساعات العمل الإضافي.
+     - `hr_leaves`: الإجازات الرسمية والسنوية والمرضية وأرصدتها.
+     - `hr_loans`: السلف المالية وأقساط السداد وحالات الموافقة.
+     - `hr_rewards_penalties`: سجل المكافآت والجزاءات والتحقيقات الإدارية.
+     - `hr_payroll_runs`: سجلات مسيرات الرواتب المحتسبة والفترات المالية.
+2. **التهيئة الذاتية لقاعدة البيانات (Self-Healing D1 Schema):**
+   - استدعاء `ensureHrSchema(db)` عبر `functions/api/_hrDb.ts` باستخدام `db.batch([...])` لتنفيذ تعليمات `CREATE TABLE IF NOT EXISTS` و `CREATE INDEX IF NOT EXISTS` بشكل ذري وتلقائي دون الحاجة لتدخل يدوي.
+3. **نقطة النهاية الشاملة (`/api/hr` Pages Functions):**
+   - دعم المسارات الموحدة عبر `functions/api/hr/[[path]].ts` لعمليات `GET`, `POST`, `PUT`, `DELETE` ودعم الحفظ الذكي المدمج (`UPSERT`) باستخدام صيغة SQLite D1:
+     `INSERT INTO hr_employees (...) VALUES (...) ON CONFLICT(id) DO UPDATE SET ...`
+   - تسجيل مسار `api/hr` داخل دالة `isCloudflareEdgeRoute` في `src/services/apiClient.ts` لتفادي خوادم Node المحلية وتوجيه الطلبات مباشرة لشبكة Cloudflare Pages.
+4. **مستودع التزامن التفاؤلي (`hrStorage.ts`):**
+   - توفير قراءة فورية من الذاكرة المحلية (`hrStorage.getEmployeesSync()`) مع جلب خلفي غير متزامن من Cloudflare D1 (`hrStorage.getEmployees()`).
+   - إطلاق حدث عام `eco-hr-updated` عند حدوث أي تعديل أو وصول بيانات سحابية جديدة لتحديث كافة الشاشات والقوائم بشكل تفاعلي.
+5. **الربط الحي الشامل وحظر البيانات الوهمية:**
+   - استبدال حقول الشركات الثابتة بمصادر البيانات الحية من `companyStorage` وفروع الشركات من `branchStorage`.
+   - استخدام مكون `<CreatableSelect />` للأقسام والمسميات الوظيفية لحفظها في تعريفات النظام تلقائياً.
+   - عرض حالة فارغة تنفيذية فخمة (Executive Empty State) عندما يكون عدد الموظفين 0 مع تشجيع المستخدم على إضافة أول موظف، وحظر أي كائنات وهمية في الكود.
+   - اعتماد هوية الكهرمان المؤسسية (Brand Amber) لجميع الأزرار والتبويبات النشطة، وحظر الأصفار المسبقة في حقول الأجور وإخفاء أسهم الإدخال الرقمية.
+   - معاينة ملفات الـ PDF والصور الضوئية للمستندات ومسوغات التعيين عبر `Blob URL` المدمجة داخل `<DocumentPreviewModal />`.
+
 
 
 

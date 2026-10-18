@@ -136,8 +136,8 @@ export const BonusesDeductionsLedgerView: React.FC = () => {
             onClick={() => setActiveFilterType('all')}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               activeFilterType === 'all'
-                ? 'bg-[#1C291E] dark:bg-[#EBB34D] text-white dark:text-[#0E1610]'
-                : 'text-[#8FA392] hover:text-[#F3EFE6]'
+                ? 'bg-gradient-to-l from-amber-600 to-amber-500 text-white shadow-sm font-black'
+                : 'text-[#5C665E] dark:text-[#8FA392] hover:text-[#1A241C] dark:hover:text-[#F3EFE6]'
             }`}
           >
             كافة السجلات ({allRecords.length})

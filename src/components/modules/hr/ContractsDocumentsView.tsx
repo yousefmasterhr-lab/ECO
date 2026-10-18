@@ -131,7 +131,7 @@ export const ContractsDocumentsView: React.FC = () => {
               onClick={() => setStatusFilter(st)}
               className={`px-3 py-1.5 rounded-xl font-bold text-xs transition-colors ${
                 statusFilter === st
-                  ? 'bg-[#1C291E] dark:bg-[#EBB34D] text-[#F3EFE6] dark:text-[#0E1610] shadow-xs'
+                  ? 'bg-gradient-to-l from-amber-600 to-amber-500 text-white shadow-xs font-black'
                   : 'bg-[#FBF9F5] dark:bg-[#0E1610] border border-[#E0D9CB] dark:border-[#243628] text-[#5C665E] dark:text-[#8FA392]'
               }`}
             >
@@ -235,7 +235,7 @@ export const ContractsDocumentsView: React.FC = () => {
               </button>
               <button
                 type="submit"
-                className="px-5 py-2 rounded-xl bg-[#1C291E] dark:bg-[#EBB34D] text-[#F3EFE6] dark:text-[#0E1610] text-xs font-bold shadow-md cursor-pointer"
+                className="px-5 py-2 rounded-xl bg-gradient-to-l from-amber-600 to-amber-500 hover:from-amber-700 hover:to-amber-600 text-white text-xs font-bold shadow-md shadow-amber-500/20 cursor-pointer"
               >
                 تأكيد التجديد وتحديث السجل
               </button>

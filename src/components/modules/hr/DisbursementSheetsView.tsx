@@ -126,14 +126,14 @@ export const DisbursementSheetsView: React.FC = () => {
       <div className="p-4 rounded-2xl bg-white dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           {/* Bank selector */}
-          <div className="flex items-center gap-1.5 p-1 rounded-xl bg-[#F3EFE6] dark:bg-[#0E1610] border border-[#E0D9CB] dark:border-[#243628] overflow-x-auto">
+          <div className="flex items-center gap-1.5 p-1 rounded-xl bg-[#F3EFE6] dark:bg-[#0E1610] border border-[#E0D9CB] dark:border-[#243628] overflow-x-auto select-none no-scrollbar">
             <button
               type="button"
               onClick={() => setSelectedBank('all')}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                 selectedBank === 'all'
-                  ? 'bg-[#1C291E] dark:bg-[#EBB34D] text-white dark:text-[#0E1610]'
-                  : 'text-[#8FA392] hover:text-[#F3EFE6]'
+                  ? 'bg-gradient-to-l from-amber-600 to-amber-500 text-white shadow-sm font-black'
+                  : 'text-[#5C665E] dark:text-[#8FA392] hover:text-[#1A241C] dark:hover:text-[#F3EFE6]'
               }`}
             >
               كافة القنوات ({filteredEmployees.length})
@@ -143,8 +143,8 @@ export const DisbursementSheetsView: React.FC = () => {
               onClick={() => setSelectedBank('misr')}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                 selectedBank === 'misr'
-                  ? 'bg-[#1C291E] dark:bg-[#EBB34D] text-white dark:text-[#0E1610]'
-                  : 'text-[#8FA392] hover:text-[#F3EFE6]'
+                  ? 'bg-gradient-to-l from-amber-600 to-amber-500 text-white shadow-sm font-black'
+                  : 'text-[#5C665E] dark:text-[#8FA392] hover:text-[#1A241C] dark:hover:text-[#F3EFE6]'
               }`}
             >
               بنك مصر (BM Online)
@@ -154,8 +154,8 @@ export const DisbursementSheetsView: React.FC = () => {
               onClick={() => setSelectedBank('qnb')}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                 selectedBank === 'qnb'
-                  ? 'bg-[#1C291E] dark:bg-[#EBB34D] text-white dark:text-[#0E1610]'
-                  : 'text-[#8FA392] hover:text-[#F3EFE6]'
+                  ? 'bg-gradient-to-l from-amber-600 to-amber-500 text-white shadow-sm font-black'
+                  : 'text-[#5C665E] dark:text-[#8FA392] hover:text-[#1A241C] dark:hover:text-[#F3EFE6]'
               }`}
             >
               بنك QNB الأهلي
@@ -165,8 +165,8 @@ export const DisbursementSheetsView: React.FC = () => {
               onClick={() => setSelectedBank('cash')}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                 selectedBank === 'cash'
-                  ? 'bg-[#1C291E] dark:bg-[#EBB34D] text-white dark:text-[#0E1610]'
-                  : 'text-[#8FA392] hover:text-[#F3EFE6]'
+                  ? 'bg-gradient-to-l from-amber-600 to-amber-500 text-white shadow-sm font-black'
+                  : 'text-[#5C665E] dark:text-[#8FA392] hover:text-[#1A241C] dark:hover:text-[#F3EFE6]'
               }`}
             >
               صرف نقدي (مواقع)

@@ -189,7 +189,7 @@ export const AttendanceLeavesView: React.FC = () => {
                   onClick={() => setSelectedStatusFilter(st)}
                   className={`px-2.5 py-1 rounded-lg font-bold text-[11px] transition-colors ${
                     selectedStatusFilter === st
-                      ? 'bg-[#1C291E] dark:bg-[#EBB34D] text-[#F3EFE6] dark:text-[#0E1610]'
+                      ? 'bg-gradient-to-l from-amber-600 to-amber-500 text-white shadow-sm font-black'
                       : 'bg-[#FBF9F5] dark:bg-[#0E1610] border border-[#E0D9CB] dark:border-[#243628] text-[#5C665E] dark:text-[#8FA392]'
                   }`}
                 >
@@ -457,7 +457,7 @@ export const AttendanceLeavesView: React.FC = () => {
             </button>
             <button
               type="submit"
-              className="px-6 py-2 rounded-xl bg-[#1C291E] dark:bg-[#EBB34D] text-[#F3EFE6] dark:text-[#0E1610] font-bold text-xs shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+              className="px-6 py-2 rounded-xl bg-gradient-to-l from-amber-600 to-amber-500 hover:from-amber-700 hover:to-amber-600 text-white font-bold text-xs shadow-md shadow-amber-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
             >
               {t('تقديم الطلب للاعتماد', 'Submit Request')}
             </button>
