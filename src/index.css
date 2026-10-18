@@ -678,13 +678,29 @@ input[type="checkbox"]:checked::before {
 /* ============================================================================== */
 /* Guaranteed Dark I-Beam Cursor in Light Mode - Never turns white               */
 /* ============================================================================== */
-html:not(.dark) input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="button"]):not([type="submit"]),
-html:not(.dark) textarea,
+html:not(.dark) input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="button"]):not([type="submit"]):not(.login-dark-input),
+html:not(.dark) textarea:not(.login-dark-input),
 html:not(.dark) [contenteditable="true"] {
   cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='24' viewBox='0 0 16 24'><path d='M5 2h6M8 2v20M5 22h6' stroke='%230f172a' stroke-width='2.2' stroke-linecap='round'/></svg>") 8 12, text !important;
   background-color: #ffffff !important;
   color: #0f172a !important;
   caret-color: #d97706 !important;
+}
+
+/* Cyber-Glassmorphic Dark Inputs for Login & Splash */
+.login-dark-input {
+  background-color: rgba(7, 19, 14, 0.85) !important;
+  color: #f3efe6 !important;
+  caret-color: #fbbf24 !important;
+}
+
+.login-dark-input:-webkit-autofill,
+.login-dark-input:-webkit-autofill:hover, 
+.login-dark-input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px #07130E inset !important;
+  -webkit-text-fill-color: #f3efe6 !important;
+  caret-color: #fbbf24 !important;
+  transition: background-color 5000s ease-in-out 0s;
 }
 
 /* Crisp Amber/White I-Beam Cursor in Dark Mode */

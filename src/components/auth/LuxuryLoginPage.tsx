@@ -8,9 +8,10 @@ import {
   Eye,
   EyeOff,
   Loader2,
-  Building2,
+  Shield,
   Sparkles
 } from 'lucide-react';
+import { TypewriterText } from './TypewriterText';
 
 interface LuxuryLoginPageProps {
   onSuccess?: () => void;
@@ -208,15 +209,50 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
         }}
       />
 
-      {/* Glassmorphic Executive Login Card */}
-      <div className={`relative z-20 w-full max-w-md p-8 sm:p-10 rounded-3xl bg-[#0d1520]/85 backdrop-blur-2xl border border-amber-500/25 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.7),0_0_30px_rgba(217,155,38,0.15)] mx-auto transition-all duration-300 ${shakeCard ? 'animate-shake border-red-500/60 shadow-red-500/10' : ''}`}>
-          {/* Brand Header */}
+      {/* Cyber-Glassmorphic 3D Executive Login Card */}
+      <div className={`relative z-20 w-full max-w-md p-8 sm:p-10 rounded-3xl bg-[#07130E]/85 backdrop-blur-2xl border border-amber-500/30 shadow-[0_25px_60px_rgba(0,0,0,0.8),0_0_40px_rgba(217,155,38,0.15)] mx-auto transition-all duration-300 ${shakeCard ? 'animate-shake border-red-500/60 shadow-red-500/20' : ''}`}>
+          {/* 3D Floating Crystal Emblem & Typewriter Header */}
           <div className="flex flex-col items-center mb-6">
-            <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mb-3 shadow-[0_0_20px_rgba(217,155,38,0.2)]">
-              <Building2 className="w-7 h-7 text-amber-400" />
+            {/* Glowing 3D Crystal Shield Emblem */}
+            <div className="relative mb-3 flex items-center justify-center">
+              {/* Amber Aura Glow */}
+              <div className="absolute w-24 h-24 rounded-full bg-amber-500/20 blur-2xl pointer-events-none animate-pulse" />
+              
+              {/* Rotating Outer Dashed Orbital Ring */}
+              <div
+                className="absolute w-20 h-20 rounded-full border border-dashed border-amber-400/50 pointer-events-none"
+                style={{ animation: 'spin 14s linear infinite' }}
+              />
+
+              {/* Floating Crystal Core Shield */}
+              <div
+                className="relative z-10 w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-700 p-0.5 shadow-[0_0_35px_rgba(245,158,11,0.45)] flex items-center justify-center transition-transform duration-300 hover:scale-105"
+                style={{ animation: 'floatParticle 3.5s ease-in-out infinite' }}
+              >
+                <div className="w-full h-full rounded-[14px] bg-[#0A1912] flex flex-col items-center justify-center text-amber-400 border border-amber-400/40 backdrop-blur-md">
+                  <Shield className="w-8 h-8 text-amber-400 stroke-[1.8]" />
+                </div>
+              </div>
             </div>
-            <h2 className="text-2xl font-black text-slate-100 text-center tracking-tight">شركة ترابط للمقاولات والتجارة</h2>
-            <p className="text-xs font-bold text-amber-400/90 text-center mt-1 tracking-wide">ECO • ERP Company Operations</p>
+
+            {/* Dynamic Typewriter Brand Header */}
+            <div className="text-center space-y-1">
+              <div className="inline-flex items-center justify-center">
+                <span className="text-3xl sm:text-4xl font-black text-amber-400 tracking-wider drop-shadow-[0_4px_20px_rgba(245,158,11,0.45)]">
+                  ECO
+                </span>
+              </div>
+              <div className="flex items-center justify-center min-h-[26px]">
+                <TypewriterText
+                  text="ERP Company Operations"
+                  typingSpeed={75}
+                  deletingSpeed={38}
+                  pauseMs={2200}
+                  className="text-xs sm:text-sm font-bold text-amber-300/90 tracking-widest uppercase font-mono"
+                  cursorClassName="text-amber-400 bg-amber-400"
+                />
+              </div>
+            </div>
           </div>
 
           {/* System Update Notification Banner */}
@@ -230,15 +266,15 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
             </div>
           )}
 
-          {/* Form with Explicit Visible Styling */}
+          {/* Form with Cyber-Glass Inputs & Glowing Focus States */}
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Username / Corporate Email Field */}
             <div>
-              <label className="block text-xs font-bold text-slate-200 mb-1.5 text-right">
+              <label className="block text-xs font-bold text-amber-100/90 mb-1.5 text-right tracking-wide">
                 {t('اسم المستخدم أو البريد الإلكتروني', 'Username or Corporate Email')}
               </label>
-              <div className="relative flex items-center">
-                <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+              <div className="relative flex items-center group">
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-amber-400/70 group-focus-within:text-amber-400 transition-colors">
                   <Mail className="w-5 h-5" />
                 </div>
                 <input
@@ -248,19 +284,19 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
                   value={emailOrUsername}
                   onChange={(e) => setEmailOrUsername(e.target.value)}
                   placeholder="admin@hrsup.com"
-                  className="w-full pr-11 pl-4 py-3 rounded-xl bg-[#090e16]/80 border border-slate-700/70 focus:border-amber-400/80 focus:ring-1 focus:ring-amber-400/30 text-slate-100 placeholder-slate-500 text-sm focus:outline-none transition-all"
+                  className="login-dark-input w-full pr-12 pl-4 py-3.5 rounded-2xl bg-[#040907]/75 border border-stone-700/60 focus:border-amber-400 focus:ring-2 focus:ring-amber-500/40 focus:shadow-[0_0_20px_rgba(245,158,11,0.25)] text-slate-100 placeholder-stone-500 text-sm focus:outline-none transition-all duration-300"
                 />
               </div>
             </div>
 
             {/* Password Field with Dual Icons */}
             <div>
-              <label className="block text-xs font-bold text-slate-200 mb-1.5 text-right">
+              <label className="block text-xs font-bold text-amber-100/90 mb-1.5 text-right tracking-wide">
                 {t('كلمة المرور', 'Password')}
               </label>
-              <div className="relative flex items-center">
+              <div className="relative flex items-center group">
                 {/* Right: Security Lock Icon */}
-                <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-amber-400/70 group-focus-within:text-amber-400 transition-colors">
                   <Lock className="w-5 h-5"/>
                 </div>
 
@@ -272,14 +308,14 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pr-11 pl-11 py-3 rounded-xl bg-[#090e16]/80 border border-slate-700/70 focus:border-amber-400/80 focus:ring-1 focus:ring-amber-400/30 text-slate-100 placeholder-slate-500 text-sm focus:outline-none transition-all"
+                  className="login-dark-input w-full pr-12 pl-12 py-3.5 rounded-2xl bg-[#040907]/75 border border-stone-700/60 focus:border-amber-400 focus:ring-2 focus:ring-amber-500/40 focus:shadow-[0_0_20px_rgba(245,158,11,0.25)] text-slate-100 placeholder-stone-500 text-sm focus:outline-none transition-all duration-300"
                 />
 
                 {/* Left: Interactive Eye Toggle Button */}
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-amber-400 transition-colors p-1 focus:outline-none cursor-pointer"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 hover:text-amber-400 transition-colors p-1 focus:outline-none cursor-pointer"
                   title={showPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}
                 >
                   {showPassword ? <EyeOff className="w-5 h-5"/> : <Eye className="w-5 h-5"/>}
@@ -294,29 +330,33 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
             )}
 
             <div className="flex items-center justify-between py-1">
-              <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-slate-300">
+              <label className="flex items-center gap-2.5 cursor-pointer text-xs font-semibold text-slate-300 hover:text-amber-200 transition-colors">
                 <input
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                  className="w-4 h-4 rounded bg-[#090e16] border-slate-700 text-amber-500 focus:ring-amber-400 cursor-pointer"
+                  className="w-4 h-4 rounded bg-[#090e16] border-stone-700 text-amber-500 focus:ring-amber-400 cursor-pointer"
                 />
                 <span>{t('تذكرني على هذا الجهاز', 'Remember me on this device')}</span>
               </label>
             </div>
 
+            {/* Magnetic Shimmer Submit Button */}
             <button
               type="submit"
               disabled={isVerifying}
-              className="w-full py-3.5 mt-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-sm shadow-lg shadow-amber-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+              className="group relative w-full py-4 mt-3 rounded-2xl bg-gradient-to-r from-amber-600 via-amber-500 to-yellow-500 hover:from-amber-500 hover:to-yellow-400 text-slate-950 font-black text-base shadow-[0_10px_30px_rgba(245,158,11,0.4)] hover:shadow-[0_15px_40px_rgba(245,158,11,0.6)] hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 overflow-hidden"
             >
+              {/* Sliding Light Beam (Shimmer) */}
+              <div className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/40 to-transparent pointer-events-none transform -skew-x-12 animate-shimmer" />
+
               {isVerifying ? (
-                <div className="flex items-center justify-center gap-2">
-                  <Loader2 className="w-4 h-4 text-slate-950 animate-spin" />
+                <div className="relative z-10 flex items-center justify-center gap-2">
+                  <Loader2 className="w-5 h-5 text-slate-950 animate-spin" />
                   <span>{t('جاري التحقق...', 'Verifying...')}</span>
                 </div>
               ) : (
-                <span>{t('تسجيل الدخول', 'Sign In')}</span>
+                <span className="relative z-10 tracking-wide font-black">{t('تسجيل الدخول', 'Sign In')}</span>
               )}
             </button>
           </form>

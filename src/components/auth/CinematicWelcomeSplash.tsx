@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Sparkles, Shield, ArrowLeft, Building2, Briefcase, Award } from 'lucide-react';
 import { AuthUser } from '../../types/auth';
+import { TypewriterText } from './TypewriterText';
 
 interface CinematicWelcomeSplashProps {
   user: AuthUser | null;
@@ -259,12 +260,22 @@ export const CinematicWelcomeSplash: React.FC<CinematicWelcomeSplashProps> = ({
         {/* Brand System Tag */}
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-500/20 to-amber-600/10 border border-amber-500/40 flex items-center justify-center text-amber-400 shadow-lg shadow-amber-500/20">
-            <Building2 className="w-5 h-5 text-amber-400" />
+            <Shield className="w-5 h-5 text-amber-400" />
           </div>
           <div className="flex flex-col text-right">
-            <span className="text-sm font-black tracking-wide text-amber-400">
-              ECO • ERP Company Operations
+            <span className="text-base font-black tracking-wide text-amber-400 drop-shadow-[0_2px_10px_rgba(245,158,11,0.4)]">
+              ECO
             </span>
+            <div className="min-h-[18px] flex items-center">
+              <TypewriterText
+                text="ERP Company Operations"
+                typingSpeed={75}
+                deletingSpeed={38}
+                pauseMs={2200}
+                className="text-[11px] text-amber-300/90 font-bold font-mono tracking-wider"
+                cursorClassName="text-amber-400 bg-amber-400 w-1 h-3"
+              />
+            </div>
           </div>
         </div>
 

@@ -101,11 +101,12 @@ export const Header: React.FC = () => {
                 <path d="M2 7h20" />
               </svg>
             </div>
-            <div className="hidden lg:block text-start leading-none">
+            <div className="hidden lg:flex items-center gap-1.5 text-start leading-none">
               <span className="font-black text-sm tracking-tight text-[#1A241C] dark:text-[#F3EFE6]">
-                ECO <span className="text-[#D99B26] dark:text-[#EBB34D] font-black">•</span>
+                ECO
               </span>
-              <span className="text-[11px] text-[#5C665E] dark:text-[#8FA392] font-bold ms-1">
+              <span className="text-[#D99B26] dark:text-[#EBB34D] font-black text-xs">•</span>
+              <span className="text-[11px] text-[#5C665E] dark:text-[#8FA392] font-semibold tracking-wide">
                 ERP Company Operations
               </span>
             </div>
