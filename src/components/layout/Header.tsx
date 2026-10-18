@@ -26,6 +26,8 @@ import { UserProfileModal } from '../modules/auth/UserProfileModal';
 import { ChangePasswordModal } from '../modules/auth/ChangePasswordModal';
 import { UserActivityDrawer } from '../modules/auth/UserActivityDrawer';
 import { PermissionsManagerModal } from '../modules/auth/PermissionsManagerModal';
+import { EcoOfficialLogo } from '../common/EcoOfficialLogo';
+import { TypewriterText } from '../auth/TypewriterText';
 
 export const Header: React.FC = () => {
   const {
@@ -83,32 +85,39 @@ export const Header: React.FC = () => {
             <Menu className="w-5 h-5" />
           </button>
 
-          {/* Platform Identity with Official Favicon SVG */}
-          <div className="hidden sm:flex items-center gap-2.5 shrink-0">
-            <div className="w-9 h-9 rounded-xl bg-[#1C291E] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] flex items-center justify-center shadow-xs">
-              <svg
-                className="w-5 h-5 text-[#D99B26] dark:text-[#EBB34D]"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7" />
-                <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
-                <path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4" />
-                <path d="M2 7h20" />
-              </svg>
-            </div>
-            <div className="hidden lg:flex items-center gap-1.5 text-start leading-none">
-              <span className="font-black text-sm tracking-tight text-[#1A241C] dark:text-[#F3EFE6]">
-                ECO
-              </span>
-              <span className="text-[#D99B26] dark:text-[#EBB34D] font-black text-xs">•</span>
-              <span className="text-[11px] text-[#5C665E] dark:text-[#8FA392] font-semibold tracking-wide">
-                ERP Company Operations
-              </span>
+          {/* Platform Identity with Official Favicon SVG & Animated Typography Lockup */}
+          <div className="hidden sm:flex items-center gap-3 shrink-0 select-none group">
+            {/* Logo Badge with Dual Light/Dark Mode Styling & Shimmer */}
+            <EcoOfficialLogo size="md" className="shrink-0 cursor-pointer" />
+            
+            {/* Dynamic 2-Line Brand Typography Lockup (ECO on top, Animated ERP Company Operations below) */}
+            <div className="hidden lg:flex flex-col justify-center text-start">
+              {/* Line 1: ECO Display Typography + Live Enterprise Pulse Beacon */}
+              <div className="flex items-center gap-1.5 leading-none">
+                <span className="font-black text-[15px] tracking-wider bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 bg-clip-text text-transparent drop-shadow-xs">
+                  ECO
+                </span>
+                {/* Live Core Cloud Beacon */}
+                <span className="relative flex h-2 w-2" title="ECO Cloud Engine Active">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
+                </span>
+                <span className="text-[9px] font-mono font-extrabold px-1.5 py-0.5 rounded-sm bg-amber-500/10 dark:bg-amber-400/15 border border-amber-500/20 text-amber-700 dark:text-amber-300 tracking-wider">
+                  ENTERPRISE
+                </span>
+              </div>
+
+              {/* Line 2: Animated Subtitle with Typewriter Motion */}
+              <div className="flex items-center min-h-[14px] mt-0.5 leading-none">
+                <TypewriterText
+                  text="ERP Company Operations"
+                  typingSpeed={70}
+                  deletingSpeed={35}
+                  pauseMs={3200}
+                  className="text-[10px] font-bold text-[#5C665E] dark:text-[#9FB1A2] font-mono tracking-tight"
+                  cursorClassName="w-1 h-2.5 bg-amber-500 dark:bg-amber-400 ms-0.5"
+                />
+              </div>
             </div>
           </div>
 

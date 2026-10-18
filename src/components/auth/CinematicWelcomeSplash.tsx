@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, Shield, ArrowLeft, Building2, Briefcase, Award } from 'lucide-react';
+import { Sparkles, ArrowLeft, Building2, Briefcase, Award } from 'lucide-react';
 import { AuthUser } from '../../types/auth';
 import { TypewriterText } from './TypewriterText';
+import { EcoOfficialLogo } from '../common/EcoOfficialLogo';
 
 interface CinematicWelcomeSplashProps {
   user: AuthUser | null;
@@ -259,9 +260,7 @@ export const CinematicWelcomeSplash: React.FC<CinematicWelcomeSplashProps> = ({
       >
         {/* Brand System Tag */}
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-500/20 to-amber-600/10 border border-amber-500/40 flex items-center justify-center text-amber-400 shadow-lg shadow-amber-500/20">
-            <Shield className="w-5 h-5 text-amber-400" />
-          </div>
+          <EcoOfficialLogo size="md" />
           <div className="flex flex-col text-right">
             <span className="text-base font-black tracking-wide text-amber-400 drop-shadow-[0_2px_10px_rgba(245,158,11,0.4)]">
               ECO
@@ -332,14 +331,14 @@ export const CinematicWelcomeSplash: React.FC<CinematicWelcomeSplashProps> = ({
             }}
           />
 
-          {/* Floating Core Shield Emblem */}
+          {/* Floating Core Official Brand Emblem */}
           <div
             className="relative z-10 w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-700 p-0.5 shadow-[0_0_40px_rgba(245,158,11,0.6)] flex items-center justify-center"
             style={{ animation: 'pulseGlow 3.5s ease-in-out infinite' }}
           >
             <div className="w-full h-full rounded-[22px] bg-[#0A1912] flex flex-col items-center justify-center text-amber-400 border border-amber-400/40 backdrop-blur-md">
-              <Shield className="w-9 h-9 sm:w-10 sm:h-10 text-amber-400 stroke-[1.8]" />
-              <span className="text-[10px] font-black tracking-widest text-amber-200 uppercase mt-0.5 font-mono">
+              <EcoOfficialLogo variant="iconOnly" size="lg" iconClassName="w-9 h-9 sm:w-10 sm:h-10 !text-amber-400 stroke-[1.8]" />
+              <span className="text-[10px] font-black tracking-widest text-amber-200 uppercase mt-1 font-mono">
                 ECO
               </span>
             </div>

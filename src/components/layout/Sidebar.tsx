@@ -13,6 +13,7 @@ import {
   LayoutGrid,
   Shield
 } from 'lucide-react';
+import { EcoOfficialLogo } from '../common/EcoOfficialLogo';
 
 export const Sidebar: React.FC = () => {
   const { isRtl, t } = useLanguage();
@@ -179,10 +180,8 @@ export const Sidebar: React.FC = () => {
             >
               {/* Drawer Top Header with Close Button */}
               <div className="p-4 border-b border-[#E0D9CB] dark:border-[#243628] flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-[#D99B26] dark:bg-[#EBB34D] flex items-center justify-center text-[#1C291E] dark:text-[#0E1610]">
-                    <Compass className="w-4 h-4" />
-                  </div>
+                <div className="flex items-center gap-2.5">
+                  <EcoOfficialLogo size="sm" />
                   <div>
                     <h3 className="text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6]">
                       ECO • ERP Company Operations

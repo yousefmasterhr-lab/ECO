@@ -8,10 +8,10 @@ import {
   Eye,
   EyeOff,
   Loader2,
-  Shield,
   Sparkles
 } from 'lucide-react';
 import { TypewriterText } from './TypewriterText';
+import { EcoOfficialLogo } from '../common/EcoOfficialLogo';
 
 interface LuxuryLoginPageProps {
   onSuccess?: () => void;
@@ -224,13 +224,13 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
                 style={{ animation: 'spin 14s linear infinite' }}
               />
 
-              {/* Floating Crystal Core Shield */}
+              {/* Floating Crystal Core Official Emblem */}
               <div
                 className="relative z-10 w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-700 p-0.5 shadow-[0_0_35px_rgba(245,158,11,0.45)] flex items-center justify-center transition-transform duration-300 hover:scale-105"
                 style={{ animation: 'floatParticle 3.5s ease-in-out infinite' }}
               >
                 <div className="w-full h-full rounded-[14px] bg-[#0A1912] flex flex-col items-center justify-center text-amber-400 border border-amber-400/40 backdrop-blur-md">
-                  <Shield className="w-8 h-8 text-amber-400 stroke-[1.8]" />
+                  <EcoOfficialLogo variant="iconOnly" size="lg" iconClassName="w-8 h-8 !text-amber-400 stroke-[1.8]" />
                 </div>
               </div>
             </div>
