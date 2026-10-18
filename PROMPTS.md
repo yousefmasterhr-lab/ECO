@@ -187,13 +187,15 @@
 
 ## 9. المعيار الإلزامي الدائم لشاشة الترحيب السينمائية ثلاثية الأبعاد (3D Cinematic Welcome Splash Checklist)
 > **قاعدة نقدية دائمة وصارمة (CRITICAL RULE):**  
-> **NEVER remove, bypass, or unmount the Post-Login 3D Cinematic Welcome Splash Screen (`CinematicWelcomeSplash.tsx`):** Every successful login MUST display the 3D animated welcome screen showing the user's real Name and Job Specialization/Role for ~3.8 seconds before automatically entering the ERP services dashboard.
+> **NEVER remove, bypass, or unmount the Post-Login 3D Cinematic Welcome Splash Screen (`CinematicWelcomeSplash.tsx`):** Every successful login MUST display the 3D animated welcome screen showing the user's real Name and Job Specialization/Role for exactly 5 full seconds (5000ms) before automatically entering the ERP services dashboard.
 
-- [ ] **التركيب على مستوى جذر التطبيق (Root-Level Execution):** استدعاء `<CinematicWelcomeSplash />` في `App.tsx` عند تفعيل `showWelcomeSplash` لضمان عدم تعرضه للفك المفاجئ في 0ms.
-- [ ] **محرك الفضاء والمدارات ثلاثية الأبعاد (Canvas 3D & Gyro Rings):** خلفية فضاء عميقة بنجوم متحركة عبر المحور Z مع 3 حلقات مدارية تدور في محاور X و Y و Z حول الدرع الذهبي الخالص.
-- [ ] **عرض بيانات وهوية المستخدم والتخصص الحقيقي:** إبراز الاسم الكامل (`user.nameAr`)، المسمى الوظيفي والتخصص الدقيق (`user.jobTitleAr` / `user.roleLabelAr`)، والقسم وسياق الشركة في كبسولة زجاجية ثلاثية الأبعاد بوهج ذهبي متحرك.
-- [ ] **شريط التقدم السينمائي وزر التخطي:** شريط تقدم ذهبي يكتمل خلال 3.6 ثانية مع تبديل نصوص الحالة التفاعلية، وإتاحة زر التخطي الفوري `الدخول الفوري للخدمات ⬅`.
-- [ ] **الحماية من مقاطعة كاشف النسخ:** منع `systemUpdateService` من قطع أو تفريغ جلسة الترحيب أثناء كون `eco_show_welcome_splash` مفعلاً.
+- [ ] **التركيب على مستوى جذر التطبيق (Root-Level Execution):** استدعاء `<CinematicWelcomeSplash />` في `App.tsx` عند تفعيل `showWelcomeSplash` لضمان عدم تعرضه للفك المفاجئ في 0ms وبقاء شاشات الـ Dashboard خارج الـ DOM تماماً طوال فترة الـ 5 ثوانٍ.
+- [ ] **محرك الفضاء والمدارات ثلاثية الأبعاد والتفاعل الحركي (Interactive 3D Parallax & Gyro Rings):** خلفية فضاء عميقة بنجوم متحركة عبر المحور Z مع 3 حلقات مدارية تدور في محاور X و Y و Z حول الدرع الذهبي الخالص، مدعومة بتفاعل إمالة ثلاثي الأبعاد مع حركة الفأرة (Mouse Parallax Tilt).
+- [ ] **عرض بيانات وهوية المستخدم والتخصص الحقيقي:** إبراز الاسم الكامل (`user.nameAr`)، المسمى الوظيفي والتخصص الدقيق (`user.jobTitleAr` / `user.roleLabelAr`)، والقسم وسياق الشركة في كبسولة زجاجية ثلاثية الأبعاد بوهج ذهبي متدرج ونقطة نبض كهرمانية مشعة (`animate-pulse`).
+- [ ] **التحية الزمنية الذكية وتاريخ اليوم العربي:** شارة علوية تفاعلية تعرض تحية بحسب الوقت (`✨ صباح الخير / مساء الخير • بوابة القيادة المركزية الموحدة • [تاريخ اليوم بالعربية]`) دون تكرار عبارة "مرحباً بك".
+- [ ] **تطهير المصطلحات البرمجية واللغات الأجنبية (Zero Technical English Fluff):** إزالة أي عبارات برمجية مثل `ECO CLOUD KERNEL` واستبدالها بنصوص عربية مؤسسية فخمة مثل: `نطاق الوصول: صلاحيات معتمدة بالكامل`، و `منظومة ECO ERP الذكية`.
+- [ ] **شريط التقدم السينمائي وزر التخطي:** شريط تقدم ذهبي يكتمل خلال 5 ثوانٍ مع تبديل نصوص الحالة التفاعلية، وإتاحة زر التخطي الفوري `الدخول الفوري للخدمات ⬅`.
+- [ ] **الحماية من مقاطعة كاشف النسخ:** منع `systemUpdateService` من قطع أو تفريغ جلسة الترحيب أثناء كون `eco_show_welcome_splash` أو `eco_pending_welcome_splash` مفعلاً.
 - [ ] **عزل الموديول المالي:** 0 ملفات معدلة في `src/pages/finance/`.
 
 ---

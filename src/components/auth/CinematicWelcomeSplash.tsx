@@ -6,17 +6,18 @@ import { AuthUser } from '../../types/auth';
 interface CinematicWelcomeSplashProps {
   user: AuthUser | null;
   onComplete: () => void;
-  durationMs?: number; // Default 3800ms
+  durationMs?: number; // Default 5000ms (5 full seconds)
 }
 
 export const CinematicWelcomeSplash: React.FC<CinematicWelcomeSplashProps> = ({
   user,
   onComplete,
-  durationMs = 4000,
+  durationMs = 5000,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [progress, setProgress] = useState(0);
   const [statusText, setStatusText] = useState('جاري تهيئة بيئة العمل ثلاثية الأبعاد وتحميل صلاحيات التخصص...');
+  const [tilt, setTilt] = useState({ x: 0, y: 0 });
 
   // User display attributes with robust fallbacks
   const displayName = user?.nameAr || user?.username || 'يوسف حجازي';
@@ -24,25 +25,54 @@ export const CinematicWelcomeSplash: React.FC<CinematicWelcomeSplashProps> = ({
   const displayDept = user?.departmentAr || 'الإدارة العليا';
   const companyContext = 'شركة ترابط للمقاولات والتجارة';
 
-  // Progress Bar and Auto-Redirect
+  // Dynamic time-aware greeting
+  const currentHour = new Date().getHours();
+  const timeGreeting = currentHour >= 4 && currentHour < 12 ? 'صباح الخير' : 'مساء الخير';
+
+  // Dynamic live Arabic date format
+  const formattedArabicDate = new Intl.DateTimeFormat('ar-EG', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date());
+
+  // Interactive 3D Mouse Parallax Tilt
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      const { innerWidth, innerHeight } = window;
+      const x = (e.clientX - innerWidth / 2) / (innerWidth / 2); // -1 to 1
+      const y = (e.clientY - innerHeight / 2) / (innerHeight / 2); // -1 to 1
+      setTilt({ x, y });
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
+
+  // 5-Second Progress Bar and Auto-Redirect
   useEffect(() => {
     const startTime = Date.now();
-    const progressDuration = durationMs - 200; // Finish progress slightly before complete
+    const progressDuration = durationMs - 300; // Finish smoothly at 4.7s and hold for 300ms
 
     const interval = setInterval(() => {
       const elapsed = Date.now() - startTime;
       const pct = Math.min(100, Math.round((elapsed / progressDuration) * 100));
       setProgress(pct);
 
-      if (pct >= 52) {
-        setStatusText('تم التحقق من الهوية السحابية — جاري فتح بوابة الخدمات...');
+      if (pct < 35) {
+        setStatusText('جاري تهيئة بيئة العمل ثلاثية الأبعاد وتحميل صلاحيات التخصص...');
+      } else if (pct < 75) {
+        setStatusText('تم التحقق من الهوية السحابية واعتماد معايير الأمان...');
+      } else {
+        setStatusText('مرحباً بك! جاري فتح بوابة الخدمات المركزية...');
       }
 
       if (elapsed >= durationMs) {
         clearInterval(interval);
         onComplete();
       }
-    }, 25);
+    }, 20);
 
     return () => clearInterval(interval);
   }, [durationMs, onComplete]);
@@ -75,7 +105,7 @@ export const CinematicWelcomeSplash: React.FC<CinematicWelcomeSplashProps> = ({
       color: string;
     }
 
-    const starCount = Math.min(130, Math.floor((width * height) / 10000));
+    const starCount = Math.min(140, Math.floor((width * height) / 9500));
     const stars: Star3D[] = [];
     const maxZ = 1200;
     const focalLength = 360;
@@ -187,8 +217,8 @@ export const CinematicWelcomeSplash: React.FC<CinematicWelcomeSplashProps> = ({
           100% { transform: rotateX(80deg) rotateY(330deg) rotateZ(-360deg); }
         }
         @keyframes pulseGlow {
-          0%, 100% { transform: scale(1); filter: drop-shadow(0 0 20px rgba(245, 158, 11, 0.5)); }
-          50% { transform: scale(1.06); filter: drop-shadow(0 0 45px rgba(245, 158, 11, 0.85)); }
+          0%, 100% { transform: scale(1); filter: drop-shadow(0 0 25px rgba(245, 158, 11, 0.6)); }
+          50% { transform: scale(1.08); filter: drop-shadow(0 0 50px rgba(245, 158, 11, 0.95)); }
         }
         @keyframes borderBeamShimmer {
           0% { background-position: 0% 50%; }
@@ -201,7 +231,7 @@ export const CinematicWelcomeSplash: React.FC<CinematicWelcomeSplashProps> = ({
       <canvas ref={canvasRef} className="absolute inset-0 z-0 pointer-events-none w-full h-full" />
 
       {/* 2. Deep Royal Olive & Obsidian Ambient Fog Mesh */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[720px] h-[720px] bg-gradient-to-tr from-[rgba(13,31,23,0.85)] via-[rgba(245,158,11,0.12)] to-[rgba(10,25,18,0.9)] rounded-full blur-[140px] pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[760px] h-[760px] bg-gradient-to-tr from-[rgba(13,31,23,0.85)] via-[rgba(245,158,11,0.14)] to-[rgba(10,25,18,0.92)] rounded-full blur-[140px] pointer-events-none" />
 
       {/* 3. 3D Architectural Holographic Grid Floor (Perspective 65deg tilt) */}
       <div
@@ -219,75 +249,82 @@ export const CinematicWelcomeSplash: React.FC<CinematicWelcomeSplashProps> = ({
         }}
       />
 
-      {/* Top Bar: Brand System Tag & Instant Access Skip CTA */}
+      {/* Top Bar: Symmetrical Header with Brand Identity & Instant Access CTA */}
       <motion.div
         initial={{ y: -25, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.15, duration: 0.5 }}
-        className="relative z-10 w-full max-w-4xl flex items-center justify-between pt-2"
+        className="relative z-10 w-full max-w-6xl mx-auto flex items-center justify-between px-6 sm:px-8 pt-6 sm:pt-8"
       >
+        {/* Brand System Tag */}
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-sm shadow-amber-500/20">
-            <Building2 className="w-5 h-5" />
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-500/20 to-amber-600/10 border border-amber-500/40 flex items-center justify-center text-amber-400 shadow-lg shadow-amber-500/20">
+            <Building2 className="w-5 h-5 text-amber-400" />
           </div>
-          <div>
-            <span className="text-xs font-black tracking-widest text-amber-400 uppercase font-mono">
-              ECO ERP ENTERPRISE
+          <div className="flex flex-col text-right">
+            <span className="text-sm font-black tracking-wide text-amber-400">
+              منظومة ECO ERP الذكية
             </span>
-            <div className="text-[11px] text-stone-400">بوابة الدخول الذكية والتحقق السحابي</div>
+            <span className="text-[11px] text-stone-400 font-medium">بوابة القيادة المركزية والتحقق السحابي</span>
           </div>
         </div>
 
+        {/* Skip CTA */}
         <button
           onClick={onComplete}
-          className="group flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-stone-900/80 hover:bg-amber-500/20 text-stone-300 hover:text-amber-300 border border-stone-800 hover:border-amber-500/40 text-xs font-bold transition-all duration-200 cursor-pointer backdrop-blur-md"
+          className="group flex items-center gap-2.5 px-4 py-2 rounded-full bg-stone-900/80 hover:bg-amber-500/20 text-stone-300 hover:text-amber-300 border border-stone-700/80 hover:border-amber-500/50 text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer backdrop-blur-md shadow-md"
           title="تخطي الدخول الفوري للخدمات"
         >
           <span>الدخول الفوري للخدمات</span>
-          <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-1" />
+          <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1 text-amber-400" />
         </button>
       </motion.div>
 
       {/* Center 3D Gyroscopic Emblem & User Identity Presentation */}
       <div className="relative z-10 flex flex-col items-center justify-center text-center my-auto w-full max-w-3xl px-4">
-        {/* 3D Rotating Gyroscopic Orbital Rings with Shield Core */}
+        {/* 3D Rotating Gyroscopic Orbital Rings with Interactive Parallax Tilt */}
         <motion.div
           initial={{ scale: 0.7, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ duration: 0.7, ease: 'easeOut' }}
-          className="relative w-44 h-44 sm:w-52 sm:h-52 flex items-center justify-center mb-6"
-          style={{ perspective: 1200, transformStyle: 'preserve-3d' }}
+          className="relative w-44 h-44 sm:w-56 sm:h-56 flex items-center justify-center mb-6"
+          style={{
+            perspective: 1200,
+            transformStyle: 'preserve-3d',
+            transform: `perspective(1000px) rotateY(${tilt.x * 16}deg) rotateX(${-tilt.y * 16}deg)`,
+            transition: 'transform 0.15s ease-out',
+          }}
         >
           {/* Ring 1 - Outermost Orbit */}
           <div
-            className="absolute inset-0 rounded-full border-2 border-amber-500/35 pointer-events-none"
+            className="absolute inset-0 rounded-full border-2 border-amber-500/40 pointer-events-none"
             style={{
               animation: 'gyroRing1 14s linear infinite',
-              boxShadow: '0 0 35px rgba(245, 158, 11, 0.25), inset 0 0 20px rgba(245, 158, 11, 0.15)',
+              boxShadow: '0 0 45px rgba(245, 158, 11, 0.35), inset 0 0 25px rgba(245, 158, 11, 0.2)',
             }}
           />
 
-          {/* Ring 2 - Middle Orbit (Dashed) */}
+          {/* Ring 2 - Middle Orbit (Dashed Gold) */}
           <div
-            className="absolute inset-4 rounded-full border border-dashed border-amber-400/50 pointer-events-none"
+            className="absolute inset-4 rounded-full border border-dashed border-amber-400/60 pointer-events-none"
             style={{
               animation: 'gyroRing2 9s linear infinite reverse',
-              boxShadow: '0 0 25px rgba(245, 158, 11, 0.3)',
+              boxShadow: '0 0 30px rgba(245, 158, 11, 0.4)',
             }}
           />
 
           {/* Ring 3 - Inner Orbit with Accents */}
           <div
-            className="absolute inset-8 rounded-full border-2 border-amber-300/60 pointer-events-none"
+            className="absolute inset-8 rounded-full border-2 border-amber-300/70 pointer-events-none"
             style={{
               animation: 'gyroRing3 6s linear infinite',
-              boxShadow: '0 0 20px rgba(251, 191, 36, 0.35)',
+              boxShadow: '0 0 25px rgba(251, 191, 36, 0.45)',
             }}
           />
 
           {/* Floating Core Shield Emblem */}
           <div
-            className="relative z-10 w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-gradient-to-br from-amber-500 via-amber-600 to-amber-700 p-0.5 shadow-2xl flex items-center justify-center"
+            className="relative z-10 w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-700 p-0.5 shadow-[0_0_40px_rgba(245,158,11,0.6)] flex items-center justify-center"
             style={{ animation: 'pulseGlow 3.5s ease-in-out infinite' }}
           >
             <div className="w-full h-full rounded-[22px] bg-[#0A1912] flex flex-col items-center justify-center text-amber-400 border border-amber-400/40 backdrop-blur-md">
@@ -299,15 +336,15 @@ export const CinematicWelcomeSplash: React.FC<CinematicWelcomeSplashProps> = ({
           </div>
         </motion.div>
 
-        {/* Stage 1: Welcome Tag */}
+        {/* Stage 1: Dynamic Time-Aware Greeting Badge with Arabic Date */}
         <motion.div
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.25, duration: 0.5 }}
           className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs sm:text-sm font-semibold mb-3.5 backdrop-blur-md shadow-inner"
         >
-          <Sparkles className="w-4 h-4 text-amber-400 animate-spin-slow" />
-          <span>مرحباً بك في منظومة إدارة الموارد المؤسسية الذكية — ECO ERP</span>
+          <Sparkles className="w-4 h-4 text-amber-400 animate-spin-slow shrink-0" />
+          <span>✨ {timeGreeting} • بوابة القيادة المركزية الموحدة • {formattedArabicDate}</span>
         </motion.div>
 
         {/* Stage 2: User Full Name (Hero 3D Gold Typography) */}
@@ -321,14 +358,16 @@ export const CinematicWelcomeSplash: React.FC<CinematicWelcomeSplashProps> = ({
           مرحباً بك، {displayName}
         </motion.h1>
 
-        {/* Stage 3: Job Role, Specialization & Department (3D Glassmorphic Pill) */}
+        {/* Stage 3: Job Role, Specialization & Department (3D Glassmorphic Card with Interactive Mouse Tilt) */}
         <motion.div
           initial={{ y: 25, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.65, duration: 0.6 }}
           className="w-full max-w-xl mx-auto rounded-2xl p-4 sm:p-5 relative overflow-hidden backdrop-blur-xl border border-amber-500/30 shadow-2xl mb-2"
           style={{
-            background: 'linear-gradient(135deg, rgba(14,26,18,0.78) 0%, rgba(7,16,11,0.85) 100%)',
+            background: 'linear-gradient(135deg, rgba(14,26,18,0.85) 0%, rgba(7,16,11,0.92) 100%)',
+            transform: `perspective(1000px) rotateY(${tilt.x * 8}deg) rotateX(${-tilt.y * 8}deg)`,
+            transition: 'transform 0.15s ease-out',
           }}
         >
           {/* Animated Golden Border Beam */}
@@ -354,7 +393,9 @@ export const CinematicWelcomeSplash: React.FC<CinematicWelcomeSplashProps> = ({
                 <div className="text-xs text-amber-400 font-bold flex items-center gap-1.5 justify-center sm:justify-start">
                   <span>المسمى الوظيفي والتخصص:</span>
                 </div>
-                <div data-testid="welcome-splash-specialization" className="text-sm sm:text-base font-black text-white">{displayRole}</div>
+                <div data-testid="welcome-splash-specialization" className="text-sm sm:text-base font-black text-white">
+                  {displayRole}
+                </div>
               </div>
             </div>
 
@@ -364,42 +405,47 @@ export const CinematicWelcomeSplash: React.FC<CinematicWelcomeSplashProps> = ({
             </div>
           </div>
 
-          <div className="mt-3 pt-2.5 border-t border-amber-500/15 flex items-center justify-center sm:justify-between text-[11px] text-stone-400">
-            <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping inline-block" />
-              <span className="text-stone-300 font-bold">{companyContext}</span>
+          <div className="mt-3.5 pt-3 border-t border-amber-500/15 flex items-center justify-between text-xs text-stone-400">
+            {/* Glowing Amber Pulse & Building Icon for Company Context */}
+            <span className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-[0_0_10px_#fbbf24] animate-pulse" />
+              <Building2 className="w-4 h-4 text-amber-400" />
+              <span className="text-stone-200 font-bold">{companyContext}</span>
             </span>
-            <span className="text-amber-400/90 font-mono hidden sm:inline-block">C-SUITE SECURE SESSION</span>
+
+            {/* Clean Arabic Metadata without English Jargon */}
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-300 text-[11px] font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+              <span>نطاق الوصول: صلاحيات معتمدة بالكامل</span>
+            </div>
           </div>
         </motion.div>
       </div>
 
-      {/* Stage 4: Cinematic Progress Bar & Status Text Indicator */}
+      {/* Stage 4: Cinematic Progress Bar & Status Text Indicator (Zero English Fluff) */}
       <motion.div
         initial={{ y: 25, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.85, duration: 0.5 }}
-        className="relative z-10 w-full max-w-lg mx-auto flex flex-col items-center pb-3"
+        className="relative z-10 w-full max-w-lg mx-auto flex flex-col items-center pb-4"
       >
         <div className="w-full flex items-center justify-between text-xs font-semibold text-stone-300 mb-2">
           <span className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse shadow-[0_0_8px_#fbbf24]" />
             <span className="text-amber-300">{statusText}</span>
           </span>
-          <span data-testid="welcome-splash-progress" className="font-mono text-amber-400 font-bold">{progress}%</span>
+          <span data-testid="welcome-splash-progress" className="font-mono text-amber-400 font-bold text-sm">
+            {progress}%
+          </span>
         </div>
 
         {/* Progress Track & Bar */}
-        <div className="w-full h-2 rounded-full bg-stone-900/90 border border-stone-800 overflow-hidden shadow-inner p-0.5">
+        <div className="w-full h-2.5 rounded-full bg-stone-900/90 border border-stone-800 overflow-hidden shadow-inner p-0.5">
           <motion.div
-            className="h-full rounded-full bg-gradient-to-l from-amber-400 via-amber-500 to-amber-600 shadow-[0_0_15px_rgba(245,158,11,0.8)]"
+            className="h-full rounded-full bg-gradient-to-l from-amber-400 via-amber-500 to-amber-600 shadow-[0_0_18px_rgba(245,158,11,0.85)]"
             style={{ width: `${progress}%` }}
             transition={{ ease: 'linear' }}
           />
-        </div>
-
-        <div className="text-[11px] text-stone-500 mt-2 font-mono">
-          ECO CLOUD KERNEL v1.1.0 • HIGH-ASSURANCE BI-DIRECTIONAL PERSISTENCE
         </div>
       </motion.div>
     </motion.div>

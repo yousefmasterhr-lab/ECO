@@ -70,7 +70,7 @@ const AppContent: React.FC = () => {
         <CinematicWelcomeSplash
           key="welcome-splash"
           user={user}
-          durationMs={4000}
+          durationMs={5000}
           onComplete={() => {
             completeWelcomeSplash();
             navigate('/');

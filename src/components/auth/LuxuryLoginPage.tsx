@@ -173,7 +173,7 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
     return (
       <CinematicWelcomeSplash
         user={user}
-        durationMs={4000}
+        durationMs={5000}
         onComplete={() => {
           completeWelcomeSplash();
           navigate('/');
