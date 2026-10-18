@@ -11,8 +11,10 @@ import { ReceptionProvider } from './context/ReceptionContext';
 import { HRProvider } from './context/HRContext';
 import { PWAProvider } from './context/PWAContext';
 import { ToastProvider } from './components/common/Toast';
+import { AnimatePresence } from 'framer-motion';
 import { ShellLayout } from './components/layout/ShellLayout';
 import { LuxuryLoginPage } from './components/auth/LuxuryLoginPage';
+import { CinematicWelcomeSplash } from './components/auth/CinematicWelcomeSplash';
 import { CinematicUpdateOverlay } from './components/common/CinematicUpdateOverlay';
 
 const AuthenticatedApp: React.FC = () => {
@@ -36,7 +38,14 @@ const AuthenticatedApp: React.FC = () => {
 };
 
 const AppContent: React.FC = () => {
-  const { isAuthenticated, isLoading, currentPath } = useAuth();
+  const {
+    isAuthenticated,
+    isLoading,
+    currentPath,
+    user,
+    showWelcomeSplash,
+    completeWelcomeSplash,
+  } = useAuth();
 
   if (isLoading) {
     return (
@@ -56,7 +65,20 @@ const AppContent: React.FC = () => {
     return <LuxuryLoginPage />;
   }
 
-  return <AuthenticatedApp />;
+  return (
+    <>
+      <AnimatePresence mode="wait">
+        {showWelcomeSplash && (
+          <CinematicWelcomeSplash
+            key="welcome-splash"
+            user={user}
+            onComplete={completeWelcomeSplash}
+          />
+        )}
+      </AnimatePresence>
+      <AuthenticatedApp />
+    </>
+  );
 };
 
 export const App: React.FC = () => {

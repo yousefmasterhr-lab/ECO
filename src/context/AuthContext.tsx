@@ -54,6 +54,8 @@ interface AuthContextType {
   logAuditEvent: (
     entry: Omit<AuditLogEntry, 'id' | 'timestamp' | 'actorName' | 'actorEmail' | 'actorRole'>
   ) => void;
+  showWelcomeSplash: boolean;
+  completeWelcomeSplash: () => void;
 }
 
 const STORAGE_KEY_AUTH = 'eco_auth_session';
@@ -78,6 +80,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     return '/';
   });
+
+  // Top-Level 3D Cinematic Post-Login Welcome Splash State
+  const [showWelcomeSplash, setShowWelcomeSplash] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return sessionStorage.getItem('eco_show_welcome_splash') === 'true';
+    }
+    return false;
+  });
+
+  const completeWelcomeSplash = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('eco_show_welcome_splash');
+    }
+    setShowWelcomeSplash(false);
+  }, []);
 
   // 1. Managed Users State (Initialized with Root Administrator only, zero dummy mock clutter)
   const [managedUsers, setManagedUsers] = useState<ManagedUser[]>(() => {
@@ -566,6 +583,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         status: 'SUCCESS',
       });
 
+      // Activate 3D Cinematic Post-Login Welcome Splash Screen
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('eco_show_welcome_splash', 'true');
+      }
+      setShowWelcomeSplash(true);
+
       setIsLoading(false);
       return { success: true, user: authenticatedUser };
     },
@@ -585,6 +608,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     setUser(null);
     clearSessionToken();
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('eco_show_welcome_splash');
+    }
+    setShowWelcomeSplash(false);
     localStorage.removeItem(STORAGE_KEY_AUTH);
     sessionStorage.removeItem(STORAGE_KEY_AUTH);
     navigate('/login');
@@ -923,6 +950,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         deleteManagedUser,
         auditLogs,
         logAuditEvent,
+        showWelcomeSplash,
+        completeWelcomeSplash,
       }}
     >
       {children}

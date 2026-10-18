@@ -175,6 +175,13 @@ class SystemUpdateService {
   public async checkForUpdates(): Promise<void> {
     if (this.isProcessingUpdate || typeof window === 'undefined') return;
 
+    // Guard: Do not interrupt or clear state while fresh login 3D welcome splash is in progress
+    try {
+      if (sessionStorage.getItem('eco_show_welcome_splash') === 'true') {
+        return;
+      }
+    } catch {}
+
     try {
       const cacheBuster = Date.now();
 

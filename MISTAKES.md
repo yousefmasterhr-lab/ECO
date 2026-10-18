@@ -246,6 +246,28 @@
   4. فور اكتشاف إصدار جديد: مسح الجلسة فوراً (`localStorage.removeItem`), وتفريغ كافة مخازن الكاش `caches.keys()`, وإلغاء تسجيل الـ Service Workers، وتوجيه المتصفح عبر `window.location.replace('/login?reason=system_updated')` مع إظهار شريط تنبيه كهرماني فخم يطلب تسجيل الدخول مجدداً لمواصلة العمل على أحدث نسخة.
   5. تحديث `security_epoch` في قاعدة Cloudflare D1 عند تعديل الصلاحيات (`PUT /api/rbac`) أو المستخدمين لإجبار المتصفحات على الخروج والتحديث الفوري.
 
+### ❌ الخطأ 3.15: تجاوز أو حذف شاشة الترحيب السينمائية ثلاثية الأبعاد بعد تسجيل الدخول (Bypassing Post-Login 3D Cinematic Welcome Splash)
+> **قاعدة نقدية دائمة وصارمة (CRITICAL RULE):**  
+> **NEVER remove, bypass, or unmount the Post-Login 3D Cinematic Welcome Splash Screen (`CinematicWelcomeSplash.tsx`):** Every successful login MUST display the 3D animated welcome screen showing the user's real Name and Job Specialization/Role for ~3.8 seconds before automatically entering the ERP services dashboard.
+
+- **وصف المشكلة والسبب الجذري:** عند النقر على `تسجيل الدخول` في `/login`، كان `AuthContext` يضبط `isAuthenticated = true` فوراً، مما يدفع `App.tsx` إلى فك تركيب (Unmount) شاشة الدخول أو التحويل الفوري إلى `/` في زمن قدره `0ms`، مما يحرم المستخدم من رؤية شاشة الترحيب والتحقق البصري من هويته ومسماه الوظيفي وتخصصه وسياق المؤسسة.
+- **القاعدة الصارمة والحل الجذري:**
+  1. **التواجد الجذري الدائم (Root-Level Placement):** يتم استدعاء مكون `<CinematicWelcomeSplash />` كطبقة سينمائية مستقلة وعليا على مستوى جذر التطبيق في `App.tsx` داخل طبقة `fixed inset-0 z-[99999]` تحت غطاء `AnimatePresence`.
+  2. **ربط دورة الحياة بحالة المصادقة:**
+     - فور نجاح المصادقة داخل `AuthContext.login()`، يتم فوراً ضبط:
+       ```typescript
+       sessionStorage.setItem('eco_show_welcome_splash', 'true');
+       setShowWelcomeSplash(true);
+       ```
+     - توفير دالة إنهاء الترحيب `completeWelcomeSplash()` التي تنظف `sessionStorage.removeItem('eco_show_welcome_splash')` وتضبط `setShowWelcomeSplash(false)`.
+  3. **المحرك البصري ثلاثي الأبعاد (Canvas 3D Starfield & Gyro Orbit):**
+     - خلفية فضاء عميقة بدرجات الزيتوني الملكي والكهرمان مع محرك Canvas ثلاثي الأبعاد يحاكي حركة النجوم والشهب المتجهة نحو الكاميرا عبر المحور Z.
+     - 3 حلقات مدارية جيروسكوبية ثلاثية الأبعاد تدور في محاور X و Y و Z حول درع المنظومة الذهبي الخالص.
+     - تقديم فخم لبيانات المستخدم الحقيقية: الاسم الكامل (`user.nameAr`)، المسمى الوظيفي والتخصص الدقيق (`user.jobTitleAr` / `user.roleLabelAr`)، والقسم المؤسسي وسياق الشركة في كبسولة زجاجية ثلاثية الأبعاد بوهج ذهبي متحرك.
+     - شريط تقدم ذهبي انسيابي يكتمل خلال 3.6 ثانية مع تبديل نصوص الحالة التفاعلية، مع خيار زر التخطي السريع `الدخول الفوري للخدمات ⬅`.
+  4. **الحماية التامة من مقاطعة كاشف التحديثات (Version Guard Protection):**
+     - إلزام خدمة `systemUpdateService.ts` بعدم إجراء أي فحص أو إعادة تحميل أو تفريغ لجلسة الترحيب أثناء كون `sessionStorage.getItem('eco_show_welcome_splash') === 'true'`.
+
 ---
 
 ## 4. ملخص البروتوكول الإلزامي قبل كتابة أي كود جديد
@@ -253,5 +275,6 @@
 2. مراجعة `SKILLS.md` لاتباع النمط البرمجي المعتمد.
 3. مراجعة `PROMPTS.md` لتطبيق المعايير الذهبية للموديول المستهدف.
 4. التأكد من النمطين الفاتح والداكن وسلامة الفأرة والتجاوب التام.
+
 
 

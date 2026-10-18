@@ -183,4 +183,18 @@
 - [ ] **ربط الصلاحيات بـ Security Epoch:** تحديث `security_epoch` في Cloudflare D1 عند تعديل الصلاحيات أو المستخدمين لضمان خروج وتحديث جميع الجلسات النشطة.
 - [ ] **عزل الموديول المالي:** 0 ملفات معدلة في `src/pages/finance/`.
 
+---
+
+## 9. المعيار الإلزامي الدائم لشاشة الترحيب السينمائية ثلاثية الأبعاد (3D Cinematic Welcome Splash Checklist)
+> **قاعدة نقدية دائمة وصارمة (CRITICAL RULE):**  
+> **NEVER remove, bypass, or unmount the Post-Login 3D Cinematic Welcome Splash Screen (`CinematicWelcomeSplash.tsx`):** Every successful login MUST display the 3D animated welcome screen showing the user's real Name and Job Specialization/Role for ~3.8 seconds before automatically entering the ERP services dashboard.
+
+- [ ] **التركيب على مستوى جذر التطبيق (Root-Level Execution):** استدعاء `<CinematicWelcomeSplash />` في `App.tsx` عند تفعيل `showWelcomeSplash` لضمان عدم تعرضه للفك المفاجئ في 0ms.
+- [ ] **محرك الفضاء والمدارات ثلاثية الأبعاد (Canvas 3D & Gyro Rings):** خلفية فضاء عميقة بنجوم متحركة عبر المحور Z مع 3 حلقات مدارية تدور في محاور X و Y و Z حول الدرع الذهبي الخالص.
+- [ ] **عرض بيانات وهوية المستخدم والتخصص الحقيقي:** إبراز الاسم الكامل (`user.nameAr`)، المسمى الوظيفي والتخصص الدقيق (`user.jobTitleAr` / `user.roleLabelAr`)، والقسم وسياق الشركة في كبسولة زجاجية ثلاثية الأبعاد بوهج ذهبي متحرك.
+- [ ] **شريط التقدم السينمائي وزر التخطي:** شريط تقدم ذهبي يكتمل خلال 3.6 ثانية مع تبديل نصوص الحالة التفاعلية، وإتاحة زر التخطي الفوري `الدخول الفوري للخدمات ⬅`.
+- [ ] **الحماية من مقاطعة كاشف النسخ:** منع `systemUpdateService` من قطع أو تفريغ جلسة الترحيب أثناء كون `eco_show_welcome_splash` مفعلاً.
+- [ ] **عزل الموديول المالي:** 0 ملفات معدلة في `src/pages/finance/`.
+
+
 

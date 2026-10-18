@@ -6,7 +6,6 @@ import {
   Lock,
   Eye,
   EyeOff,
-  CheckCircle2,
   Loader2,
   Building2,
   Sparkles
@@ -27,7 +26,6 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
   const [isVerifying, setIsVerifying] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [shakeCard, setShakeCard] = useState(false);
-  const [welcomeUser, setWelcomeUser] = useState<any | null>(null);
   const [updateNotice, setUpdateNotice] = useState<{ title: string; message: string } | null>(null);
 
   useEffect(() => {
@@ -144,7 +142,7 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (isVerifying || welcomeUser) return;
+    if (isVerifying) return;
 
     setErrorMessage(null);
     setIsVerifying(true);
@@ -158,13 +156,8 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
         setTimeout(() => setShakeCard(false), 500);
       } else {
         setErrorMessage(null);
-        setWelcomeUser(result.user);
-
-        // 2500ms cinematic sequence before entering dashboard
-        setTimeout(() => {
-          navigate('/');
-          if (onSuccess) onSuccess();
-        }, 2500);
+        navigate('/');
+        if (onSuccess) onSuccess();
       }
     } catch (err: any) {
       setErrorMessage(err?.message || 'اسم المستخدم أو كلمة المرور غير صحيحة');
@@ -200,37 +193,8 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
         }}
       />
 
-      {/* 4. Bulletproof Conditional Rendering: Welcome Screen vs Login Form */}
-      {welcomeUser ? (
-        /* Dedicated Cinematic Welcome Stage (Active for 2.5 Seconds) */
-        <div className="relative z-20 flex flex-col items-center justify-center p-8 sm:p-10 text-center max-w-md w-full mx-auto rounded-3xl bg-[#0d1520]/90 border border-amber-500/30 shadow-[0_0_50px_-10px_rgba(217,155,38,0.25)] backdrop-blur-2xl animate-fade-in">
-          {/* Glowing Golden Ring */}
-          <div className="w-20 h-20 rounded-full border-2 border-amber-400 bg-amber-500/10 flex items-center justify-center mb-5 shadow-[0_0_35px_rgba(217,155,38,0.4)] animate-pulse">
-            <CheckCircle2 className="w-10 h-10 text-amber-400" />
-          </div>
-
-          {/* Personalized Greeting */}
-          <span className="text-amber-400/90 text-xs font-bold tracking-widest uppercase mb-1">
-            أهلاً بك مجدداً في منظومة ترابط
-          </span>
-          <h1 className="text-2xl sm:text-3xl font-black text-white mb-2">
-            {welcomeUser.full_name || welcomeUser.nameAr || welcomeUser.fullName || welcomeUser.username}
-          </h1>
-          <p className="text-slate-300 text-xs font-medium mb-6">
-            جاري تهيئة لوحة التحكم وصلاحيات {welcomeUser.role_id || welcomeUser.roleLabelAr || welcomeUser.role || 'الإدارة العليا'}...
-          </p>
-
-          {/* 2.4s Progress Bar */}
-          <div className="w-full max-w-xs h-1.5 bg-slate-800 rounded-full overflow-hidden border border-amber-500/20">
-            <div 
-              className="h-full bg-gradient-to-r from-amber-600 via-amber-400 to-amber-500 rounded-full w-full"
-              style={{ animation: 'progressFill 2400ms cubic-bezier(0.4, 0, 0.2, 1) forwards' }}
-            />
-          </div>
-        </div>
-      ) : (
-        /* Glassmorphic Executive Login Card */
-        <div className={`relative z-20 w-full max-w-md p-8 sm:p-10 rounded-3xl bg-[#0d1520]/85 backdrop-blur-2xl border border-amber-500/25 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.7),0_0_30px_rgba(217,155,38,0.15)] mx-auto transition-all duration-300 ${shakeCard ? 'animate-shake border-red-500/60 shadow-red-500/10' : ''}`}>
+      {/* Glassmorphic Executive Login Card */}
+      <div className={`relative z-20 w-full max-w-md p-8 sm:p-10 rounded-3xl bg-[#0d1520]/85 backdrop-blur-2xl border border-amber-500/25 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.7),0_0_30px_rgba(217,155,38,0.15)] mx-auto transition-all duration-300 ${shakeCard ? 'animate-shake border-red-500/60 shadow-red-500/10' : ''}`}>
           {/* Brand Header */}
           <div className="flex flex-col items-center mb-6">
             <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mb-3 shadow-[0_0_20px_rgba(217,155,38,0.2)]">
@@ -342,7 +306,6 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
             </button>
           </form>
         </div>
-      )}
     </div>
   );
 };
