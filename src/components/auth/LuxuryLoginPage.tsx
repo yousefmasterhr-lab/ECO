@@ -32,11 +32,19 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
 
   useEffect(() => {
     try {
+      const params = new URLSearchParams(window.location.search);
+      const isUpdatedReason = params.get('reason') === 'system_updated';
+
       const raw = sessionStorage.getItem('eco_update_notice');
       if (raw) {
         const parsed = JSON.parse(raw);
         setUpdateNotice(parsed);
         sessionStorage.removeItem('eco_update_notice');
+      } else if (isUpdatedReason) {
+        setUpdateNotice({
+          title: 'تم تحديث المنظومة بنجاح',
+          message: 'تم تحديث المنظومة إلى إصدار جديد — يرجى تسجيل الدخول مجدداً لمواصلة العمل بأحدث التعديلات.'
+        });
       }
     } catch {}
   }, []);
@@ -74,10 +82,10 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
 
     const particles: Particle[] = [];
     const colors = [
-      'rgba(217, 155, 38, ', // Radiant Gold Amber
-      'rgba(235, 179, 77, ', // Soft Glowing Gold
-      'rgba(5, 150, 105, ',  // Emerald Green
-      'rgba(16, 185, 129, ', // Mint Emerald
+      'rgba(217, 155, 38, ',  // Radiant Gold Amber
+      'rgba(245, 158, 11, ',  // Bright Warm Amber
+      'rgba(251, 191, 36, ',  // Soft Glowing Amber
+      'rgba(180, 83, 9, ',    // Deep Bronze Amber
     ];
 
     const particleCount = Math.min(55, Math.floor(window.innerWidth / 25));
@@ -215,7 +223,7 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
           {/* 2.4s Progress Bar */}
           <div className="w-full max-w-xs h-1.5 bg-slate-800 rounded-full overflow-hidden border border-amber-500/20">
             <div 
-              className="h-full bg-gradient-to-r from-amber-500 via-emerald-400 to-amber-400 rounded-full w-full"
+              className="h-full bg-gradient-to-r from-amber-600 via-amber-400 to-amber-500 rounded-full w-full"
               style={{ animation: 'progressFill 2400ms cubic-bezier(0.4, 0, 0.2, 1) forwards' }}
             />
           </div>
@@ -234,11 +242,11 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
 
           {/* System Update Notification Banner */}
           {updateNotice && (
-            <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-emerald-950/80 to-teal-950/80 border border-emerald-500/40 text-emerald-200 text-xs flex items-start gap-3 shadow-[0_0_25px_rgba(16,185,129,0.25)] animate-in fade-in slide-in-from-top-2 duration-300">
-              <Sparkles className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5 animate-pulse" />
+            <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-amber-950/90 via-[#1A1208] to-amber-950/80 border border-amber-500/40 text-amber-200 text-xs flex items-start gap-3 shadow-[0_0_25px_rgba(217,155,38,0.25)] animate-in fade-in slide-in-from-top-2 duration-300">
+              <Sparkles className="w-5 h-5 text-amber-400 shrink-0 mt-0.5 animate-pulse" />
               <div className="text-right">
                 <div className="font-bold text-white text-xs mb-1">{updateNotice.title}</div>
-                <div className="text-emerald-100/90 leading-relaxed text-[11px]">{updateNotice.message}</div>
+                <div className="text-amber-100/90 leading-relaxed text-[11px]">{updateNotice.message}</div>
               </div>
             </div>
           )}

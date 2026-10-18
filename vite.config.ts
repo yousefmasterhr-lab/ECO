@@ -882,43 +882,58 @@ function sqlServerBridgePlugin() {
   };
 }
 
+const BUILD_ID = Date.now().toString();
+const DEPLOYED_AT = new Date().toISOString();
+const BUILD_VERSION_STR = `1.1.0-build.${DEPLOYED_AT.slice(0, 10).replace(/-/g, '')}.${BUILD_ID.slice(-5)}`;
+
 function autoVersionPlugin() {
-  const buildTimestamp = Date.now();
-  const buildDateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-  const versionStr = `1.1.0-build.${buildDateStr}.${Math.floor(buildTimestamp / 1000) % 100000}`;
+  const writeVersionFiles = () => {
+    try {
+      const rootDir = process.cwd();
+      const versionData = {
+        buildId: BUILD_ID,
+        deployedAt: DEPLOYED_AT,
+        version: BUILD_VERSION_STR,
+        buildTimestamp: Number(BUILD_ID),
+        buildTime: DEPLOYED_AT,
+        gitCommit: 'latest'
+      };
+      const jsonContent = JSON.stringify(versionData, null, 2);
+
+      // 1. public/version.json
+      const publicDir = path.resolve(rootDir, 'public');
+      if (!fs.existsSync(publicDir)) {
+        fs.mkdirSync(publicDir, { recursive: true });
+      }
+      fs.writeFileSync(path.resolve(publicDir, 'version.json'), jsonContent, 'utf-8');
+
+      // 2. dist/version.json if dist folder exists
+      const distDir = path.resolve(rootDir, 'dist');
+      if (fs.existsSync(distDir)) {
+        fs.writeFileSync(path.resolve(distDir, 'version.json'), jsonContent, 'utf-8');
+      }
+    } catch (err) {
+      console.warn('[autoVersionPlugin] Notice:', err);
+    }
+  };
 
   return {
     name: 'auto-version-plugin',
     buildStart() {
-      try {
-        const rootDir = process.cwd();
-        const publicDir = path.resolve(rootDir, 'public');
-        if (!fs.existsSync(publicDir)) {
-          fs.mkdirSync(publicDir, { recursive: true });
-        }
-        const versionPath = path.resolve(publicDir, 'version.json');
-        const versionData = {
-          version: versionStr,
-          buildTimestamp,
-          buildTime: new Date().toISOString(),
-          gitCommit: 'latest'
-        };
-        fs.writeFileSync(versionPath, JSON.stringify(versionData, null, 2), 'utf-8');
-      } catch (err) {
-        console.warn('[autoVersionPlugin] Notice:', err);
-      }
+      writeVersionFiles();
+    },
+    closeBundle() {
+      writeVersionFiles();
     }
   };
 }
 
-const currentBuildTime = Date.now();
-const currentBuildVersion = `1.1.0-build.${new Date().toISOString().slice(0, 10).replace(/-/g, '')}`;
-
 export default defineConfig({
   plugins: [react(), sqlServerBridgePlugin(), autoVersionPlugin()],
   define: {
-    __APP_BUILD_TIME__: currentBuildTime,
-    __APP_VERSION__: JSON.stringify(currentBuildVersion),
+    __APP_BUILD_ID__: JSON.stringify(BUILD_ID),
+    __APP_BUILD_TIME__: Number(BUILD_ID),
+    __APP_VERSION__: JSON.stringify(BUILD_VERSION_STR),
   },
   resolve: {
     alias: {

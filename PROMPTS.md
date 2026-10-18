@@ -161,3 +161,26 @@
 - [ ] **تثبيت المكون الموحد:** استخدام `<DocumentPreviewModal />` في كافة تبويبات إدارة الشركات (`CompanySignatoriesTab`, `CompanyLicensesTab`, `CompanyDirectoryTab`).
 - [ ] **عزل الموديول المالي:** 0 ملفات معدلة في `src/pages/finance/`.
 
+---
+
+## 7. المعيار القياسي لحظر الألوان الزمردية وتوحيد لوحة الكهرمان المؤسسية (Brand Amber Palette Enforcement Checklist)
+- [ ] **تطهير الأزرار وشارات الملفات من الأخضر:** حظر تام لأي استخدام لألوان الزمرد والأخضر (`emerald-*`, `green-*`) في أزرار المعاينة والتحميل وشارات المرفقات.
+- [ ] **قصر الأخضر على الحالات الدلالية فقط:** حصر اللون الأخضر في نقاط الحالة الصغرى المتصلة (`متصل`) وحالة المستند الساري (`ساري`).
+- [ ] **تطبيق تدرج الكهرمان المؤسسي الفخم:**
+  `bg-gradient-to-l from-amber-600 to-amber-500 hover:from-amber-700 hover:to-amber-600 text-white shadow-md shadow-amber-500/20 font-bold`.
+- [ ] **توحيد أيقونات المستندات وشارات المرفقات:**
+  `bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/30`.
+- [ ] **عزل الموديول المالي:** 0 ملفات معدلة في `src/pages/finance/`.
+
+---
+
+## 8. المعيار القياسي للحماية والتحديث القسري وتطهير الكاش التلقائي (Automated Force-Logout & Auto-Refresh Checklist)
+- [ ] **توليد معرف البناء الفريد (`BUILD_ID`):** ختم كل بناء برقم فريد في `vite.config.ts` وحقنه عبر `__APP_BUILD_ID__` وتوليد `version.json`.
+- [ ] **منع التخزين المؤقت للنسخة:** ضبط `Cache-Control: no-store, no-cache, must-revalidate, max-age=0` لملف `/version.json` في ترويسات `public/_headers`.
+- [ ] **مراقب نبضات النسخة:** استقصاء دوري كل 25 ثانية وعند استعادة التركيز للنافذة (`visibilitychange` / `focus`).
+- [ ] **تسجيل الخروج القسري وتطهير الكاش:** عند اكتشاف إصدار جديد، مسح بيانات الجلسة، وتفريغ مخازن `window.caches` بالكامل، وإلغاء تسجيل الـ Service Workers.
+- [ ] **إعادة التحميل الفوري مع إشعار كهرماني:** التوجيه عبر `window.location.replace('/login?reason=system_updated')` وعرض شريط تنبيه كهرماني فخم في شاشة الدخول يوضح اكتمال التحديث.
+- [ ] **ربط الصلاحيات بـ Security Epoch:** تحديث `security_epoch` في Cloudflare D1 عند تعديل الصلاحيات أو المستخدمين لضمان خروج وتحديث جميع الجلسات النشطة.
+- [ ] **عزل الموديول المالي:** 0 ملفات معدلة في `src/pages/finance/`.
+
+

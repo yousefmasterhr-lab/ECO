@@ -419,6 +419,21 @@ export const onRequestPut: PagesFunction = async (context) => {
       console.warn('Failed to log audit update:', logErr);
     }
 
+    // Bump security_epoch to invalidate sessions if user status or clearance changed
+    try {
+      await env.DB.prepare(`
+        CREATE TABLE IF NOT EXISTS system_settings (
+          key TEXT PRIMARY KEY,
+          value TEXT NOT NULL,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `).run();
+      await env.DB.prepare(`
+        INSERT INTO system_settings (key, value, updated_at) VALUES ('security_epoch', ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP
+      `).bind(String(Date.now())).run();
+    } catch {}
+
     return jsonResponse({
       success: true,
       message: 'تم تحديث بيانات وصلاحيات المستخدم بنجاح',
@@ -480,6 +495,21 @@ export const onRequestDelete: PagesFunction = async (context) => {
     } catch (logErr) {
       console.warn('Failed to log audit deletion:', logErr);
     }
+
+    // Bump security_epoch to invalidate deleted user sessions immediately
+    try {
+      await env.DB.prepare(`
+        CREATE TABLE IF NOT EXISTS system_settings (
+          key TEXT PRIMARY KEY,
+          value TEXT NOT NULL,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `).run();
+      await env.DB.prepare(`
+        INSERT INTO system_settings (key, value, updated_at) VALUES ('security_epoch', ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP
+      `).bind(String(Date.now())).run();
+    } catch {}
 
     return jsonResponse({
       success: true,

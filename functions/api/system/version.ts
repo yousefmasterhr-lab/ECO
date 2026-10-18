@@ -47,7 +47,7 @@ export const onRequestGet: PagesFunction = async (context) => {
     `);
 
     const result = await env.DB.prepare(
-      `SELECT key, value FROM system_settings WHERE key IN ('system_version', 'build_timestamp', 'maintenance_mode')`
+      `SELECT key, value FROM system_settings WHERE key IN ('system_version', 'build_timestamp', 'maintenance_mode', 'security_epoch')`
     ).all();
 
     const map: Record<string, string> = {};
@@ -66,12 +66,14 @@ export const onRequestGet: PagesFunction = async (context) => {
 
     const version = map['system_version'] || fallback.version;
     const buildTimestamp = map['build_timestamp'] ? parseInt(map['build_timestamp'], 10) : fallback.buildTimestamp;
+    const securityEpoch = map['security_epoch'] ? parseInt(map['security_epoch'], 10) : 0;
 
     return jsonResponse({
       success: true,
       source: 'cloudflare_d1',
       version,
       buildTimestamp,
+      securityEpoch,
       gitCommit: 'd8ebc7c',
       maintenance,
     });

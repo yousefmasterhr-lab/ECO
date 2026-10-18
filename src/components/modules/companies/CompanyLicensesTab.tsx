@@ -627,7 +627,7 @@ export const CompanyLicensesTab: React.FC<CompanyLicensesTabProps> = ({
                                   attachment: doc.fileAttachment,
                                   driveUrl: doc.driveUrl
                                 })}
-                                className="min-h-[36px] min-w-[36px] p-2 rounded-xl text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/50 transition-colors cursor-pointer"
+                                className="min-h-[36px] min-w-[36px] p-2 rounded-xl text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-950/50 transition-colors cursor-pointer"
                                 title="معاينة / تحميل المستند المرفوع"
                               >
                                 <Eye className="w-4 h-4" />
@@ -858,9 +858,9 @@ export const CompanyLicensesTab: React.FC<CompanyLicensesTabProps> = ({
                   />
 
                   {formFileAttachment ? (
-                    <div className="p-3 rounded-xl border border-emerald-300 dark:border-emerald-800/80 bg-emerald-50/70 dark:bg-emerald-950/20 flex items-center justify-between gap-3">
+                    <div className="p-3 rounded-xl border border-amber-300 dark:border-amber-800/80 bg-amber-50/70 dark:bg-amber-950/20 flex items-center justify-between gap-3">
                       <div className="flex items-center gap-2.5 overflow-hidden">
-                        <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                        <div className="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
                           <FileCheck className="w-4 h-4" />
                         </div>
                         <div className="overflow-hidden">
@@ -880,7 +880,7 @@ export const CompanyLicensesTab: React.FC<CompanyLicensesTabProps> = ({
                               title: formFileAttachment.name,
                               attachment: formFileAttachment
                             })}
-                            className="p-1.5 rounded-lg text-emerald-700 dark:text-emerald-300 hover:bg-emerald-200/50 cursor-pointer"
+                            className="p-1.5 rounded-lg text-amber-700 dark:text-amber-300 hover:bg-amber-200/50 cursor-pointer"
                             title="معاينة"
                           >
                             <Eye className="w-4 h-4" />

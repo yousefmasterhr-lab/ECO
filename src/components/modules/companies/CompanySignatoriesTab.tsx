@@ -706,7 +706,7 @@ export const CompanySignatoriesTab: React.FC<CompanySignatoriesTabProps> = ({
 
                       <div className="flex flex-wrap gap-1.5 pt-1.5">
                         {sig.bankingLimits.allowLettersOfGuarantee && (
-                          <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold border border-emerald-500/20">
+                          <span className="px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-400 text-[10px] font-bold border border-amber-500/20">
                             خطابات الضمان (LG)
                           </span>
                         )}
@@ -814,7 +814,7 @@ export const CompanySignatoriesTab: React.FC<CompanySignatoriesTabProps> = ({
               <div className="pt-3 border-t border-slate-200/80 dark:border-[#243628] flex items-center justify-between">
                 <div className="text-xs text-slate-500 dark:text-[#8FA392] flex items-center gap-2">
                   {sig.poaAttachment && (
-                    <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 text-[10px] font-bold border border-emerald-200 dark:border-emerald-800">
+                    <span className="px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 text-[10px] font-bold border border-amber-200 dark:border-amber-500/30">
                       مرفق موثق ({sig.poaAttachment.name})
                     </span>
                   )}
@@ -827,9 +827,9 @@ export const CompanySignatoriesTab: React.FC<CompanySignatoriesTabProps> = ({
                     <button
                       onClick={() => setDocPreviewSig(sig)}
                       title="معاينة / تحميل صورة التوكيل الموثق"
-                      className="min-h-[38px] min-w-[38px] flex items-center justify-center rounded-xl bg-slate-100 hover:bg-emerald-50 text-emerald-600 hover:text-emerald-700 dark:bg-[#111A13] dark:hover:bg-emerald-950/40 dark:text-emerald-400 dark:hover:text-emerald-300 border border-slate-200/70 dark:border-[#243628] transition-all cursor-pointer shadow-2xs"
+                      className="min-h-[38px] min-w-[38px] flex items-center justify-center rounded-xl bg-slate-100 hover:bg-amber-50 text-amber-600 hover:text-amber-700 dark:bg-[#111A13] dark:hover:bg-amber-950/40 dark:text-amber-400 dark:hover:text-amber-300 border border-slate-200/70 dark:border-[#243628] transition-all cursor-pointer shadow-2xs"
                     >
-                      <FileText className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <FileText className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                     </button>
                   )}
 
@@ -1074,7 +1074,7 @@ export const CompanySignatoriesTab: React.FC<CompanySignatoriesTabProps> = ({
                           {formAttachment ? formAttachment.name : 'انقر أو اسحب الملف هنا للرفع المباشر'}
                         </span>
                         {formAttachment && (
-                          <span className="text-[10px] text-emerald-600 font-bold">
+                          <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold">
                             الحجم: {formatAttachmentSize(formAttachment.sizeBytes)} • تم التحميل بنجاح
                           </span>
                         )}

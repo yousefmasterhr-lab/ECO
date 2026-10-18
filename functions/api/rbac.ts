@@ -163,6 +163,21 @@ export const onRequestPut: PagesFunction = async (context) => {
       }
     }
 
+    // Bump security_epoch in system_settings to trigger live force-logout and re-authentication
+    batchStatements.push(
+      env.DB.prepare(`
+        CREATE TABLE IF NOT EXISTS system_settings (
+          key TEXT PRIMARY KEY,
+          value TEXT NOT NULL,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `),
+      env.DB.prepare(`
+        INSERT INTO system_settings (key, value, updated_at) VALUES ('security_epoch', ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP
+      `).bind(String(Date.now()))
+    );
+
     if (batchStatements.length > 0) {
       await env.DB.batch(batchStatements);
     }

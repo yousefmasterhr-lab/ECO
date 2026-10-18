@@ -325,8 +325,62 @@
    - استدعاء `URL.revokeObjectURL(blobUrl)` بشكل إلزامي داخل دالة التنظيف (Cleanup Return) لخطاف `useEffect` عند إغلاق النافذة أو تغيير الملف لمنع أي تسريب للذاكرة في المتصفح.
 3. **تصميم نافذة المعاينة الموحدة (`<DocumentPreviewModal />`):**
    - استخدام عرض مريح للعين `max-w-4xl w-full` لضمان وضوح نصوص مستندات A4 الرسمية وأختام التوثيق.
-   - تضمين عناصر تحكم علوية: زر "فتح في علامة تبويب جديدة" (`window.open(blobUrl, '_blank')`) وزر "تحميل الملف" المباشر.
+   - تضمين عناصر تحكم علوية: زر "فتح في علامة تبويب جديدة" (`window.open(blobUrl, '_blank')`) وزر "تحميل الملف" المباشر بتدرج الكهرمان الرسمي.
+   - تضمين إطار المعاينة التفاعلي لملفات الـ PDF مع خيارات الضبط التلقائي للعرض وشريط الأدوات:
+     ```tsx
+     <iframe
+       src={`${blobUrl}#toolbar=1&navpanes=0&view=FitH`}
+       className="w-full h-[68vh] rounded-xl border border-slate-200 dark:border-stone-700 bg-slate-100 dark:bg-stone-900 shadow-inner"
+       title="معاينة المستند الرسمي"
+     />
+     ```
    - توفير عارض صور ضوئية عالي الدقة مع أدوات تكبير وتصغير تفاعلية (`Zoom In`, `Zoom Out`, `Reset 100%`) وتحريك التمرير عند التكبير.
+
+### 8.11 نمط إنفاذ الهوية المؤسسية الكهرمانية والزيتونية الملكية (Official Amber & Royal Olive Brand Palette Enforcement)
+1. **استبعاد ألوان الزمرد والأخضر الفاقعة (`emerald-*`, `green-*`):**
+   - حظر استخدام اللون الأخضر في الأزرار الرئيسية، أزرار التحميل، هيدرات النوافذ المنبثقة، بطاقات الملفات، وشارات المرفقات.
+   - حصر اللون الأخضر في المؤشرات الدلالية المتناهية الصغر فقط (نقطة اتصال الحساب أو حالة المستند الساري).
+2. **الأنماط اللونية القياسية:**
+   - **الأزرار الرئيسية وأزرار التحميل:**
+     `bg-gradient-to-l from-amber-600 to-amber-500 hover:from-amber-700 hover:to-amber-600 text-white shadow-md shadow-amber-500/20 font-bold`.
+   - **شارات المرفقات وأيقونات المستندات:**
+     `bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/30`.
+   - **الخلفيات الداكنة الفاخرة:**
+     `#07130E` و `#0D1F17` و `#0E1610` مع نصوص عاجية `#F3EFE6`.
+
+### 8.12 محرك الحماية والتحديث القسري وتطهير الكاش التلقائي عند كل إصدار (Automated Force-Logout, Cache-Buster & Auto-Refresh Engine)
+1. **ختم البناء التلقائي (`vite.config.ts` & `version.json`):**
+   - توليد `BUILD_ID = Date.now().toString()` عند كل عملية بناء وحقنه برمجياً عبر `__APP_BUILD_ID__`.
+   - إضافة إضافة (Vite Plugin) تقوم بكتابة ملف `version.json` داخل `public/` و `dist/`:
+     ```json
+     { "buildId": "1773849...", "deployedAt": "2026-10-18T..." }
+     ```
+   - منع التخزين المؤقت للملف نهائياً عبر ملف `public/_headers`:
+     ```text
+     /version.json
+       Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+     ```
+2. **مراقب نبضات النسخة في العميل (`src/services/systemUpdateService.ts`):**
+   - فحص النسخة كل 25 ثانية وعند استعادة التركيز بالمتصفح (`visibilitychange` و `focus`).
+   - استدعاء `/version.json?t=${Date.now()}` بهيدر `{ cache: 'no-store' }`.
+   - مقارنة المعرف مع المخزن في `localStorage.getItem('eco_active_build_id')`.
+3. **التنظيف الشامل وإعادة التوجيه (Hard Refresh & Force Logout):**
+   - فور اكتشاف إصدار أحدث أو تغير في `security_epoch`:
+     1. مسح بيانات الجلسة والمستخدم (`localStorage.removeItem('eco_auth_session')` و `localStorage.removeItem('eco_auth_user')` و `sessionStorage.clear()`).
+     2. تفريغ كافة مخازن الكاش بالمتصفح عبر `window.caches`:
+        ```typescript
+        if ('caches' in window) {
+          const keys = await caches.keys();
+          await Promise.all(keys.map(k => caches.delete(k)));
+        }
+        ```
+     3. إلغاء تسجيل كافة Service Workers لضمان عدم تقديم أي Chunk قديم.
+     4. إعادة التوجيه الفوري الإجباري:
+        ```typescript
+        window.location.replace('/login?reason=system_updated');
+        ```
+     5. استقبال المعلمة في صفحة تسجيل الدخول وعرض شريط تنبيه كهرماني فخم يوضح تحديث المنظومة وضرورة الدخول مجدداً.
+
 
 
 

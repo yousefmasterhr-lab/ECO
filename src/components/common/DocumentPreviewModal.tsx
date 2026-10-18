@@ -166,12 +166,12 @@ export const DocumentPreviewViewer: React.FC<DocumentPreviewViewerProps> = ({
   // 1. PDF Embedded Viewer
   if (isPdf && fileData) {
     return (
-      <div className="relative w-full h-[65vh] rounded-xl overflow-hidden bg-slate-100 dark:bg-[#070B08] border border-slate-200 dark:border-[#243628]">
+      <div className="relative w-full h-[68vh] rounded-xl overflow-hidden bg-slate-100 dark:bg-stone-900 border border-slate-200 dark:border-stone-700 shadow-inner">
         {blobUrl ? (
           <iframe
-            src={blobUrl}
-            className="w-full h-full rounded-xl border-0 bg-slate-100 dark:bg-[#070B08]"
-            title={title || fileName || 'معاينة المستند'}
+            src={`${blobUrl}#toolbar=1&navpanes=0&view=FitH`}
+            className="w-full h-full rounded-xl border-0 bg-slate-100 dark:bg-stone-900"
+            title={title || fileName || 'معاينة المستند الرسمي'}
           >
             <object
               data={blobUrl}
@@ -183,7 +183,7 @@ export const DocumentPreviewViewer: React.FC<DocumentPreviewViewerProps> = ({
                 <a
                   href={blobUrl}
                   download={fileName || 'document.pdf'}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-l from-amber-600 to-amber-500 hover:from-amber-700 hover:to-amber-600 text-white font-bold cursor-pointer shadow-md"
                 >
                   <Download className="w-4 h-4" />
                   <span>تحميل الملف مباشرة</span>
@@ -204,7 +204,7 @@ export const DocumentPreviewViewer: React.FC<DocumentPreviewViewerProps> = ({
   // 2. High-Resolution Zoomable Image Viewer
   if (isImage && fileData) {
     return (
-      <div className="relative w-full h-[65vh] rounded-xl overflow-hidden bg-slate-900/90 dark:bg-[#050806] border border-slate-200 dark:border-[#243628] flex flex-col">
+      <div className="relative w-full h-[68vh] rounded-xl overflow-hidden bg-slate-900/90 dark:bg-[#050806] border border-slate-200 dark:border-[#243628] flex flex-col shadow-inner">
         {/* Floating Zoom Controls Bar */}
         <div className="absolute top-3 left-3 z-10 flex items-center gap-1 bg-black/60 backdrop-blur-md px-2 py-1.5 rounded-xl border border-white/10 text-white shadow-lg">
           <button

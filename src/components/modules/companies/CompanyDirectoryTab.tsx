@@ -1186,7 +1186,7 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
                             <a
                               href={doc.fileAttachment.dataUrl}
                               download={doc.fileAttachment.name}
-                              className="min-h-[34px] px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 transition-colors flex items-center gap-1 text-[11px] font-bold border border-emerald-200 dark:border-emerald-800/40"
+                              className="min-h-[34px] px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors flex items-center gap-1 text-[11px] font-bold border border-amber-200 dark:border-amber-800/40"
                               title="تحميل الملف"
                             >
                               <Download className="w-3.5 h-3.5" />
