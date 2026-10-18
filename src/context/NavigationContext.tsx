@@ -319,9 +319,7 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   const [activeCategoryId, setActiveCategoryId] = useState<string | null>(initialRoute.catId);
   const [activeSubItemId, setActiveSubItemId] = useState<string | null>(initialRoute.subId);
-  const [expandedCategories, setExpandedCategories] = useState<string[]>(() => {
-    return initialRoute.catId ? ['executive', initialRoute.catId] : ['executive'];
-  });
+  const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
 
   // Listen to browser back/forward buttons (popstate)

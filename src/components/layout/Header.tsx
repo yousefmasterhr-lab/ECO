@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTenant } from '../../context/TenantContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -20,7 +20,9 @@ import {
   User,
   Lock,
   History,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Sparkles,
+  ArrowUpRight
 } from 'lucide-react';
 import { UserProfileModal } from '../modules/auth/UserProfileModal';
 import { ChangePasswordModal } from '../modules/auth/ChangePasswordModal';
@@ -28,6 +30,21 @@ import { UserActivityDrawer } from '../modules/auth/UserActivityDrawer';
 import { PermissionsManagerModal } from '../modules/auth/PermissionsManagerModal';
 import { EcoOfficialLogo } from '../common/EcoOfficialLogo';
 import { TypewriterText } from '../auth/TypewriterText';
+
+interface SearchModuleItem {
+  id: string;
+  title: string;
+  badge?: string;
+  colorVar?: string;
+  subItem?: { id: string; title: string };
+}
+
+interface SearchCompanyItem {
+  id: string;
+  name: string;
+  code: string;
+  logoColor?: string;
+}
 
 export const Header: React.FC = () => {
   const {
@@ -37,11 +54,12 @@ export const Header: React.FC = () => {
     isAllSelected,
     toggleSelectAll,
     selectionSummaryAr,
-    selectionSummaryEn
+    selectionSummaryEn,
+    setActiveCompany
   } = useTenant();
 
   const { isRtl, t } = useLanguage();
-  const { currentUser, toggleMobileDrawer, setSearchModalOpen } = useNavigation();
+  const { currentUser, toggleMobileDrawer, setSearchModalOpen, categories, selectItem } = useNavigation();
   const { isDark, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
 
@@ -57,6 +75,151 @@ export const Header: React.FC = () => {
   const [activityDrawerOpen, setActivityDrawerOpen] = useState(false);
   const [permissionsModalOpen, setPermissionsModalOpen] = useState(false);
 
+  // Supercharged Search Bar State & Typewriter Cycling Prompts
+  const SEARCH_PROMPTS = [
+    'ابحث في الأقسام والخدمات والمستندات...',
+    'انتقل سريعاً إلى دليل الشركات أو الفروع...',
+    'ابحث في الموارد البشرية أو مصفوفة الصلاحيات...',
+  ];
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const [currentPromptIdx, setCurrentPromptIdx] = useState(0);
+  const [placeholderText, setPlaceholderText] = useState('');
+  const [isDeletingPlaceholder, setIsDeletingPlaceholder] = useState(false);
+
+  useEffect(() => {
+    if (isSearchFocused || searchQuery) return;
+    const currentPrompt = SEARCH_PROMPTS[currentPromptIdx];
+    let timer: any;
+
+    if (!isDeletingPlaceholder) {
+      if (placeholderText.length < currentPrompt.length) {
+        timer = setTimeout(() => {
+          setPlaceholderText(currentPrompt.slice(0, placeholderText.length + 1));
+        }, 65);
+      } else {
+        timer = setTimeout(() => {
+          setIsDeletingPlaceholder(true);
+        }, 2600);
+      }
+    } else {
+      if (placeholderText.length > 0) {
+        timer = setTimeout(() => {
+          setPlaceholderText(currentPrompt.slice(0, placeholderText.length - 1));
+        }, 30);
+      } else {
+        setIsDeletingPlaceholder(false);
+        setCurrentPromptIdx(prev => (prev + 1) % SEARCH_PROMPTS.length);
+      }
+    }
+
+    return () => clearTimeout(timer);
+  }, [placeholderText, isDeletingPlaceholder, currentPromptIdx, isSearchFocused, searchQuery]);
+
+  // Global Ctrl + K listener & Escape listener
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        setIsSearchFocused(true);
+      }
+      if (e.key === 'Escape') {
+        setIsSearchFocused(false);
+        searchInputRef.current?.blur();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Filtered live search results
+  const searchResults: {
+    modules: SearchModuleItem[];
+    companies: SearchCompanyItem[];
+    isQueryEmpty: boolean;
+  } = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) {
+      return {
+        modules: (categories || []).slice(0, 6).map(c => ({
+          id: c.id,
+          title: isRtl ? c.titleAr : c.titleEn,
+          badge: isRtl ? c.badgeAr : c.badgeEn,
+          colorVar: c.colorVar,
+          subItem: undefined as { id: string; title: string } | undefined,
+        })),
+        companies: (companies || []).slice(0, 3).map(c => ({
+          id: c.id,
+          name: isRtl ? c.nameAr : c.nameEn,
+          code: c.code,
+          logoColor: c.logoColor,
+        })),
+        isQueryEmpty: true,
+      };
+    }
+
+    const matchedModules: Array<{
+      id: string;
+      title: string;
+      badge?: string;
+      colorVar?: string;
+      subItem?: { id: string; title: string };
+    }> = [];
+
+    (categories || []).forEach(cat => {
+      const catTitle = (isRtl ? cat.titleAr : cat.titleEn).toLowerCase();
+      if (catTitle.includes(q)) {
+        matchedModules.push({
+          id: cat.id,
+          title: isRtl ? cat.titleAr : cat.titleEn,
+          badge: isRtl ? cat.badgeAr : cat.badgeEn,
+          colorVar: cat.colorVar,
+        });
+      }
+      (cat.subItems || []).forEach(sub => {
+        const subTitle = (isRtl ? sub.titleAr : sub.titleEn).toLowerCase();
+        if (subTitle.includes(q)) {
+          matchedModules.push({
+            id: cat.id,
+            title: isRtl ? cat.titleAr : cat.titleEn,
+            badge: isRtl ? cat.badgeAr : cat.badgeEn,
+            colorVar: cat.colorVar,
+            subItem: {
+              id: sub.id,
+              title: isRtl ? sub.titleAr : sub.titleEn,
+            },
+          });
+        }
+      });
+    });
+
+    const matchedCompanies = (companies || []).filter(c => {
+      const name = (isRtl ? c.nameAr : c.nameEn).toLowerCase();
+      const code = (c.code || '').toLowerCase();
+      return name.includes(q) || code.includes(q);
+    }).map(c => ({
+      id: c.id,
+      name: isRtl ? c.nameAr : c.nameEn,
+      code: c.code,
+      logoColor: c.logoColor,
+    }));
+
+    return {
+      modules: matchedModules.slice(0, 8),
+      companies: matchedCompanies.slice(0, 4),
+      isQueryEmpty: false,
+    };
+  }, [searchQuery, categories, companies, isRtl]);
+
+  const displayCompanySummary = companies.length === 1
+    ? (isRtl ? companies[0].nameAr : companies[0].nameEn)
+    : (isRtl ? selectionSummaryAr : selectionSummaryEn);
+
   // Close dropdowns on click outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -65,6 +228,9 @@ export const Header: React.FC = () => {
       }
       if (userDropdownRef.current && !userDropdownRef.current.contains(event.target as Node)) {
         setUserDropdownOpen(false);
+      }
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+        setIsSearchFocused(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -85,37 +251,32 @@ export const Header: React.FC = () => {
             <Menu className="w-5 h-5" />
           </button>
 
-          {/* Platform Identity with Official Favicon SVG & Animated Typography Lockup */}
+          {/* Platform Identity with 3D Official Logo & Centered Typewriter Typography */}
           <div className="hidden sm:flex items-center gap-3 shrink-0 select-none group">
-            {/* Logo Badge with Dual Light/Dark Mode Styling & Shimmer */}
-            <EcoOfficialLogo size="md" className="shrink-0 cursor-pointer" />
+            {/* 3D Floating Official Logo Badge with Hover Tilt & Golden Glow */}
+            <div
+              className="relative transition-transform duration-300 ease-out hover:scale-105 hover:-rotate-2 cursor-pointer filter drop-shadow-[0_2px_12px_rgba(217,155,38,0.25)] dark:drop-shadow-[0_0_18px_rgba(245,158,11,0.4)]"
+              style={{ perspective: 600 }}
+            >
+              <EcoOfficialLogo size="md" className="shrink-0 transition-all duration-300 group-hover:border-amber-400" />
+            </div>
             
-            {/* Dynamic 2-Line Brand Typography Lockup (ECO on top, Animated ERP Company Operations below) */}
-            <div className="hidden lg:flex flex-col justify-center text-start">
-              {/* Line 1: ECO Display Typography + Live Enterprise Pulse Beacon */}
-              <div className="flex items-center gap-1.5 leading-none">
-                <span className="font-black text-[15px] tracking-wider bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 bg-clip-text text-transparent drop-shadow-xs">
-                  ECO
-                </span>
-                {/* Live Core Cloud Beacon */}
-                <span className="relative flex h-2 w-2" title="ECO Cloud Engine Active">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
-                </span>
-                <span className="text-[9px] font-mono font-extrabold px-1.5 py-0.5 rounded-sm bg-amber-500/10 dark:bg-amber-400/15 border border-amber-500/20 text-amber-700 dark:text-amber-300 tracking-wider">
-                  ENTERPRISE
-                </span>
-              </div>
+            {/* Centered 2-Line Brand Typography Lockup (ECO centered on top, ERP Company Operations full typewriter below) */}
+            <div className="hidden lg:flex flex-col items-center justify-center text-center shrink-0 min-w-[175px]">
+              {/* Top Line: ECO Centered, text-xl, bold high contrast */}
+              <span className="text-xl font-black tracking-wider bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 dark:from-amber-400 dark:via-amber-300 dark:to-amber-500 bg-clip-text text-transparent drop-shadow-xs leading-none">
+                ECO
+              </span>
 
-              {/* Line 2: Animated Subtitle with Typewriter Motion */}
-              <div className="flex items-center min-h-[14px] mt-0.5 leading-none">
+              {/* Bottom Line: Full ERP Company Operations with Typewriter Motion & Blinking Amber Cursor */}
+              <div className="flex items-center justify-center min-h-[16px] mt-1 leading-none whitespace-nowrap overflow-visible w-full">
                 <TypewriterText
                   text="ERP Company Operations"
-                  typingSpeed={70}
-                  deletingSpeed={35}
-                  pauseMs={3200}
-                  className="text-[10px] font-bold text-[#5C665E] dark:text-[#9FB1A2] font-mono tracking-tight"
-                  cursorClassName="w-1 h-2.5 bg-amber-500 dark:bg-amber-400 ms-0.5"
+                  typingSpeed={75}
+                  deletingSpeed={38}
+                  pauseMs={2800}
+                  className="text-[10px] sm:text-[11px] font-bold text-[#5C665E] dark:text-[#A1B3A4] font-mono tracking-tight whitespace-nowrap"
+                  cursorClassName="w-1 h-3 bg-amber-500 dark:bg-amber-400 ms-0.5"
                 />
               </div>
             </div>
@@ -134,7 +295,7 @@ export const Header: React.FC = () => {
               </div>
               <div className="min-w-0 flex-1 truncate">
                 <div className="text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6] truncate flex items-center gap-1.5">
-                  <span className="truncate">{isRtl ? selectionSummaryAr : selectionSummaryEn}</span>
+                  <span className="truncate">{displayCompanySummary}</span>
                 </div>
               </div>
               <ChevronDown
@@ -355,20 +516,180 @@ export const Header: React.FC = () => {
           </div>
         </div>
 
-        {/* Center / Search Trigger Button */}
-        <div className="hidden md:flex flex-1 max-w-md mx-2">
-          <button
-            onClick={() => setSearchModalOpen(true)}
-            className="w-full flex items-center justify-between px-3.5 py-1.5 rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-[#F3EFE6] dark:bg-[#17231A] hover:border-[#D99B26]/50 hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23] text-[#5C665E] dark:text-[#8FA392] text-xs transition-all shadow-inner"
+        {/* Center / Supercharged Animated Search Bar & Instant Dropdown */}
+        <div className="hidden md:flex flex-1 max-w-lg mx-3 relative" ref={searchContainerRef}>
+          {/* Animated Golden Shimmer Border Wrapper */}
+          <div
+            className={`w-full rounded-2xl p-[1px] transition-all duration-300 ${
+              isSearchFocused
+                ? 'bg-gradient-to-r from-amber-500 via-amber-300 to-amber-600 shadow-[0_0_25px_rgba(245,158,11,0.35)]'
+                : 'bg-gradient-to-r from-[#E0D9CB] via-[#D99B26]/30 to-[#E0D9CB] dark:from-[#243628] dark:via-[#D99B26]/40 dark:to-[#243628] hover:from-amber-500/50 hover:to-amber-500/50 hover:shadow-[0_0_15px_rgba(217,155,38,0.2)]'
+            }`}
           >
-            <div className="flex items-center gap-2.5">
-              <Search className="w-4 h-4 text-[#5C665E] dark:text-[#8FA392]" />
-              <span>{t('البحث السريع في الأقسام والمستندات...', 'Quick search modules & records...')}</span>
+            <div className="w-full flex items-center justify-between px-3.5 py-1.5 rounded-[15px] bg-[#FBF9F5] dark:bg-[#121B14] text-xs transition-colors">
+              <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                <Search
+                  className={`w-4 h-4 shrink-0 transition-transform duration-300 ${
+                    isSearchFocused
+                      ? 'text-amber-500 scale-110 rotate-12'
+                      : 'text-[#5C665E] dark:text-[#8FA392]'
+                  }`}
+                />
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  onFocus={() => setIsSearchFocused(true)}
+                  placeholder={placeholderText || t('البحث السريع في الأقسام والمستندات...', 'Quick search modules & records...')}
+                  className="w-full bg-transparent border-none outline-hidden text-[#1A241C] dark:text-[#F3EFE6] placeholder:text-[#5C665E]/70 dark:placeholder:text-[#8FA392]/70 text-xs font-medium cursor-text caret-amber-500"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="p-1 rounded-full text-stone-400 hover:text-stone-600 dark:hover:text-stone-200"
+                    aria-label={t('مسح البحث', 'Clear')}
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {/* Realistic 3D Pressed Keycap */}
+              <kbd
+                onClick={() => {
+                  searchInputRef.current?.focus();
+                  setIsSearchFocused(true);
+                }}
+                className="hidden lg:inline-flex items-center gap-0.5 px-2 py-0.5 text-[10px] font-mono font-bold text-amber-700 dark:text-amber-300 bg-gradient-to-b from-[#FFFDF9] to-[#EAE4D7] dark:from-[#243628] dark:to-[#17231A] border border-[#D99B26]/40 dark:border-amber-500/40 rounded-md shadow-[0_2px_0_rgba(180,83,9,0.35),inset_0_1px_0_rgba(255,255,255,0.5)] dark:shadow-[0_2px_0_rgba(0,0,0,0.6)] active:translate-y-0.5 active:shadow-none select-none cursor-pointer transition-all shrink-0 ms-2"
+                title="Ctrl + K / ⌘ + K"
+              >
+                <span className="text-xs">⌘</span>K
+              </kbd>
             </div>
-            <kbd className="hidden lg:inline-flex items-center gap-0.5 px-2 py-0.5 text-[10px] font-mono font-semibold text-[#5C665E] dark:text-[#8FA392] bg-[#EAE4D7] dark:bg-[#1F2E23] border border-[#E0D9CB] dark:border-[#243628] rounded-md shadow-xs">
-              <span className="text-xs">⌘</span>K
-            </kbd>
-          </button>
+          </div>
+
+          {/* Interactive Instant Search Dropdown */}
+          <AnimatePresence>
+            {isSearchFocused && (
+              <motion.div
+                initial={{ opacity: 0, y: 8, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 6, scale: 0.98 }}
+                transition={{ duration: 0.18, ease: 'easeOut' }}
+                className="absolute top-full mt-2 inset-x-0 rounded-2xl bg-[#FBF9F5]/95 dark:bg-[#0E1610]/95 backdrop-blur-2xl border border-[#D99B26]/35 dark:border-amber-500/40 shadow-[0_20px_50px_rgba(0,0,0,0.3),0_0_25px_rgba(217,155,38,0.15)] p-3 z-50 max-h-[420px] overflow-y-auto sidebar-scrollbar"
+              >
+                {/* Modules Results */}
+                {searchResults.modules.length > 0 && (
+                  <div className="mb-3">
+                    <div className="flex items-center justify-between px-2 py-1 mb-1 text-[11px] font-bold text-[#5C665E] dark:text-[#8FA392]">
+                      <span className="flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                        <span>{searchResults.isQueryEmpty ? t('المنظومات والأقسام الرئيسية', 'Core ERP Modules') : t('النتائج المطابقة في الأقسام', 'Matching Modules & Services')}</span>
+                      </span>
+                      <span className="text-[10px] text-stone-400 font-mono">
+                        {searchResults.modules.length} {t('عنصر', 'items')}
+                      </span>
+                    </div>
+
+                    <div className="space-y-1">
+                      {searchResults.modules.map((item: SearchModuleItem, idx: number) => (
+                        <button
+                          key={`${item.id}-${idx}`}
+                          type="button"
+                          onClick={() => {
+                            selectItem(item.id, item.subItem?.id);
+                            setIsSearchFocused(false);
+                            setSearchQuery('');
+                          }}
+                          className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-start hover:bg-amber-500/10 dark:hover:bg-amber-400/10 hover:border-amber-500/30 border border-transparent transition-all group cursor-pointer"
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div
+                              className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 shadow-xs"
+                              style={{
+                                backgroundColor: `${item.colorVar || '#D99B26'}18`,
+                                color: item.colorVar || '#D99B26',
+                              }}
+                            >
+                              <span className="text-xs font-bold">#</span>
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6] group-hover:text-amber-600 dark:group-hover:text-amber-400 truncate">
+                                {item.subItem ? `${item.title} › ${item.subItem.title}` : item.title}
+                              </p>
+                              {item.badge && (
+                                <span className="text-[10px] text-[#5C665E] dark:text-[#8FA392]">
+                                  {item.badge}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <ArrowUpRight className="w-4 h-4 text-stone-400 group-hover:text-amber-500 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform shrink-0" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Companies Results */}
+                {searchResults.companies.length > 0 && (
+                  <div>
+                    <div className="flex items-center justify-between px-2 py-1 mb-1 text-[11px] font-bold text-[#5C665E] dark:text-[#8FA392]">
+                      <span className="flex items-center gap-1.5">
+                        <Building2 className="w-3.5 h-3.5 text-amber-500" />
+                        <span>{t('الشركات والكيانات المسجلة', 'Registered Entities')}</span>
+                      </span>
+                    </div>
+
+                    <div className="space-y-1">
+                      {searchResults.companies.map((comp: SearchCompanyItem) => (
+                        <button
+                          key={comp.id}
+                          type="button"
+                          onClick={() => {
+                            const found = companies.find(c => c.id === comp.id);
+                            if (found) setActiveCompany(found);
+                            setIsSearchFocused(false);
+                            setSearchQuery('');
+                          }}
+                          className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-start hover:bg-emerald-500/10 dark:hover:bg-emerald-400/10 hover:border-emerald-500/30 border border-transparent transition-all group cursor-pointer"
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div
+                              className="w-7 h-7 rounded-lg flex items-center justify-center text-white shrink-0 text-[10px] font-bold shadow-xs"
+                              style={{ backgroundColor: comp.logoColor }}
+                            >
+                              <Building2 className="w-4 h-4" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6] group-hover:text-emerald-600 dark:group-hover:text-emerald-400 truncate">
+                                {comp.name}
+                              </p>
+                              <span className="text-[10px] text-[#5C665E] dark:text-[#8FA392]">
+                                {comp.code} • {t('تفعيل النطاق', 'Activate Scope')}
+                              </span>
+                            </div>
+                          </div>
+                          <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md">
+                            {t('تبديل', 'Switch')}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {searchResults.modules.length === 0 && searchResults.companies.length === 0 && (
+                  <div className="p-6 text-center text-xs text-[#5C665E] dark:text-[#8FA392]">
+                    <Search className="w-8 h-8 mx-auto mb-2 opacity-40 text-amber-500" />
+                    <p className="font-bold">{t('لا توجد نتائج مطابقة لبحثك', 'No matching results found')}</p>
+                    <p className="text-[10px] mt-1">{t('جرّب البحث باسم القسم مثل "الشركات" أو "المالية"', 'Try searching by module name like "Companies" or "Finance"')}</p>
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* End / Action Controls: Mobile Search, Notifications, User Profile */}

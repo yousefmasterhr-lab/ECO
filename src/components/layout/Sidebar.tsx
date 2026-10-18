@@ -92,14 +92,14 @@ export const Sidebar: React.FC = () => {
             isCollapsed ? 'justify-center px-0' : 'justify-between'
           }`}
           title={t(
-            isCollapsed ? 'توسيع القائمة الجانبية' : 'طي القائمة (Mini-Rail)',
-            isCollapsed ? 'Expand Sidebar' : 'Collapse to Mini-Rail'
+            isCollapsed ? 'توسيع القائمة الجانبية' : 'طي القائمة',
+            isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'
           )}
         >
           {!isCollapsed && (
             <div className="flex items-center gap-2 min-w-0">
               <Compass className="w-4 h-4 text-[#D99B26] dark:text-[#EBB34D] shrink-0" />
-              <span className="truncate">{t('تصغير القائمة (Mini-Rail)', 'Collapse Sidebar')}</span>
+              <span className="truncate">{t('تصغير القائمة', 'Collapse Sidebar')}</span>
             </div>
           )}
           <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-[#EAE4D7] dark:bg-[#17231A] shrink-0 text-[#1A241C] dark:text-[#F3EFE6]">

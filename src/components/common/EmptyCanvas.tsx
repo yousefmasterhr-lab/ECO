@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigation, DEPARTMENT_CATEGORIES } from '../../context/NavigationContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -11,7 +11,6 @@ import { FinancialAffairsModule } from '../modules/finance/FinancialAffairsModul
 import { HRModule } from '../modules/hr/HRModule';
 import { SettingsModule } from '../modules/settings/SettingsModule';
 import { UnauthorizedView } from './UnauthorizedView';
-import { useReception } from '../../context/ReceptionContext';
 import { useFinancial } from '../../context/FinancialContext';
 import { useHR } from '../../context/HRContext';
 import { useAuth } from '../../context/AuthContext';
@@ -130,9 +129,8 @@ const cardVariants = {
 
 export const EmptyCanvas: React.FC = () => {
   const { isRtl, t } = useLanguage();
-  const { selectionSummaryAr, selectionSummaryEn, companies } = useTenant();
+  const { selectionSummaryAr, selectionSummaryEn, companies, selectedCompanyIds, toggleCompany, isAllSelected, selectAllCompanies } = useTenant();
   const { categories, activeCategoryId, activeSubItemId, selectItem, currentUser } = useNavigation();
-  const { activeVisitorsCount, todayScheduledCount, occupiedRoomsCount } = useReception();
   const { summary: finSummary, costCenters: finCostCenters } = useFinancial();
   const { stats: hrStats, employees } = useHR();
   const { user, managedUsers } = useAuth();
@@ -220,6 +218,127 @@ export const EmptyCanvas: React.FC = () => {
     const formattedHours = hours % 12 || 12;
     return `${formattedHours}:${minutes} ${period}`;
   }, [currentDateTime, isRtl]);
+
+  // 3D Cinematic Background Canvas & Interactive Parallax State
+  const bannerCanvasRef = useRef<HTMLCanvasElement>(null);
+  const [bannerParallax, setBannerParallax] = useState({ x: 0, y: 0 });
+
+  useEffect(() => {
+    const canvas = bannerCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let animId: number;
+    let width = (canvas.width = canvas.parentElement?.clientWidth || 800);
+    let height = (canvas.height = canvas.parentElement?.clientHeight || 220);
+
+    const handleResize = () => {
+      if (!canvas || !canvas.parentElement) return;
+      width = canvas.width = canvas.parentElement.clientWidth;
+      height = canvas.height = canvas.parentElement.clientHeight;
+    };
+    window.addEventListener('resize', handleResize);
+
+    const particleCount = 28;
+    const particles = Array.from({ length: particleCount }, () => ({
+      x: Math.random() * width,
+      y: Math.random() * height,
+      r: Math.random() * 2 + 1,
+      vx: (Math.random() - 0.5) * 0.4,
+      vy: -Math.random() * 0.35 - 0.1,
+      alpha: Math.random() * 0.5 + 0.2,
+      dAlpha: (Math.random() * 0.008 + 0.003) * (Math.random() > 0.5 ? 1 : -1),
+    }));
+
+    let angle = 0;
+
+    const render = () => {
+      ctx.clearRect(0, 0, width, height);
+
+      const isDarkMode = document.documentElement.classList.contains('dark');
+      angle += 0.008;
+
+      // 1. Moving architectural perspective grid floor
+      ctx.save();
+      ctx.strokeStyle = isDarkMode ? 'rgba(217, 155, 38, 0.07)' : 'rgba(217, 155, 38, 0.12)';
+      ctx.lineWidth = 1;
+      const horizonY = height * 0.65;
+      const vpX = width * 0.5 + bannerParallax.x * 40;
+
+      for (let x = -width * 0.5; x <= width * 1.5; x += 60) {
+        ctx.beginPath();
+        ctx.moveTo(vpX, horizonY);
+        ctx.lineTo(x, height);
+        ctx.stroke();
+      }
+      for (let y = horizonY; y <= height; y += (height - horizonY) / 5) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      // 2. 3D Perspective Geometric Orbital Rings
+      ctx.save();
+      const ringCenterX = isRtl ? width * 0.18 : width * 0.82;
+      const ringCenterY = height * 0.5 + bannerParallax.y * 12;
+      const ringRadiusX = 65;
+      const ringRadiusY = 22;
+
+      ctx.translate(ringCenterX + bannerParallax.x * 15, ringCenterY);
+      ctx.rotate(angle);
+
+      // Outer Ring
+      ctx.beginPath();
+      ctx.ellipse(0, 0, ringRadiusX, ringRadiusY, angle * 0.5, 0, Math.PI * 2);
+      ctx.strokeStyle = isDarkMode ? 'rgba(245, 158, 11, 0.22)' : 'rgba(217, 155, 38, 0.28)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Inner Dashed Ring
+      ctx.beginPath();
+      ctx.setLineDash([4, 6]);
+      ctx.ellipse(0, 0, ringRadiusX * 0.7, ringRadiusY * 0.7, -angle * 0.7, 0, Math.PI * 2);
+      ctx.strokeStyle = isDarkMode ? 'rgba(251, 191, 36, 0.3)' : 'rgba(180, 83, 9, 0.25)';
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+
+      // 3. Floating Gold Particles
+      particles.forEach(p => {
+        p.x += p.vx + bannerParallax.x * 0.15;
+        p.y += p.vy;
+        p.alpha += p.dAlpha;
+
+        if (p.alpha > 0.75 || p.alpha < 0.15) {
+          p.dAlpha = -p.dAlpha;
+        }
+
+        if (p.y < -10) {
+          p.y = height + 10;
+          p.x = Math.random() * width;
+        }
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = isDarkMode
+          ? `rgba(245, 158, 11, ${p.alpha})`
+          : `rgba(217, 155, 38, ${p.alpha * 0.8})`;
+        ctx.fill();
+      });
+
+      animId = requestAnimationFrame(render);
+    };
+
+    render();
+
+    return () => {
+      cancelAnimationFrame(animId);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [bannerParallax, isRtl]);
 
   if (activeCategoryId === 'unauthorized') {
     return <UnauthorizedView />;
@@ -334,7 +453,7 @@ export const EmptyCanvas: React.FC = () => {
         return [
           { label: isRtl ? 'المخاطر' : 'Risks', value: isRtl ? '0 مخاطر' : '0 Risks', color: 'text-emerald-600 dark:text-emerald-400 font-bold' },
           { label: isRtl ? 'المؤشرات' : 'KPIs', value: isRtl ? '0 مؤشرات' : '0 KPIs', color: 'text-amber-600 dark:text-[#EBB34D] font-bold' },
-          { label: isRtl ? 'حالة المنظومة' : 'Status', value: isRtl ? 'جاهز للتشغيل' : 'Ready', color: 'text-emerald-600 dark:text-emerald-400 font-bold' },
+          { label: isRtl ? 'الحالة' : 'Status', value: isRtl ? 'نشط' : 'Active', color: 'text-emerald-600 dark:text-emerald-400 font-bold' },
         ];
       case 'companies':
         return [
@@ -358,7 +477,7 @@ export const EmptyCanvas: React.FC = () => {
         return [
           { label: isRtl ? 'المشاريع' : 'Projects', value: isRtl ? '0 مشاريع' : '0 Projects', color: 'text-slate-900 dark:text-white font-bold' },
           { label: isRtl ? 'العقود' : 'Contracts', value: isRtl ? '0 عقد' : '0 Contracts', color: 'text-amber-600 dark:text-[#EBB34D] font-bold' },
-          { label: isRtl ? 'المستخلصات' : 'IPCs', value: isRtl ? '0 مستخلصات' : '0 IPCs', color: 'text-slate-900 dark:text-white font-bold' },
+          { label: isRtl ? 'المستخلص' : 'IPCs', value: isRtl ? '0 معتمد' : '0 Approved', color: 'text-slate-900 dark:text-white font-bold' },
         ];
       case 'cts':
         return [
@@ -392,9 +511,9 @@ export const EmptyCanvas: React.FC = () => {
         ];
       case 'reception':
         return [
-          { label: isRtl ? 'بالمنشأة' : 'Guests', value: `${activeVisitorsCount || 0} ${isRtl ? 'زوار' : 'Guests'}`, color: 'text-slate-900 dark:text-white font-bold' },
-          { label: isRtl ? 'المواعيد' : 'Visits', value: `${todayScheduledCount || 0} ${isRtl ? 'مواعيد' : 'Visits'}`, color: 'text-amber-600 dark:text-[#EBB34D] font-bold' },
-          { label: isRtl ? 'القاعات' : 'Rooms', value: `${occupiedRoomsCount || 0} ${isRtl ? 'قاعات' : 'Rooms'}`, color: 'text-slate-700 dark:text-[#8FA392] font-bold' },
+          { label: isRtl ? 'بالمنشأة' : 'Guests', value: isRtl ? '0 زوار' : '0 Guests', color: 'text-slate-900 dark:text-white font-bold' },
+          { label: isRtl ? 'المواعيد' : 'Visits', value: isRtl ? '0 مواعيد' : '0 Visits', color: 'text-amber-600 dark:text-[#EBB34D] font-bold' },
+          { label: isRtl ? 'القاعات' : 'Rooms', value: isRtl ? '0 قاعات' : '0 Rooms', color: 'text-slate-700 dark:text-[#8FA392] font-bold' },
         ];
       case 'settings':
         return [
@@ -414,48 +533,107 @@ export const EmptyCanvas: React.FC = () => {
   // Executive Command Launchpad
   return (
     <div className="w-full max-w-none space-y-7 animate-in fade-in duration-200">
-      {/* 1. Welcome & Time Header */}
-      <div className="relative overflow-hidden rounded-2xl border border-[#E0D9CB] dark:border-[#243628] bg-gradient-to-r from-[#F3EFE6] via-[#F3EFE6]/95 to-[#EAE4D7] dark:from-[#17231A] dark:via-[#17231A]/95 dark:to-[#131E15] p-5 sm:p-7 shadow-lg">
-        {/* Subtle Ambient Luminescence Aura */}
-        <div className="absolute -top-16 -end-16 w-64 h-64 bg-[#D99B26]/10 dark:bg-[#EBB34D]/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-16 start-1/4 w-48 h-48 bg-[#EAE4D7]/40 dark:bg-[#1F2E23]/40 rounded-full blur-2xl pointer-events-none" />
+      {/* 1. 3D Cinematic Hero Welcome Banner */}
+      <div
+        onMouseMove={e => {
+          const rect = e.currentTarget.getBoundingClientRect();
+          setBannerParallax({
+            x: ((e.clientX - rect.left) / rect.width - 0.5) * 2,
+            y: ((e.clientY - rect.top) / rect.height - 0.5) * 2,
+          });
+        }}
+        onMouseLeave={() => setBannerParallax({ x: 0, y: 0 })}
+        className="relative overflow-hidden rounded-3xl border border-[#D99B26]/30 dark:border-amber-500/35 bg-gradient-to-br from-[#FFFDF9] via-[#FEF9EE] to-[#FDF3DC] dark:from-[#07130E] dark:via-[#0D1F17] dark:to-[#132A1F] p-6 sm:p-8 shadow-[0_12px_40px_rgba(0,0,0,0.06),0_0_20px_rgba(217,155,38,0.12)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.5),0_0_25px_rgba(245,158,11,0.15)] transition-all duration-300 select-none"
+      >
+        {/* Live 3D Interactive Canvas */}
+        <canvas ref={bannerCanvasRef} className="absolute inset-0 pointer-events-none w-full h-full z-0 opacity-80" />
 
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="space-y-1.5">
+        {/* Ambient Luminescence Light Beams */}
+        <div className="absolute -top-20 -end-20 w-80 h-80 bg-gradient-to-bl from-amber-400/20 via-amber-500/10 to-transparent rounded-full blur-3xl pointer-events-none animate-pulse" />
+        <div className="absolute -bottom-20 -start-20 w-72 h-72 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col xl:flex-row xl:items-center justify-between gap-6">
+          {/* User Welcome Presentation */}
+          <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-[#D99B26] dark:bg-[#EBB34D] animate-pulse" />
-              <span className="text-[11px] font-bold tracking-wider uppercase text-[#D99B26] dark:text-[#EBB34D]">
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping" />
+              <span className="text-xs font-mono font-black tracking-widest uppercase text-amber-600 dark:text-amber-400">
                 ECO • ERP Company Operations
               </span>
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-black text-[#1A241C] dark:text-[#F3EFE6] tracking-tight">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 dark:text-[#F3EFE6] tracking-tight drop-shadow-xs">
               {isRtl ? `مرحباً بك، ${currentUser.nameAr}` : `Welcome, ${currentUser.nameEn}`}
             </h1>
 
-            <div className="pt-0.5">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#FBF9F5]/90 dark:bg-[#0E1610]/80 border border-[#E0D9CB] dark:border-[#243628] text-[11px] font-medium text-[#5C665E] dark:text-[#8FA392]">
-                <Clock className="w-3 h-3 text-[#D99B26] dark:text-[#EBB34D]" />
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white/80 dark:bg-[#0E1610]/80 border border-[#D99B26]/30 dark:border-amber-500/30 text-xs font-semibold text-slate-700 dark:text-stone-300 shadow-2xs backdrop-blur-md">
+                <Clock className="w-3.5 h-3.5 text-amber-500" />
                 <span>{formattedDate} • {formattedTime}</span>
+              </span>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-500/10 border border-amber-500/25 text-xs font-bold text-amber-700 dark:text-amber-300 backdrop-blur-md">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>{currentUser.jobTitleAr || currentUser.roleAr}</span>
               </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5 self-start lg:self-center shrink-0">
-            {/* Active Company Tag Capsule */}
-            <div className="flex items-center gap-2.5 px-4 py-2 rounded-xl bg-[#FBF9F5]/90 dark:bg-[#0E1610]/90 border border-[#E0D9CB] dark:border-[#243628] text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6] shadow-xs">
-              <div className="w-7 h-7 rounded-lg bg-[#D99B26]/15 dark:bg-[#EBB34D]/15 text-[#D99B26] dark:text-[#EBB34D] flex items-center justify-center shrink-0">
-                <Building2 className="w-4 h-4" />
-              </div>
-              <div className="text-start leading-tight">
-                <span className="text-[10px] text-[#5C665E] dark:text-[#8FA392] block font-semibold">
-                  {t('نطاق العمل النشط', 'Active Entity Scope')}
-                </span>
-                <span className="text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6] truncate max-w-[220px] block">
-                  {isRtl ? selectionSummaryAr : selectionSummaryEn}
-                </span>
-              </div>
-            </div>
+          {/* Dynamic Interactive Authorized Company Cards */}
+          <div className="flex flex-wrap items-center gap-3">
+            {companies.length > 1 && (
+              <button
+                type="button"
+                onClick={selectAllCompanies}
+                className={`px-3.5 py-2 rounded-2xl text-xs font-bold transition-all border backdrop-blur-md cursor-pointer ${
+                  isAllSelected
+                    ? 'bg-amber-500 text-stone-900 border-amber-400 shadow-md scale-102 font-black'
+                    : 'bg-white/70 dark:bg-stone-900/70 text-[#5C665E] dark:text-[#8FA392] border-[#E0D9CB] dark:border-[#243628] hover:border-amber-500/40'
+                }`}
+              >
+                {t('جميع الشركات', 'All Entities')} ({companies.length})
+              </button>
+            )}
+
+            {companies.map(c => {
+              const isSelected = selectedCompanyIds.includes(c.id);
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => {
+                    if (companies.length > 1) {
+                      toggleCompany(c.id);
+                    }
+                  }}
+                  className={`group/comp flex items-center gap-3 px-4 py-2.5 rounded-2xl text-start transition-all duration-200 border backdrop-blur-md cursor-pointer ${
+                    isSelected
+                      ? 'bg-white/95 dark:bg-[#0E1610]/95 border-[#D99B26] dark:border-amber-400 shadow-[0_8px_25px_rgba(217,155,38,0.22)] scale-102 ring-1 ring-amber-400/50'
+                      : 'bg-white/60 dark:bg-[#121B14]/60 border-[#E0D9CB]/80 dark:border-[#243628] text-stone-500 hover:border-amber-500/40 hover:bg-white/80'
+                  }`}
+                >
+                  <div
+                    className="w-8 h-8 rounded-xl flex items-center justify-center text-white shrink-0 text-xs font-bold shadow-xs transition-transform group-hover/comp:scale-105"
+                    style={{ backgroundColor: c.logoColor || '#D99B26' }}
+                  >
+                    <Building2 className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-xs font-extrabold text-slate-900 dark:text-[#F3EFE6] block truncate max-w-[210px]">
+                      {isRtl ? c.nameAr : c.nameEn}
+                    </span>
+                    <span className="text-[10px] text-[#5C665E] dark:text-[#8FA392] block truncate font-medium">
+                      {c.code} {c.badgeAr ? `• ${isRtl ? c.badgeAr : c.badgeEn}` : ''}
+                    </span>
+                  </div>
+                  {isSelected && (
+                    <span className="relative flex h-2 w-2 ms-1 shrink-0" title={t('نطاق نشط', 'Active Scope')}>
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -500,10 +678,10 @@ export const EmptyCanvas: React.FC = () => {
               whileHover={{ y: -5 }}
               transition={{ duration: 0.18, ease: 'easeOut' }}
               onClick={() => selectItem(cat.id, cat.subItems[0]?.id)}
-              className="group flex flex-col justify-between rounded-2xl bg-[#F3EFE6]/90 dark:bg-[#17231A]/90 backdrop-blur-md border border-[#E0D9CB] dark:border-[#243628] hover:border-[#D99B26]/50 dark:hover:border-[#EBB34D]/50 hover:shadow-[0_12px_32px_-8px_rgba(217,155,38,0.14)] dark:hover:shadow-[0_12px_32px_-8px_rgba(235,179,77,0.14)] p-5 relative overflow-hidden transition-all duration-300 cursor-pointer text-start"
+              className="group flex flex-col justify-between rounded-2xl bg-[#F3EFE6]/90 dark:bg-[#17231A]/90 backdrop-blur-md border border-[#E0D9CB] dark:border-[#243628] hover:border-[#D99B26]/60 dark:hover:border-amber-400/60 hover:shadow-[0_20px_45px_-12px_rgba(217,155,38,0.2),0_0_20px_rgba(217,155,38,0.1)] dark:hover:shadow-[0_20px_45px_-12px_rgba(235,179,77,0.22),0_0_25px_rgba(235,179,77,0.12)] p-5 relative overflow-hidden transition-all duration-300 cursor-pointer text-start transform-gpu hover:-translate-y-1.5 hover:rotate-[0.3deg]"
             >
-              {/* Subtle dynamic ambient glow on hover */}
-              <div className="absolute -top-12 -end-12 w-28 h-28 rounded-full bg-[#D99B26]/0 dark:bg-[#EBB34D]/0 group-hover:bg-[#D99B26]/10 dark:group-hover:bg-[#EBB34D]/10 blur-xl transition-all duration-500 pointer-events-none" />
+              {/* Golden spotlight radial aura on hover */}
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none bg-[radial-gradient(circle_at_top,rgba(217,155,38,0.14),transparent_70%)]" />
 
               <div>
                 {/* Top Bar of Card: Frosted Glass Icon + Badge + Interactive Arrow */}
@@ -555,13 +733,13 @@ export const EmptyCanvas: React.FC = () => {
                 </p>
 
                 {/* Live Micro-KPIs Matrix (3-Column Embedded Panel) */}
-                <div className="mt-3.5 p-2.5 rounded-xl bg-[#FBF9F5]/90 dark:bg-[#0E1610]/80 border border-[#E0D9CB]/80 dark:border-[#243628]/80 grid grid-cols-3 divide-x divide-x-reverse divide-[#E0D9CB]/60 dark:divide-[#243628]/60 text-center">
+                <div className="mt-3.5 p-2 rounded-xl bg-[#FBF9F5]/90 dark:bg-[#0E1610]/80 border border-[#E0D9CB]/80 dark:border-[#243628]/80 grid grid-cols-3 divide-x divide-x-reverse divide-[#E0D9CB]/60 dark:divide-[#243628]/60 text-center">
                   {kpis.map((kpi, idx) => (
-                    <div key={idx} className="px-1 flex flex-col justify-center">
-                      <span className="text-[10px] text-[#5C665E] dark:text-[#8FA392] font-semibold truncate block">
+                    <div key={idx} className="px-0.5 flex flex-col justify-center min-w-0">
+                      <span className="text-[9.5px] sm:text-[10px] text-[#5C665E] dark:text-[#8FA392] font-semibold truncate block">
                         {kpi.label}
                       </span>
-                      <span className={`text-[12px] font-bold font-mono truncate mt-0.5 ${kpi.color}`}>
+                      <span className={`text-[11px] sm:text-[11.5px] font-bold font-mono truncate mt-0.5 ${kpi.color}`}>
                         {kpi.value}
                       </span>
                     </div>
