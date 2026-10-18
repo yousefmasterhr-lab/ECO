@@ -308,5 +308,25 @@
   - **مبدل الفئات (Segmented Switcher):** `bg-amber-500 text-white shadow-sm font-bold`.
   - **قوائم الاختيار `<select>`:** `bg-white text-slate-900 border-slate-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20`.
 
+### 8.10 نمط المعاينة الحية المدمجة للوثائق وملفات الـ PDF عبر روابط الكائنات (Universal Embedded Document & PDF Blob Viewer Pattern)
+1. **علاج حظر متصفحات Chromium لسلاسل Base64 PDF:**
+   - متصفح Chrome والمتصفحات المبنية عليه تحظر تشغيل سلاسل `data:application/pdf;base64,...` داخل `<iframe>` / `<embed>`.
+   - الحل المعياري هو تحويل السلسلة إلى ثنائي `Uint8Array` ثم إنشاء كائن `Blob` واستخراج رابط كائن `URL.createObjectURL(blob)`:
+     ```typescript
+     const byteCharacters = atob(base64String);
+     const byteNumbers = new Uint8Array(byteCharacters.length);
+     for (let i = 0; i < byteCharacters.length; i++) {
+       byteNumbers[i] = byteCharacters.charCodeAt(i);
+     }
+     const blob = new Blob([byteNumbers], { type: 'application/pdf' });
+     const blobUrl = URL.createObjectURL(blob);
+     ```
+2. **إدارة دورة حياة الروابط في الذاكرة (Memory Cleanup):**
+   - استدعاء `URL.revokeObjectURL(blobUrl)` بشكل إلزامي داخل دالة التنظيف (Cleanup Return) لخطاف `useEffect` عند إغلاق النافذة أو تغيير الملف لمنع أي تسريب للذاكرة في المتصفح.
+3. **تصميم نافذة المعاينة الموحدة (`<DocumentPreviewModal />`):**
+   - استخدام عرض مريح للعين `max-w-4xl w-full` لضمان وضوح نصوص مستندات A4 الرسمية وأختام التوثيق.
+   - تضمين عناصر تحكم علوية: زر "فتح في علامة تبويب جديدة" (`window.open(blobUrl, '_blank')`) وزر "تحميل الملف" المباشر.
+   - توفير عارض صور ضوئية عالي الدقة مع أدوات تكبير وتصغير تفاعلية (`Zoom In`, `Zoom Out`, `Reset 100%`) وتحريك التمرير عند التكبير.
+
 
 

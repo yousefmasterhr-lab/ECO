@@ -12,8 +12,6 @@ import {
   AlertCircle,
   X,
   UploadCloud,
-  Download,
-  ExternalLink,
   Eye,
   Building,
   Calendar,
@@ -25,6 +23,7 @@ import { SmartDocument, CompanyEntity, CompanyDocumentAttachment } from './types
 import { getFormattedAuditTimestamp } from './licenseStorage';
 import { useAuth } from '../../../context/AuthContext';
 import { CreatableSelect } from '../../common/CreatableSelect';
+import { DocumentPreviewModal } from '../../common/DocumentPreviewModal';
 
 interface CompanyLicensesTabProps {
   documents: SmartDocument[];
@@ -1103,106 +1102,19 @@ export const CompanyLicensesTab: React.FC<CompanyLicensesTabProps> = ({
       </AnimatePresence>
 
       {/* ============================================================= */}
-      {/* Modal 4: نافذة معاينة / تحميل المستند (Preview Lightbox)       */}
+      {/* Modal 4: نافذة معاينة / تحميل المستند (Preview Lightbox via Blob URL) */}
       {/* ============================================================= */}
-      <AnimatePresence>
-        {previewDoc && (
-          <div className="fixed inset-0 !m-0 !top-0 !left-0 !right-0 !bottom-0 w-screen h-screen z-[999] flex items-center justify-center p-3 sm:p-5 bg-black/75 backdrop-blur-xs">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-3xl max-h-[90vh] flex flex-col bg-white dark:bg-[#0E1610] rounded-2xl border border-slate-200 dark:border-[#243628] shadow-2xl overflow-hidden"
-            >
-              {/* Header */}
-              <div className="flex items-center justify-between p-3.5 border-b border-slate-200 dark:border-[#243628] bg-slate-50 dark:bg-[#121B14] shrink-0">
-                <div className="flex items-center gap-2 overflow-hidden">
-                  <Eye className="w-4 h-4 text-emerald-500 shrink-0" />
-                  <span className="font-bold text-xs text-slate-900 dark:text-[#F3EFE6] truncate">
-                    {previewDoc.title}
-                  </span>
-                </div>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  {previewDoc.attachment?.dataUrl && (
-                    <a
-                      href={previewDoc.attachment.dataUrl}
-                      download={previewDoc.attachment.name}
-                      className="min-h-[36px] px-3 flex items-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors cursor-pointer shadow-xs"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                      <span>تحميل</span>
-                    </a>
-                  )}
-                  {previewDoc.driveUrl && (
-                    <a
-                      href={previewDoc.driveUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="min-h-[36px] px-3 flex items-center gap-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-colors cursor-pointer shadow-xs"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" />
-                      <span>فتح في Google Drive</span>
-                    </a>
-                  )}
-                  <button
-                    onClick={() => setPreviewDoc(null)}
-                    className="min-h-[36px] min-w-[36px] flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors cursor-pointer"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Body */}
-              <div className="flex-1 p-4 bg-slate-900/5 flex items-center justify-center overflow-auto min-h-[320px]">
-                {previewDoc.attachment?.dataUrl?.startsWith('data:image') ? (
-                  <img
-                    src={previewDoc.attachment.dataUrl}
-                    alt={previewDoc.title}
-                    className="max-h-[75vh] w-auto object-contain rounded-lg shadow-md"
-                  />
-                ) : previewDoc.attachment?.dataUrl?.startsWith('data:application/pdf') ? (
-                  <object
-                    data={previewDoc.attachment.dataUrl}
-                    type="application/pdf"
-                    className="w-full h-[70vh] rounded-lg"
-                  >
-                    <div className="p-6 text-center text-xs text-slate-500">
-                      <p className="mb-3">تم تجهيز ملف الـ PDF. إذا لم يتم عرضه تلقائياً، يمكنك تنزيله مباشرة:</p>
-                      <a
-                        href={previewDoc.attachment.dataUrl}
-                        download={previewDoc.attachment.name}
-                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 text-white font-bold"
-                      >
-                        <Download className="w-4 h-4" />
-                        <span>تحميل {previewDoc.attachment.name}</span>
-                      </a>
-                    </div>
-                  </object>
-                ) : previewDoc.driveUrl ? (
-                  <div className="p-8 text-center space-y-3">
-                    <ExternalLink className="w-12 h-12 text-blue-500 mx-auto" />
-                    <p className="font-bold text-sm text-slate-800 dark:text-[#F3EFE6]">
-                      المستند مؤرشف عبر الرابط السحابي الخارجي
-                    </p>
-                    <a
-                      href={previewDoc.driveUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-colors"
-                    >
-                      <span>الانتقال إلى Google Drive</span>
-                      <ExternalLink className="w-4 h-4" />
-                    </a>
-                  </div>
-                ) : (
-                  <p className="text-xs text-slate-400">لا توجد معاينة متاحة لهذا الملف.</p>
-                )}
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      <DocumentPreviewModal
+        isOpen={Boolean(previewDoc)}
+        onClose={() => setPreviewDoc(null)}
+        title={previewDoc?.title || 'معاينة المستند'}
+        subtitle={previewDoc?.attachment ? `${previewDoc.attachment.docType || ''} • ${previewDoc.attachment.name}` : undefined}
+        fileName={previewDoc?.attachment?.name}
+        fileData={previewDoc?.attachment?.dataUrl}
+        mimeType={previewDoc?.attachment?.mimeType}
+        sizeBytes={previewDoc?.attachment?.sizeBytes}
+        driveUrl={previewDoc?.driveUrl}
+      />
     </div>
   );
 };

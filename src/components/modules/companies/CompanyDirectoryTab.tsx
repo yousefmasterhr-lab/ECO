@@ -28,6 +28,7 @@ import {
 } from './types';
 import { formatCurrency, formatNumber } from '../../../utils/formatters';
 import { useAuth } from '../../../context/AuthContext';
+import { DocumentPreviewModal } from '../../common/DocumentPreviewModal';
 
 interface CompanyDirectoryTabProps {
   companies: CompanyEntity[];
@@ -1370,65 +1371,18 @@ export const CompanyDirectoryTab: React.FC<CompanyDirectoryTabProps> = ({
       </AnimatePresence>
 
       {/* ============================================================= */}
-      {/* Modal 6: عارض ومعاينة المستندات المرفقة (Lightbox / PDF)      */}
+      {/* Modal 6: عارض ومعاينة المستندات المرفقة (Lightbox via Blob URL) */}
       {/* ============================================================= */}
-      <AnimatePresence>
-        {previewDocument && (
-          <div className="fixed inset-0 !m-0 !top-0 !left-0 !right-0 !bottom-0 w-screen h-screen z-[999] flex items-center justify-center p-3 sm:p-5 bg-black/75 backdrop-blur-sm">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-3xl max-h-[90vh] bg-white dark:bg-[#0E1610] rounded-2xl border border-slate-200 dark:border-[#243628] shadow-2xl flex flex-col overflow-hidden text-start"
-            >
-              <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-[#243628] bg-slate-50 dark:bg-[#121B14] shrink-0">
-                <div className="truncate min-w-0 pr-2">
-                  <h3 className="text-sm font-black text-slate-900 dark:text-[#F3EFE6] truncate">
-                    {previewDocument.name}
-                  </h3>
-                  <span className="text-[11px] text-amber-600 font-bold">
-                    {previewDocument.docType} • {formatBytes(previewDocument.sizeBytes)}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  {previewDocument.dataUrl && (
-                    <a
-                      href={previewDocument.dataUrl}
-                      download={previewDocument.name}
-                      className="min-h-[38px] px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-400 font-bold text-xs flex items-center gap-1.5 transition-colors"
-                    >
-                      <Download className="w-4 h-4" />
-                      <span>تحميل</span>
-                    </a>
-                  )}
-                  <button
-                    onClick={() => setPreviewDocument(null)}
-                    className="min-h-[38px] min-w-[38px] flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-white/10"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex-1 p-4 overflow-auto flex items-center justify-center bg-slate-100/50 dark:bg-[#070B08]">
-                {previewDocument.mimeType?.includes('pdf') ? (
-                  <iframe
-                    src={previewDocument.dataUrl}
-                    className="w-full h-[65vh] rounded-xl border border-slate-300 dark:border-[#243628]"
-                    title={previewDocument.name}
-                  />
-                ) : (
-                  <img
-                    src={previewDocument.dataUrl}
-                    alt={previewDocument.name}
-                    className="max-h-[65vh] max-w-full object-contain rounded-xl shadow-md"
-                  />
-                )}
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      <DocumentPreviewModal
+        isOpen={Boolean(previewDocument)}
+        onClose={() => setPreviewDocument(null)}
+        title={previewDocument?.name || 'معاينة المستند'}
+        subtitle={previewDocument ? `${previewDocument.docType} • ${formatBytes(previewDocument.sizeBytes)}` : undefined}
+        fileName={previewDocument?.name}
+        fileData={previewDocument?.dataUrl}
+        mimeType={previewDocument?.mimeType}
+        sizeBytes={previewDocument?.sizeBytes}
+      />
     </div>
   );
 };

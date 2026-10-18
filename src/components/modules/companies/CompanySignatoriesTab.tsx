@@ -4,7 +4,6 @@ import {
   PenTool,
   Plus,
   FileText,
-  ExternalLink,
   Pencil,
   Trash2,
   X,
@@ -16,7 +15,6 @@ import {
   FileCheck2,
   Ban,
   AlertCircle,
-  Download,
   UploadCloud,
   ShieldCheck,
   Building2,
@@ -33,6 +31,7 @@ import {
 import { formatCurrency } from '../../../utils/formatters';
 import { useAuth } from '../../../context/AuthContext';
 import { CreatableSelect } from '../../common/CreatableSelect';
+import { DocumentPreviewModal } from '../../common/DocumentPreviewModal';
 
 const formatAttachmentSize = (bytes?: number) => {
   if (!bytes) return '—';
@@ -1413,153 +1412,31 @@ export const CompanySignatoriesTab: React.FC<CompanySignatoriesTabProps> = ({
         )}
       </AnimatePresence>
 
-      {/* Modal 3: معاينة صورة التوكيل المؤرشف (Document Lightbox / Viewer) */}
-      <AnimatePresence>
-        {docPreviewSig && (
-          <div className="fixed inset-0 !m-0 !top-0 !left-0 !right-0 !bottom-0 w-screen h-screen z-[999] flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-xs overflow-y-auto">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-2xl max-h-[85vh] flex flex-col bg-white dark:bg-[#0E1610] rounded-2xl border border-slate-200 dark:border-[#243628] shadow-2xl overflow-hidden text-start"
-            >
-              {/* Header */}
-              <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-200 dark:border-[#243628] bg-slate-50/50 dark:bg-[#111A13] shrink-0">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
-                    <FileText className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-black text-slate-900 dark:text-[#F3EFE6]">
-                      صورة التوكيل الرسمي الموثق
-                    </h3>
-                    <p className="text-xs text-slate-500 dark:text-[#8FA392]">
-                      {docPreviewSig.poaNumber} • {docPreviewSig.nameAr} ({docPreviewSig.companyNameAr})
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setDocPreviewSig(null)}
-                  className="min-h-[40px] min-w-[40px] flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-white/10"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              {/* Body */}
-              <div className="p-5 sm:p-6 overflow-y-auto space-y-4">
-                {docPreviewSig.poaAttachment?.dataUrl ? (
-                  <div className="space-y-4">
-                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#17231A] border border-slate-200 dark:border-[#243628] flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <FileText className="w-6 h-6 text-emerald-600" />
-                        <div>
-                          <strong className="text-xs font-bold text-slate-900 dark:text-[#F3EFE6] block">
-                            {docPreviewSig.poaAttachment.name}
-                          </strong>
-                          <span className="text-[11px] text-slate-500">
-                            الحجم: {formatAttachmentSize(docPreviewSig.poaAttachment.sizeBytes)} • النوع: {docPreviewSig.poaAttachment.mimeType}
-                          </span>
-                        </div>
-                      </div>
-
-                      <a
-                        href={docPreviewSig.poaAttachment.dataUrl}
-                        download={docPreviewSig.poaAttachment.name}
-                        className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 transition-colors"
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                        <span>تحميل الملف</span>
-                      </a>
-                    </div>
-
-                    {/* Image preview if image */}
-                    {docPreviewSig.poaAttachment.mimeType?.startsWith('image/') ? (
-                      <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-stone-800 max-h-[400px] flex items-center justify-center bg-slate-950">
-                        <img
-                          src={docPreviewSig.poaAttachment.dataUrl}
-                          alt="صورة التوكيل"
-                          className="max-h-[400px] object-contain"
-                        />
-                      </div>
-                    ) : (
-                      <div className="p-8 text-center rounded-xl bg-slate-50 dark:bg-[#17231A] border border-slate-200 dark:border-stone-800">
-                        <FileText className="w-12 h-12 text-slate-400 mx-auto mb-2" />
-                        <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                          مستند توكيل بصيغة PDF
-                        </p>
-                        <p className="text-[11px] text-slate-500 mb-3">
-                          يمكنك تحميل المستند مباشرة للاطلاع على الأختام وسندات التوثيق الرسمية
-                        </p>
-                        <a
-                          href={docPreviewSig.poaAttachment.dataUrl}
-                          download={docPreviewSig.poaAttachment.name}
-                          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 text-white font-bold text-xs"
-                        >
-                          <Download className="w-4 h-4" />
-                          <span>تنزيل نسخة PDF</span>
-                        </a>
-                      </div>
-                    )}
-                  </div>
-                ) : docPreviewSig.driveDocUrl ? (
-                  <div className="p-6 text-center space-y-4 rounded-xl bg-slate-50 dark:bg-[#17231A] border border-slate-200 dark:border-stone-800">
-                    <ExternalLink className="w-10 h-10 text-blue-500 mx-auto" />
-                    <div>
-                      <h4 className="text-sm font-bold text-slate-900 dark:text-[#F3EFE6] mb-1">
-                        رابط الأرشفة الإلكترونية (Google Drive)
-                      </h4>
-                      <p className="text-xs text-slate-500 font-mono break-all max-w-md mx-auto">
-                        {docPreviewSig.driveDocUrl}
-                      </p>
-                    </div>
-                    <a
-                      href={docPreviewSig.driveDocUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition-colors"
-                    >
-                      <span>فتح الملف في Google Drive</span>
-                      <ExternalLink className="w-4 h-4" />
-                    </a>
-                  </div>
-                ) : (
-                  <div className="py-12 text-center">
-                    <FileText className="w-12 h-12 text-slate-300 dark:text-stone-700 mx-auto mb-3" />
-                    <h4 className="text-sm font-bold text-slate-800 dark:text-[#F3EFE6] mb-1">
-                      لم يتم إرفاق ملف التوكيل بعد
-                    </h4>
-                    <p className="text-xs text-slate-500 dark:text-[#8FA392] max-w-sm mx-auto mb-4">
-                      يمكنك تعديل بيانات المفوض وإرفاق نسخة PDF أو صورة ضوئية للتوكيل الموثق.
-                    </p>
-                    <button
-                      onClick={() => {
-                        const target = docPreviewSig;
-                        setDocPreviewSig(null);
-                        handleOpenEdit(target);
-                      }}
-                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs"
-                    >
-                      <Pencil className="w-3.5 h-3.5" />
-                      <span>تعديل وإرفاق التوكيل الآن</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Footer */}
-              <div className="p-4 border-t border-slate-200 dark:border-[#243628] flex justify-end">
-                <button
-                  onClick={() => setDocPreviewSig(null)}
-                  className="min-h-[38px] px-5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-stone-800 text-slate-700 dark:text-slate-200 font-bold text-xs"
-                >
-                  إغلاق
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      {/* Modal 3: معاينة صورة التوكيل المؤرشف (Document Lightbox / Viewer with Live Blob URL) */}
+      <DocumentPreviewModal
+        isOpen={Boolean(docPreviewSig)}
+        onClose={() => setDocPreviewSig(null)}
+        title="صورة التوكيل الرسمي الموثق"
+        subtitle={
+          docPreviewSig
+            ? `${docPreviewSig.poaNumber} • ${docPreviewSig.nameAr} (${docPreviewSig.companyNameAr})`
+            : undefined
+        }
+        fileName={docPreviewSig?.poaAttachment?.name}
+        fileData={docPreviewSig?.poaAttachment?.dataUrl}
+        mimeType={docPreviewSig?.poaAttachment?.mimeType}
+        sizeBytes={docPreviewSig?.poaAttachment?.sizeBytes}
+        driveUrl={docPreviewSig?.driveDocUrl}
+        onEditAndAttach={
+          docPreviewSig
+            ? () => {
+                const target = docPreviewSig;
+                setDocPreviewSig(null);
+                handleOpenEdit(target);
+              }
+            : undefined
+        }
+      />
 
       {/* Modal 4: تأكيد إلغاء أو حذف التفويض (Delete / Revoke Confirmation) */}
       <AnimatePresence>
