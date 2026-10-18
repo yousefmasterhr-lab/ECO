@@ -12,7 +12,7 @@ interface CinematicWelcomeSplashProps {
 export const CinematicWelcomeSplash: React.FC<CinematicWelcomeSplashProps> = ({
   user,
   onComplete,
-  durationMs = 3800,
+  durationMs = 4000,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [progress, setProgress] = useState(0);
@@ -161,12 +161,13 @@ export const CinematicWelcomeSplash: React.FC<CinematicWelcomeSplashProps> = ({
 
   return (
     <motion.div
+      data-testid="cinematic-welcome-splash"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0, scale: 1.04, filter: 'blur(10px)' }}
       transition={{ duration: 0.45, ease: 'easeOut' }}
       dir="rtl"
-      className="fixed inset-0 !m-0 !top-0 !left-0 !right-0 !bottom-0 w-screen h-screen z-[99999] flex flex-col items-center justify-between p-4 sm:p-8 bg-[#040B08] text-[#F3EFE6] overflow-hidden select-none"
+      className="fixed inset-0 !m-0 !top-0 !left-0 !right-0 !bottom-0 w-screen h-screen z-[999999] flex flex-col items-center justify-between p-4 sm:p-8 bg-[#040B08] text-[#F3EFE6] overflow-hidden select-none"
     >
       {/* Dynamic Keyframes for 3D Gyroscopic Orbital Rings */}
       <style>{`
@@ -311,12 +312,13 @@ export const CinematicWelcomeSplash: React.FC<CinematicWelcomeSplashProps> = ({
 
         {/* Stage 2: User Full Name (Hero 3D Gold Typography) */}
         <motion.h1
+          data-testid="welcome-splash-username"
           initial={{ y: 25, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.45, duration: 0.6 }}
           className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-amber-100 via-amber-300 to-amber-500 drop-shadow-[0_4px_30px_rgba(245,158,11,0.5)] mb-4"
         >
-          {displayName}
+          مرحباً بك، {displayName}
         </motion.h1>
 
         {/* Stage 3: Job Role, Specialization & Department (3D Glassmorphic Pill) */}
@@ -352,13 +354,13 @@ export const CinematicWelcomeSplash: React.FC<CinematicWelcomeSplashProps> = ({
                 <div className="text-xs text-amber-400 font-bold flex items-center gap-1.5 justify-center sm:justify-start">
                   <span>المسمى الوظيفي والتخصص:</span>
                 </div>
-                <div className="text-sm sm:text-base font-black text-white">{displayRole}</div>
+                <div data-testid="welcome-splash-specialization" className="text-sm sm:text-base font-black text-white">{displayRole}</div>
               </div>
             </div>
 
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-stone-900/60 border border-stone-800 text-xs text-stone-300">
               <Award className="w-4 h-4 text-amber-400" />
-              <span>{displayDept}</span>
+              <span data-testid="welcome-splash-department">{displayDept}</span>
             </div>
           </div>
 
@@ -384,7 +386,7 @@ export const CinematicWelcomeSplash: React.FC<CinematicWelcomeSplashProps> = ({
             <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
             <span className="text-amber-300">{statusText}</span>
           </span>
-          <span className="font-mono text-amber-400 font-bold">{progress}%</span>
+          <span data-testid="welcome-splash-progress" className="font-mono text-amber-400 font-bold">{progress}%</span>
         </div>
 
         {/* Progress Track & Bar */}

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useAuth } from '../../context/AuthContext';
 import { Header } from './Header';
 import { Sidebar } from './Sidebar';
 import { SearchModal } from './SearchModal';
@@ -6,6 +7,12 @@ import { EmptyCanvas } from '../common/EmptyCanvas';
 import { PWAInstallBanner } from '../common/PWAInstallBanner';
 
 export const ShellLayout: React.FC = () => {
+  const { showWelcomeSplash } = useAuth();
+
+  // Bulletproof Lockout: Never paint dashboard elements while welcome splash is active
+  if (showWelcomeSplash) {
+    return null;
+  }
   return (
     <div className="h-screen w-screen overflow-hidden flex flex-col bg-[#FBF9F5] text-[#1A241C] dark:bg-[#0E1610] dark:text-[#F3EFE6] transition-colors duration-200">
       {/* Top Executive Navigation Bar (Fixed) */}

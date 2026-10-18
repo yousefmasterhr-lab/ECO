@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth, useNavigate } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { CinematicWelcomeSplash } from './CinematicWelcomeSplash';
 import {
   Mail,
   Lock,
@@ -17,7 +18,7 @@ interface LuxuryLoginPageProps {
 
 export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) => {
   const { isRtl, t } = useLanguage();
-  const { login, rememberMe, setRememberMe } = useAuth();
+  const { login, rememberMe, setRememberMe, showWelcomeSplash, user, completeWelcomeSplash } = useAuth();
   const navigate = useNavigate();
 
   const [emailOrUsername, setEmailOrUsername] = useState('admin@hrsup.com');
@@ -156,8 +157,7 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
         setTimeout(() => setShakeCard(false), 500);
       } else {
         setErrorMessage(null);
-        navigate('/');
-        if (onSuccess) onSuccess();
+        // Authentication committed: showWelcomeSplash is active and gates entry for 4 full seconds
       }
     } catch (err: any) {
       setErrorMessage(err?.message || 'اسم المستخدم أو كلمة المرور غير صحيحة');
@@ -167,6 +167,21 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
       setIsVerifying(false);
     }
   };
+
+  // Component-Level Guard: When welcome splash is active, render it exclusively
+  if (showWelcomeSplash) {
+    return (
+      <CinematicWelcomeSplash
+        user={user}
+        durationMs={4000}
+        onComplete={() => {
+          completeWelcomeSplash();
+          navigate('/');
+          if (onSuccess) onSuccess();
+        }}
+      />
+    );
+  }
 
   return (
     <div
@@ -309,3 +324,6 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
     </div>
   );
 };
+
+export const LoginView = LuxuryLoginPage;
+export default LuxuryLoginPage;

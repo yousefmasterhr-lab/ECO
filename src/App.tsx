@@ -45,6 +45,7 @@ const AppContent: React.FC = () => {
     user,
     showWelcomeSplash,
     completeWelcomeSplash,
+    navigate,
   } = useAuth();
 
   if (isLoading) {
@@ -60,25 +61,31 @@ const AppContent: React.FC = () => {
     );
   }
 
+  // LOCK 1: Exclusive 3D Cinematic Welcome Splash Screen Gate
+  // When active, render ONLY the full-screen 3D Welcome Splash.
+  // Neither the login page nor the dashboard/ShellLayout exists in the DOM.
+  if (showWelcomeSplash) {
+    return (
+      <AnimatePresence mode="wait">
+        <CinematicWelcomeSplash
+          key="welcome-splash"
+          user={user}
+          durationMs={4000}
+          onComplete={() => {
+            completeWelcomeSplash();
+            navigate('/');
+          }}
+        />
+      </AnimatePresence>
+    );
+  }
+
   // If user is not authenticated or explicitly navigates to /login
   if (!isAuthenticated || currentPath === '/login') {
     return <LuxuryLoginPage />;
   }
 
-  return (
-    <>
-      <AnimatePresence mode="wait">
-        {showWelcomeSplash && (
-          <CinematicWelcomeSplash
-            key="welcome-splash"
-            user={user}
-            onComplete={completeWelcomeSplash}
-          />
-        )}
-      </AnimatePresence>
-      <AuthenticatedApp />
-    </>
-  );
+  return <AuthenticatedApp />;
 };
 
 export const App: React.FC = () => {

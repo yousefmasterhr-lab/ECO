@@ -81,16 +81,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return '/';
   });
 
-  // Top-Level 3D Cinematic Post-Login Welcome Splash State
+  // Top-Level 3D Cinematic Post-Login Welcome Splash State (Two-Lock Persistent Flag)
   const [showWelcomeSplash, setShowWelcomeSplash] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
-      return sessionStorage.getItem('eco_show_welcome_splash') === 'true';
+      return (
+        localStorage.getItem('eco_pending_welcome_splash') === 'true' ||
+        sessionStorage.getItem('eco_show_welcome_splash') === 'true'
+      );
     }
     return false;
   });
 
   const completeWelcomeSplash = useCallback(() => {
     if (typeof window !== 'undefined') {
+      localStorage.removeItem('eco_pending_welcome_splash');
       sessionStorage.removeItem('eco_show_welcome_splash');
     }
     setShowWelcomeSplash(false);
@@ -431,6 +435,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setSessionToken(edgeRes.token, isRemember);
           }
 
+          // Activate 3D Cinematic Post-Login Welcome Splash Screen in both localStorage and sessionStorage
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('eco_pending_welcome_splash', 'true');
+            sessionStorage.setItem('eco_show_welcome_splash', 'true');
+          }
+          setShowWelcomeSplash(true);
+
           setIsLoading(false);
           return { success: true, user: authenticatedUser };
         } else if (edgeRes.error && !edgeRes.error.includes('خطأ في الاتصال') && !edgeRes.error.includes('fetch')) {
@@ -583,8 +594,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         status: 'SUCCESS',
       });
 
-      // Activate 3D Cinematic Post-Login Welcome Splash Screen
+      // Activate 3D Cinematic Post-Login Welcome Splash Screen in both localStorage and sessionStorage
       if (typeof window !== 'undefined') {
+        localStorage.setItem('eco_pending_welcome_splash', 'true');
         sessionStorage.setItem('eco_show_welcome_splash', 'true');
       }
       setShowWelcomeSplash(true);
@@ -609,6 +621,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
     clearSessionToken();
     if (typeof window !== 'undefined') {
+      localStorage.removeItem('eco_pending_welcome_splash');
       sessionStorage.removeItem('eco_show_welcome_splash');
     }
     setShowWelcomeSplash(false);

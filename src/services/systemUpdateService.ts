@@ -177,7 +177,10 @@ class SystemUpdateService {
 
     // Guard: Do not interrupt or clear state while fresh login 3D welcome splash is in progress
     try {
-      if (sessionStorage.getItem('eco_show_welcome_splash') === 'true') {
+      if (
+        sessionStorage.getItem('eco_show_welcome_splash') === 'true' ||
+        localStorage.getItem('eco_pending_welcome_splash') === 'true'
+      ) {
         return;
       }
     } catch {}
