@@ -14,7 +14,10 @@ import { UnauthorizedView } from './UnauthorizedView';
 import { useReception } from '../../context/ReceptionContext';
 import { useFinancial } from '../../context/FinancialContext';
 import { useHR } from '../../context/HRContext';
+import { useAuth } from '../../context/AuthContext';
 import { branchStorage } from '../modules/companies/branchStorage';
+import { licenseStorage } from '../modules/companies/licenseStorage';
+import { signatoryStorage } from '../modules/companies/signatoryStorage';
 import {
   ArrowUpRight,
   HardHat,
@@ -132,6 +135,7 @@ export const EmptyCanvas: React.FC = () => {
   const { activeVisitorsCount, todayScheduledCount, occupiedRoomsCount } = useReception();
   const { summary: finSummary, costCenters: finCostCenters } = useFinancial();
   const { stats: hrStats, employees } = useHR();
+  const { user, managedUsers } = useAuth();
 
   const [branchesCount, setBranchesCount] = useState<number>(() => {
     try {
@@ -141,13 +145,39 @@ export const EmptyCanvas: React.FC = () => {
     }
   });
 
+  const [licensesCount, setLicensesCount] = useState<number>(() => {
+    try {
+      return licenseStorage.getLicensesSync().length;
+    } catch {
+      return 0;
+    }
+  });
+
+  const [signatoriesCount, setSignatoriesCount] = useState<number>(() => {
+    try {
+      return signatoryStorage.getSignatoriesSync().length;
+    } catch {
+      return 0;
+    }
+  });
+
   useEffect(() => {
     branchStorage.getBranches().then(list => {
       if (list && Array.isArray(list)) setBranchesCount(list.length);
     }).catch(() => {});
+
+    licenseStorage.getLicenses().then(list => {
+      if (list && Array.isArray(list)) setLicensesCount(list.length);
+    }).catch(() => {});
+
+    signatoryStorage.getSignatories().then(list => {
+      if (list && Array.isArray(list)) setSignatoriesCount(list.length);
+    }).catch(() => {});
   }, []);
 
   const totalEmployeesCount = employees?.length ?? (hrStats?.totalEmployees ?? 0);
+  const usersCount = (managedUsers && managedUsers.length > 0) ? managedUsers.length : (user ? 1 : 0);
+  const rolesCount = new Set(managedUsers?.map(u => u.role) || (user?.role ? [user.role] : ['admin'])).size || 1;
 
   const [currentDateTime, setCurrentDateTime] = useState(() => new Date());
 
@@ -298,89 +328,89 @@ export const EmptyCanvas: React.FC = () => {
     switch (catId) {
       case 'executive':
         return [
-          { label: isRtl ? 'المخاطر' : 'Risks', value: isRtl ? 'صفر حرجة' : '0 Critical', color: 'text-emerald-600 dark:text-emerald-400 font-bold' },
-          { label: isRtl ? 'السيولة' : 'Liquidity', value: isRtl ? 'مستقرة' : 'Stable', color: 'text-amber-600 dark:text-[#EBB34D] font-bold' },
-          { label: isRtl ? 'الإنجاز' : 'Completion', value: '94%', color: 'text-emerald-600 dark:text-emerald-400 font-bold' },
+          { label: isRtl ? 'المخاطر' : 'Risks', value: isRtl ? '0 مخاطر' : '0 Risks', color: 'text-emerald-600 dark:text-emerald-400 font-bold' },
+          { label: isRtl ? 'المؤشرات' : 'KPIs', value: isRtl ? '0 مؤشرات' : '0 KPIs', color: 'text-amber-600 dark:text-[#EBB34D] font-bold' },
+          { label: isRtl ? 'حالة المنظومة' : 'Status', value: isRtl ? 'جاهز للتشغيل' : 'Ready', color: 'text-emerald-600 dark:text-emerald-400 font-bold' },
         ];
       case 'companies':
         return [
           { label: isRtl ? 'الشركات' : 'Entities', value: `${companies.length} ${isRtl ? 'مسجلة' : 'Total'}`, color: 'text-amber-600 dark:text-[#EBB34D] font-bold' },
           { label: isRtl ? 'الفروع' : 'Branches', value: `${branchesCount} ${isRtl ? 'فرع' : 'Sites'}`, color: 'text-slate-900 dark:text-white font-bold' },
-          { label: isRtl ? 'التراخيص' : 'Licenses', value: isRtl ? 'سارية' : 'Valid', color: 'text-emerald-600 dark:text-emerald-400 font-bold' },
+          { label: isRtl ? 'التراخيص' : 'Licenses', value: `${licensesCount} ${isRtl ? 'وثيقة' : 'Docs'}`, color: 'text-emerald-600 dark:text-emerald-400 font-bold' },
         ];
       case 'finance':
         return [
-          { label: isRtl ? 'الحسابات' : 'Accounts', value: `${finSummary?.totalAccounts || 497}`, color: 'text-amber-600 dark:text-[#EBB34D] font-bold' },
-          { label: isRtl ? 'مراكز التكلفة' : 'Cost Centers', value: `${finCostCenters.length || 45}`, color: 'text-slate-900 dark:text-white font-bold' },
+          { label: isRtl ? 'الحسابات' : 'Accounts', value: `${finSummary?.totalAccounts || 0}`, color: 'text-amber-600 dark:text-[#EBB34D] font-bold' },
+          { label: isRtl ? 'مراكز التكلفة' : 'Cost Centers', value: `${finCostCenters.length || 0}`, color: 'text-slate-900 dark:text-white font-bold' },
           { label: isRtl ? 'حالة الدليل' : 'GL State', value: isRtl ? 'متزن' : 'Balanced', color: 'text-emerald-600 dark:text-emerald-400 font-bold' },
         ];
       case 'hr':
         return [
           { label: isRtl ? 'قوة العمل' : 'Staff', value: `${totalEmployeesCount}`, color: 'text-amber-600 dark:text-[#EBB34D] font-bold' },
-          { label: isRtl ? 'الحضور' : 'Attendance', value: `${totalEmployeesCount > 0 ? (hrStats?.attendanceTodayRate ?? 100) : 0}%`, color: 'text-emerald-600 dark:text-emerald-400 font-bold' },
+          { label: isRtl ? 'الحضور' : 'Attendance', value: `${totalEmployeesCount > 0 ? (hrStats?.attendanceTodayRate ?? 0) : 0}%`, color: 'text-emerald-600 dark:text-emerald-400 font-bold' },
           { label: isRtl ? 'الإجازات' : 'Leaves', value: `${hrStats?.onLeaveCount || 0} ${isRtl ? 'طلبات' : 'Req'}`, color: 'text-slate-700 dark:text-[#8FA392] font-bold' },
         ];
       case 'engineering':
         return [
-          { label: isRtl ? 'المشاريع' : 'Projects', value: `8 ${isRtl ? 'نشطة' : 'Active'}`, color: 'text-emerald-600 dark:text-emerald-400 font-bold' },
-          { label: isRtl ? 'العقود' : 'Contracts', value: `14 ${isRtl ? 'عقد' : 'Total'}`, color: 'text-amber-600 dark:text-[#EBB34D] font-bold' },
-          { label: isRtl ? 'المستخلصات' : 'IPCs', value: `9 ${isRtl ? 'معتمدة' : 'IPCs'}`, color: 'text-slate-900 dark:text-white font-bold' },
+          { label: isRtl ? 'المشاريع' : 'Projects', value: isRtl ? '0 مشاريع' : '0 Projects', color: 'text-slate-900 dark:text-white font-bold' },
+          { label: isRtl ? 'العقود' : 'Contracts', value: isRtl ? '0 عقد' : '0 Contracts', color: 'text-amber-600 dark:text-[#EBB34D] font-bold' },
+          { label: isRtl ? 'المستخلصات' : 'IPCs', value: isRtl ? '0 مستخلصات' : '0 IPCs', color: 'text-slate-900 dark:text-white font-bold' },
         ];
       case 'cts':
         return [
-          { label: isRtl ? 'معاملات اليوم' : 'Today', value: `28`, color: 'text-amber-600 dark:text-[#EBB34D] font-bold' },
-          { label: isRtl ? 'الصادر' : 'Outgoing', value: `12`, color: 'text-slate-900 dark:text-white font-bold' },
-          { label: isRtl ? 'الوارد' : 'Incoming', value: `16`, color: 'text-emerald-600 dark:text-emerald-400 font-bold' },
+          { label: isRtl ? 'معاملات اليوم' : 'Today', value: '0', color: 'text-amber-600 dark:text-[#EBB34D] font-bold' },
+          { label: isRtl ? 'الصادر' : 'Outgoing', value: '0', color: 'text-slate-900 dark:text-white font-bold' },
+          { label: isRtl ? 'الوارد' : 'Incoming', value: '0', color: 'text-slate-900 dark:text-white font-bold' },
         ];
       case 'legal':
         return [
-          { label: isRtl ? 'العقود' : 'Contracts', value: `42 ${isRtl ? 'سارٍ' : 'Active'}`, color: 'text-emerald-600 dark:text-emerald-400 font-bold' },
-          { label: isRtl ? 'النزاعات' : 'Disputes', value: isRtl ? 'صفر' : '0 Cases', color: 'text-emerald-600 dark:text-emerald-400 font-bold' },
-          { label: isRtl ? 'التوكيلات' : 'POAs', value: `8`, color: 'text-amber-600 dark:text-[#EBB34D] font-bold' },
+          { label: isRtl ? 'العقود' : 'Contracts', value: isRtl ? '0 عقد' : '0 Contracts', color: 'text-slate-900 dark:text-white font-bold' },
+          { label: isRtl ? 'النزاعات' : 'Disputes', value: isRtl ? '0' : '0 Cases', color: 'text-emerald-600 dark:text-emerald-400 font-bold' },
+          { label: isRtl ? 'التوكيلات' : 'POAs', value: `${signatoriesCount} ${isRtl ? 'توكيل' : 'POAs'}`, color: 'text-amber-600 dark:text-[#EBB34D] font-bold' },
         ];
       case 'insurance':
         return [
           { label: isRtl ? 'المؤمن عليهم' : 'Insured', value: `${totalEmployeesCount}`, color: 'text-amber-600 dark:text-[#EBB34D] font-bold' },
-          { label: isRtl ? 'النماذج' : 'Forms', value: 'س1 / س2', color: 'text-emerald-600 dark:text-emerald-400 font-bold' },
-          { label: isRtl ? 'الامتثال' : 'Audit', value: '100%', color: 'text-emerald-600 dark:text-emerald-400 font-bold' },
+          { label: isRtl ? 'النماذج' : 'Forms', value: isRtl ? '0 استمارات' : '0 Forms', color: 'text-slate-900 dark:text-white font-bold' },
+          { label: isRtl ? 'الامتثال' : 'Audit', value: isRtl ? 'جاهز' : 'Compliant', color: 'text-emerald-600 dark:text-emerald-400 font-bold' },
         ];
       case 'ats':
         return [
-          { label: isRtl ? 'الشواغر' : 'Openings', value: `6 ${isRtl ? 'وظائف' : 'Roles'}`, color: 'text-amber-600 dark:text-[#EBB34D] font-bold' },
-          { label: isRtl ? 'المرشحون' : 'Applicants', value: `84`, color: 'text-slate-900 dark:text-white font-bold' },
-          { label: isRtl ? 'المقابلات' : 'Interviews', value: `4 ${isRtl ? 'اليوم' : 'Today'}`, color: 'text-emerald-600 dark:text-emerald-400 font-bold' },
+          { label: isRtl ? 'الشواغر' : 'Openings', value: isRtl ? '0 وظائف' : '0 Roles', color: 'text-amber-600 dark:text-[#EBB34D] font-bold' },
+          { label: isRtl ? 'المرشحون' : 'Applicants', value: '0', color: 'text-slate-900 dark:text-white font-bold' },
+          { label: isRtl ? 'المقابلات' : 'Interviews', value: isRtl ? '0 مقابلات' : '0 Interviews', color: 'text-slate-900 dark:text-white font-bold' },
         ];
       case 'decrees':
         return [
-          { label: isRtl ? 'القرارات' : 'Decrees', value: `18`, color: 'text-amber-600 dark:text-[#EBB34D] font-bold' },
-          { label: isRtl ? 'التعميمات' : 'Circulars', value: `7`, color: 'text-slate-900 dark:text-white font-bold' },
-          { label: isRtl ? 'اللوائح' : 'Policies', value: isRtl ? 'معتمدة' : 'Valid', color: 'text-emerald-600 dark:text-emerald-400 font-bold' },
+          { label: isRtl ? 'القرارات' : 'Decrees', value: isRtl ? '0 قرارات' : '0 Decrees', color: 'text-amber-600 dark:text-[#EBB34D] font-bold' },
+          { label: isRtl ? 'التعميمات' : 'Circulars', value: isRtl ? '0 تعميمات' : '0 Circulars', color: 'text-slate-900 dark:text-white font-bold' },
+          { label: isRtl ? 'اللوائح' : 'Policies', value: isRtl ? '0 لوائح' : '0 Policies', color: 'text-slate-900 dark:text-white font-bold' },
         ];
       case 'reception':
         return [
-          { label: isRtl ? 'بالمنشأة' : 'Guests', value: `${activeVisitorsCount}`, color: 'text-emerald-600 dark:text-emerald-400 font-bold' },
-          { label: isRtl ? 'المواعيد' : 'Visits', value: `${todayScheduledCount}`, color: 'text-amber-600 dark:text-[#EBB34D] font-bold' },
-          { label: isRtl ? 'القاعات' : 'Rooms', value: `${occupiedRoomsCount} ${isRtl ? 'مشغولة' : 'In Use'}`, color: 'text-slate-700 dark:text-[#8FA392] font-bold' },
+          { label: isRtl ? 'بالمنشأة' : 'Guests', value: `${activeVisitorsCount || 0} ${isRtl ? 'زوار' : 'Guests'}`, color: 'text-slate-900 dark:text-white font-bold' },
+          { label: isRtl ? 'المواعيد' : 'Visits', value: `${todayScheduledCount || 0} ${isRtl ? 'مواعيد' : 'Visits'}`, color: 'text-amber-600 dark:text-[#EBB34D] font-bold' },
+          { label: isRtl ? 'القاعات' : 'Rooms', value: `${occupiedRoomsCount || 0} ${isRtl ? 'قاعات' : 'Rooms'}`, color: 'text-slate-700 dark:text-[#8FA392] font-bold' },
         ];
       case 'settings':
         return [
-          { label: isRtl ? 'المستخدمون' : 'Users', value: `24`, color: 'text-amber-600 dark:text-[#EBB34D] font-bold' },
-          { label: isRtl ? 'الأدوار' : 'Roles', value: `6`, color: 'text-slate-900 dark:text-white font-bold' },
+          { label: isRtl ? 'المستخدمون' : 'Users', value: `${usersCount} ${isRtl ? 'مستخدم' : 'Users'}`, color: 'text-amber-600 dark:text-[#EBB34D] font-bold' },
+          { label: isRtl ? 'الأدوار' : 'Roles', value: `${rolesCount} ${isRtl ? 'أدوار' : 'Roles'}`, color: 'text-slate-900 dark:text-white font-bold' },
           { label: isRtl ? 'قواعد SQL' : 'SQL Fleet', value: isRtl ? 'متصلة' : 'Online', color: 'text-emerald-600 dark:text-emerald-400 font-bold' },
         ];
       default:
         return [
           { label: isRtl ? 'الحالة' : 'Status', value: isRtl ? 'نشط' : 'Active', color: 'text-emerald-600 dark:text-emerald-400 font-bold' },
-          { label: isRtl ? 'الخدمات' : 'Services', value: '5+', color: 'text-amber-600 dark:text-[#EBB34D] font-bold' },
+          { label: isRtl ? 'الخدمات' : 'Services', value: 'جاهز', color: 'text-amber-600 dark:text-[#EBB34D] font-bold' },
           { label: isRtl ? 'الربط' : 'Link', value: isRtl ? 'مباشر' : 'Live', color: 'text-slate-900 dark:text-white font-bold' },
         ];
     }
   };
 
-  // Executive Command Launchpad (بوابة الاستقبال والقيادة المركزية)
+  // Executive Command Launchpad
   return (
     <div className="w-full max-w-none space-y-7 animate-in fade-in duration-200">
-      {/* 1. Welcome & Time Header (مرحباً، م. أحمد مصطفى) */}
+      {/* 1. Welcome & Time Header */}
       <div className="relative overflow-hidden rounded-2xl border border-[#E0D9CB] dark:border-[#243628] bg-gradient-to-r from-[#F3EFE6] via-[#F3EFE6]/95 to-[#EAE4D7] dark:from-[#17231A] dark:via-[#17231A]/95 dark:to-[#131E15] p-5 sm:p-7 shadow-lg">
         {/* Subtle Ambient Luminescence Aura */}
         <div className="absolute -top-16 -end-16 w-64 h-64 bg-[#D99B26]/10 dark:bg-[#EBB34D]/10 rounded-full blur-3xl pointer-events-none" />
@@ -391,16 +421,16 @@ export const EmptyCanvas: React.FC = () => {
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-[#D99B26] dark:bg-[#EBB34D] animate-pulse" />
               <span className="text-[11px] font-bold tracking-wider uppercase text-[#D99B26] dark:text-[#EBB34D]">
-                {t('بوابة الاستقبال والقيادة المركزية', 'Executive Command Launchpad')}
+                {t('ECO — منظومة تشغيل وإدارة الشركات', 'ECO • ERP Company Operations')}
               </span>
             </div>
 
             <h1 className="text-2xl sm:text-3xl font-black text-[#1A241C] dark:text-[#F3EFE6] tracking-tight">
-              {isRtl ? `مرحباً، ${currentUser.nameAr}` : `Welcome, ${currentUser.nameEn}`}
+              {isRtl ? `مرحباً بك، ${currentUser.nameAr}` : `Welcome, ${currentUser.nameEn}`}
             </h1>
 
             <div className="text-xs sm:text-sm text-[#5C665E] dark:text-[#8FA392] leading-relaxed flex items-center gap-2 flex-wrap pt-0.5">
-              <span>{t('لوحة القيادة المركزية • اختر القسم أو المنظومة لبدء العمل الميداني والمالي', 'Central Command Launchpad • Select a department to begin operations')}</span>
+              <span>{t('منصة العمل والتشغيل الموحدة لإدارة الشركات والعمليات المؤسسية', 'Unified operational platform for company operations')}</span>
               <span className="text-[#E0D9CB] dark:text-[#243628] hidden sm:inline">•</span>
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#FBF9F5]/90 dark:bg-[#0E1610]/80 border border-[#E0D9CB] dark:border-[#243628] text-[11px] font-medium text-[#5C665E] dark:text-[#8FA392]">
                 <Clock className="w-3 h-3 text-[#D99B26] dark:text-[#EBB34D]" />

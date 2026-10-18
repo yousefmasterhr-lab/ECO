@@ -101,9 +101,12 @@ export const Header: React.FC = () => {
                 <path d="M2 7h20" />
               </svg>
             </div>
-            <div className="hidden lg:block">
-              <span className="font-extrabold text-sm tracking-tight text-[#1A241C] dark:text-[#F3EFE6]">
-                ECO <span className="text-[#D99B26] dark:text-[#EBB34D] font-black">ERP</span>
+            <div className="hidden lg:block text-start leading-none">
+              <span className="font-black text-sm tracking-tight text-[#1A241C] dark:text-[#F3EFE6]">
+                ECO <span className="text-[#D99B26] dark:text-[#EBB34D] font-black">•</span>
+              </span>
+              <span className="text-[11px] text-[#5C665E] dark:text-[#8FA392] font-bold ms-1">
+                {isRtl ? 'منظومة تشغيل وإدارة الشركات' : 'Company Operations'}
               </span>
             </div>
           </div>
@@ -412,11 +415,11 @@ export const Header: React.FC = () => {
                 {(user?.nameAr || currentUser.nameAr).charAt(0)}
               </div>
               <div className="hidden sm:block text-start leading-tight">
-                <div className="text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6] truncate max-w-[130px]">
+                <div className="text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6] truncate max-w-[200px]">
                   {isRtl ? (user?.nameAr || currentUser.nameAr) : (user?.nameEn || currentUser.nameEn)}
                 </div>
                 <div className="flex items-center gap-1 text-[10px] font-semibold text-[#D99B26] dark:text-[#EBB34D]">
-                  <span className="truncate max-w-[120px]">
+                  <span className="truncate max-w-[240px]">
                     {user?.jobTitleAr || currentUser.jobTitleAr || 'مدير النظام العام'}
                   </span>
                 </div>

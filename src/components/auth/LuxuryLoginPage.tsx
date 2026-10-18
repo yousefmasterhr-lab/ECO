@@ -216,7 +216,7 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
               <Building2 className="w-7 h-7 text-amber-400" />
             </div>
             <h2 className="text-2xl font-black text-slate-100 text-center tracking-tight">شركة ترابط للمقاولات والتجارة</h2>
-            <p className="text-xs font-semibold text-amber-400/90 text-center mt-1">منظومة إدارة الموارد المؤسسية الذكية ECO</p>
+            <p className="text-xs font-bold text-amber-400/90 text-center mt-1 tracking-wide">ECO — منظومة تشغيل وإدارة الشركات</p>
           </div>
 
           {/* System Update Notification Banner */}

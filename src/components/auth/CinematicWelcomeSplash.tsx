@@ -263,9 +263,9 @@ export const CinematicWelcomeSplash: React.FC<CinematicWelcomeSplashProps> = ({
           </div>
           <div className="flex flex-col text-right">
             <span className="text-sm font-black tracking-wide text-amber-400">
-              منظومة ECO ERP الذكية
+              ECO — منظومة تشغيل وإدارة الشركات
             </span>
-            <span className="text-[11px] text-stone-400 font-medium">بوابة القيادة المركزية والتحقق السحابي</span>
+            <span className="text-[11px] text-stone-400 font-medium font-mono">ERP Company Operations</span>
           </div>
         </div>
 
@@ -344,16 +344,16 @@ export const CinematicWelcomeSplash: React.FC<CinematicWelcomeSplashProps> = ({
           className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs sm:text-sm font-semibold mb-3.5 backdrop-blur-md shadow-inner"
         >
           <Sparkles className="w-4 h-4 text-amber-400 animate-spin-slow shrink-0" />
-          <span>{timeGreeting} • بوابة القيادة المركزية الموحدة • {formattedArabicDate}</span>
+          <span>{timeGreeting} • {formattedArabicDate}</span>
         </motion.div>
 
-        {/* Stage 2: User Full Name (Hero 3D Gold Typography with Full Arabic Descender Breathing Room) */}
+        {/* Stage 2: User Full Name (Hero 3D Gold Typography - Solid High Luminance No Clipping) */}
         <motion.h1
           data-testid="welcome-splash-username"
           initial={{ y: 25, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.45, duration: 0.6 }}
-          className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-wide leading-[1.45] py-3 px-2 overflow-visible text-transparent bg-clip-text bg-gradient-to-r from-amber-100 via-amber-300 to-amber-500 drop-shadow-[0_4px_30px_rgba(245,158,11,0.5)] mb-4"
+          className="text-4xl md:text-5xl lg:text-6xl font-black text-amber-400 drop-shadow-[0_4px_24px_rgba(245,158,11,0.4)] leading-[1.6] py-3 px-4 overflow-visible mb-4"
         >
           مرحباً بك، {displayName}
         </motion.h1>

@@ -58,7 +58,7 @@ export const Sidebar: React.FC = () => {
           {!isCollapsed && (
             <div className="flex-1 text-start min-w-0">
               <span className="text-xs tracking-tight block truncate font-bold">
-                {t('لوحة التحكم المركزية', 'Central Overview')}
+                {t('الرئيسية (بوابة الأقسام)', 'Main (Departments Portal)')}
               </span>
             </div>
           )}
@@ -125,7 +125,7 @@ export const Sidebar: React.FC = () => {
             <div className="px-3 py-1.5 rounded-xl bg-[#F3EFE6] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] flex items-center justify-between text-[10px] text-[#5C665E] dark:text-[#8FA392] font-medium">
               <span className="flex items-center gap-1.5">
                 <Sparkles className="w-3 h-3 text-[#D99B26] dark:text-[#EBB34D]" />
-                <span>ECO Enterprise Shell</span>
+                <span className="font-bold">ECO • Company Operations</span>
               </span>
               <span className="px-1.5 py-0.5 bg-[#D99B26]/15 text-[#D99B26] dark:text-[#EBB34D] rounded-sm font-semibold text-[9px]">
                 {t('متصل', 'ACTIVE')}
@@ -185,9 +185,9 @@ export const Sidebar: React.FC = () => {
                   </div>
                   <div>
                     <h3 className="text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6]">
-                      {t('أقسام المنظومة الموحدة', 'ERP Portal Modules')}
+                      {t('ECO — منظومة تشغيل وإدارة الشركات', 'ECO • ERP Company Operations')}
                     </h3>
-                    <span className="text-[10px] text-[#5C665E] dark:text-[#8FA392]">{t('القائمة الرئيسية', 'Main Navigation')}</span>
+                    <span className="text-[10px] text-[#5C665E] dark:text-[#8FA392]">{t('الرئيسية (بوابة الأقسام)', 'Departments Portal')}</span>
                   </div>
                 </div>
                 <button
