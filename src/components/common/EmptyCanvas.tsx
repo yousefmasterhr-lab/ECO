@@ -14,6 +14,7 @@ import { UnauthorizedView } from './UnauthorizedView';
 import { useReception } from '../../context/ReceptionContext';
 import { useFinancial } from '../../context/FinancialContext';
 import { useHR } from '../../context/HRContext';
+import { branchStorage } from '../modules/companies/branchStorage';
 import {
   ArrowUpRight,
   HardHat,
@@ -130,7 +131,23 @@ export const EmptyCanvas: React.FC = () => {
   const { categories, activeCategoryId, activeSubItemId, selectItem, currentUser } = useNavigation();
   const { activeVisitorsCount, todayScheduledCount, occupiedRoomsCount } = useReception();
   const { summary: finSummary, costCenters: finCostCenters } = useFinancial();
-  const { stats: hrStats } = useHR();
+  const { stats: hrStats, employees } = useHR();
+
+  const [branchesCount, setBranchesCount] = useState<number>(() => {
+    try {
+      return branchStorage.getBranchesSync().length;
+    } catch {
+      return 0;
+    }
+  });
+
+  useEffect(() => {
+    branchStorage.getBranches().then(list => {
+      if (list && Array.isArray(list)) setBranchesCount(list.length);
+    }).catch(() => {});
+  }, []);
+
+  const totalEmployeesCount = employees?.length ?? (hrStats?.totalEmployees ?? 0);
 
   const [currentDateTime, setCurrentDateTime] = useState(() => new Date());
 
@@ -281,81 +298,81 @@ export const EmptyCanvas: React.FC = () => {
     switch (catId) {
       case 'executive':
         return [
-          { label: isRtl ? 'المخاطر' : 'Risks', value: isRtl ? 'صفر حرجة' : '0 Critical', color: 'text-emerald-400' },
-          { label: isRtl ? 'السيولة' : 'Liquidity', value: isRtl ? 'مستقرة' : 'Stable', color: 'text-[#EBB34D]' },
-          { label: isRtl ? 'الإنجاز' : 'Completion', value: '94%', color: 'text-emerald-400' },
+          { label: isRtl ? 'المخاطر' : 'Risks', value: isRtl ? 'صفر حرجة' : '0 Critical', color: 'text-emerald-600 dark:text-emerald-400 font-bold' },
+          { label: isRtl ? 'السيولة' : 'Liquidity', value: isRtl ? 'مستقرة' : 'Stable', color: 'text-amber-600 dark:text-[#EBB34D] font-bold' },
+          { label: isRtl ? 'الإنجاز' : 'Completion', value: '94%', color: 'text-emerald-600 dark:text-emerald-400 font-bold' },
         ];
       case 'companies':
         return [
-          { label: isRtl ? 'الشركات' : 'Entities', value: `${companies.length || 4} ${isRtl ? 'مسجلة' : 'Total'}`, color: 'text-[#EBB34D]' },
-          { label: isRtl ? 'الفروع' : 'Branches', value: `12 ${isRtl ? 'فرع' : 'Sites'}`, color: 'text-[#F3EFE6]' },
-          { label: isRtl ? 'التراخيص' : 'Licenses', value: isRtl ? 'سارية' : 'Valid', color: 'text-emerald-400' },
+          { label: isRtl ? 'الشركات' : 'Entities', value: `${companies.length} ${isRtl ? 'مسجلة' : 'Total'}`, color: 'text-amber-600 dark:text-[#EBB34D] font-bold' },
+          { label: isRtl ? 'الفروع' : 'Branches', value: `${branchesCount} ${isRtl ? 'فرع' : 'Sites'}`, color: 'text-slate-900 dark:text-white font-bold' },
+          { label: isRtl ? 'التراخيص' : 'Licenses', value: isRtl ? 'سارية' : 'Valid', color: 'text-emerald-600 dark:text-emerald-400 font-bold' },
         ];
       case 'finance':
         return [
-          { label: isRtl ? 'الحسابات' : 'Accounts', value: `${finSummary?.totalAccounts || 497}`, color: 'text-[#EBB34D]' },
-          { label: isRtl ? 'مراكز التكلفة' : 'Cost Centers', value: `${finCostCenters.length || 45}`, color: 'text-[#F3EFE6]' },
-          { label: isRtl ? 'حالة الدليل' : 'GL State', value: isRtl ? 'متزن' : 'Balanced', color: 'text-emerald-400' },
+          { label: isRtl ? 'الحسابات' : 'Accounts', value: `${finSummary?.totalAccounts || 497}`, color: 'text-amber-600 dark:text-[#EBB34D] font-bold' },
+          { label: isRtl ? 'مراكز التكلفة' : 'Cost Centers', value: `${finCostCenters.length || 45}`, color: 'text-slate-900 dark:text-white font-bold' },
+          { label: isRtl ? 'حالة الدليل' : 'GL State', value: isRtl ? 'متزن' : 'Balanced', color: 'text-emerald-600 dark:text-emerald-400 font-bold' },
         ];
       case 'hr':
         return [
-          { label: isRtl ? 'قوة العمل' : 'Staff', value: `${hrStats?.totalEmployees || 1343}`, color: 'text-[#EBB34D]' },
-          { label: isRtl ? 'الحضور' : 'Attendance', value: `${hrStats?.attendanceTodayRate || 100}%`, color: 'text-emerald-400' },
-          { label: isRtl ? 'الإجازات' : 'Leaves', value: `${hrStats?.onLeaveCount || 5} ${isRtl ? 'طلبات' : 'Req'}`, color: 'text-[#8FA392]' },
+          { label: isRtl ? 'قوة العمل' : 'Staff', value: `${totalEmployeesCount}`, color: 'text-amber-600 dark:text-[#EBB34D] font-bold' },
+          { label: isRtl ? 'الحضور' : 'Attendance', value: `${totalEmployeesCount > 0 ? (hrStats?.attendanceTodayRate ?? 100) : 0}%`, color: 'text-emerald-600 dark:text-emerald-400 font-bold' },
+          { label: isRtl ? 'الإجازات' : 'Leaves', value: `${hrStats?.onLeaveCount || 0} ${isRtl ? 'طلبات' : 'Req'}`, color: 'text-slate-700 dark:text-[#8FA392] font-bold' },
         ];
       case 'engineering':
         return [
-          { label: isRtl ? 'المشاريع' : 'Projects', value: `8 ${isRtl ? 'نشطة' : 'Active'}`, color: 'text-emerald-400' },
-          { label: isRtl ? 'العقود' : 'Contracts', value: `14 ${isRtl ? 'عقد' : 'Total'}`, color: 'text-[#EBB34D]' },
-          { label: isRtl ? 'المستخلصات' : 'IPCs', value: `9 ${isRtl ? 'معتمدة' : 'IPCs'}`, color: 'text-[#F3EFE6]' },
+          { label: isRtl ? 'المشاريع' : 'Projects', value: `8 ${isRtl ? 'نشطة' : 'Active'}`, color: 'text-emerald-600 dark:text-emerald-400 font-bold' },
+          { label: isRtl ? 'العقود' : 'Contracts', value: `14 ${isRtl ? 'عقد' : 'Total'}`, color: 'text-amber-600 dark:text-[#EBB34D] font-bold' },
+          { label: isRtl ? 'المستخلصات' : 'IPCs', value: `9 ${isRtl ? 'معتمدة' : 'IPCs'}`, color: 'text-slate-900 dark:text-white font-bold' },
         ];
       case 'cts':
         return [
-          { label: isRtl ? 'معاملات اليوم' : 'Today', value: `28`, color: 'text-[#EBB34D]' },
-          { label: isRtl ? 'الصادر' : 'Outgoing', value: `12`, color: 'text-[#F3EFE6]' },
-          { label: isRtl ? 'الوارد' : 'Incoming', value: `16`, color: 'text-emerald-400' },
+          { label: isRtl ? 'معاملات اليوم' : 'Today', value: `28`, color: 'text-amber-600 dark:text-[#EBB34D] font-bold' },
+          { label: isRtl ? 'الصادر' : 'Outgoing', value: `12`, color: 'text-slate-900 dark:text-white font-bold' },
+          { label: isRtl ? 'الوارد' : 'Incoming', value: `16`, color: 'text-emerald-600 dark:text-emerald-400 font-bold' },
         ];
       case 'legal':
         return [
-          { label: isRtl ? 'العقود' : 'Contracts', value: `42 ${isRtl ? 'سارٍ' : 'Active'}`, color: 'text-emerald-400' },
-          { label: isRtl ? 'النزاعات' : 'Disputes', value: isRtl ? 'صفر' : '0 Cases', color: 'text-emerald-400' },
-          { label: isRtl ? 'التوكيلات' : 'POAs', value: `8`, color: 'text-[#EBB34D]' },
+          { label: isRtl ? 'العقود' : 'Contracts', value: `42 ${isRtl ? 'سارٍ' : 'Active'}`, color: 'text-emerald-600 dark:text-emerald-400 font-bold' },
+          { label: isRtl ? 'النزاعات' : 'Disputes', value: isRtl ? 'صفر' : '0 Cases', color: 'text-emerald-600 dark:text-emerald-400 font-bold' },
+          { label: isRtl ? 'التوكيلات' : 'POAs', value: `8`, color: 'text-amber-600 dark:text-[#EBB34D] font-bold' },
         ];
       case 'insurance':
         return [
-          { label: isRtl ? 'المؤمن عليهم' : 'Insured', value: `${hrStats?.totalEmployees || 1343}`, color: 'text-[#EBB34D]' },
-          { label: isRtl ? 'النماذج' : 'Forms', value: 'س1 / س2', color: 'text-emerald-400' },
-          { label: isRtl ? 'الامتثال' : 'Audit', value: '100%', color: 'text-emerald-400' },
+          { label: isRtl ? 'المؤمن عليهم' : 'Insured', value: `${totalEmployeesCount}`, color: 'text-amber-600 dark:text-[#EBB34D] font-bold' },
+          { label: isRtl ? 'النماذج' : 'Forms', value: 'س1 / س2', color: 'text-emerald-600 dark:text-emerald-400 font-bold' },
+          { label: isRtl ? 'الامتثال' : 'Audit', value: '100%', color: 'text-emerald-600 dark:text-emerald-400 font-bold' },
         ];
       case 'ats':
         return [
-          { label: isRtl ? 'الشواغر' : 'Openings', value: `6 ${isRtl ? 'وظائف' : 'Roles'}`, color: 'text-[#EBB34D]' },
-          { label: isRtl ? 'المرشحون' : 'Applicants', value: `84`, color: 'text-[#F3EFE6]' },
-          { label: isRtl ? 'المقابلات' : 'Interviews', value: `4 ${isRtl ? 'اليوم' : 'Today'}`, color: 'text-emerald-400' },
+          { label: isRtl ? 'الشواغر' : 'Openings', value: `6 ${isRtl ? 'وظائف' : 'Roles'}`, color: 'text-amber-600 dark:text-[#EBB34D] font-bold' },
+          { label: isRtl ? 'المرشحون' : 'Applicants', value: `84`, color: 'text-slate-900 dark:text-white font-bold' },
+          { label: isRtl ? 'المقابلات' : 'Interviews', value: `4 ${isRtl ? 'اليوم' : 'Today'}`, color: 'text-emerald-600 dark:text-emerald-400 font-bold' },
         ];
       case 'decrees':
         return [
-          { label: isRtl ? 'القرارات' : 'Decrees', value: `18`, color: 'text-[#EBB34D]' },
-          { label: isRtl ? 'التعميمات' : 'Circulars', value: `7`, color: 'text-[#F3EFE6]' },
-          { label: isRtl ? 'اللوائح' : 'Policies', value: isRtl ? 'معتمدة' : 'Valid', color: 'text-emerald-400' },
+          { label: isRtl ? 'القرارات' : 'Decrees', value: `18`, color: 'text-amber-600 dark:text-[#EBB34D] font-bold' },
+          { label: isRtl ? 'التعميمات' : 'Circulars', value: `7`, color: 'text-slate-900 dark:text-white font-bold' },
+          { label: isRtl ? 'اللوائح' : 'Policies', value: isRtl ? 'معتمدة' : 'Valid', color: 'text-emerald-600 dark:text-emerald-400 font-bold' },
         ];
       case 'reception':
         return [
-          { label: isRtl ? 'بالمنشأة' : 'Guests', value: `${activeVisitorsCount}`, color: 'text-emerald-400' },
-          { label: isRtl ? 'المواعيد' : 'Visits', value: `${todayScheduledCount}`, color: 'text-[#EBB34D]' },
-          { label: isRtl ? 'القاعات' : 'Rooms', value: `${occupiedRoomsCount} ${isRtl ? 'مشغولة' : 'In Use'}`, color: 'text-[#8FA392]' },
+          { label: isRtl ? 'بالمنشأة' : 'Guests', value: `${activeVisitorsCount}`, color: 'text-emerald-600 dark:text-emerald-400 font-bold' },
+          { label: isRtl ? 'المواعيد' : 'Visits', value: `${todayScheduledCount}`, color: 'text-amber-600 dark:text-[#EBB34D] font-bold' },
+          { label: isRtl ? 'القاعات' : 'Rooms', value: `${occupiedRoomsCount} ${isRtl ? 'مشغولة' : 'In Use'}`, color: 'text-slate-700 dark:text-[#8FA392] font-bold' },
         ];
       case 'settings':
         return [
-          { label: isRtl ? 'المستخدمون' : 'Users', value: `24`, color: 'text-[#EBB34D]' },
-          { label: isRtl ? 'الأدوار' : 'Roles', value: `6`, color: 'text-[#F3EFE6]' },
-          { label: isRtl ? 'قواعد SQL' : 'SQL Fleet', value: isRtl ? 'متصلة' : 'Online', color: 'text-emerald-400' },
+          { label: isRtl ? 'المستخدمون' : 'Users', value: `24`, color: 'text-amber-600 dark:text-[#EBB34D] font-bold' },
+          { label: isRtl ? 'الأدوار' : 'Roles', value: `6`, color: 'text-slate-900 dark:text-white font-bold' },
+          { label: isRtl ? 'قواعد SQL' : 'SQL Fleet', value: isRtl ? 'متصلة' : 'Online', color: 'text-emerald-600 dark:text-emerald-400 font-bold' },
         ];
       default:
         return [
-          { label: isRtl ? 'الحالة' : 'Status', value: isRtl ? 'نشط' : 'Active', color: 'text-emerald-400' },
-          { label: isRtl ? 'الخدمات' : 'Services', value: '5+', color: 'text-[#EBB34D]' },
-          { label: isRtl ? 'الربط' : 'Link', value: isRtl ? 'مباشر' : 'Live', color: 'text-[#F3EFE6]' },
+          { label: isRtl ? 'الحالة' : 'Status', value: isRtl ? 'نشط' : 'Active', color: 'text-emerald-600 dark:text-emerald-400 font-bold' },
+          { label: isRtl ? 'الخدمات' : 'Services', value: '5+', color: 'text-amber-600 dark:text-[#EBB34D] font-bold' },
+          { label: isRtl ? 'الربط' : 'Link', value: isRtl ? 'مباشر' : 'Live', color: 'text-slate-900 dark:text-white font-bold' },
         ];
     }
   };
