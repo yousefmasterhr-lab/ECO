@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigation } from '../../context/NavigationContext';
+import { useNavigation, DEPARTMENT_CATEGORIES } from '../../context/NavigationContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTenant } from '../../context/TenantContext';
 import { CompaniesModule } from '../modules/companies/CompaniesModule';
@@ -136,6 +136,10 @@ export const EmptyCanvas: React.FC = () => {
   const { summary: finSummary, costCenters: finCostCenters } = useFinancial();
   const { stats: hrStats, employees } = useHR();
   const { user, managedUsers } = useAuth();
+
+  const displayCategories = useMemo(() => {
+    return categories && categories.length > 0 ? categories : DEPARTMENT_CATEGORIES;
+  }, [categories]);
 
   const [branchesCount, setBranchesCount] = useState<number>(() => {
     try {
@@ -421,7 +425,7 @@ export const EmptyCanvas: React.FC = () => {
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-[#D99B26] dark:bg-[#EBB34D] animate-pulse" />
               <span className="text-[11px] font-bold tracking-wider uppercase text-[#D99B26] dark:text-[#EBB34D]">
-                {t('ECO — منظومة تشغيل وإدارة الشركات', 'ECO • ERP Company Operations')}
+                ECO • ERP Company Operations
               </span>
             </div>
 
@@ -429,9 +433,7 @@ export const EmptyCanvas: React.FC = () => {
               {isRtl ? `مرحباً بك، ${currentUser.nameAr}` : `Welcome, ${currentUser.nameEn}`}
             </h1>
 
-            <div className="text-xs sm:text-sm text-[#5C665E] dark:text-[#8FA392] leading-relaxed flex items-center gap-2 flex-wrap pt-0.5">
-              <span>{t('منصة العمل والتشغيل الموحدة لإدارة الشركات والعمليات المؤسسية', 'Unified operational platform for company operations')}</span>
-              <span className="text-[#E0D9CB] dark:text-[#243628] hidden sm:inline">•</span>
+            <div className="pt-0.5">
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#FBF9F5]/90 dark:bg-[#0E1610]/80 border border-[#E0D9CB] dark:border-[#243628] text-[11px] font-medium text-[#5C665E] dark:text-[#8FA392]">
                 <Clock className="w-3 h-3 text-[#D99B26] dark:text-[#EBB34D]" />
                 <span>{formattedDate} • {formattedTime}</span>
@@ -468,14 +470,11 @@ export const EmptyCanvas: React.FC = () => {
             <h2 className="text-sm font-bold text-[#1A241C] dark:text-[#F3EFE6] tracking-tight">
               {t('منظومات وأقسام المنشأة', 'Enterprise Core Modules')}
             </h2>
-            <p className="text-[11px] text-[#5C665E] dark:text-[#8FA392]">
-              {t('منصات العمل المتكاملة والمربوطة بالدليل المحاسبي ومراكز التكلفة', 'Integrated operational suites linked to the central GL & cost centers')}
-            </p>
           </div>
         </div>
 
         <span className="px-3 py-1 rounded-full bg-[#F3EFE6] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] text-xs font-bold font-mono text-[#D99B26] dark:text-[#EBB34D] shadow-2xs">
-          {categories.length} {t('منظومات متصلة', 'Connected Suites')}
+          {displayCategories.length} {t('منظومات متصلة', 'Connected Suites')}
         </span>
       </div>
 
@@ -486,7 +485,7 @@ export const EmptyCanvas: React.FC = () => {
         animate="show"
         className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 w-full max-w-none"
       >
-        {categories.map(cat => {
+        {displayCategories.map(cat => {
           const Icon = ICON_MAP[cat.iconName] || CircleDot;
           const title = isRtl ? cat.titleAr : cat.titleEn;
           const badge = isRtl ? cat.badgeAr : cat.badgeEn;

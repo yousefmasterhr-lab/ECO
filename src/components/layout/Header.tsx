@@ -106,7 +106,7 @@ export const Header: React.FC = () => {
                 ECO <span className="text-[#D99B26] dark:text-[#EBB34D] font-black">•</span>
               </span>
               <span className="text-[11px] text-[#5C665E] dark:text-[#8FA392] font-bold ms-1">
-                {isRtl ? 'منظومة تشغيل وإدارة الشركات' : 'Company Operations'}
+                ERP Company Operations
               </span>
             </div>
           </div>
@@ -419,8 +419,10 @@ export const Header: React.FC = () => {
                   {isRtl ? (user?.nameAr || currentUser.nameAr) : (user?.nameEn || currentUser.nameEn)}
                 </div>
                 <div className="flex items-center gap-1 text-[10px] font-semibold text-[#D99B26] dark:text-[#EBB34D]">
-                  <span className="truncate max-w-[240px]">
-                    {user?.jobTitleAr || currentUser.jobTitleAr || 'مدير النظام العام'}
+                  <span className="truncate max-w-[240px]" title={user?.jobTitleAr || currentUser.jobTitleAr || 'مدير النظام العام'}>
+                    {user?.jobTitleAr?.includes('/')
+                      ? user.jobTitleAr.split('/')[0].trim()
+                      : (user?.jobTitleAr || (currentUser.jobTitleAr?.includes('/') ? currentUser.jobTitleAr.split('/')[0].trim() : 'مدير النظام العام'))}
                   </span>
                 </div>
               </div>

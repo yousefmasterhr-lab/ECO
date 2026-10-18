@@ -263,9 +263,8 @@ export const CinematicWelcomeSplash: React.FC<CinematicWelcomeSplashProps> = ({
           </div>
           <div className="flex flex-col text-right">
             <span className="text-sm font-black tracking-wide text-amber-400">
-              ECO — منظومة تشغيل وإدارة الشركات
+              ECO • ERP Company Operations
             </span>
-            <span className="text-[11px] text-stone-400 font-medium font-mono">ERP Company Operations</span>
           </div>
         </div>
 
