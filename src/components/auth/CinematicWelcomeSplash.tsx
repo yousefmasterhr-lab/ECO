@@ -5,6 +5,8 @@ import { AuthUser } from '../../types/auth';
 import { TypewriterText } from './TypewriterText';
 import { EcoOfficialLogo } from '../common/EcoOfficialLogo';
 
+import { companyStorage } from '../modules/companies/companyStorage';
+
 interface CinematicWelcomeSplashProps {
   user: AuthUser | null;
   onComplete: () => void;
@@ -21,11 +23,37 @@ export const CinematicWelcomeSplash: React.FC<CinematicWelcomeSplashProps> = ({
   const [statusText, setStatusText] = useState('جاري تهيئة بيئة العمل ثلاثية الأبعاد وتحميل صلاحيات التخصص...');
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
 
-  // User display attributes with robust fallbacks
-  const displayName = user?.nameAr || user?.username || 'يوسف حجازي';
-  const displayRole = user?.jobTitleAr || user?.roleLabelAr || 'مدير النظام العام / رئيس مجلس الإدارة';
-  const displayDept = user?.departmentAr || 'الإدارة العليا';
-  const companyContext = 'شركة ترابط للمقاولات والتجارة';
+  // User display attributes reflecting exact logged-in user database record
+  const displayName = user?.nameAr || (user as any)?.fullName || user?.username || 'المستخدم المصرح به';
+  const displayRole = user?.jobTitleAr || (user as any)?.job_title || user?.roleLabelAr || 'إدارة الموارد البشرية';
+  const displayDept = user?.departmentAr || (user as any)?.department || 'إدارة الموارد البشرية';
+
+  // Dynamic company context resolution based on user.allowedCompanyIds
+  const companyContext = React.useMemo(() => {
+    if (!user) return 'مجموعة الشركات المركزية';
+    const allowed = user.allowedCompanyIds;
+    if (!allowed || allowed.length === 0 || allowed.includes('all')) {
+      return 'مجموعة الشركات المركزية (صلاحيات شاملة)';
+    }
+
+    try {
+      const allCompanies = companyStorage.getCompaniesSync();
+      const matched = allCompanies.filter(c =>
+        allowed.includes(c.id) ||
+        allowed.includes(c.crNumber || '') ||
+        allowed.some(a => c.id.toLowerCase().includes(a.toLowerCase()) || c.nameAr.includes(a))
+      );
+      if (matched.length === 1) {
+        return matched[0].nameAr;
+      } else if (matched.length > 1) {
+        return `${matched[0].nameAr} (+${matched.length - 1} شركات)`;
+      }
+    } catch {
+      // Fallback
+    }
+
+    return allowed[0] || 'شركة ترابط للاستثمارات والمشروعات';
+  }, [user]);
 
   // Dynamic time-aware greeting
   const currentHour = new Date().getHours();

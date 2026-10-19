@@ -540,6 +540,20 @@
 4. **حلقات التركيز الكهرمانية لمدخلات نصوص ورسائل التحديث:**
    - تطبيق `focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500` على كافة حقول النصوص والدقائق التقديرية.
 
+### 8.21 معمارية إنفاذ الصلاحيات الحية وعزل الشركات المتعددة (Dynamic RBAC & Multi-Company Security Architecture)
+1. **استرجاع وحفظ نطاق الصلاحيات والشركات الحقيقي (D1 Profile Persistence):**
+   - تمرير `permissions_json` و `allowed_company_ids` وفك تشفيرها في نقاط نهاية المصادقة `login.ts` و `me.ts` وتخزينها في جلسة المستخدم `AuthUser`.
+   - منع انتحال صفة مدير النظام: قصر صلاحيات الـ Root Admin حصراً على الحساب الجذري الحقيقي وعدم استبدال بيانات المستخدمين الفعليين (مثل `تغريد عاطف`).
+2. **عزل الشركات المتعددة على مستوى الـ Context (Tenant Isolation Layer):**
+   - ربط `TenantContext` بـ `useAuth()` لتقييد مصفوفة `companies` بـ `user.allowedCompanyIds`.
+   - المستخدم المقيد بشركة واحدة يرى فقط تلك الشركة في الهيدر والبانر وكافة موديولات المنظومة.
+3. **بوابات حظر الوصول وحماية المسارات (Protected Route & Module Gates):**
+   - فلترة مصفوفة `DEPARTMENT_CATEGORIES` في `NavigationContext.tsx` وفق `checkModuleAccess`.
+   - التحقق الصارم في `EmptyCanvas.tsx` قبل تصيير أي موديول، وعرض `<UnauthorizedView />` فوراً عند أي محاولة وصول غير مصرح.
+4. **شاشة الترحيب السينمائية الحية:**
+   - استعراض هوية المستخدم الحقيقية، مسماه الوظيفي وقائمة شركاته المصرح بها ديناميكياً من قاعدة بيانات Cloudflare D1 في `CinematicWelcomeSplash.tsx`.
+
+
 
 
 

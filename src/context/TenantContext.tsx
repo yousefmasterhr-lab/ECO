@@ -103,10 +103,13 @@ interface TenantContextType {
   taxConfig: TaxJurisdictionConfig;
 }
 
+import { useAuth } from './AuthContext';
+
 const TenantContext = createContext<TenantContextType | undefined>(undefined);
 
 export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [companies, setCompanies] = useState<Company[]>(() => {
+  const { user } = useAuth();
+  const [rawCompanies, setRawCompanies] = useState<Company[]>(() => {
     try {
       const cached = companyStorage.getCompaniesSync();
       return cached.length > 0 ? mapEntitiesToCompanies(cached) : COMPANIES_LIST;
@@ -115,10 +118,49 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   });
 
-  // Default to selecting all companies
+  const isSuperAdmin = useMemo(() => {
+    if (!user) return false;
+    return (
+      user.id === 'usr_root_csuite_01' ||
+      user.id === 'usr_root_csuite' ||
+      user.username === 'admin' ||
+      user.email === 'admin@hrsup.com' ||
+      (Array.isArray(user.permissions) && user.permissions.includes('*'))
+    );
+  }, [user]);
+
+  // Strictly filter authorized companies against user.allowedCompanyIds
+  const companies: Company[] = useMemo(() => {
+    if (!user || isSuperAdmin) return rawCompanies;
+    const allowed = user.allowedCompanyIds;
+    if (!allowed || allowed.length === 0 || allowed.includes('all')) {
+      return rawCompanies;
+    }
+
+    const filtered = rawCompanies.filter(c =>
+      allowed.includes(c.id) ||
+      allowed.includes(c.code) ||
+      allowed.some(aId =>
+        c.id.toLowerCase().includes(aId.toLowerCase()) ||
+        c.nameAr.toLowerCase().includes(aId.toLowerCase())
+      )
+    );
+
+    return filtered.length > 0 ? filtered : [rawCompanies[0] || COMPANIES_LIST[0]!];
+  }, [rawCompanies, user, isSuperAdmin]);
+
+  // Default to selecting all authorized companies
   const [selectedCompanyIds, setSelectedCompanyIds] = useState<string[]>(() =>
     companies.map(c => c.id)
   );
+
+  // Sync selected companies when authorized companies list changes
+  useEffect(() => {
+    setSelectedCompanyIds(prev => {
+      const valid = prev.filter(id => companies.some(c => c.id === id));
+      return valid.length > 0 ? valid : companies.map(c => c.id);
+    });
+  }, [companies]);
 
   // Sync with live Cloudflare D1 companies count and updates
   useEffect(() => {
@@ -129,11 +171,7 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         const liveEntities = await companyStorage.getCompanies();
         if (isMounted && liveEntities && liveEntities.length > 0) {
           const mapped = mapEntitiesToCompanies(liveEntities);
-          setCompanies(mapped);
-          setSelectedCompanyIds(prev => {
-            const valid = prev.filter(id => mapped.some(c => c.id === id));
-            return valid.length > 0 ? valid : mapped.map(c => c.id);
-          });
+          setRawCompanies(mapped);
         }
       } catch (err) {
         console.warn('[TenantContext] Error fetching live D1 companies:', err);
@@ -146,11 +184,7 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       const cached = companyStorage.getCompaniesSync();
       if (cached && cached.length > 0) {
         const mapped = mapEntitiesToCompanies(cached);
-        setCompanies(mapped);
-        setSelectedCompanyIds(prev => {
-          const valid = prev.filter(id => mapped.some(c => c.id === id));
-          return valid.length > 0 ? valid : mapped.map(c => c.id);
-        });
+        setRawCompanies(mapped);
       }
     };
 
@@ -221,7 +255,10 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   let selectionSummaryAr = '';
   let selectionSummaryEn = '';
 
-  if (selectedCompanyIds.length === companies.length) {
+  if (companies.length === 1) {
+    selectionSummaryAr = companies[0].nameAr;
+    selectionSummaryEn = companies[0].nameEn;
+  } else if (selectedCompanyIds.length === companies.length) {
     selectionSummaryAr = `جميع الشركات (${companies.length})`;
     selectionSummaryEn = `All Companies (${companies.length})`;
   } else if (selectedCompanyIds.length === 1) {

@@ -285,20 +285,19 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     return CURRENT_USER;
   }, [user]);
 
-  // Dynamically filter categories based on logged-in user permissions
+  // Dynamically filter categories based on logged-in user permissions (Strict RBAC enforcement)
   const categories = useMemo(() => {
-    if (
-      !user ||
-      user.role === 'SUPER_ADMIN' ||
-      (user.role as string) === 'admin' ||
+    if (!user) return [];
+    const isRoot =
+      user.id === 'usr_root_csuite_01' ||
       user.username === 'admin' ||
       user.email === 'admin@hrsup.com' ||
-      user.id === 'usr_root_csuite_01'
-    ) {
+      (Array.isArray(user.permissions) && user.permissions.includes('*'));
+
+    if (isRoot) {
       return DEPARTMENT_CATEGORIES;
     }
-    const filtered = DEPARTMENT_CATEGORIES.filter(cat => checkModuleAccess(cat.id));
-    return filtered.length > 0 ? filtered : DEPARTMENT_CATEGORIES;
+    return DEPARTMENT_CATEGORIES.filter(cat => checkModuleAccess(cat.id));
   }, [user, checkModuleAccess]);
 
   const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {

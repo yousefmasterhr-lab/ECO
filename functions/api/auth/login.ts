@@ -61,6 +61,28 @@ export const onRequestPost: PagesFunction<{ DB: D1Database; JWT_SECRET?: string 
       }), { status: 401, headers: jsonHeaders });
     }
 
+    // Parse real permissions and allowed companies from D1 row
+    let perms: string[] = [];
+    try {
+      if (user.permissions_json) {
+        perms = typeof user.permissions_json === 'string' ? JSON.parse(user.permissions_json) : user.permissions_json;
+      }
+    } catch {
+      perms = [];
+    }
+    if ((user.role_id === 'SUPER_ADMIN' || user.id === 'usr_root_csuite_01') && perms.length === 0) {
+      perms = ['*'];
+    }
+
+    let allowedCompanies: string[] = ['all'];
+    try {
+      if (user.allowed_company_ids) {
+        allowedCompanies = typeof user.allowed_company_ids === 'string' ? JSON.parse(user.allowed_company_ids) : user.allowed_company_ids;
+      }
+    } catch {
+      allowedCompanies = ['all'];
+    }
+
     // Safe Token Generation without external crashes
     const sanitizedUser = {
       id: user.id,
@@ -71,6 +93,8 @@ export const onRequestPost: PagesFunction<{ DB: D1Database; JWT_SECRET?: string 
       role_id: user.role_id,
       department: user.department,
       clearance_level: user.clearance_level,
+      job_title: user.job_title,
+      phone: user.phone,
       // camelCase compatibility
       nationalId: user.national_id,
       fullName: user.full_name,
@@ -78,7 +102,11 @@ export const onRequestPost: PagesFunction<{ DB: D1Database; JWT_SECRET?: string 
       nameEn: user.username,
       role: user.role_id,
       departmentAr: user.department,
+      jobTitleAr: user.job_title || user.role_id,
+      phoneStr: user.phone,
       clearanceLevel: user.clearance_level,
+      permissions: perms,
+      allowedCompanyIds: allowedCompanies,
       isActive: Boolean(user.is_active)
     };
 

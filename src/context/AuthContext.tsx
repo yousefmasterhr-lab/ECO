@@ -322,34 +322,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (activeData) {
         const parsed = JSON.parse(activeData) as AuthUser;
         if (parsed && parsed.id && parsed.role) {
-          const rawRole = parsed.role as string;
+          const rawRole = (parsed.role as string) || 'HR_MANAGER';
           const isRoot =
             parsed.id === INITIAL_ROOT_ADMIN.id ||
             parsed.id === 'usr_root_csuite_01' ||
             parsed.id === 'usr_root_csuite' ||
             parsed.username === 'admin' ||
-            parsed.email === 'admin@hrsup.com' ||
-            rawRole === 'SUPER_ADMIN' ||
-            rawRole === 'admin';
+            parsed.email === 'admin@hrsup.com';
 
-          const mappedRole: UserRole = isRoot ? 'SUPER_ADMIN' : ((rawRole === 'admin' ? 'SUPER_ADMIN' : rawRole) as UserRole);
-          const config = ROLE_CONFIGURATIONS[mappedRole] || ROLE_CONFIGURATIONS.SUPER_ADMIN;
+          const mappedRole: UserRole = isRoot ? 'SUPER_ADMIN' : (rawRole as UserRole);
+          const config = ROLE_CONFIGURATIONS[mappedRole] || ROLE_CONFIGURATIONS.HR_MANAGER;
 
           setUser({
             ...parsed,
             role: mappedRole,
-            nameAr: isRoot ? 'يوسف حجازي' : (parsed.nameAr || 'يوسف حجازي'),
-            nameEn: isRoot ? 'Yousef Hegazy' : (parsed.nameEn || 'Yousef Hegazy'),
+            nameAr: isRoot ? 'يوسف حجازي' : (parsed.nameAr || (parsed as any).fullName || parsed.username || 'مستخدم المنظومة'),
+            nameEn: isRoot ? 'Yousef Hegazy' : (parsed.nameEn || parsed.username || 'System User'),
             jobTitleAr: isRoot
               ? (parsed.jobTitleAr || 'مدير النظام العام / رئيس مجلس الإدارة')
-              : parsed.jobTitleAr,
+              : (parsed.jobTitleAr || parsed.roleLabelAr || config?.titleAr),
             phone: isRoot ? (parsed.phone || '+20 100 000 0000') : parsed.phone,
             permissions: Array.isArray(parsed.permissions) && parsed.permissions.length > 0
               ? parsed.permissions
-              : (isRoot ? [...ALL_COMPANY_PERMISSIONS] : []),
-            allowedModuleIds: (config?.allowedModuleIds && config.allowedModuleIds.length > 0)
-              ? config.allowedModuleIds
-              : ROLE_CONFIGURATIONS.SUPER_ADMIN.allowedModuleIds,
+              : (isRoot ? ['*'] : (config?.allowedModuleIds?.map(m => `${m}.*`) || [])),
+            allowedModuleIds: (parsed.allowedModuleIds && parsed.allowedModuleIds.length > 0)
+              ? parsed.allowedModuleIds
+              : (config?.allowedModuleIds || []),
+            allowedCompanyIds: (parsed.allowedCompanyIds && parsed.allowedCompanyIds.length > 0)
+              ? parsed.allowedCompanyIds
+              : ['all'],
           });
         }
       } else {
@@ -399,39 +400,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         const edgeRes = await d1Client.login(cleanInput, password);
         if (edgeRes.success && edgeRes.user) {
-          const rawRole = (edgeRes.user.role as string) || 'SUPER_ADMIN';
+          const rawRole = (edgeRes.user.role as string) || (edgeRes.user as any).role_id || 'HR_MANAGER';
           const isRoot =
-            rawRole === 'SUPER_ADMIN' ||
-            rawRole === 'admin' ||
             edgeRes.user.id === INITIAL_ROOT_ADMIN.id ||
             edgeRes.user.id === 'usr_root_csuite_01' ||
             edgeRes.user.username === 'admin' ||
             edgeRes.user.email === 'admin@hrsup.com';
 
-          const mappedRole: UserRole = isRoot ? 'SUPER_ADMIN' : ((rawRole === 'admin' ? 'SUPER_ADMIN' : rawRole) as UserRole);
-          const config = ROLE_CONFIGURATIONS[mappedRole] || ROLE_CONFIGURATIONS.SUPER_ADMIN;
+          const mappedRole: UserRole = isRoot ? 'SUPER_ADMIN' : (rawRole as UserRole);
+          const config = ROLE_CONFIGURATIONS[mappedRole] || ROLE_CONFIGURATIONS.HR_MANAGER;
+
+          const allowedCompanies = (edgeRes.user as any).allowedCompanyIds || ['all'];
+          const userPermissions = Array.isArray(edgeRes.user.permissions) && edgeRes.user.permissions.length > 0
+            ? edgeRes.user.permissions
+            : (isRoot ? ['*'] : (config?.allowedModuleIds?.map(m => `${m}.*`) || []));
+
+          const allowedModules = isRoot
+            ? ROLE_CONFIGURATIONS.SUPER_ADMIN.allowedModuleIds
+            : (config?.allowedModuleIds || []);
 
           const authenticatedUser: AuthUser = {
             id: edgeRes.user.id,
             email: edgeRes.user.email,
             username: edgeRes.user.username,
-            nameAr: isRoot ? 'يوسف حجازي' : (edgeRes.user.nameAr || (edgeRes.user as any).fullName || edgeRes.user.nameEn),
+            nameAr: isRoot ? 'يوسف حجازي' : (edgeRes.user.nameAr || (edgeRes.user as any).fullName || edgeRes.user.username),
             nameEn: isRoot ? 'Yousef Hegazy' : (edgeRes.user.nameEn || edgeRes.user.username),
-            jobTitleAr: edgeRes.user.jobTitleAr || (edgeRes.user as any).job_title || (isRoot ? 'مدير النظام العام / رئيس مجلس الإدارة' : undefined),
-            jobTitleEn: edgeRes.user.jobTitleEn,
+            jobTitleAr: edgeRes.user.jobTitleAr || (edgeRes.user as any).job_title || (isRoot ? 'مدير النظام العام / رئيس مجلس الإدارة' : config?.titleAr),
+            jobTitleEn: edgeRes.user.jobTitleEn || config?.titleEn,
             phone: edgeRes.user.phone || (isRoot ? '+20 100 000 0000' : undefined),
             role: mappedRole,
-            roleLabelAr: config?.titleAr || 'مدير النظام العام / رئيس مجلس الإدارة',
-            roleLabelEn: config?.titleEn || 'System Administrator / CEO',
-            departmentAr: edgeRes.user.departmentAr || (edgeRes.user as any).department || 'الإدارة العليا والاستراتيجية',
-            departmentEn: edgeRes.user.departmentEn || (edgeRes.user as any).department || 'Executive Management',
-            clearanceLevel: (edgeRes.user.clearanceLevel as 1 | 2 | 3 | 4) || 4,
-            clearanceNameAr: config?.clearanceNameAr || 'إدارة عليا وحوكمة',
-            clearanceNameEn: config?.clearanceNameEn || 'Level 4 - C-Suite Governance',
-            allowedModuleIds: (config?.allowedModuleIds && config.allowedModuleIds.length > 0)
-              ? config.allowedModuleIds
-              : ROLE_CONFIGURATIONS.SUPER_ADMIN.allowedModuleIds,
-            permissions: edgeRes.user.permissions || (edgeRes.user as any).permissions_json || (isRoot ? [...ALL_COMPANY_PERMISSIONS] : []),
+            roleLabelAr: edgeRes.user.jobTitleAr || config?.titleAr || mappedRole,
+            roleLabelEn: config?.titleEn || mappedRole,
+            departmentAr: edgeRes.user.departmentAr || (edgeRes.user as any).department || config?.departmentAr || 'إدارة الموارد البشرية',
+            departmentEn: edgeRes.user.departmentEn || config?.departmentEn || 'Human Resources',
+            clearanceLevel: (edgeRes.user.clearanceLevel as 1 | 2 | 3 | 4) || (config?.clearanceLevel as 1 | 2 | 3 | 4) || 2,
+            clearanceNameAr: config?.clearanceNameAr || 'صلاحيات مخصصة',
+            clearanceNameEn: config?.clearanceNameEn || 'Custom Clearance',
+            allowedModuleIds: allowedModules,
+            allowedCompanyIds: allowedCompanies,
+            permissions: userPermissions,
             lastLogin: new Date().toISOString().replace('T', ' ').substring(0, 16),
           };
 
@@ -523,9 +530,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         const config = ROLE_CONFIGURATIONS[foundInManaged.role];
         const isRoot =
-          foundInManaged.role === 'SUPER_ADMIN' ||
           foundInManaged.id === INITIAL_ROOT_ADMIN.id ||
-          foundInManaged.id === 'usr_root_csuite_01';
+          foundInManaged.id === 'usr_root_csuite_01' ||
+          foundInManaged.username === 'admin' ||
+          foundInManaged.email === 'admin@hrsup.com';
 
         authenticatedUser = {
           id: foundInManaged.id,
@@ -533,7 +541,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           username: foundInManaged.username,
           nameAr: isRoot ? 'يوسف حجازي' : foundInManaged.nameAr,
           nameEn: isRoot ? 'Yousef Hegazy' : foundInManaged.nameEn,
-          jobTitleAr: foundInManaged.jobTitleAr || (isRoot ? 'مدير النظام العام / رئيس مجلس الإدارة' : undefined),
+          jobTitleAr: foundInManaged.jobTitleAr || (isRoot ? 'مدير النظام العام / رئيس مجلس الإدارة' : config?.titleAr),
           jobTitleEn: foundInManaged.jobTitleEn,
           phone: foundInManaged.phone || (isRoot ? '+20 100 000 0000' : undefined),
           role: foundInManaged.role,
@@ -545,7 +553,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           clearanceNameAr: foundInManaged.clearanceNameAr,
           clearanceNameEn: foundInManaged.clearanceNameEn,
           allowedModuleIds: config?.allowedModuleIds || [],
-          permissions: foundInManaged.permissions || foundInManaged.customPermissions || (isRoot ? [...ALL_COMPANY_PERMISSIONS] : []),
+          allowedCompanyIds: foundInManaged.allowedCompanyIds || ['all'],
+          permissions: foundInManaged.permissions || foundInManaged.customPermissions || (isRoot ? ['*'] : []),
           lastLogin: new Date().toISOString().replace('T', ' ').substring(0, 16),
         };
       } else if (foundInSeed) {
@@ -677,19 +686,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const checkModuleAccess = useCallback(
     (moduleId: string): boolean => {
-      if (!user) return true; // Fail safe to avoid blank screen
-      if (
-        user.role === 'SUPER_ADMIN' ||
-        (user.role as string) === 'admin' ||
-        user.username === 'admin' ||
-        user.email === 'admin@hrsup.com' ||
+      if (!user) return false;
+      const isRoot =
         user.id === 'usr_root_csuite_01' ||
-        user.id === INITIAL_ROOT_ADMIN.id
-      ) return true;
-      if (!user.allowedModuleIds || user.allowedModuleIds.length === 0) {
-        return true;
+        user.id === INITIAL_ROOT_ADMIN.id ||
+        user.username === 'admin' ||
+        user.email === 'admin@hrsup.com';
+      if (isRoot) return true;
+
+      // Check wildcard or module-specific permissions
+      if (Array.isArray(user.permissions)) {
+        if (user.permissions.includes('*')) return true;
+        if (user.permissions.includes(`${moduleId}.*`) || user.permissions.includes(moduleId)) return true;
+        if (user.permissions.some(p => p.startsWith(`${moduleId}.`))) return true;
       }
-      return user.allowedModuleIds.includes(moduleId);
+
+      // Check user's assigned allowedModuleIds
+      if (Array.isArray(user.allowedModuleIds) && user.allowedModuleIds.length > 0) {
+        return user.allowedModuleIds.includes(moduleId);
+      }
+
+      return false;
     },
     [user]
   );
@@ -709,6 +726,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const hasPermission = useCallback(
     (key: string): boolean => {
       if (!user) return false;
+      const isRoot =
+        user.id === 'usr_root_csuite_01' ||
+        user.id === INITIAL_ROOT_ADMIN.id ||
+        user.username === 'admin' ||
+        user.email === 'admin@hrsup.com';
+      if (isRoot) return true;
+
       // If user has an explicit permissions list, enforce it with wildcard support
       if (Array.isArray(user.permissions)) {
         if (user.permissions.includes('*')) return true;
@@ -716,15 +740,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (parts.length > 1 && user.permissions.includes(`${parts[0]}.*`)) return true;
         if (parts.length > 2 && user.permissions.includes(`${parts[0]}.${parts[1]}.*`)) return true;
         return user.permissions.includes(key);
-      }
-      // Fallback for root admin if permissions list is not initialized
-      if (
-        user.role === 'SUPER_ADMIN' ||
-        user.id === INITIAL_ROOT_ADMIN.id ||
-        user.id === 'usr_root_csuite_01' ||
-        user.id === 'usr_root_csuite'
-      ) {
-        return true;
       }
       return false;
     },

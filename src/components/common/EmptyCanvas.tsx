@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigation, DEPARTMENT_CATEGORIES } from '../../context/NavigationContext';
+import { useNavigation } from '../../context/NavigationContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTenant } from '../../context/TenantContext';
 import { CompaniesModule } from '../modules/companies/CompaniesModule';
@@ -133,10 +133,10 @@ export const EmptyCanvas: React.FC = () => {
   const { categories, activeCategoryId, activeSubItemId, selectItem, currentUser } = useNavigation();
   const { summary: finSummary, costCenters: finCostCenters } = useFinancial();
   const { stats: hrStats, employees } = useHR();
-  const { user, managedUsers } = useAuth();
+  const { user, managedUsers, checkModuleAccess } = useAuth();
 
   const displayCategories = useMemo(() => {
-    return categories && categories.length > 0 ? categories : DEPARTMENT_CATEGORIES;
+    return categories || [];
   }, [categories]);
 
   const [branchesCount, setBranchesCount] = useState<number>(() => {
@@ -344,11 +344,19 @@ export const EmptyCanvas: React.FC = () => {
     return <UnauthorizedView />;
   }
 
+  // If a category ID was requested (e.g. via direct URL) but is not in authorized categories
+  if (activeCategoryId && !categories.some(c => c.id === activeCategoryId)) {
+    return <UnauthorizedView />;
+  }
+
   const activeCategory = categories.find(c => c.id === activeCategoryId);
   const activeSubItem = activeCategory?.subItems.find(s => s.id === activeSubItemId);
 
   // When a category / sub-item has been selected
   if (activeCategory) {
+    if (!checkModuleAccess(activeCategory.id)) {
+      return <UnauthorizedView />;
+    }
     const Icon = ICON_MAP[activeCategory.iconName] || CircleDot;
     const catTitle = isRtl ? activeCategory.titleAr : activeCategory.titleEn;
     const subTitle = activeSubItem
