@@ -552,88 +552,95 @@ export const EmptyCanvas: React.FC = () => {
         <div className="absolute -top-20 -end-20 w-80 h-80 bg-gradient-to-bl from-amber-400/20 via-amber-500/10 to-transparent rounded-full blur-3xl pointer-events-none animate-pulse" />
         <div className="absolute -bottom-20 -start-20 w-72 h-72 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="relative z-10 flex flex-col xl:flex-row xl:items-center justify-between gap-6">
-          {/* User Welcome Presentation */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping" />
-              <span className="text-xs font-mono font-black tracking-widest uppercase text-amber-600 dark:text-amber-400">
-                ECO • ERP Company Operations
-              </span>
+        <div className="relative z-10 space-y-4">
+          {/* Top Row: User Welcome Presentation & Status Badges */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-1.5 shrink-0">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping" />
+                <span className="text-xs font-mono font-black tracking-widest uppercase text-amber-600 dark:text-amber-400">
+                  ECO • ERP Company Operations
+                </span>
+              </div>
+
+              <h1 className="text-2xl md:text-3xl lg:text-4xl font-black text-slate-900 dark:text-[#F3EFE6] tracking-tight drop-shadow-xs whitespace-nowrap leading-normal">
+                {isRtl ? `مرحباً بك، ${currentUser.nameAr}` : `Welcome, ${currentUser.nameEn}`}
+              </h1>
             </div>
 
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 dark:text-[#F3EFE6] tracking-tight drop-shadow-xs">
-              {isRtl ? `مرحباً بك، ${currentUser.nameAr}` : `Welcome, ${currentUser.nameEn}`}
-            </h1>
-
-            <div className="flex flex-wrap items-center gap-2 pt-1">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white/80 dark:bg-[#0E1610]/80 border border-[#D99B26]/30 dark:border-amber-500/30 text-xs font-semibold text-slate-700 dark:text-stone-300 shadow-2xs backdrop-blur-md">
+            <div className="flex flex-wrap items-center gap-2 sm:self-center">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/80 dark:bg-[#0E1610]/80 border border-[#D99B26]/30 dark:border-amber-500/30 text-xs font-semibold text-slate-700 dark:text-stone-300 shadow-2xs backdrop-blur-md">
                 <Clock className="w-3.5 h-3.5 text-amber-500" />
                 <span>{formattedDate} • {formattedTime}</span>
               </span>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-500/10 border border-amber-500/25 text-xs font-bold text-amber-700 dark:text-amber-300 backdrop-blur-md">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/25 text-xs font-bold text-amber-700 dark:text-amber-300 backdrop-blur-md">
                 <Sparkles className="w-3.5 h-3.5" />
                 <span>{currentUser.jobTitleAr || currentUser.roleAr}</span>
               </span>
             </div>
           </div>
 
-          {/* Dynamic Interactive Authorized Company Cards */}
-          <div className="flex flex-wrap items-center gap-3">
-            {companies.length > 1 && (
-              <button
-                type="button"
-                onClick={selectAllCompanies}
-                className={`px-3.5 py-2 rounded-2xl text-xs font-bold transition-all border backdrop-blur-md cursor-pointer ${
-                  isAllSelected
-                    ? 'bg-amber-500 text-stone-900 border-amber-400 shadow-md scale-102 font-black'
-                    : 'bg-white/70 dark:bg-stone-900/70 text-[#5C665E] dark:text-[#8FA392] border-[#E0D9CB] dark:border-[#243628] hover:border-amber-500/40'
-                }`}
-              >
-                {t('جميع الشركات', 'All Entities')} ({companies.length})
-              </button>
-            )}
-
-            {companies.map(c => {
-              const isSelected = selectedCompanyIds.includes(c.id);
-              return (
+          {/* Bottom Row: Dedicated Horizontal Strip for Authorized Company Cards */}
+          <div className="border-t border-amber-500/15 pt-4 mt-4">
+            <div className="flex flex-wrap items-center gap-2.5">
+              {companies.length > 1 && (
                 <button
-                  key={c.id}
                   type="button"
-                  onClick={() => {
-                    if (companies.length > 1) {
-                      toggleCompany(c.id);
-                    }
-                  }}
-                  className={`group/comp flex items-center gap-3 px-4 py-2.5 rounded-2xl text-start transition-all duration-200 border backdrop-blur-md cursor-pointer ${
-                    isSelected
-                      ? 'bg-white/95 dark:bg-[#0E1610]/95 border-[#D99B26] dark:border-amber-400 shadow-[0_8px_25px_rgba(217,155,38,0.22)] scale-102 ring-1 ring-amber-400/50'
-                      : 'bg-white/60 dark:bg-[#121B14]/60 border-[#E0D9CB]/80 dark:border-[#243628] text-stone-500 hover:border-amber-500/40 hover:bg-white/80'
+                  onClick={selectAllCompanies}
+                  className={`px-3.5 py-2 rounded-2xl text-xs font-bold transition-all border backdrop-blur-md cursor-pointer shrink-0 ${
+                    isAllSelected
+                      ? 'bg-gradient-to-l from-amber-600 to-amber-500 text-white border-amber-500 shadow-sm font-black'
+                      : 'bg-white/70 dark:bg-[#121B14]/70 text-slate-700 dark:text-[#8FA392] border-slate-200/80 dark:border-[#243628] hover:border-amber-500/40 hover:text-amber-700 dark:hover:text-amber-300'
                   }`}
                 >
-                  <div
-                    className="w-8 h-8 rounded-xl flex items-center justify-center text-white shrink-0 text-xs font-bold shadow-xs transition-transform group-hover/comp:scale-105"
-                    style={{ backgroundColor: c.logoColor || '#D99B26' }}
-                  >
-                    <Building2 className="w-4 h-4" />
-                  </div>
-                  <div className="min-w-0">
-                    <span className="text-xs font-extrabold text-slate-900 dark:text-[#F3EFE6] block truncate max-w-[210px]">
-                      {isRtl ? c.nameAr : c.nameEn}
-                    </span>
-                    <span className="text-[10px] text-[#5C665E] dark:text-[#8FA392] block truncate font-medium">
-                      {c.code} {c.badgeAr ? `• ${isRtl ? c.badgeAr : c.badgeEn}` : ''}
-                    </span>
-                  </div>
-                  {isSelected && (
-                    <span className="relative flex h-2 w-2 ms-1 shrink-0" title={t('نطاق نشط', 'Active Scope')}>
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-                    </span>
-                  )}
+                  {t('جميع الشركات', 'All Entities')} ({companies.length})
                 </button>
-              );
-            })}
+              )}
+
+              {companies.map(c => {
+                const isSelected = selectedCompanyIds.includes(c.id);
+                return (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => {
+                      if (companies.length > 1) {
+                        toggleCompany(c.id);
+                      }
+                    }}
+                    className={`group/comp flex items-center gap-2.5 px-3.5 py-2 rounded-2xl text-start transition-all duration-200 border backdrop-blur-md cursor-pointer shrink-0 ${
+                      isSelected
+                        ? 'bg-white/95 dark:bg-[#0E1610]/95 border-amber-500 dark:border-amber-400 shadow-[0_6px_20px_rgba(217,155,38,0.2)] scale-[1.02] ring-1 ring-amber-400/50'
+                        : 'bg-white/60 dark:bg-[#121B14]/60 border-slate-200/80 dark:border-[#243628] text-slate-600 dark:text-stone-400 hover:border-amber-500/40 hover:bg-white/90 dark:hover:bg-[#17231A]'
+                    }`}
+                  >
+                    <div
+                      className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 text-xs font-bold shadow-xs transition-transform group-hover/comp:scale-105 ${
+                        isSelected
+                          ? 'bg-gradient-to-l from-amber-600 to-amber-500 text-white'
+                          : 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30'
+                      }`}
+                    >
+                      <Building2 className="w-3.5 h-3.5" />
+                    </div>
+                    <div className="min-w-0">
+                      <span className="text-xs font-extrabold text-slate-900 dark:text-[#F3EFE6] block truncate max-w-[200px]">
+                        {isRtl ? c.nameAr : c.nameEn}
+                      </span>
+                      <span className="text-[10px] text-slate-500 dark:text-[#8FA392] block truncate font-medium">
+                        {c.code} {c.badgeAr ? `• ${isRtl ? c.badgeAr : c.badgeEn}` : ''}
+                      </span>
+                    </div>
+                    {isSelected && (
+                      <span className="relative flex h-2 w-2 ms-1 shrink-0" title={t('نطاق نشط', 'Active Scope')}>
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
