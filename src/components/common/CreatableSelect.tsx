@@ -126,8 +126,18 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
     };
 
     load();
+
+    const handleConfigUpdated = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (!customEvent.detail?.category || customEvent.detail.category === category) {
+        load();
+      }
+    };
+    window.addEventListener('eco-configurations-updated', handleConfigUpdated);
+
     return () => {
       isMounted = false;
+      window.removeEventListener('eco-configurations-updated', handleConfigUpdated);
     };
   }, [category]);
 

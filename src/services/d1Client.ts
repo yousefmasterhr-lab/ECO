@@ -326,20 +326,37 @@ export const d1Client = {
       if (response.ok) {
         const data = await response.json();
         if (data.success && Array.isArray(data.configurations)) {
-          return data.configurations.map((item: any) => ({
-            id: item.id,
-            category: item.category as ConfigurationCategory,
-            code: item.code,
-            nameAr: item.name_ar || item.nameAr,
-            nameEn: item.name_en || item.nameEn,
-            descriptionAr: item.description_ar || item.descriptionAr,
-            descriptionEn: item.description_en || item.descriptionEn,
-            colorVar: item.color_var || item.colorVar,
-            isSystem: item.is_system === 1 || item.isSystem === true,
-            isActive: item.is_active === 1 || item.isActive === true || item.is_active === undefined,
-            createdAt: item.created_at || item.createdAt,
-            updatedAt: item.updated_at || item.updatedAt,
-          }));
+          return data.configurations.map((item: any) => {
+            let parsedAudit: any[] = [];
+            try {
+              if (item.audit_log_json) {
+                parsedAudit = JSON.parse(item.audit_log_json);
+              } else if (Array.isArray(item.auditLog)) {
+                parsedAudit = item.auditLog;
+              }
+            } catch {
+              parsedAudit = [];
+            }
+
+            return {
+              id: item.id,
+              category: item.category as ConfigurationCategory,
+              code: item.code,
+              nameAr: item.name_ar || item.nameAr,
+              nameEn: item.name_en || item.nameEn,
+              descriptionAr: item.description_ar || item.descriptionAr,
+              descriptionEn: item.description_en || item.descriptionEn,
+              colorVar: item.color_var || item.colorVar || '#D99B26',
+              isSystem: item.is_system === 1 || item.isSystem === true,
+              isActive: item.is_active === 1 || item.isActive === true || item.is_active === undefined,
+              metadata: {
+                ...(item.metadata || {}),
+                auditLog: parsedAudit,
+              },
+              createdAt: item.created_at || item.createdAt,
+              updatedAt: item.updated_at || item.updatedAt,
+            };
+          });
         }
       }
     } catch (e) {
@@ -349,7 +366,7 @@ export const d1Client = {
   },
 
   createConfiguration: async (
-    item: Partial<SystemConfigurationItem> & { category: ConfigurationCategory; nameAr: string }
+    item: Partial<SystemConfigurationItem> & { category: ConfigurationCategory; nameAr: string; userName?: string }
   ): Promise<{ success: boolean; item?: SystemConfigurationItem; error?: string }> => {
     try {
       const response = await fetch('/api/configurations', {
@@ -364,6 +381,13 @@ export const d1Client = {
       }
 
       const raw = data.item;
+      let parsedAudit: any[] = [];
+      try {
+        if (raw.audit_log_json) {
+          parsedAudit = JSON.parse(raw.audit_log_json);
+        }
+      } catch {}
+
       const mapped: SystemConfigurationItem = {
         id: raw.id,
         category: raw.category,
@@ -372,12 +396,24 @@ export const d1Client = {
         nameEn: raw.name_en || raw.nameEn,
         descriptionAr: raw.description_ar || raw.descriptionAr,
         descriptionEn: raw.description_en || raw.descriptionEn,
-        colorVar: raw.color_var || raw.colorVar,
+        colorVar: raw.color_var || raw.colorVar || '#D99B26',
         isSystem: raw.is_system === 1 || raw.isSystem === true,
-        isActive: raw.is_active === 1 || raw.isActive === true,
+        isActive: raw.is_active === 1 || raw.isActive === true || raw.is_active === undefined,
+        metadata: {
+          auditLog: parsedAudit,
+        },
         createdAt: raw.created_at || raw.createdAt,
         updatedAt: raw.updated_at || raw.updatedAt,
       };
+
+      // Broadcast global event so every CreatableSelect updates immediately
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('eco-configurations-updated', {
+            detail: { action: 'CREATE', item: mapped, category: mapped.category },
+          })
+        );
+      }
 
       return { success: true, item: mapped };
     } catch (err: any) {
@@ -387,7 +423,7 @@ export const d1Client = {
 
   updateConfiguration: async (
     id: string,
-    updates: Partial<SystemConfigurationItem>
+    updates: Partial<SystemConfigurationItem> & { userName?: string }
   ): Promise<{ success: boolean; item?: SystemConfigurationItem; error?: string }> => {
     try {
       const response = await fetch('/api/configurations', {
@@ -401,13 +437,48 @@ export const d1Client = {
         return { success: false, error: data.error || 'فشل تحديث عنصر الإعدادات' };
       }
 
-      return { success: true, item: data.item };
+      const raw = data.item;
+      let parsedAudit: any[] = [];
+      try {
+        if (raw?.audit_log_json) {
+          parsedAudit = JSON.parse(raw.audit_log_json);
+        }
+      } catch {}
+
+      const mapped: SystemConfigurationItem = raw ? {
+        id: raw.id,
+        category: raw.category,
+        code: raw.code,
+        nameAr: raw.name_ar || raw.nameAr,
+        nameEn: raw.name_en || raw.nameEn,
+        descriptionAr: raw.description_ar || raw.descriptionAr,
+        descriptionEn: raw.description_en || raw.descriptionEn,
+        colorVar: raw.color_var || raw.colorVar || '#D99B26',
+        isSystem: raw.is_system === 1 || raw.isSystem === true,
+        isActive: raw.is_active === 1 || raw.isActive === true || raw.is_active === undefined,
+        metadata: {
+          auditLog: parsedAudit,
+        },
+        createdAt: raw.created_at || raw.createdAt,
+        updatedAt: raw.updated_at || raw.updatedAt,
+      } : updates as SystemConfigurationItem;
+
+      // Broadcast global sync event
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('eco-configurations-updated', {
+            detail: { action: 'UPDATE', id, item: mapped, category: mapped.category },
+          })
+        );
+      }
+
+      return { success: true, item: mapped };
     } catch (err: any) {
       return { success: false, error: err.message };
     }
   },
 
-  deleteConfiguration: async (id: string): Promise<{ success: boolean; error?: string }> => {
+  deleteConfiguration: async (id: string, category?: ConfigurationCategory): Promise<{ success: boolean; error?: string }> => {
     try {
       const response = await fetch(`/api/configurations?id=${encodeURIComponent(id)}`, {
         method: 'DELETE',
@@ -417,6 +488,42 @@ export const d1Client = {
       const data = await response.json();
       if (!response.ok || !data.success) {
         return { success: false, error: data.error || 'فشل حذف عنصر الإعدادات' };
+      }
+
+      // Broadcast global sync event
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('eco-configurations-updated', {
+            detail: { action: 'DELETE', id, category },
+          })
+        );
+      }
+
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
+  },
+
+  clearCategoryConfigurations: async (category: ConfigurationCategory): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const response = await fetch(`/api/configurations?clearCategory=${encodeURIComponent(category)}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        return { success: false, error: data.error || 'فشل تصفير القائمة' };
+      }
+
+      // Broadcast global sync event
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('eco-configurations-updated', {
+            detail: { action: 'CLEAR_CATEGORY', category },
+          })
+        );
       }
 
       return { success: true };
