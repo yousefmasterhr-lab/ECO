@@ -32,6 +32,7 @@ import { UserActivityDrawer } from '../modules/auth/UserActivityDrawer';
 import { PermissionsManagerModal } from '../modules/auth/PermissionsManagerModal';
 import { EcoOfficialLogo } from '../common/EcoOfficialLogo';
 import { TypewriterText } from '../auth/TypewriterText';
+import { cleanArabicTitle } from '../../types/rbac';
 
 interface SearchModuleItem {
   id: string;
@@ -750,9 +751,11 @@ export const Header: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-1 text-[10px] font-semibold text-[#D99B26] dark:text-[#EBB34D]">
                   <span className="truncate max-w-[240px]">
-                    {user?.jobTitleAr?.includes('/')
-                      ? user.jobTitleAr.split('/')[0].trim()
-                      : (user?.jobTitleAr || user?.roleLabelAr || (user?.role === 'SUPER_ADMIN' ? 'مدير النظام العام' : 'إدارة الموارد البشرية'))}
+                    {cleanArabicTitle(
+                      user?.jobTitleAr?.includes('/')
+                        ? user.jobTitleAr.split('/')[0].trim()
+                        : (user?.jobTitleAr || user?.roleLabelAr || (user?.role === 'SUPER_ADMIN' ? 'مدير النظام العام' : 'إدارة الموارد البشرية'))
+                    )}
                   </span>
                 </div>
               </div>
@@ -831,7 +834,7 @@ export const Header: React.FC = () => {
                   </button>
 
                   {/* Users & Permissions Matrix (Quick Manager - Strictly Gated by RBAC) */}
-                  {(user?.id === 'usr_root_csuite_01' || user?.username === 'admin' || user?.email === 'admin@hrsup.com' || (hasPermission && (hasPermission('settings.rbac.edit') || hasPermission('settings.view') || hasPermission('manage_users')))) && (
+                  {(user?.id === 'usr_root_csuite_01' || user?.username === 'admin' || user?.email === 'admin@hrsup.com' || (hasPermission && (hasPermission('set.rbac.view') || hasPermission('set.rbac.edit') || hasPermission('settings.rbac.edit') || hasPermission('settings.view')))) && (
                     <button
                       onClick={() => {
                         setUserDropdownOpen(false);
@@ -841,7 +844,7 @@ export const Header: React.FC = () => {
                     >
                       <SlidersHorizontal className="w-4 h-4 text-[#D99B26] dark:text-[#EBB34D]" />
                       <span className="flex-1 text-start">{t('إدارة المستخدمين ومصفوفة الصلاحيات', 'Users & Permissions Matrix')}</span>
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#1C291E] text-white">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 font-bold">
                         {t('إدارة', 'Admin')}
                       </span>
                     </button>

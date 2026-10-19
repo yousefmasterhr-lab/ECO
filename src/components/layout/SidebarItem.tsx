@@ -4,7 +4,7 @@ import { DepartmentNavCategory, NavSubItem } from '../../types';
 import { useLanguage } from '../../context/LanguageContext';
 import { useNavigation } from '../../context/NavigationContext';
 import { useAuth } from '../../context/AuthContext';
-import { SUBMODULE_VIEW_PERMISSION_MAP } from '../../types/rbac';
+import { SUBMODULE_VIEW_PERMISSION_MAP, cleanArabicTitle } from '../../types/rbac';
 import {
   HardHat,
   Scale,
@@ -144,7 +144,7 @@ const SubItemRow: React.FC<SubItemRowProps> = ({
           }`}
         />
 
-        <span className="truncate relative z-10">{isRtl ? sub.titleAr : sub.titleEn}</span>
+        <span className="truncate relative z-10">{isRtl ? cleanArabicTitle(sub.titleAr) : sub.titleEn}</span>
       </button>
     </motion.div>
   );
@@ -203,8 +203,8 @@ export const SidebarItem: React.FC<SidebarItemProps> = ({ category }) => {
   const isExpanded = expandedCategories.includes(category.id);
   const isCategoryActive = activeCategoryId === category.id;
 
-  const categoryTitle = isRtl ? category.titleAr : category.titleEn;
-  const categoryBadge = isRtl ? category.badgeAr : category.badgeEn;
+  const categoryTitle = isRtl ? cleanArabicTitle(category.titleAr) : category.titleEn;
+  const categoryBadge = isRtl ? cleanArabicTitle(category.badgeAr) : category.badgeEn;
 
   // Render for Mini-Rail (Collapsed) mode
   if (isCollapsed) {

@@ -17,8 +17,8 @@ import { useAuth } from '../../context/AuthContext';
 import { branchStorage } from '../modules/companies/branchStorage';
 import { licenseStorage } from '../modules/companies/licenseStorage';
 import { signatoryStorage } from '../modules/companies/signatoryStorage';
+import { SUBMODULE_VIEW_PERMISSION_MAP, cleanArabicTitle } from '../../types/rbac';
 import {
-  ArrowUpRight,
   HardHat,
   Scale,
   ShieldCheck,
@@ -133,11 +133,24 @@ export const EmptyCanvas: React.FC = () => {
   const { categories, activeCategoryId, activeSubItemId, selectItem, currentUser } = useNavigation();
   const { summary: finSummary, costCenters: finCostCenters } = useFinancial();
   const { stats: hrStats, employees } = useHR();
-  const { user, managedUsers, checkModuleAccess } = useAuth();
+  const { user, managedUsers, checkModuleAccess, hasPermission } = useAuth();
 
   const displayCategories = useMemo(() => {
-    return categories || [];
-  }, [categories]);
+    if (!categories) return [];
+    return categories
+      .map(cat => {
+        const authorizedSubItems = cat.subItems.filter(sub => {
+          const permKey = SUBMODULE_VIEW_PERMISSION_MAP[sub.id];
+          if (!permKey) return true;
+          return hasPermission(permKey);
+        });
+        return {
+          ...cat,
+          authorizedSubItems,
+        };
+      })
+      .filter(cat => cat.authorizedSubItems.length > 0);
+  }, [categories, hasPermission]);
 
   const [branchesCount, setBranchesCount] = useState<number>(() => {
     try {
@@ -597,7 +610,7 @@ export const EmptyCanvas: React.FC = () => {
               </span>
               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/25 text-xs font-bold text-amber-700 dark:text-amber-300 backdrop-blur-md">
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>{currentUser.jobTitleAr || currentUser.roleAr}</span>
+                <span>{cleanArabicTitle(currentUser.jobTitleAr || currentUser.roleAr)}</span>
               </span>
             </div>
           </div>
@@ -706,14 +719,14 @@ export const EmptyCanvas: React.FC = () => {
               variants={cardVariants}
               whileHover={{ y: -5 }}
               transition={{ duration: 0.18, ease: 'easeOut' }}
-              onClick={() => selectItem(cat.id, cat.subItems[0]?.id)}
+              onClick={() => selectItem(cat.id, cat.authorizedSubItems[0]?.id || cat.subItems[0]?.id)}
               className="group flex flex-col justify-between rounded-2xl bg-[#F3EFE6]/90 dark:bg-[#17231A]/90 backdrop-blur-md border border-[#E0D9CB] dark:border-[#243628] hover:border-[#D99B26]/60 dark:hover:border-amber-400/60 hover:shadow-[0_20px_45px_-12px_rgba(217,155,38,0.22),0_0_20px_rgba(217,155,38,0.12)] dark:hover:shadow-[0_20px_45px_-12px_rgba(235,179,77,0.25),0_0_25px_rgba(235,179,77,0.15)] p-5 relative overflow-hidden transition-all duration-300 cursor-pointer text-start transform-gpu hover:-translate-y-1.5"
             >
               {/* Golden spotlight radial aura on hover */}
               <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none bg-[radial-gradient(circle_at_top,rgba(217,155,38,0.14),transparent_70%)]" />
 
               <div>
-                {/* Top Bar of Card: Brand Amber Frosted Glass Icon + Amber Badge + Micro-Arrow */}
+                {/* Top Bar of Card: Brand Amber Frosted Glass Icon + Amber Badge */}
                 <div className="flex items-center justify-between gap-2 mb-3.5">
                   <div className="flex items-center gap-2.5">
                     <div
@@ -729,17 +742,6 @@ export const EmptyCanvas: React.FC = () => {
                         {badge}
                       </span>
                     )}
-                  </div>
-
-                  {/* Corner Luxury Navigation Micro-Arrow */}
-                  <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-600 dark:text-amber-400 group-hover:bg-amber-500 group-hover:text-white transition-all shrink-0">
-                    <ArrowUpRight
-                      className={`w-3.5 h-3.5 transition-transform duration-200 ${
-                        isRtl
-                          ? 'rotate-[-90deg] group-hover:-translate-x-0.5 group-hover:-translate-y-0.5'
-                          : 'group-hover:translate-x-0.5 group-hover:-translate-y-0.5'
-                      }`}
-                    />
                   </div>
                 </div>
 
@@ -770,7 +772,7 @@ export const EmptyCanvas: React.FC = () => {
               <div className="mt-4 pt-3 border-t border-[#E0D9CB]/80 dark:border-[#243628]/80 flex items-center justify-between text-xs">
                 <div className="flex items-center gap-1.5 text-[#5C665E] dark:text-[#8FA392]">
                   <Sparkles className="w-3.5 h-3.5 text-[#D99B26] dark:text-[#EBB34D]" />
-                  <span className="font-semibold">{cat.subItems.length} {isRtl ? 'خدمات' : 'Services'}</span>
+                  <span className="font-semibold">{cat.authorizedSubItems.length} {isRtl ? 'خدمات' : 'Services'}</span>
                 </div>
                 <div className="flex items-center gap-1 text-xs font-bold text-[#D99B26] dark:text-[#EBB34D] group-hover:text-[#C58F38] dark:group-hover:text-[#F5C76D] transition-colors">
                   <span>{isRtl ? 'دخول القسم' : 'Access Suite'}</span>

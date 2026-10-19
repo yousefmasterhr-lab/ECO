@@ -11,7 +11,7 @@ import {
   INITIAL_TAGHREED_USER,
   ALL_COMPANY_PERMISSIONS
 } from '../types/auth';
-import { cleanArabicTitle } from '../types/rbac';
+import { cleanArabicTitle, SUBMODULE_VIEW_PERMISSION_MAP } from '../types/rbac';
 import { d1Client, clearSessionToken, setSessionToken } from '../services/d1Client';
 
 interface AuthContextType {
@@ -761,49 +761,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     [rememberMe, logAuditEvent]
   );
 
-  const checkModuleAccess = useCallback(
-    (moduleId: string): boolean => {
-      if (!user) return false;
-      const isRoot =
-        user.id === 'usr_root_csuite_01' ||
-        user.id === 'usr_root_csuite' ||
-        user.id === INITIAL_ROOT_ADMIN.id ||
-        user.username === 'admin' ||
-        user.email === 'admin@hrsup.com';
-      if (isRoot) return true;
-
-      // Absolute Barrier: 'settings' and 'executive' can NEVER be accessed by non-root users
-      if (moduleId === 'settings' || moduleId === 'executive') {
-        return false;
-      }
-
-      // Check user's assigned allowedModuleIds
-      if (Array.isArray(user.allowedModuleIds) && user.allowedModuleIds.length > 0) {
-        return user.allowedModuleIds.includes(moduleId);
-      }
-
-      // Check module-specific permissions
-      if (Array.isArray(user.permissions)) {
-        if (user.permissions.includes(`${moduleId}.*`) || user.permissions.includes(moduleId)) return true;
-        if (user.permissions.some(p => p.startsWith(`${moduleId}.`))) return true;
-      }
-
-      return false;
-    },
-    [user]
-  );
-
-  const hasRole = useCallback(
-    (roles: UserRole | UserRole[]): boolean => {
-      if (!user) return false;
-      if (Array.isArray(roles)) {
-        return roles.includes(user.role);
-      }
-      return user.role === roles;
-    },
-    [user]
-  );
-
   // Granular Action-Level RBAC Checker with live reactive enforcement
   // Supports both hasPermission('perm.key') and hasPermission(user, 'perm.key')
   const hasPermission = useCallback(
@@ -820,11 +777,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         targetUser.email === 'admin@hrsup.com';
       if (isRoot) return true;
 
-      // Absolute Barrier for settings / executive permissions
-      if (targetKey.startsWith('set.') || targetKey.startsWith('settings.') || targetKey.startsWith('executive.')) {
-        return false;
-      }
-
       // If user has an explicit permissions list, enforce it with wildcard support
       if (Array.isArray(targetUser.permissions)) {
         if (targetUser.permissions.includes('*')) return true;
@@ -834,6 +786,71 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return targetUser.permissions.includes(targetKey);
       }
       return false;
+    },
+    [user]
+  );
+
+  const checkModuleAccess = useCallback(
+    (moduleId: string): boolean => {
+      if (!user) return false;
+      const isRoot =
+        user.id === 'usr_root_csuite_01' ||
+        user.id === 'usr_root_csuite' ||
+        user.id === INITIAL_ROOT_ADMIN.id ||
+        user.username === 'admin' ||
+        user.email === 'admin@hrsup.com';
+      if (isRoot) return true;
+
+      // Check module-specific permissions in user.permissions
+      if (Array.isArray(user.permissions)) {
+        if (user.permissions.includes('*')) return true;
+        if (user.permissions.includes(`${moduleId}.*`) || user.permissions.includes(moduleId)) return true;
+        if (user.permissions.some(p => p.startsWith(`${moduleId}.`))) return true;
+
+        const prefixMap: Record<string, string> = {
+          companies: 'companies.',
+          executive: 'exec.',
+          finance: 'fin.',
+          hr: 'hr.',
+          engineering: 'eng.',
+          cts: 'cts.',
+          legal: 'leg.',
+          insurance: 'ins.',
+          ats: 'ats.',
+          decrees: 'dec.',
+          reception: 'rec.',
+          settings: 'set.',
+        };
+        const pfx = prefixMap[moduleId];
+        if (pfx && user.permissions.some(p => p.startsWith(pfx))) return true;
+
+        // Check if any sub-item mapping matches
+        const hasAnySubPerm = Object.entries(SUBMODULE_VIEW_PERMISSION_MAP).some(([, permKey]) => {
+          if (permKey.startsWith(`${moduleId}.`) || (pfx && permKey.startsWith(pfx))) {
+            return hasPermission(permKey);
+          }
+          return false;
+        });
+        if (hasAnySubPerm) return true;
+      }
+
+      // Check user's assigned allowedModuleIds
+      if (Array.isArray(user.allowedModuleIds) && user.allowedModuleIds.length > 0) {
+        return user.allowedModuleIds.includes(moduleId);
+      }
+
+      return false;
+    },
+    [user, hasPermission]
+  );
+
+  const hasRole = useCallback(
+    (roles: UserRole | UserRole[]): boolean => {
+      if (!user) return false;
+      if (Array.isArray(roles)) {
+        return roles.includes(user.role);
+      }
+      return user.role === roles;
     },
     [user]
   );

@@ -98,6 +98,7 @@ export const UserManagementView: React.FC = () => {
   const [auditUser, setAuditUser] = useState<ManagedUser | null>(null);
   const [resetPasswordUser, setResetPasswordUser] = useState<ManagedUser | null>(null);
   const [permissionsModalOpen, setPermissionsModalOpen] = useState(false);
+  const [selectedPermissionUserId, setSelectedPermissionUserId] = useState<string>('');
 
   // Form Fields - strictly initialized to empty strings (NO pre-filled defaults)
   const [nameAr, setNameAr] = useState('');
@@ -798,7 +799,10 @@ export const UserManagementView: React.FC = () => {
                   {/* 1. تخصيص مصفوفة الصلاحيات (RBAC) */}
                   <button
                     type="button"
-                    onClick={() => setPermissionsModalOpen(true)}
+                    onClick={() => {
+                      setSelectedPermissionUserId(u.id);
+                      setPermissionsModalOpen(true);
+                    }}
                     title={t('تخصيص مصفوفة الصلاحيات (RBAC)', 'RBAC Permissions Matrix')}
                     className="w-7 h-7 rounded-xl flex items-center justify-center text-emerald-600 hover:bg-emerald-500/15 transition-colors cursor-pointer"
                   >
@@ -1496,7 +1500,11 @@ export const UserManagementView: React.FC = () => {
          ========================================================================= */}
       <PermissionsManagerModal
         isOpen={permissionsModalOpen}
-        onClose={() => setPermissionsModalOpen(false)}
+        initialUserId={selectedPermissionUserId}
+        onClose={() => {
+          setPermissionsModalOpen(false);
+          setSelectedPermissionUserId('');
+        }}
       />
     </div>
   );
