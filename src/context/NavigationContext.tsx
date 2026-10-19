@@ -75,8 +75,8 @@ export const DEPARTMENT_CATEGORIES: DepartmentNavCategory[] = [
   {
     id: 'hr',
     iconName: 'Users',
-    titleAr: 'إدارة الموارد البشرية (HRMS)',
-    titleEn: 'Human Resources (HRMS)',
+    titleAr: 'إدارة الموارد البشرية',
+    titleEn: 'Human Resources',
     colorVar: '#EBB34D', // Radiant Amber
     badgeAr: 'HRMS',
     badgeEn: 'HRMS',
@@ -121,8 +121,8 @@ export const DEPARTMENT_CATEGORIES: DepartmentNavCategory[] = [
   {
     id: 'cts',
     iconName: 'Mail',
-    titleAr: 'الصادر والوارد (CTS)',
-    titleEn: 'Correspondence (CTS)',
+    titleAr: 'الصادر والوارد',
+    titleEn: 'Correspondence',
     colorVar: '#0D9488', // Mineral Teal
     badgeAr: 'مراسلات',
     badgeEn: 'CTS',
@@ -175,8 +175,8 @@ export const DEPARTMENT_CATEGORIES: DepartmentNavCategory[] = [
   {
     id: 'ats',
     iconName: 'UserCheck',
-    titleAr: 'استقطاب الكفاءات (ATS)',
-    titleEn: 'Talent Acquisition (ATS)',
+    titleAr: 'استقطاب الكفاءات',
+    titleEn: 'Talent Acquisition',
     colorVar: '#6366F1', // Indigo Accent
     badgeAr: 'توظيف',
     badgeEn: 'Hiring',
@@ -232,6 +232,7 @@ export const DEPARTMENT_CATEGORIES: DepartmentNavCategory[] = [
       { id: 'set_configurations', titleAr: 'التعريفات والقوائم المرنة', titleEn: 'Dynamic Configurations' },
       { id: 'set_audit', titleAr: 'سجل العمليات', titleEn: 'Audit Log' },
       { id: 'set_integrations', titleAr: 'ربط وتكامل قواعد البيانات (SQL Hub)', titleEn: 'Database Federation Hub (SQL)' },
+      { id: 'set_upgrades', titleAr: 'الترقيات والصيانة السحابية', titleEn: 'Cloud Upgrades & Maintenance' },
     ],
   },
 ];

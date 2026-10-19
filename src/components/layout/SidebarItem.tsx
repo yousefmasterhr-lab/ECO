@@ -266,18 +266,7 @@ export const SidebarItem: React.FC<SidebarItemProps> = ({ category }) => {
           <span className="truncate tracking-tight">{categoryTitle}</span>
         </div>
 
-        <div className="flex items-center gap-1.5 shrink-0">
-          {categoryBadge && (
-            <span
-              className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
-              style={{
-                backgroundColor: `${category.colorVar}15`,
-                color: category.colorVar,
-              }}
-            >
-              {categoryBadge}
-            </span>
-          )}
+        <div className="flex items-center gap-1 shrink-0">
           <ChevronDown
             className={`w-4 h-4 text-[#5C665E] dark:text-[#8FA392] transition-transform duration-200 ${
               isExpanded ? 'rotate-180' : ''

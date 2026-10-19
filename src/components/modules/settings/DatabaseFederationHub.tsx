@@ -332,18 +332,18 @@ export const DatabaseFederationHub: React.FC = () => {
   return (
     <div className="w-full space-y-6 animate-in fade-in duration-200">
       {/* Top Cockpit Header & Connection Health Bar */}
-      <div className="relative overflow-hidden rounded-2xl border border-[#243628] bg-[#121B14] p-5 sm:p-6 shadow-xl space-y-4">
+      <div className="relative overflow-hidden rounded-2xl border border-slate-200 dark:border-[#243628] bg-white dark:bg-[#121B14] p-5 sm:p-6 shadow-sm dark:shadow-xl space-y-4">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="space-y-1.5">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[#3D2D14] text-[#EBB34D] border border-[#5C431D] flex items-center justify-center font-bold shadow-xs">
+              <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-[#3D2D14] text-amber-600 dark:text-[#EBB34D] border border-amber-200 dark:border-[#5C431D] flex items-center justify-center font-bold shadow-xs">
                 <Database className="w-5 h-5" />
               </div>
               <div>
-                <h1 className="text-lg sm:text-xl font-black text-[#F3EFE6] tracking-tight">
+                <h1 className="text-lg sm:text-xl font-black text-slate-900 dark:text-[#F3EFE6] tracking-tight">
                   {t('مركز إدارة وتكامل قواعد البيانات (SQL Federation Hub)', 'Database & SQL Federation Hub')}
                 </h1>
-                <p className="text-xs text-[#8FA392]">
+                <p className="text-xs text-slate-500 dark:text-[#8FA392]">
                   {t(
                     'الربط المباشر مع خادم Microsoft SQL Server عبر نفق Tailscale وبوابة الربط API Bridge',
                     'Direct Multi-Database Connection across Tailscale and API Bridge'
@@ -360,7 +360,7 @@ export const DatabaseFederationHub: React.FC = () => {
               type="button"
               onClick={handleSaveNetworkSettings}
               disabled={isSavingConfig || isContextLoading}
-              className="flex items-center gap-2 px-3.5 py-2 text-xs font-bold rounded-xl border border-[#5C431D] bg-[#2A1F0E] hover:bg-[#3D2D14] text-[#EBB34D] transition-all cursor-pointer shadow-xs disabled:opacity-50"
+              className="flex items-center gap-2 px-3.5 py-2 text-xs font-bold rounded-xl border border-amber-300 dark:border-[#5C431D] bg-amber-50 hover:bg-amber-100 dark:bg-[#2A1F0E] dark:hover:bg-[#3D2D14] text-amber-800 dark:text-[#EBB34D] transition-all cursor-pointer shadow-xs disabled:opacity-50"
               title={t('حفظ إعدادات الاتصال إلى D1 والتطبيق فورياً', 'Save Network Config to D1 & Apply Immediately')}
             >
               <Save className={`w-3.5 h-3.5 ${isSavingConfig ? 'animate-spin' : ''}`} />
@@ -373,8 +373,8 @@ export const DatabaseFederationHub: React.FC = () => {
               onClick={() => setIsConfigEditing(prev => !prev)}
               className={`flex items-center gap-2 px-3 py-2 text-xs font-bold rounded-xl border transition-all cursor-pointer shadow-xs ${
                 isConfigEditing
-                  ? 'border-[#3E5C46] bg-[#17231A] text-[#A3CFAC] hover:bg-[#1F2E23]'
-                  : 'border-[#243628] bg-[#121B14] text-[#8FA392] hover:text-[#F3EFE6]'
+                  ? 'border-amber-400 dark:border-[#3E5C46] bg-amber-50/80 dark:bg-[#17231A] text-amber-800 dark:text-[#A3CFAC] hover:bg-amber-100 dark:hover:bg-[#1F2E23]'
+                  : 'border-slate-200 dark:border-[#243628] bg-slate-50 dark:bg-[#121B14] text-slate-600 dark:text-[#8FA392] hover:text-slate-900 dark:hover:text-[#F3EFE6]'
               }`}
               title={t('التبديل بين التعديل المباشر ونمط العرض', 'Toggle between inline editing and display view')}
             >
@@ -386,12 +386,12 @@ export const DatabaseFederationHub: React.FC = () => {
             <button
               onClick={handlePing}
               disabled={isPinging}
-              className="flex items-center gap-2 px-3.5 py-2 text-xs font-bold rounded-xl border border-[#243628] bg-[#17231A] hover:bg-[#1F2E23] text-[#EBB34D] transition-all cursor-pointer shadow-xs"
+              className="flex items-center gap-2 px-3.5 py-2 text-xs font-bold rounded-xl border border-slate-200 dark:border-[#243628] bg-slate-50 hover:bg-slate-100 dark:bg-[#17231A] dark:hover:bg-[#1F2E23] text-amber-700 dark:text-[#EBB34D] transition-all cursor-pointer shadow-xs"
             >
-              <Radio className={`w-3.5 h-3.5 ${isPinging ? 'animate-pulse text-amber-400' : ''}`} />
+              <Radio className={`w-3.5 h-3.5 ${isPinging ? 'animate-pulse text-amber-500' : ''}`} />
               <span>{isPinging ? t('جاري القياس...', 'Pinging...') : t('فحص النفق (Ping)', 'Ping Tunnel')}</span>
               {lastPingTime !== null && (
-                <span className="font-mono text-[10px] px-1.5 py-0.2 rounded-md bg-[#2A3F30] text-[#A3CFAC] border border-[#3E5C46]">
+                <span className="font-mono text-[10px] px-1.5 py-0.2 rounded-md bg-amber-100 dark:bg-[#2A3F30] text-amber-800 dark:text-[#A3CFAC] border border-amber-300 dark:border-[#3E5C46]">
                   {lastPingTime}ms
                 </span>
               )}
@@ -401,10 +401,10 @@ export const DatabaseFederationHub: React.FC = () => {
             <button
               onClick={() => handleSyncDatabases(false)}
               disabled={isSyncing}
-              className="flex items-center gap-2 px-3.5 py-2 text-xs font-bold rounded-xl border border-[#243628] bg-[#17231A] hover:bg-[#1F2E23] text-[#F3EFE6] transition-all cursor-pointer shadow-xs disabled:opacity-50"
+              className="flex items-center gap-2 px-3.5 py-2 text-xs font-bold rounded-xl border border-slate-200 dark:border-[#243628] bg-slate-50 hover:bg-slate-100 dark:bg-[#17231A] dark:hover:bg-[#1F2E23] text-slate-800 dark:text-[#F3EFE6] transition-all cursor-pointer shadow-xs disabled:opacity-50"
               title={t('تحديث ومزامنة القواعد الحية من خادم SQL Server', 'Sync & Refresh Databases from SQL Server')}
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin text-[#EBB34D]' : ''}`} />
+              <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin text-amber-600 dark:text-[#EBB34D]' : ''}`} />
               <span>{isSyncing ? t('جاري المزامنة...', 'Syncing...') : t('تحديث ومزامنة القواعد', 'Sync & Refresh Databases')}</span>
             </button>
           </div>
@@ -412,33 +412,33 @@ export const DatabaseFederationHub: React.FC = () => {
 
         {/* Dynamic Save Notification Banner */}
         {saveSuccessMessage && (
-          <div className="flex items-center gap-2.5 p-3 rounded-xl bg-[#0E1610] border border-[#3E5C46] text-[#A3CFAC] text-xs font-bold shadow-md animate-in fade-in duration-150">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          <div className="flex items-center gap-2.5 p-3 rounded-xl bg-emerald-50 dark:bg-[#0E1610] border border-emerald-200 dark:border-[#3E5C46] text-emerald-800 dark:text-[#A3CFAC] text-xs font-bold shadow-xs animate-in fade-in duration-150">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
             <span>{saveSuccessMessage}</span>
           </div>
         )}
 
         {/* =================================================================== */}
-        {/* Dynamic Editable Network Configuration Cards (High-Contrast Luxury Dark) */}
+        {/* Dynamic Editable Network Configuration Cards (Dual Theme Luxury) */}
         {/* =================================================================== */}
-        <div className="pt-4 border-t border-[#243628] grid grid-cols-1 md:grid-cols-2 gap-3.5">
+        <div className="pt-4 border-t border-slate-200 dark:border-[#243628] grid grid-cols-1 md:grid-cols-2 gap-3.5">
           {/* 1. خادم SQL Server (Tailscale Node) */}
-          <div className="p-3.5 rounded-xl bg-[#0E1610] border border-[#243628] hover:border-[#5C431D] focus-within:border-[#EBB34D] transition-all shadow-sm space-y-2.5">
+          <div className="p-3.5 rounded-xl bg-slate-50/80 dark:bg-[#0E1610] border border-slate-200/80 dark:border-[#243628] hover:border-amber-300 dark:hover:border-[#5C431D] focus-within:border-amber-500 dark:focus-within:border-[#EBB34D] transition-all shadow-xs space-y-2.5">
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-[#2A1F0E] text-[#EBB34D] border border-[#5C431D] flex items-center justify-center">
+                <div className="w-7 h-7 rounded-lg bg-amber-100/60 dark:bg-[#2A1F0E] text-amber-700 dark:text-[#EBB34D] border border-amber-200 dark:border-[#5C431D] flex items-center justify-center">
                   <Server className="w-3.5 h-3.5" />
                 </div>
                 <div>
-                  <span className="text-xs font-bold text-[#F3EFE6] block">
+                  <span className="text-xs font-bold text-slate-900 dark:text-[#F3EFE6] block">
                     {t('خادم SQL Server (Tailscale Node)', 'SQL Server (Tailscale Node)')}
                   </span>
-                  <span className="text-[10px] text-[#8FA392]">
+                  <span className="text-[10px] text-slate-500 dark:text-[#8FA392]">
                     {t('عنوان IP أو الدومين عبر نفق Tailscale', 'IP address or domain across Tailscale mesh')}
                   </span>
                 </div>
               </div>
-              <span className="font-mono text-[10px] px-2 py-0.5 rounded-md bg-[#17231A] text-[#EBB34D] border border-[#5C431D]">
+              <span className="font-mono text-[10px] px-2 py-0.5 rounded-md bg-white dark:bg-[#17231A] text-amber-700 dark:text-[#EBB34D] border border-slate-200 dark:border-[#5C431D]">
                 MS SQL: {health?.port || sqlPort}
               </span>
             </div>
@@ -446,7 +446,7 @@ export const DatabaseFederationHub: React.FC = () => {
             {isConfigEditing ? (
               <div className="grid grid-cols-3 gap-2 pt-1">
                 <div className="col-span-2 space-y-1">
-                  <label className="text-[10px] font-medium text-[#8FA392] block">
+                  <label className="text-[10px] font-medium text-slate-500 dark:text-[#8FA392] block">
                     {t('العنوان / Host (Tailscale IP)', 'Host / Tailscale IP')}
                   </label>
                   <input
@@ -459,11 +459,11 @@ export const DatabaseFederationHub: React.FC = () => {
                       localStorage.setItem('eco_sql_host', val.trim());
                     }}
                     placeholder="100.68.121.85"
-                    className="w-full bg-[#17231A] border border-[#243628] rounded-lg px-2.5 py-1.5 text-xs text-[#EBB34D] placeholder-[#5C431D] focus:outline-hidden focus:border-[#EBB34D] font-mono font-bold"
+                    className="w-full bg-white dark:bg-[#17231A] border border-slate-300 dark:border-[#243628] rounded-lg px-2.5 py-1.5 text-xs text-slate-900 dark:text-[#EBB34D] placeholder-slate-400 dark:placeholder-[#5C431D] focus:outline-hidden focus:border-amber-500 dark:focus:border-[#EBB34D] font-mono font-bold"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-medium text-[#8FA392] block">
+                  <label className="text-[10px] font-medium text-slate-500 dark:text-[#8FA392] block">
                     {t('المنفذ / Port', 'Port')}
                   </label>
                   <input
@@ -472,19 +472,19 @@ export const DatabaseFederationHub: React.FC = () => {
                     value={sqlPort}
                     onChange={e => setSqlPort(e.target.value)}
                     placeholder="1433"
-                    className="w-full bg-[#17231A] border border-[#243628] rounded-lg px-2.5 py-1.5 text-xs text-[#EBB34D] placeholder-[#5C431D] focus:outline-hidden focus:border-[#EBB34D] font-mono font-bold text-center"
+                    className="w-full bg-white dark:bg-[#17231A] border border-slate-300 dark:border-[#243628] rounded-lg px-2.5 py-1.5 text-xs text-slate-900 dark:text-[#EBB34D] placeholder-slate-400 dark:placeholder-[#5C431D] focus:outline-hidden focus:border-amber-500 dark:focus:border-[#EBB34D] font-mono font-bold text-center"
                   />
                 </div>
               </div>
             ) : (
-              <div className="flex items-center justify-between p-2.5 rounded-lg bg-[#17231A] border border-[#243628] mt-1">
-                <span className="font-mono text-xs font-bold text-[#EBB34D]" dir="ltr">
+              <div className="flex items-center justify-between p-2.5 rounded-lg bg-white dark:bg-[#17231A] border border-slate-200 dark:border-[#243628] mt-1">
+                <span className="font-mono text-xs font-bold text-amber-700 dark:text-[#EBB34D]" dir="ltr">
                   {sqlHost}:{sqlPort}
                 </span>
                 <button
                   type="button"
                   onClick={() => setIsConfigEditing(true)}
-                  className="text-[10px] text-[#8FA392] hover:text-[#EBB34D] underline cursor-pointer"
+                  className="text-[10px] text-slate-500 hover:text-amber-700 dark:text-[#8FA392] dark:hover:text-[#EBB34D] underline cursor-pointer"
                 >
                   {t('تعديل الإعدادات', 'Edit')}
                 </button>
@@ -493,29 +493,29 @@ export const DatabaseFederationHub: React.FC = () => {
           </div>
 
           {/* 2. الهدف المحلي (PortProxy Target) */}
-          <div className="p-3.5 rounded-xl bg-[#0E1610] border border-[#243628] hover:border-[#3E5C46] focus-within:border-[#A3CFAC] transition-all shadow-sm space-y-2.5">
+          <div className="p-3.5 rounded-xl bg-slate-50/80 dark:bg-[#0E1610] border border-slate-200/80 dark:border-[#243628] hover:border-amber-300 dark:hover:border-[#3E5C46] focus-within:border-amber-500 dark:focus-within:border-[#A3CFAC] transition-all shadow-xs space-y-2.5">
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-[#17231A] text-[#A3CFAC] border border-[#3E5C46] flex items-center justify-center">
+                <div className="w-7 h-7 rounded-lg bg-amber-100/60 dark:bg-[#17231A] text-amber-700 dark:text-[#A3CFAC] border border-amber-200 dark:border-[#3E5C46] flex items-center justify-center">
                   <ArrowRightLeft className="w-3.5 h-3.5" />
                 </div>
                 <div>
-                  <span className="text-xs font-bold text-[#F3EFE6] block">
+                  <span className="text-xs font-bold text-slate-900 dark:text-[#F3EFE6] block">
                     {t('الهدف المحلي (PortProxy Target)', 'Local PortProxy Target')}
                   </span>
-                  <span className="text-[10px] text-[#8FA392]">
+                  <span className="text-[10px] text-slate-500 dark:text-[#8FA392]">
                     {t('عنوان الخادم المحلي مع البورت الموجه', 'Internal host & portproxy forwarded destination')}
                   </span>
                 </div>
               </div>
-              <span className="font-mono text-[10px] px-2 py-0.5 rounded-md bg-[#17231A] text-[#A3CFAC] border border-[#3E5C46]">
+              <span className="font-mono text-[10px] px-2 py-0.5 rounded-md bg-white dark:bg-[#17231A] text-amber-700 dark:text-[#A3CFAC] border border-slate-200 dark:border-[#3E5C46]">
                 PortProxy Forward
               </span>
             </div>
 
             {isConfigEditing ? (
               <div className="space-y-1 pt-1">
-                <label className="text-[10px] font-medium text-[#8FA392] block">
+                <label className="text-[10px] font-medium text-slate-500 dark:text-[#8FA392] block">
                   {t('عنوان وبورت الهدف المحلي (Host:Port)', 'Local Host:Port Destination')}
                 </label>
                 <input
@@ -524,18 +524,18 @@ export const DatabaseFederationHub: React.FC = () => {
                   value={portProxyTarget}
                   onChange={e => setPortProxyTarget(e.target.value)}
                   placeholder="192.168.1.50:49748"
-                  className="w-full bg-[#17231A] border border-[#243628] rounded-lg px-2.5 py-1.5 text-xs text-[#F3EFE6] placeholder-[#3E5C46] focus:outline-hidden focus:border-[#A3CFAC] font-mono font-bold"
+                  className="w-full bg-white dark:bg-[#17231A] border border-slate-300 dark:border-[#243628] rounded-lg px-2.5 py-1.5 text-xs text-slate-900 dark:text-[#F3EFE6] placeholder-slate-400 dark:placeholder-[#3E5C46] focus:outline-hidden focus:border-amber-500 dark:focus:border-[#A3CFAC] font-mono font-bold"
                 />
               </div>
             ) : (
-              <div className="flex items-center justify-between p-2.5 rounded-lg bg-[#17231A] border border-[#243628] mt-1">
-                <span className="font-mono text-xs font-bold text-[#F3EFE6]" dir="ltr">
+              <div className="flex items-center justify-between p-2.5 rounded-lg bg-white dark:bg-[#17231A] border border-slate-200 dark:border-[#243628] mt-1">
+                <span className="font-mono text-xs font-bold text-slate-900 dark:text-[#F3EFE6]" dir="ltr">
                   {portProxyTarget}
                 </span>
                 <button
                   type="button"
                   onClick={() => setIsConfigEditing(true)}
-                  className="text-[10px] text-[#8FA392] hover:text-[#A3CFAC] underline cursor-pointer"
+                  className="text-[10px] text-slate-500 hover:text-amber-700 dark:text-[#8FA392] dark:hover:text-[#A3CFAC] underline cursor-pointer"
                 >
                   {t('تعديل الإعدادات', 'Edit')}
                 </button>
@@ -544,54 +544,54 @@ export const DatabaseFederationHub: React.FC = () => {
           </div>
         </div>
 
-        {/* Real-time Health Metrics Strip */}
+        {/* Real-time Health Metrics Strip (Dual Theme & LTR Latency) */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-          <div className="p-2.5 rounded-xl bg-[#17231A] border border-[#243628]">
-            <span className="text-[10px] text-[#8FA392] block">{t('حالة النفق / الاتصال', 'Tunnel Status')}</span>
+          <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[#17231A] border border-slate-200 dark:border-[#243628]">
+            <span className="text-[10px] text-slate-500 dark:text-[#8FA392] block">{t('حالة النفق / الاتصال', 'Tunnel Status')}</span>
             <div className="flex items-center gap-1.5 mt-1 font-bold">
-              <span className={`w-2 h-2 rounded-full ${isFailSafe ? 'bg-amber-400' : 'bg-emerald-400 animate-pulse'}`} />
-              <span className={isFailSafe ? 'text-amber-400' : 'text-[#A3CFAC]'}>
+              <span className={`w-2 h-2 rounded-full ${isFailSafe ? 'bg-amber-400' : 'bg-emerald-500 animate-pulse'}`} />
+              <span className={isFailSafe ? 'text-amber-700 dark:text-amber-400' : 'text-emerald-700 dark:text-[#A3CFAC]'}>
                 {isFailSafe ? t('محاكاة آمنة (Fail-Safe)', 'Safe Mode') : t('متصل (Tailscale)', 'Online Bridge')}
               </span>
             </div>
           </div>
 
-          <div className="p-2.5 rounded-xl bg-[#17231A] border border-[#243628]">
-            <span className="text-[10px] text-[#8FA392] block">{t('سرعة الاستجابة (Latency)', 'Round-Trip Ping')}</span>
-            <span className="font-mono font-bold text-[#A3CFAC] mt-1 block tabular-nums">
+          <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[#17231A] border border-slate-200 dark:border-[#243628]">
+            <span className="text-[10px] text-slate-500 dark:text-[#8FA392] block">{t('سرعة الاستجابة (Latency)', 'Round-Trip Ping')}</span>
+            <span dir="ltr" className="font-mono font-bold text-emerald-700 dark:text-[#A3CFAC] mt-1 inline-block tabular-nums text-start">
               {health?.latencyMs || 0} ms
             </span>
           </div>
 
-          <div className="p-2.5 rounded-xl bg-[#17231A] border border-[#243628]">
-            <span className="text-[10px] text-[#8FA392] block">{t('القواعد المكتشفة فعلياً', 'Discovered Databases')}</span>
-            <span className="font-mono font-bold text-[#EBB34D] mt-1 block tabular-nums">
-              {databases.length} {t('قاعدة نشطة', 'active')}
+          <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[#17231A] border border-slate-200 dark:border-[#243628]">
+            <span className="text-[10px] text-slate-500 dark:text-[#8FA392] block">{t('القواعد المكتشفة فعلياً', 'Discovered Databases')}</span>
+            <span className="font-mono font-bold text-amber-700 dark:text-[#EBB34D] mt-1 block tabular-nums">
+              {effectiveDatabases.length > 0 ? effectiveDatabases.length : databases.length} {t('قاعدة نشطة', 'active')}
             </span>
           </div>
 
-          <div className="p-2.5 rounded-xl bg-[#17231A] border border-[#243628]">
-            <span className="text-[10px] text-[#8FA392] block">{t('السياق النشط حالياً', 'Active DB Context')}</span>
-            <span className="font-mono font-bold text-[#F3EFE6] mt-1 block truncate">
+          <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[#17231A] border border-slate-200 dark:border-[#243628]">
+            <span className="text-[10px] text-slate-500 dark:text-[#8FA392] block">{t('السياق النشط حالياً', 'Active DB Context')}</span>
+            <span className="font-mono font-bold text-slate-900 dark:text-[#F3EFE6] mt-1 block truncate">
               {activeDatabase}
             </span>
           </div>
         </div>
 
         {/* Cloudflare & Remote Tailscale Bridge Configuration Bar */}
-        <div className="pt-3 border-t border-[#243628]">
-          <form onSubmit={handleSaveBridgeUrl} className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-[#17231A] p-3 rounded-xl border border-[#243628]">
+        <div className="pt-3 border-t border-slate-200 dark:border-[#243628]">
+          <form onSubmit={handleSaveBridgeUrl} className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-slate-50 dark:bg-[#17231A] p-3 rounded-xl border border-slate-200 dark:border-[#243628]">
             <div className="flex items-center gap-2 flex-1">
-              <Globe className="w-4 h-4 text-[#EBB34D] shrink-0" />
+              <Globe className="w-4 h-4 text-amber-600 dark:text-[#EBB34D] shrink-0" />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs font-bold text-[#F3EFE6]">
+                  <span className="text-xs font-bold text-slate-900 dark:text-[#F3EFE6]">
                     {t('بوابة خادم الربط (API Bridge / Tunnel Gateway URL):', 'API Bridge Gateway URL:')}
                   </span>
                   <button
                     type="button"
                     onClick={() => setShowTunnelHelp(prev => !prev)}
-                    className="text-[10px] text-[#8FA392] hover:text-[#EBB34D] flex items-center gap-1 underline cursor-pointer"
+                    className="text-[10px] text-slate-500 hover:text-amber-600 dark:text-[#8FA392] dark:hover:text-[#EBB34D] flex items-center gap-1 underline cursor-pointer"
                   >
                     <Info className="w-3 h-3" />
                     <span>{t('طريقة ربط Cloudflare بـ Tailscale', 'How to connect Cloudflare to Tailscale')}</span>
@@ -603,7 +603,7 @@ export const DatabaseFederationHub: React.FC = () => {
                   value={bridgeUrlInput}
                   onChange={e => setBridgeUrlInput(e.target.value)}
                   placeholder="https://datatest.hrsup.com (الافتراضي للإنتاج) أو http://localhost:5000"
-                  className="w-full bg-[#121B14] border border-[#243628] rounded-lg px-3 py-1.5 text-xs text-[#F3EFE6] placeholder-[#8FA392] focus:outline-hidden focus:border-[#EBB34D] font-mono"
+                  className="w-full bg-white dark:bg-[#121B14] border border-slate-200 dark:border-[#243628] rounded-lg px-3 py-1.5 text-xs text-slate-900 dark:text-[#F3EFE6] placeholder-slate-400 dark:placeholder-[#8FA392] focus:outline-hidden focus:border-amber-500 dark:focus:border-[#EBB34D] font-mono"
                 />
               </div>
             </div>
@@ -612,7 +612,7 @@ export const DatabaseFederationHub: React.FC = () => {
               <button
                 type="submit"
                 disabled={isSavingUrl || isSavingConfig || isContextLoading}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#EBB34D] hover:bg-[#D99B26] text-[#0E1610] text-xs font-black transition-all cursor-pointer shadow-xs disabled:opacity-50"
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 dark:bg-[#EBB34D] dark:hover:bg-[#D99B26] text-slate-950 font-black text-xs transition-all cursor-pointer shadow-xs disabled:opacity-50"
               >
                 <Link className={`w-3.5 h-3.5 ${isSavingUrl || isSavingConfig ? 'animate-spin' : ''}`} />
                 <span>{isSavingUrl || isSavingConfig ? t('جاري الحفظ والمزامنة...', 'Saving & Syncing...') : t('حفظ واختبار المزامنة', 'Save & Sync')}</span>
@@ -622,18 +622,18 @@ export const DatabaseFederationHub: React.FC = () => {
 
           {/* Help instructions for Cloudflare Deployment */}
           {showTunnelHelp && (
-            <div className="mt-3 p-4 rounded-xl border border-[#243628] bg-[#0E1610] text-xs text-[#8FA392] space-y-2 animate-in fade-in duration-200">
-              <div className="flex items-center gap-2 text-[#EBB34D] font-bold">
+            <div className="mt-3 p-4 rounded-xl border border-slate-200 dark:border-[#243628] bg-slate-50 dark:bg-[#0E1610] text-xs text-slate-600 dark:text-[#8FA392] space-y-2 animate-in fade-in duration-200">
+              <div className="flex items-center gap-2 text-amber-700 dark:text-[#EBB34D] font-bold">
                 <Info className="w-4 h-4 shrink-0" />
                 <span>{t('خطوات ربط الموقع المنشور على Cloudflare (eco.hrsup.com) بقاعدة بيانات Tailscale:', 'Connecting Cloudflare-hosted eco.hrsup.com to Tailscale SQL:')}</span>
               </div>
-              <ol className="list-decimal list-inside space-y-1.5 leading-relaxed text-[#F3EFE6]/90 ps-2">
+              <ol className="list-decimal list-inside space-y-1.5 leading-relaxed text-slate-700 dark:text-[#F3EFE6]/90 ps-2">
                 <li>
                   {t('المتصفحات لا تستطيع الاتصال بمنفذ SQL (1433) مباشرة عبر الإنترنت، بل تحتاج لخادم ربط وسيط (Bridge API).', 'Browsers cannot directly connect to raw TCP SQL Port 1433; an HTTP Bridge API is required.')}
                 </li>
                 <li>
                   {t('شغّل خادم الربط على جهازك المتصل بنفق Tailscale:', 'Run the local SQL bridge on your Tailscale-connected machine:')}
-                  <code className="block mt-1 p-2 rounded-lg bg-[#17231A] font-mono text-[#A3CFAC] text-[11px]" dir="ltr">
+                  <code className="block mt-1 p-2 rounded-lg bg-white dark:bg-[#17231A] border border-slate-200 dark:border-[#243628] font-mono text-emerald-700 dark:text-[#A3CFAC] text-[11px]" dir="ltr">
                     node server/sqlBridge.cjs
                   </code>
                 </li>
@@ -650,13 +650,13 @@ export const DatabaseFederationHub: React.FC = () => {
       </div>
 
       {/* Segmented Control: Only Databases & SQL Console */}
-      <div className="p-1 rounded-2xl bg-[#121B14] border border-[#243628] flex items-center gap-1 overflow-x-auto shadow-inner">
+      <div className="p-1 rounded-2xl bg-slate-100 dark:bg-[#121B14] border border-slate-200 dark:border-[#243628] flex items-center gap-1 overflow-x-auto shadow-inner">
         <button
           onClick={() => setHubTab('databases')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
             hubTab === 'databases'
-              ? 'bg-[#EBB34D] text-[#0E1610] shadow-sm'
-              : 'text-[#8FA392] hover:text-[#F3EFE6] hover:bg-[#17231A]'
+              ? 'bg-amber-500 dark:bg-[#EBB34D] text-slate-950 shadow-sm'
+              : 'text-slate-600 dark:text-[#8FA392] hover:text-slate-900 dark:hover:text-[#F3EFE6] hover:bg-slate-200/60 dark:hover:bg-[#17231A]'
           }`}
         >
           <Database className="w-3.5 h-3.5" />
@@ -667,8 +667,8 @@ export const DatabaseFederationHub: React.FC = () => {
           onClick={() => setHubTab('sql_console')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
             hubTab === 'sql_console'
-              ? 'bg-[#EBB34D] text-[#0E1610] shadow-sm'
-              : 'text-[#8FA392] hover:text-[#F3EFE6] hover:bg-[#17231A]'
+              ? 'bg-amber-500 dark:bg-[#EBB34D] text-slate-950 shadow-sm'
+              : 'text-slate-600 dark:text-[#8FA392] hover:text-slate-900 dark:hover:text-[#F3EFE6] hover:bg-slate-200/60 dark:hover:bg-[#17231A]'
           }`}
         >
           <FileCode2 className="w-3.5 h-3.5" />
@@ -683,22 +683,22 @@ export const DatabaseFederationHub: React.FC = () => {
         <div className="space-y-4">
           {/* Detailed Diagnostic Guidance Alert on Fetch Failure */}
           {syncDiagnosticError && (
-            <div className="p-4 rounded-2xl border border-[#5A2E2E] bg-[#221010] text-[#F3EFE6] space-y-3 animate-in fade-in duration-200 shadow-lg">
+            <div className="p-4 rounded-2xl border border-red-200 dark:border-[#5A2E2E] bg-red-50/70 dark:bg-[#221010] text-slate-900 dark:text-[#F3EFE6] space-y-3 animate-in fade-in duration-200 shadow-sm">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-[#3A1818] text-[#F5A3A3] border border-[#5A2E2E] flex items-center justify-center shrink-0">
-                    <AlertTriangle className="w-4 h-4 text-red-400" />
+                  <div className="w-8 h-8 rounded-xl bg-red-100 dark:bg-[#3A1818] text-red-600 dark:text-[#F5A3A3] border border-red-200 dark:border-[#5A2E2E] flex items-center justify-center shrink-0">
+                    <AlertTriangle className="w-4 h-4 text-red-500" />
                   </div>
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#3A1818] text-[#F5A3A3] border border-[#5A2E2E]">
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-red-100 dark:bg-[#3A1818] text-red-700 dark:text-[#F5A3A3] border border-red-200 dark:border-[#5A2E2E]">
                         {t('سيرفر الربط المحلي غير متصل أو النفق متوقف', 'Local Bridge Disconnected or Tunnel Stopped')}
                       </span>
-                      <span className="text-xs font-bold text-[#F3EFE6]">
+                      <span className="text-xs font-bold text-slate-900 dark:text-[#F3EFE6]">
                         {syncDiagnosticError.isTunnelOffline ? t('بوابة Cloudflare Tunnel غير مستجيبة', 'Cloudflare Tunnel Gateway Unreachable') : t('فشل الاتصال بالبوابة', 'Gateway Connection Failure')}
                       </span>
                     </div>
-                    <p className="text-[11px] text-[#A3928F] mt-0.5">
+                    <p className="text-[11px] text-slate-600 dark:text-[#A3928F] mt-0.5">
                       {t(
                         `تعذر الوصول إلى البوابة (${syncDiagnosticError.targetUrl}). سبب الخطأ: ${syncDiagnosticError.message}`,
                         `Could not reach gateway (${syncDiagnosticError.targetUrl}). Error: ${syncDiagnosticError.message}`
@@ -716,7 +716,7 @@ export const DatabaseFederationHub: React.FC = () => {
                         setApiBaseUrl('http://localhost:5000');
                         handleSyncDatabases(true);
                       }}
-                      className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#EBB34D] text-[#0E1610] text-xs font-black shadow hover:bg-[#D99B26] transition-all cursor-pointer"
+                      className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 dark:bg-[#EBB34D] dark:hover:bg-[#D99B26] text-slate-950 text-xs font-black shadow-xs transition-all cursor-pointer"
                     >
                       <RefreshCw className="w-3.5 h-3.5" />
                       <span>{t('فحص مباشر عبر localhost:5000', 'Direct Sync via localhost:5000')}</span>
@@ -725,7 +725,7 @@ export const DatabaseFederationHub: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => handleSyncDatabases(false)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#5C431D] bg-[#2A1F0E] text-[#EBB34D] text-xs font-bold hover:bg-[#3D2D14] transition-all cursor-pointer"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-amber-300 dark:border-[#5C431D] bg-amber-50 dark:bg-[#2A1F0E] text-amber-800 dark:text-[#EBB34D] text-xs font-bold hover:bg-amber-100 dark:hover:bg-[#3D2D14] transition-all cursor-pointer"
                     >
                       <RefreshCw className="w-3.5 h-3.5" />
                       <span>{t('إعادة المحاولة', 'Retry')}</span>
@@ -734,9 +734,9 @@ export const DatabaseFederationHub: React.FC = () => {
                 </div>
               </div>
 
-              <div className="text-[11px] text-[#8FA392] bg-[#121B14] p-2.5 rounded-xl border border-[#243628] flex items-center justify-between gap-3">
+              <div className="text-[11px] text-slate-600 dark:text-[#8FA392] bg-white dark:bg-[#121B14] p-2.5 rounded-xl border border-slate-200 dark:border-[#243628] flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
-                  <Info className="w-3.5 h-3.5 text-[#EBB34D] shrink-0" />
+                  <Info className="w-3.5 h-3.5 text-amber-600 dark:text-[#EBB34D] shrink-0" />
                   <span>
                     {syncDiagnosticError.localBridgeAvailable
                       ? t('تم التحقق: خادم الربط المحلي شغال ومستجيب على http://localhost:5000. اضغط الزر أعلاه للتحويل المباشر دون الحاجة لنفق Cloudflare.', 'Verified: Local bridge is active on http://localhost:5000. Click above to switch directly without Cloudflare tunnel.')
@@ -748,9 +748,9 @@ export const DatabaseFederationHub: React.FC = () => {
           )}
 
           {/* Filter Bar: Search + Category Dropdown */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-[#121B14] p-3 rounded-xl border border-[#243628]">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white dark:bg-[#121B14] p-3 rounded-xl border border-slate-200 dark:border-[#243628]">
             <div className="relative flex-1 w-full">
-              <Search className="w-4 h-4 text-[#8FA392] absolute top-1/2 -translate-y-1/2 start-3" />
+              <Search className="w-4 h-4 text-slate-400 dark:text-[#8FA392] absolute top-1/2 -translate-y-1/2 start-3" />
               <input
                 type="text"
                 value={dbSearch}
@@ -759,20 +759,20 @@ export const DatabaseFederationHub: React.FC = () => {
                   'البحث باسم قاعدة البيانات أو الكيان أو الوصف...',
                   'Search database name, entity, or description...'
                 )}
-                className="w-full bg-[#17231A] border border-[#243628] rounded-lg ps-9 pe-3 py-2 text-xs text-[#F3EFE6] placeholder-[#8FA392] focus:outline-hidden focus:border-[#EBB34D]"
+                className="w-full bg-slate-50 dark:bg-[#17231A] border border-slate-200 dark:border-[#243628] rounded-lg ps-9 pe-3 py-2 text-xs text-slate-900 dark:text-[#F3EFE6] placeholder-slate-400 dark:placeholder-[#8FA392] focus:outline-hidden focus:border-amber-500 dark:focus:border-[#EBB34D]"
               />
             </div>
             <div className="w-full sm:w-auto flex items-center gap-2 shrink-0">
-              <span className="text-xs text-[#8FA392] shrink-0 font-medium">
+              <span className="text-xs text-slate-600 dark:text-[#8FA392] shrink-0 font-medium">
                 {t('التصنيف:', 'Category:')}
               </span>
               <select
                 value={selectedCategory}
                 onChange={e => setSelectedCategory(e.target.value)}
-                className="bg-[#17231A] border border-[#243628] rounded-lg px-3 py-2 text-xs text-[#F3EFE6] focus:outline-hidden focus:border-[#EBB34D] cursor-pointer"
+                className="bg-slate-50 dark:bg-[#17231A] border border-slate-200 dark:border-[#243628] rounded-lg px-3 py-2 text-xs text-slate-900 dark:text-[#F3EFE6] focus:outline-hidden focus:border-amber-500 dark:focus:border-[#EBB34D] cursor-pointer"
               >
                 {categoryFilters.map(filter => (
-                  <option key={filter.id} value={filter.id} className="bg-[#17231A] text-[#F3EFE6]">
+                  <option key={filter.id} value={filter.id} className="bg-white dark:bg-[#17231A] text-slate-900 dark:text-[#F3EFE6]">
                     {isRtl ? filter.labelAr : filter.labelEn}
                   </option>
                 ))}
@@ -782,15 +782,15 @@ export const DatabaseFederationHub: React.FC = () => {
 
           {/* If No Databases Discovered: Clean honest empty state (No fake cards) */}
           {filteredDatabases.length === 0 ? (
-            <div className="p-12 rounded-2xl border border-dashed border-[#243628] bg-[#121B14] text-center space-y-4">
-              <div className="w-14 h-14 rounded-2xl bg-[#17231A] text-[#EBB34D] border border-[#243628] flex items-center justify-center mx-auto shadow-md">
+            <div className="p-12 rounded-2xl border border-dashed border-slate-300 dark:border-[#243628] bg-slate-50/50 dark:bg-[#121B14] text-center space-y-4">
+              <div className="w-14 h-14 rounded-2xl bg-white dark:bg-[#17231A] text-amber-600 dark:text-[#EBB34D] border border-slate-200 dark:border-[#243628] flex items-center justify-center mx-auto shadow-xs">
                 <Database className="w-7 h-7" />
               </div>
               <div className="space-y-1.5">
-                <h3 className="text-base font-bold text-[#F3EFE6]">
+                <h3 className="text-base font-bold text-slate-900 dark:text-[#F3EFE6]">
                   {t('لا توجد قواعد بيانات مكتشفة حالياً', 'No Discovered Databases Found')}
                 </h3>
-                <p className="text-xs text-[#8FA392] max-w-lg mx-auto leading-relaxed">
+                <p className="text-xs text-slate-500 dark:text-[#8FA392] max-w-lg mx-auto leading-relaxed">
                   {t(
                     'لم يتم العثور على قواعد بيانات عبر الاتصال الحالي. لن يتم توليد أي كروت وهمية؛ تظهر الكروت ديناميكياً فقط لقواعد البيانات التي يتم اكتشافها فعلياً ومزامنتها بنجاح عبر السيرفر.',
                     'No databases discovered through the current connection. Synthetic dummy cards have been eliminated; cards are dynamically generated only for verified discovered databases on the server.'
@@ -801,7 +801,7 @@ export const DatabaseFederationHub: React.FC = () => {
                 <button
                   onClick={() => handleSyncDatabases(false)}
                   disabled={isSyncing}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#EBB34D] text-[#0E1610] text-xs font-black shadow-md hover:bg-[#D99B26] transition-all cursor-pointer disabled:opacity-50"
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 dark:bg-[#EBB34D] dark:hover:bg-[#D99B26] text-slate-950 text-xs font-black shadow-xs transition-all cursor-pointer disabled:opacity-50"
                 >
                   <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
                   <span>{isSyncing ? t('جاري الفحص المباشر...', 'Scanning...') : t('فحص ومزامنة القواعد الحية', 'Scan & Sync Live Databases')}</span>
@@ -820,8 +820,8 @@ export const DatabaseFederationHub: React.FC = () => {
                     key={db.name}
                     className={`rounded-2xl border p-4 transition-all duration-200 flex flex-col justify-between gap-4 min-h-[220px] ${
                       isCurrent
-                        ? 'border-[#EBB34D] bg-[#1F2E23] shadow-lg ring-1 ring-[#EBB34D]/50'
-                        : 'border-[#243628] bg-[#121B14] hover:bg-[#17231A]'
+                        ? 'border-amber-500 dark:border-[#EBB34D] bg-amber-50/50 dark:bg-[#1F2E23] shadow-md ring-1 ring-amber-500/40 dark:ring-[#EBB34D]/50'
+                        : 'border-slate-200 dark:border-[#243628] bg-white dark:bg-[#121B14] hover:bg-slate-50/80 dark:hover:bg-[#17231A] shadow-xs'
                     }`}
                   >
                     <div className="space-y-2.5">
@@ -830,17 +830,17 @@ export const DatabaseFederationHub: React.FC = () => {
                           <div
                             className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${
                               isCurrent
-                                ? 'bg-[#3D2D14] text-[#EBB34D] border-[#5C431D]'
-                                : 'bg-[#17231A] text-[#8FA392] border-[#243628]'
+                                ? 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-[#3D2D14] dark:text-[#EBB34D] dark:border-[#5C431D]'
+                                : 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-[#17231A] dark:text-[#8FA392] dark:border-[#243628]'
                             }`}
                           >
                             <Database className="w-4 h-4" />
                           </div>
                           <div className="min-w-0">
-                            <h3 className="font-mono text-xs sm:text-sm font-bold text-[#F3EFE6] truncate" title={db.name}>
+                            <h3 className="font-mono text-xs sm:text-sm font-bold text-slate-900 dark:text-[#F3EFE6] truncate" title={db.name}>
                               {db.name}
                             </h3>
-                            <span className="text-[11px] font-bold text-[#8FA392] block truncate">
+                            <span className="text-[11px] font-bold text-slate-500 dark:text-[#8FA392] block truncate">
                               {isRtl ? db.displayNameAr : db.displayNameEn}
                             </span>
                           </div>
@@ -850,33 +850,33 @@ export const DatabaseFederationHub: React.FC = () => {
                           <span
                             className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold ${
                               isOnline
-                                ? 'bg-[#193220] text-[#A3CFAC] border border-[#2E5A36]'
-                                : 'bg-[#3A1818] text-[#F5A3A3] border border-[#5A2E2E]'
+                                ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30'
+                                : 'bg-rose-500/15 text-rose-700 dark:text-rose-400 border border-rose-500/30'
                             }`}
                           >
-                            <span className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-[#52C41A]' : 'bg-[#F5222D]'}`} />
+                            <span className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-amber-500 animate-pulse' : 'bg-rose-500'}`} />
                             {isOnline ? 'ONLINE' : 'OFFLINE'}
                           </span>
                         </div>
                       </div>
 
-                      <p className="text-xs text-[#8FA392] line-clamp-2 leading-relaxed">
+                      <p className="text-xs text-slate-600 dark:text-[#8FA392] line-clamp-2 leading-relaxed">
                         {db.descriptionAr}
                       </p>
                     </div>
 
-                    <div className="space-y-3 pt-3 border-t border-[#243628]">
+                    <div className="space-y-3 pt-3 border-t border-slate-200 dark:border-[#243628]">
                       <div className="grid grid-cols-2 gap-2 text-[11px] font-mono">
-                        <div className="p-1.5 rounded-lg bg-[#17231A] border border-[#243628] text-center">
-                          <span className="text-[9px] text-[#8FA392] block">الحجم التخزيني:</span>
-                          <span className="font-bold text-[#EBB34D]">
+                        <div className="p-1.5 rounded-lg bg-slate-50 dark:bg-[#17231A] border border-slate-200 dark:border-[#243628] text-center">
+                          <span className="text-[9px] text-slate-500 dark:text-[#8FA392] block">الحجم التخزيني:</span>
+                          <span className="font-bold text-amber-700 dark:text-[#EBB34D]">
                             {db.sizeMB ? `${db.sizeMB} MB` : (db.sizeMb ? `${db.sizeMb} MB` : 'غير محدد')}
                           </span>
                         </div>
 
-                        <div className="p-1.5 rounded-lg bg-[#17231A] border border-[#243628] text-center">
-                          <span className="text-[9px] text-[#8FA392] block">تصنيف المنظومة:</span>
-                          <span className="font-bold text-[#A3CFAC] truncate block">
+                        <div className="p-1.5 rounded-lg bg-slate-50 dark:bg-[#17231A] border border-slate-200 dark:border-[#243628] text-center">
+                          <span className="text-[9px] text-slate-500 dark:text-[#8FA392] block">تصنيف المنظومة:</span>
+                          <span className="font-bold text-slate-800 dark:text-[#A3CFAC] truncate block">
                             {isRtl ? db.categoryNameAr : db.categoryNameEn}
                           </span>
                         </div>
@@ -887,13 +887,13 @@ export const DatabaseFederationHub: React.FC = () => {
                         onClick={() => setActiveDatabase(db.name)}
                         className={`w-full min-h-[36px] flex items-center justify-center gap-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                           isCurrent
-                            ? 'bg-[#EBB34D] text-[#0E1610] cursor-default font-extrabold shadow-sm'
-                            : 'bg-[#17231A] hover:bg-[#3D2D14] text-[#EBB34D] border border-[#243628] hover:border-[#EBB34D]/60'
+                            ? 'bg-amber-500 dark:bg-[#EBB34D] text-slate-950 cursor-default font-extrabold shadow-xs'
+                            : 'bg-slate-50 hover:bg-amber-50/80 dark:bg-[#17231A] dark:hover:bg-[#3D2D14] text-slate-700 hover:text-amber-800 dark:text-[#EBB34D] border border-slate-200 hover:border-amber-400/60 dark:border-[#243628] dark:hover:border-[#EBB34D]/60'
                         }`}
                       >
                         {isCurrent ? (
                           <>
-                            <CheckCircle2 className="w-3.5 h-3.5 text-[#0E1610]" />
+                            <CheckCircle2 className="w-3.5 h-3.5 text-slate-950" />
                             <span>{t('السياق النشط حالياً', 'Active Database Context')}</span>
                           </>
                         ) : (
@@ -917,15 +917,15 @@ export const DatabaseFederationHub: React.FC = () => {
       {/* =================================================================== */}
       {hubTab === 'sql_console' && (
         <div className="space-y-4">
-          <div className="p-4 rounded-xl border border-[#243628] bg-[#17231A] space-y-4">
+          <div className="p-4 rounded-xl border border-slate-200 dark:border-[#243628] bg-white dark:bg-[#17231A] space-y-4 shadow-xs">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <FileCode2 className="w-5 h-5 text-[#EBB34D]" />
+                <FileCode2 className="w-5 h-5 text-amber-600 dark:text-[#EBB34D]" />
                 <div>
-                  <h3 className="text-sm font-bold text-[#F3EFE6]">
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-[#F3EFE6]">
                     {t('وحدة استعلامات SQL المباشرة الآمنة (Read-Only Query Console)', 'Safe SQL Console')}
                   </h3>
-                  <p className="text-xs text-[#8FA392]">
+                  <p className="text-xs text-slate-500 dark:text-[#8FA392]">
                     {t(
                       'استعلام مباشر وسريع على أي من القواعد المكتشفة مع حماية تامة لمنع أي تعديل أو مساس بالبيانات',
                       'Direct read-only query execution with strict mutation protection'
@@ -936,11 +936,11 @@ export const DatabaseFederationHub: React.FC = () => {
 
               {/* Target DB Selector */}
               <div className="flex items-center gap-2">
-                <span className="text-xs text-[#8FA392] font-bold">{t('القاعدة المستهدفة:', 'Target DB:')}</span>
+                <span className="text-xs text-slate-600 dark:text-[#8FA392] font-bold">{t('القاعدة المستهدفة:', 'Target DB:')}</span>
                 <select
                   value={consoleDb}
                   onChange={e => setConsoleDb(e.target.value)}
-                  className="px-3 py-1.5 text-xs font-mono font-bold rounded-xl border border-[#243628] bg-[#121B14] text-[#EBB34D] focus:border-[#EBB34D]"
+                  className="px-3 py-1.5 text-xs font-mono font-bold rounded-xl border border-slate-200 dark:border-[#243628] bg-slate-50 dark:bg-[#121B14] text-slate-900 dark:text-[#EBB34D] focus:border-amber-500"
                 >
                   {databases.length === 0 ? (
                     <option value={activeDatabase}>{activeDatabase}</option>
@@ -957,11 +957,11 @@ export const DatabaseFederationHub: React.FC = () => {
 
             {/* Quick Sample Queries Buttons */}
             <div className="flex items-center gap-1.5 flex-wrap text-xs">
-              <span className="text-[11px] text-[#8FA392]">{t('نماذج استعلام سريعة:', 'Quick Templates:')}</span>
+              <span className="text-[11px] text-slate-500 dark:text-[#8FA392]">{t('نماذج استعلام سريعة:', 'Quick Templates:')}</span>
               <button
                 type="button"
                 onClick={() => setSqlQuery('SELECT TOP 15 Level5_ID, Level5_Name_A, Level4_ID FROM Level5_View ORDER BY Level5_ID ASC;')}
-                className="px-2.5 py-1 rounded-lg bg-[#121B14] hover:bg-[#1F2E23] text-[#8FA392] hover:text-[#F3EFE6] border border-[#243628] text-[11px] font-mono cursor-pointer"
+                className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200/80 dark:bg-[#121B14] dark:hover:bg-[#1F2E23] text-slate-700 hover:text-slate-900 dark:text-[#8FA392] dark:hover:text-[#F3EFE6] border border-slate-200 dark:border-[#243628] text-[11px] font-mono cursor-pointer"
               >
                 Level5_View
               </button>
@@ -969,7 +969,7 @@ export const DatabaseFederationHub: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setSqlQuery('SELECT TOP 15 Costcenter_ID, Costcenter_Name_A FROM Costcenters ORDER BY Costcenter_ID ASC;')}
-                className="px-2.5 py-1 rounded-lg bg-[#121B14] hover:bg-[#1F2E23] text-[#8FA392] hover:text-[#F3EFE6] border border-[#243628] text-[11px] font-mono cursor-pointer"
+                className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200/80 dark:bg-[#121B14] dark:hover:bg-[#1F2E23] text-slate-700 hover:text-slate-900 dark:text-[#8FA392] dark:hover:text-[#F3EFE6] border border-slate-200 dark:border-[#243628] text-[11px] font-mono cursor-pointer"
               >
                 Costcenters
               </button>
@@ -977,7 +977,7 @@ export const DatabaseFederationHub: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setSqlQuery('SELECT @@VERSION AS ServerVersion, DB_NAME() AS CurrentDatabase, GETDATE() AS ServerTime;')}
-                className="px-2.5 py-1 rounded-lg bg-[#121B14] hover:bg-[#1F2E23] text-[#8FA392] hover:text-[#F3EFE6] border border-[#243628] text-[11px] font-mono cursor-pointer"
+                className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200/80 dark:bg-[#121B14] dark:hover:bg-[#1F2E23] text-slate-700 hover:text-slate-900 dark:text-[#8FA392] dark:hover:text-[#F3EFE6] border border-slate-200 dark:border-[#243628] text-[11px] font-mono cursor-pointer"
               >
                 @@VERSION
               </button>
@@ -985,7 +985,7 @@ export const DatabaseFederationHub: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setSqlQuery('SELECT TABLE_NAME, TABLE_TYPE FROM INFORMATION_SCHEMA.TABLES ORDER BY TABLE_NAME;')}
-                className="px-2.5 py-1 rounded-lg bg-[#121B14] hover:bg-[#1F2E23] text-[#8FA392] hover:text-[#F3EFE6] border border-[#243628] text-[11px] font-mono cursor-pointer"
+                className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200/80 dark:bg-[#121B14] dark:hover:bg-[#1F2E23] text-slate-700 hover:text-slate-900 dark:text-[#8FA392] dark:hover:text-[#F3EFE6] border border-slate-200 dark:border-[#243628] text-[11px] font-mono cursor-pointer"
               >
                 Tables List
               </button>
@@ -998,13 +998,13 @@ export const DatabaseFederationHub: React.FC = () => {
                 rows={4}
                 value={sqlQuery}
                 onChange={e => setSqlQuery(e.target.value)}
-                className="w-full p-3 text-xs font-mono rounded-xl border border-[#243628] bg-[#0E1610] text-[#EBB34D] focus:border-[#EBB34D] focus:outline-hidden leading-relaxed"
+                className="w-full p-3 text-xs font-mono rounded-xl border border-slate-300 dark:border-[#243628] bg-slate-50 dark:bg-[#0E1610] text-slate-900 dark:text-[#EBB34D] focus:border-amber-500 dark:focus:border-[#EBB34D] focus:outline-hidden leading-relaxed"
                 placeholder="SELECT ... FROM ...;"
               />
 
               <div className="flex items-center justify-between">
-                <span className="text-[11px] text-[#8FA392] flex items-center gap-1">
-                  <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+                <span className="text-[11px] text-slate-500 dark:text-[#8FA392] flex items-center gap-1">
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
                   <span>{t('أوامر ALTER و DROP و DELETE و UPDATE محظورة برمجياً.', 'Read-Only enforcement active.')}</span>
                 </span>
 
@@ -1012,7 +1012,7 @@ export const DatabaseFederationHub: React.FC = () => {
                   type="button"
                   onClick={handleExecuteQuery}
                   disabled={isExecutingQuery}
-                  className="flex items-center gap-2 px-5 py-2 text-xs font-bold rounded-xl bg-[#D99B26] hover:bg-[#EBB34D] text-[#0E1610] transition-all cursor-pointer shadow-xs"
+                  className="flex items-center gap-2 px-5 py-2 text-xs font-bold rounded-xl bg-amber-500 hover:bg-amber-600 dark:bg-[#D99B26] dark:hover:bg-[#EBB34D] text-slate-950 transition-all cursor-pointer shadow-xs"
                 >
                   <Play className={`w-3.5 h-3.5 fill-current ${isExecutingQuery ? 'animate-spin' : ''}`} />
                   <span>{isExecutingQuery ? t('جاري التنفيذ...', 'Executing...') : t('تنفيذ الاستعلام (Execute)', 'Run Query')}</span>
@@ -1023,32 +1023,32 @@ export const DatabaseFederationHub: React.FC = () => {
 
           {/* Query Error Alert */}
           {queryError && (
-            <div className="p-3.5 rounded-xl border border-rose-900/60 bg-rose-950/20 text-rose-300 text-xs font-mono">
+            <div className="p-3.5 rounded-xl border border-rose-300 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/20 text-rose-800 dark:text-rose-300 text-xs font-mono shadow-xs">
               {queryError}
             </div>
           )}
 
           {/* Query Results Table */}
           {queryResult && queryResult.success && (
-            <div className="rounded-xl border border-[#243628] bg-[#17231A] p-4 space-y-3">
+            <div className="rounded-xl border border-slate-200 dark:border-[#243628] bg-white dark:bg-[#17231A] p-4 space-y-3 shadow-xs">
               <div className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-3">
-                  <span className="font-bold text-[#F3EFE6]">
+                  <span className="font-bold text-slate-900 dark:text-[#F3EFE6]">
                     {t('نتائج الاستعلام:', 'Query Results:')}
                   </span>
-                  <span className="font-mono text-[#EBB34D]">
+                  <span className="font-mono font-bold text-amber-700 dark:text-[#EBB34D]">
                     {queryResult.rowCount} {t('سجلات', 'rows')}
                   </span>
-                  <span className="font-mono text-[#8FA392]">
+                  <span className="font-mono text-slate-500 dark:text-[#8FA392]">
                     ({queryResult.durationMs} ms)
                   </span>
                 </div>
               </div>
 
-              <div className="border border-[#243628] rounded-xl overflow-x-auto bg-[#121B14] max-h-[360px]">
+              <div className="border border-slate-200 dark:border-[#243628] rounded-xl overflow-x-auto bg-slate-50/50 dark:bg-[#121B14] max-h-[360px]">
                 <table className="w-full text-start text-xs border-collapse font-mono" dir="ltr">
                   <thead>
-                    <tr className="border-b border-[#243628] bg-[#17231A] text-[#8FA392] font-bold sticky top-0">
+                    <tr className="border-b border-slate-200 dark:border-[#243628] bg-slate-100 dark:bg-[#17231A] text-slate-700 dark:text-[#8FA392] font-bold sticky top-0">
                       {queryResult.columns.map(col => (
                         <th key={col} className="py-2 px-3 text-start whitespace-nowrap">
                           {col}
@@ -1056,12 +1056,12 @@ export const DatabaseFederationHub: React.FC = () => {
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#243628]">
+                  <tbody className="divide-y divide-slate-200 dark:divide-[#243628]">
                     {queryResult.rows.map((row, rIdx) => (
-                      <tr key={rIdx} className="hover:bg-[#1F2E23]/40 transition-colors">
+                      <tr key={rIdx} className="hover:bg-slate-100/70 dark:hover:bg-[#1F2E23]/40 transition-colors">
                         {queryResult.columns.map(col => (
-                          <td key={col} className="py-1.5 px-3 whitespace-nowrap text-[#F3EFE6]">
-                            {row[col] !== null && row[col] !== undefined ? String(row[col]) : <span className="text-[#8FA392] italic">NULL</span>}
+                          <td key={col} className="py-1.5 px-3 whitespace-nowrap text-slate-900 dark:text-[#F3EFE6]">
+                            {row[col] !== null && row[col] !== undefined ? String(row[col]) : <span className="text-slate-400 dark:text-[#8FA392] italic">NULL</span>}
                           </td>
                         ))}
                       </tr>

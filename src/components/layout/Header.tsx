@@ -5,6 +5,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { useNavigation } from '../../context/NavigationContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
+import { usePWA } from '../../context/PWAContext';
 
 import {
   Building2,
@@ -22,7 +23,8 @@ import {
   History,
   SlidersHorizontal,
   Sparkles,
-  ArrowUpRight
+  ArrowUpRight,
+  Download
 } from 'lucide-react';
 import { UserProfileModal } from '../modules/auth/UserProfileModal';
 import { ChangePasswordModal } from '../modules/auth/ChangePasswordModal';
@@ -62,6 +64,7 @@ export const Header: React.FC = () => {
   const { currentUser, toggleMobileDrawer, setSearchModalOpen, categories, selectItem } = useNavigation();
   const { isDark, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
+  const { canInstall, isStandalone, promptInstall } = usePWA();
 
   const [companyDropdownOpen, setCompanyDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -269,7 +272,10 @@ export const Header: React.FC = () => {
               </span>
 
               {/* Bottom Line: Full ERP Company Operations with Typewriter Motion & Blinking Amber Cursor */}
-              <div className="flex items-center justify-center min-h-[16px] mt-1 leading-none whitespace-nowrap overflow-visible w-full">
+              <div
+                dir="ltr"
+                className="min-w-[180px] text-center inline-flex items-center justify-center min-h-[16px] mt-1 leading-none whitespace-nowrap overflow-visible"
+              >
                 <TypewriterText
                   text="ERP Company Operations"
                   typingSpeed={75}
@@ -284,11 +290,11 @@ export const Header: React.FC = () => {
 
           <div className="hidden sm:block h-6 w-px bg-[#E0D9CB] dark:bg-[#243628]" />
 
-          {/* Multi-Select Company Selector Dropdown */}
-          <div className="relative min-w-0" ref={dropdownRef}>
+          {/* Multi-Select Company Selector Dropdown (Fixed Width to Avoid Single Letter Clipping) */}
+          <div className="relative shrink-0 min-w-[180px] max-w-[260px]" ref={dropdownRef}>
             <button
               onClick={() => setCompanyDropdownOpen(prev => !prev)}
-              className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-[#F3EFE6] dark:bg-[#17231A] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23] text-start transition-colors max-w-[240px] sm:max-w-[340px] md:max-w-[420px]"
+              className="w-full flex items-center justify-between gap-2.5 px-3.5 py-2 rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-[#F3EFE6] dark:bg-[#17231A] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23] text-start transition-colors min-w-[180px] max-w-[260px] shrink-0"
             >
               <div className="w-6 h-6 rounded-lg bg-[#D99B26]/15 dark:bg-[#EBB34D]/15 text-[#D99B26] dark:text-[#EBB34D] flex items-center justify-center shrink-0">
                 <Building2 className="w-3.5 h-3.5" />
@@ -723,6 +729,22 @@ export const Header: React.FC = () => {
               <Moon className="w-4 h-4 text-[#1C291E] transition-transform duration-200 hover:-rotate-12" />
             )}
           </button>
+
+          {/* PWA Install Button (Relocated from floating card) */}
+          {!isStandalone && (
+            <button
+              type="button"
+              onClick={promptInstall}
+              aria-label={t('تثبيت تطبيق ECO', 'Install ECO App')}
+              title={t('تثبيت تطبيق ECO', 'Install ECO App')}
+              className="flex items-center justify-center w-9 h-9 rounded-xl text-[#1A241C] dark:text-[#F3EFE6] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23] border border-transparent hover:border-[#E0D9CB] dark:border-[#243628] transition-colors touch-target cursor-pointer print:hidden relative group"
+            >
+              <Download className="w-4 h-4 text-[#D99B26] dark:text-[#EBB34D] transition-transform duration-200 group-hover:scale-110" />
+              {canInstall && (
+                <span className="absolute top-2 end-2 w-2 h-2 rounded-full bg-amber-500 animate-ping" />
+              )}
+            </button>
+          )}
 
           {/* Notification Bell */}
           <button
