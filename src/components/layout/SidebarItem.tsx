@@ -4,6 +4,7 @@ import { DepartmentNavCategory, NavSubItem } from '../../types';
 import { useLanguage } from '../../context/LanguageContext';
 import { useNavigation } from '../../context/NavigationContext';
 import { useAuth } from '../../context/AuthContext';
+import { SUBMODULE_VIEW_PERMISSION_MAP } from '../../types/rbac';
 import {
   HardHat,
   Scale,
@@ -168,26 +169,17 @@ export const SidebarItem: React.FC<SidebarItemProps> = ({ category }) => {
 
   const [expandedSubItems, setExpandedSubItems] = useState<string[]>(['leg_contracts']);
 
-  // Filter sub-items based on Granular Action-Level RBAC for Company Management
+  // Filter sub-items based on Granular Action-Level RBAC across ALL 12 Modules
   const visibleSubItems = React.useMemo(() => {
-    if (category.id !== 'companies') return category.subItems;
-
-    const COMPANY_TAB_PERMS: Record<string, string> = {
-      comp_directory: 'companies.directory.view',
-      comp_licenses: 'companies.licenses.view',
-      comp_branches: 'companies.branches.view',
-      comp_structure: 'companies.org.view',
-      comp_signatories: 'companies.signatories.view',
-    };
-
     return category.subItems.filter(sub => {
-      const permKey = COMPANY_TAB_PERMS[sub.id];
-      return permKey ? hasPermission(permKey) : true;
+      const permKey = SUBMODULE_VIEW_PERMISSION_MAP[sub.id];
+      if (!permKey) return true;
+      return hasPermission(permKey);
     });
-  }, [category.id, category.subItems, hasPermission]);
+  }, [category.subItems, hasPermission]);
 
-  // Hide the entire Companies Management category if user has zero view permissions across all 5 tabs
-  if (category.id === 'companies' && visibleSubItems.length === 0) {
+  // Hide the entire category if user has zero view permissions across all its sub-items
+  if (visibleSubItems.length === 0) {
     return null;
   }
 

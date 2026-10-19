@@ -413,6 +413,7 @@ export const d1Client = {
             detail: { action: 'CREATE', item: mapped, category: mapped.category },
           })
         );
+        window.dispatchEvent(new CustomEvent('eco-data-updated'));
       }
 
       return { success: true, item: mapped };
@@ -470,6 +471,7 @@ export const d1Client = {
             detail: { action: 'UPDATE', id, item: mapped, category: mapped.category },
           })
         );
+        window.dispatchEvent(new CustomEvent('eco-data-updated'));
       }
 
       return { success: true, item: mapped };
@@ -497,6 +499,7 @@ export const d1Client = {
             detail: { action: 'DELETE', id, category },
           })
         );
+        window.dispatchEvent(new CustomEvent('eco-data-updated'));
       }
 
       return { success: true };
@@ -524,6 +527,7 @@ export const d1Client = {
             detail: { action: 'CLEAR_CATEGORY', category },
           })
         );
+        window.dispatchEvent(new CustomEvent('eco-data-updated'));
       }
 
       return { success: true };

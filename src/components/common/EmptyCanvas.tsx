@@ -164,17 +164,31 @@ export const EmptyCanvas: React.FC = () => {
   });
 
   useEffect(() => {
-    branchStorage.getBranches().then(list => {
-      if (list && Array.isArray(list)) setBranchesCount(list.length);
-    }).catch(() => {});
+    const refreshCounts = () => {
+      branchStorage.getBranches().then(list => {
+        if (list && Array.isArray(list)) setBranchesCount(list.length);
+      }).catch(() => {});
 
-    licenseStorage.getLicenses().then(list => {
-      if (list && Array.isArray(list)) setLicensesCount(list.length);
-    }).catch(() => {});
+      licenseStorage.getLicenses().then(list => {
+        if (list && Array.isArray(list)) setLicensesCount(list.length);
+      }).catch(() => {});
 
-    signatoryStorage.getSignatories().then(list => {
-      if (list && Array.isArray(list)) setSignatoriesCount(list.length);
-    }).catch(() => {});
+      signatoryStorage.getSignatories().then(list => {
+        if (list && Array.isArray(list)) setSignatoriesCount(list.length);
+      }).catch(() => {});
+    };
+
+    refreshCounts();
+
+    window.addEventListener('eco-data-updated', refreshCounts);
+    window.addEventListener('eco-configurations-updated', refreshCounts);
+    window.addEventListener('eco-users-updated', refreshCounts);
+
+    return () => {
+      window.removeEventListener('eco-data-updated', refreshCounts);
+      window.removeEventListener('eco-configurations-updated', refreshCounts);
+      window.removeEventListener('eco-users-updated', refreshCounts);
+    };
   }, []);
 
   const totalEmployeesCount = employees?.length ?? (hrStats?.totalEmployees ?? 0);
@@ -693,44 +707,34 @@ export const EmptyCanvas: React.FC = () => {
               whileHover={{ y: -5 }}
               transition={{ duration: 0.18, ease: 'easeOut' }}
               onClick={() => selectItem(cat.id, cat.subItems[0]?.id)}
-              className="group flex flex-col justify-between rounded-2xl bg-[#F3EFE6]/90 dark:bg-[#17231A]/90 backdrop-blur-md border border-[#E0D9CB] dark:border-[#243628] hover:border-[#D99B26]/60 dark:hover:border-amber-400/60 hover:shadow-[0_20px_45px_-12px_rgba(217,155,38,0.2),0_0_20px_rgba(217,155,38,0.1)] dark:hover:shadow-[0_20px_45px_-12px_rgba(235,179,77,0.22),0_0_25px_rgba(235,179,77,0.12)] p-5 relative overflow-hidden transition-all duration-300 cursor-pointer text-start transform-gpu hover:-translate-y-1.5 hover:rotate-[0.3deg]"
+              className="group flex flex-col justify-between rounded-2xl bg-[#F3EFE6]/90 dark:bg-[#17231A]/90 backdrop-blur-md border border-[#E0D9CB] dark:border-[#243628] hover:border-[#D99B26]/60 dark:hover:border-amber-400/60 hover:shadow-[0_20px_45px_-12px_rgba(217,155,38,0.22),0_0_20px_rgba(217,155,38,0.12)] dark:hover:shadow-[0_20px_45px_-12px_rgba(235,179,77,0.25),0_0_25px_rgba(235,179,77,0.15)] p-5 relative overflow-hidden transition-all duration-300 cursor-pointer text-start transform-gpu hover:-translate-y-1.5"
             >
               {/* Golden spotlight radial aura on hover */}
               <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none bg-[radial-gradient(circle_at_top,rgba(217,155,38,0.14),transparent_70%)]" />
 
               <div>
-                {/* Top Bar of Card: Frosted Glass Icon + Badge + Interactive Arrow */}
+                {/* Top Bar of Card: Brand Amber Frosted Glass Icon + Amber Badge + Micro-Arrow */}
                 <div className="flex items-center justify-between gap-2 mb-3.5">
                   <div className="flex items-center gap-2.5">
                     <div
-                      className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 border transition-transform duration-200 group-hover:scale-105 shadow-xs"
-                      style={{
-                        backgroundColor: `${cat.colorVar}15`,
-                        borderColor: `${cat.colorVar}30`,
-                        color: cat.colorVar,
-                      }}
+                      className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 border border-amber-500/25 bg-amber-500/10 text-amber-600 dark:text-amber-400 transition-transform duration-300 group-hover:scale-108 shadow-xs"
                     >
                       <Icon className="w-5 h-5" />
                     </div>
 
                     {badge && (
                       <span
-                        className="text-[11px] font-bold px-2.5 py-1 rounded-full border shadow-2xs"
-                        style={{
-                          backgroundColor: `${cat.colorVar}12`,
-                          borderColor: `${cat.colorVar}30`,
-                          color: cat.colorVar,
-                        }}
+                        className="text-[11px] font-bold px-2.5 py-1 rounded-full border border-amber-500/25 bg-amber-500/10 text-amber-700 dark:text-amber-300 shadow-2xs"
                       >
                         {badge}
                       </span>
                     )}
                   </div>
 
-                  {/* Corner Navigation Arrow */}
-                  <div className="w-8 h-8 rounded-xl bg-[#EAE4D7]/60 dark:bg-[#243628]/40 border border-[#E0D9CB] dark:border-[#243628] flex items-center justify-center text-[#5C665E] dark:text-[#8FA392] group-hover:text-[#D99B26] dark:group-hover:text-[#EBB34D] group-hover:border-[#D99B26]/40 dark:group-hover:border-[#EBB34D]/40 group-hover:bg-[#D99B26]/10 dark:group-hover:bg-[#EBB34D]/10 group-hover:scale-110 transition-all shrink-0">
+                  {/* Corner Luxury Navigation Micro-Arrow */}
+                  <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-600 dark:text-amber-400 group-hover:bg-amber-500 group-hover:text-white transition-all shrink-0">
                     <ArrowUpRight
-                      className={`w-4 h-4 transition-transform duration-200 ${
+                      className={`w-3.5 h-3.5 transition-transform duration-200 ${
                         isRtl
                           ? 'rotate-[-90deg] group-hover:-translate-x-0.5 group-hover:-translate-y-0.5'
                           : 'group-hover:translate-x-0.5 group-hover:-translate-y-0.5'
@@ -739,11 +743,11 @@ export const EmptyCanvas: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Card Body: Title & Concise Description */}
+                {/* Card Body: Title & Multi-Line Clear Description (line-clamp-2) */}
                 <h3 className="text-base font-black text-[#1A241C] dark:text-[#F3EFE6] group-hover:text-[#D99B26] dark:group-hover:text-[#EBB34D] transition-colors tracking-tight leading-snug">
                   {title}
                 </h3>
-                <p className="text-xs text-[#5C665E] dark:text-[#8FA392] line-clamp-1 leading-relaxed mt-1">
+                <p className="text-xs text-[#5C665E] dark:text-[#8FA392] line-clamp-2 leading-relaxed mt-1.5 h-[36px]">
                   {description}
                 </p>
 

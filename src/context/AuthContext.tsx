@@ -11,6 +11,7 @@ import {
   INITIAL_TAGHREED_USER,
   ALL_COMPANY_PERMISSIONS
 } from '../types/auth';
+import { cleanArabicTitle } from '../types/rbac';
 import { d1Client, clearSessionToken, setSessionToken } from '../services/d1Client';
 
 interface AuthContextType {
@@ -28,7 +29,7 @@ interface AuthContextType {
   switchUserRole: (role: UserRole) => void;
   checkModuleAccess: (moduleId: string) => boolean;
   hasRole: (roles: UserRole | UserRole[]) => boolean;
-  hasPermission: (key: string) => boolean;
+  hasPermission: (userOrKey: any, maybeKey?: string) => boolean;
   updateUserProfile: (updates: {
     nameAr?: string;
     jobTitleAr?: string;
@@ -804,23 +805,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 
   // Granular Action-Level RBAC Checker with live reactive enforcement
+  // Supports both hasPermission('perm.key') and hasPermission(user, 'perm.key')
   const hasPermission = useCallback(
-    (key: string): boolean => {
-      if (!user) return false;
+    (userOrKey: any, maybeKey?: string): boolean => {
+      const targetKey: string = (maybeKey || userOrKey || '') as string;
+      const targetUser: AuthUser | null = maybeKey ? userOrKey : user;
+
+      if (!targetUser) return false;
       const isRoot =
-        user.id === 'usr_root_csuite_01' ||
-        user.id === INITIAL_ROOT_ADMIN.id ||
-        user.username === 'admin' ||
-        user.email === 'admin@hrsup.com';
+        targetUser.id === 'usr_root_csuite_01' ||
+        targetUser.id === 'usr_root_csuite' ||
+        targetUser.id === INITIAL_ROOT_ADMIN.id ||
+        targetUser.username === 'admin' ||
+        targetUser.email === 'admin@hrsup.com';
       if (isRoot) return true;
 
+      // Absolute Barrier for settings / executive permissions
+      if (targetKey.startsWith('set.') || targetKey.startsWith('settings.') || targetKey.startsWith('executive.')) {
+        return false;
+      }
+
       // If user has an explicit permissions list, enforce it with wildcard support
-      if (Array.isArray(user.permissions)) {
-        if (user.permissions.includes('*')) return true;
-        const parts = key.split('.');
-        if (parts.length > 1 && user.permissions.includes(`${parts[0]}.*`)) return true;
-        if (parts.length > 2 && user.permissions.includes(`${parts[0]}.${parts[1]}.*`)) return true;
-        return user.permissions.includes(key);
+      if (Array.isArray(targetUser.permissions)) {
+        if (targetUser.permissions.includes('*')) return true;
+        const parts = targetKey.split('.');
+        if (parts.length > 1 && targetUser.permissions.includes(`${parts[0]}.*`)) return true;
+        if (parts.length > 2 && targetUser.permissions.includes(`${parts[0]}.${parts[1]}.*`)) return true;
+        return targetUser.permissions.includes(targetKey);
       }
       return false;
     },
@@ -838,9 +849,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }): Promise<{ success: boolean; error?: string }> => {
       if (!user) return { success: false, error: 'المستخدم غير مسجل الدخول' };
       try {
+        const sanitizedUpdates = {
+          ...updates,
+          ...(updates.jobTitleAr ? { jobTitleAr: cleanArabicTitle(updates.jobTitleAr) } : {}),
+        };
         const updatedUser: AuthUser = {
           ...user,
-          ...updates,
+          ...sanitizedUpdates,
         };
         setUser(updatedUser);
 
@@ -857,6 +872,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         // Sync with Cloudflare D1
         await d1Client.updateUser(user.id, updates);
+
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('eco-data-updated'));
+          window.dispatchEvent(new CustomEvent('eco-users-updated'));
+        }
 
         logAuditEvent({
           actionAr: 'تحديث بيانات الملف الشخصي',
@@ -955,6 +975,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           throw new Error(res.error || 'Failed to save permissions to D1');
         }
 
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('eco-data-updated'));
+          window.dispatchEvent(new CustomEvent('eco-permissions-updated'));
+        }
+
         logAuditEvent({
           actionAr: 'تعديل مصفوفة الصلاحيات',
           actionEn: 'Update Permissions Matrix',
@@ -990,6 +1015,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         password: newUser.passwordHash,
       }).catch(e => console.warn('D1 user creation sync error:', e));
 
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('eco-data-updated'));
+        window.dispatchEvent(new CustomEvent('eco-users-updated'));
+      }
+
       logAuditEvent({
         actionAr: 'إضافة مستخدم جديد',
         actionEn: 'Create New User Account',
@@ -1013,6 +1043,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             // Async sync to Cloudflare D1
             d1Client.updateUser(id, updates).catch(e => console.warn('D1 user update sync error:', e));
+
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('eco-data-updated'));
+              window.dispatchEvent(new CustomEvent('eco-users-updated'));
+            }
 
             logAuditEvent({
               actionAr: 'تعديل بيانات وصلاحيات مستخدم',
@@ -1044,6 +1079,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         // Async sync to Cloudflare D1
         d1Client.deleteUser(id).catch(e => console.warn('D1 user delete sync error:', e));
+
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('eco-data-updated'));
+          window.dispatchEvent(new CustomEvent('eco-users-updated'));
+        }
 
         logAuditEvent({
           actionAr: 'حذف حساب مستخدم',

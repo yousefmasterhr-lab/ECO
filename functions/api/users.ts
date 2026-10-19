@@ -114,11 +114,11 @@ async function ensureUserSchema(db: any) {
       await db.prepare(`
         UPDATE users
         SET role_id = 'HR_MANAGER',
-            job_title = 'مدير الموارد البشرية (HRMS)',
+            job_title = 'مدير الموارد البشرية',
             department = 'إدارة الموارد البشرية والرواتب',
             clearance_level = 3,
             allowed_company_ids = '["comp_01"]',
-            permissions_json = '["hr.*", "insurance.*", "ats.*", "decrees.*", "companies.directory.view"]'
+            permissions_json = '["hr.*", "insurance.*", "ats.*", "decrees.*", "companies.directory.view", "companies.licenses.view"]'
         WHERE id = ?
       `).bind(taghreedUser.id).run();
     }
@@ -171,7 +171,12 @@ export const onRequestGet: PagesFunction = async (context) => {
       const nationalId = (rawNatId === '29001010100000' || rawNatId.startsWith('NID_UNSET_')) ? '' : rawNatId;
 
       const nameAr = (row.id === 'usr_root_csuite_01' && (row.full_name === 'م. أحمد مصطفى' || !row.full_name)) ? 'يوسف حجازي' : row.full_name;
-      const jobTitleAr = row.job_title || (isSuper ? 'مدير النظام العام / رئيس مجلس الإدارة' : row.role_id);
+      const rawJobTitle = row.job_title || (isSuper ? 'مدير النظام العام / رئيس مجلس الإدارة' : row.role_id);
+      const jobTitleAr = String(rawJobTitle || '')
+        .replace(/_/g, ' ')
+        .replace(/\s+/g, ' ')
+        .replace(/\(HRMS\)|\(ATS\)|\(CTS\)|\(CFO\)|\(HRD\)|\(C-Suite\)/gi, '')
+        .trim();
 
       return {
         id: row.id,
@@ -235,7 +240,12 @@ export const onRequestPost: PagesFunction = async (context) => {
     const password = (body.password || body.passwordHash || '').toString();
     const roleId = (body.roleId || body.role_id || body.role || 'HR_MANAGER').toString();
     const department = (body.department || body.departmentAr || 'إدارة الموارد البشرية').toString();
-    const jobTitle = (body.jobTitleAr || body.jobTitle || body.job_title || roleId).toString().trim();
+    const rawJt = (body.jobTitleAr || body.jobTitle || body.job_title || roleId).toString().trim();
+    const jobTitle = rawJt
+      .replace(/_/g, ' ')
+      .replace(/\s+/g, ' ')
+      .replace(/\(HRMS\)|\(ATS\)|\(CTS\)|\(CFO\)|\(HRD\)|\(C-Suite\)/gi, '')
+      .trim();
     const phone = (body.phone || '').toString().trim();
     const clearanceLevel = Number(body.clearanceLevel || body.clearance_level || 2);
     const isActive = body.status === 'SUSPENDED' || body.is_active === 0 ? 0 : 1;
@@ -427,7 +437,12 @@ export const onRequestPut: PagesFunction = async (context) => {
     const fullName = body.fullName || body.nameAr || targetUser.full_name;
     const roleId = body.roleId || body.role || targetUser.role_id;
     const department = body.department || body.departmentAr || targetUser.department;
-    const jobTitle = body.jobTitleAr || body.job_title || targetUser.job_title || roleId;
+    const rawPutJt = (body.jobTitleAr || body.job_title || targetUser.job_title || roleId).toString();
+    const jobTitle = rawPutJt
+      .replace(/_/g, ' ')
+      .replace(/\s+/g, ' ')
+      .replace(/\(HRMS\)|\(ATS\)|\(CTS\)|\(CFO\)|\(HRD\)|\(C-Suite\)/gi, '')
+      .trim();
     const phone = body.phone !== undefined ? body.phone : (targetUser.phone || '');
     const clearanceLevel = body.clearanceLevel !== undefined ? Number(body.clearanceLevel) : undefined;
     const isActive = body.status !== undefined ? (body.status === 'ACTIVE' ? 1 : 0) : targetUser.is_active;

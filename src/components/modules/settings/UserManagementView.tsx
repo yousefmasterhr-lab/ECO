@@ -6,6 +6,7 @@ import { ManagedUser, UserRole, ROLE_CONFIGURATIONS } from '../../../types/auth'
 import { CreatableSelect } from '../../common/CreatableSelect';
 import { hrStorage } from '../../../services/hrStorage';
 import { PermissionsManagerModal } from '../auth/PermissionsManagerModal';
+import { cleanArabicTitle } from '../../../types/rbac';
 import {
   Users,
   UserPlus,
@@ -178,7 +179,7 @@ export const UserManagementView: React.FC = () => {
     setDepartmentId(user.departmentId || user.departmentAr || '');
     setDepartmentNameAr(user.departmentAr || '');
     setRole(user.role || '');
-    setRoleLabelAr(user.roleLabelAr || user.role || '');
+    setRoleLabelAr(cleanArabicTitle(user.roleLabelAr || user.role || ''));
     setPassword('');
     setAllowedCompanyIds(user.allowedCompanyIds && user.allowedCompanyIds.length > 0 ? user.allowedCompanyIds : ['all']);
     setModalMode('EDIT');
@@ -292,7 +293,7 @@ export const UserManagementView: React.FC = () => {
         departmentAr: departmentNameAr || departmentId || 'الإدارة العامة',
         departmentEn: departmentId || 'General Management',
         role: effectiveRole,
-        roleLabelAr: roleLabelAr || roleCfg.titleAr,
+        roleLabelAr: cleanArabicTitle(roleLabelAr || roleCfg.titleAr),
         roleLabelEn: roleCfg.titleEn,
         clearanceLevel: (roleCfg.clearanceLevel as 1 | 2 | 3 | 4) || 2,
         clearanceNameAr: roleCfg.clearanceNameAr,
@@ -319,7 +320,7 @@ export const UserManagementView: React.FC = () => {
         departmentAr: departmentNameAr || selectedUser.departmentAr,
         departmentEn: departmentId || selectedUser.departmentEn,
         role: effectiveRole,
-        roleLabelAr: roleLabelAr || selectedUser.roleLabelAr,
+        roleLabelAr: cleanArabicTitle(roleLabelAr || selectedUser.roleLabelAr),
         roleLabelEn: roleCfg.titleEn,
         passwordHash: password || selectedUser.passwordHash,
         allowedCompanyIds: allowedCompanyIds.length > 0 ? allowedCompanyIds : ['all'],
@@ -725,7 +726,7 @@ export const UserManagementView: React.FC = () => {
                   <span className="px-2.5 py-1 rounded-xl bg-amber-500/10 text-amber-900 dark:text-amber-300 text-[11px] font-bold flex items-center gap-1 border border-amber-500/30">
                     <Briefcase className="w-3 h-3 text-amber-600 dark:text-amber-400" />
                     <span className="truncate max-w-[140px]">
-                      {isRtl ? (u.roleLabelAr || u.jobTitleAr || u.role) : (u.roleLabelEn || u.role)}
+                      {isRtl ? cleanArabicTitle(u.roleLabelAr || u.jobTitleAr || u.role) : (u.roleLabelEn || u.role)}
                     </span>
                   </span>
                 </div>
@@ -1189,20 +1190,24 @@ export const UserManagementView: React.FC = () => {
 
                 {/* Password with Strength Meter & Auto-Generator */}
                 <div>
-                  <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center justify-between mb-1.5">
                     <label className="text-xs font-bold text-[#1A241C] dark:text-[#E0D9CB]">
                       {modalMode === 'ADD'
                         ? t('كلمة المرور *', 'Password *')
-                        : t('كلمة المرور (اتركها فارغة للإبقاء على الحالية)', 'Password (Leave blank to keep unchanged)')}
+                        : t('كلمة المرور الجديدة', 'New Password')}
                     </label>
 
                     <button
                       type="button"
-                      onClick={() => setPassword(generateStrongPassword())}
-                      className="text-[11px] font-bold text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1 cursor-pointer"
+                      onClick={() => {
+                        const newPass = generateStrongPassword();
+                        setPassword(newPass);
+                        setShowPassword(true);
+                      }}
+                      className="text-xs font-bold px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
                     >
-                      <Sparkles className="w-3 h-3" />
-                      <span>{t('⚡ توليد تلقائي قوي', '⚡ Auto-Generate')}</span>
+                      <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                      <span>{t('توليد كلمة مرور قوية', 'Generate Password')}</span>
                     </button>
                   </div>
 
@@ -1217,7 +1222,7 @@ export const UserManagementView: React.FC = () => {
                       autoComplete="new-password"
                       required={modalMode === 'ADD'}
                       dir="ltr"
-                      placeholder={t('أدخل كلمة مرور قوية (أو انقر على توليد تلقائي)', 'Enter password or auto-generate')}
+                      placeholder={modalMode === 'EDIT' ? t('اترك الحقل فارغاً للإبقاء على كلمة المرور الحالية دون تغيير', 'Leave blank to keep current password unchanged') : t('أدخل كلمة مرور قوية (أو انقر على توليد تلقائي)', 'Enter password or auto-generate')}
                       className="w-full ps-3.5 pe-10 py-2.5 rounded-xl text-xs bg-white dark:bg-[#07130E] border border-[#E0D9CB] dark:border-[#243628] focus:border-amber-500 text-[#1A241C] dark:text-[#F3EFE6] focus:outline-none transition-colors font-mono"
                     />
                     <button
@@ -1228,6 +1233,13 @@ export const UserManagementView: React.FC = () => {
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
+
+                  {modalMode === 'EDIT' && (
+                    <p className="text-[11px] text-slate-500 dark:text-[#8FA392] mt-1.5 flex items-center gap-1.5">
+                      <Key className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                      <span>{t('اترك هذا الحقل فارغاً إذا كنت لا ترغب في تغيير كلمة مرور المستخدم الحالية.', 'Leave blank if you do not want to change the user\'s current password.')}</span>
+                    </p>
+                  )}
 
                   {/* Password Strength Meter */}
                   {password && (

@@ -6,6 +6,7 @@ import {
   ConfigurationCategory,
   SystemConfigurationItem,
 } from '../../../types/configurations';
+import { cleanArabicTitle } from '../../../types/rbac';
 import {
   Plus,
   Search,
@@ -129,8 +130,10 @@ export const ConfigurationView: React.FC = () => {
       loadConfigurations();
     };
     window.addEventListener('eco-configurations-updated', handleGlobalUpdate);
+    window.addEventListener('eco-data-updated', handleGlobalUpdate);
     return () => {
       window.removeEventListener('eco-configurations-updated', handleGlobalUpdate);
+      window.removeEventListener('eco-data-updated', handleGlobalUpdate);
     };
   }, []);
 
@@ -224,12 +227,13 @@ export const ConfigurationView: React.FC = () => {
 
     setIsSubmitting(true);
     const actorName = user?.nameAr || user?.username || 'مدير النظام';
+    const sanitizedNameAr = cleanArabicTitle(nameAr.trim());
 
     try {
       if (modalMode === 'ADD') {
         const res = await d1Client.createConfiguration({
           category: formCategory as ConfigurationCategory,
-          nameAr: nameAr.trim(),
+          nameAr: sanitizedNameAr,
           nameEn: nameEn.trim() || undefined,
           isActive,
           userName: actorName,
@@ -247,7 +251,7 @@ export const ConfigurationView: React.FC = () => {
         }, 750);
       } else if (modalMode === 'EDIT' && selectedItem) {
         const res = await d1Client.updateConfiguration(selectedItem.id, {
-          nameAr: nameAr.trim(),
+          nameAr: sanitizedNameAr,
           nameEn: nameEn.trim() || undefined,
           category: formCategory as ConfigurationCategory,
           isActive,
@@ -568,7 +572,7 @@ export const ConfigurationView: React.FC = () => {
                     </div>
                     <div className="min-w-0">
                       <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-[#F3EFE6] truncate leading-snug">
-                        {item.nameAr}
+                        {cleanArabicTitle(item.nameAr)}
                       </h4>
                       {item.nameEn ? (
                         <span className="text-[11px] text-slate-400 dark:text-[#8FA392] truncate block font-sans mt-0.5">

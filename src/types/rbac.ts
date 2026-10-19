@@ -1232,3 +1232,124 @@ export const MULTI_DEPARTMENT_RBAC_DATA: Record<DepartmentKey, DepartmentRbacGro
   });
   return data;
 })();
+
+/**
+ * Universal Sub-Module View Permission Map covering ALL 12 ERP Modules
+ * Enables strict, real-time RBAC gating across all sidebar items and workspace tabs.
+ */
+export const SUBMODULE_VIEW_PERMISSION_MAP: Record<string, string> = {
+  // 1. Companies Management
+  comp_directory: 'companies.directory.view',
+  comp_licenses: 'companies.licenses.view',
+  comp_branches: 'companies.branches.view',
+  comp_structure: 'companies.org.view',
+  comp_signatories: 'companies.signatories.view',
+
+  // 2. Executive Management & Strategy
+  exec_kpi: 'exec.kpi.view',
+  exec_risks: 'exec.risks.view',
+  exec_financial: 'exec.kpi.view',
+
+  // 3. Financial Affairs
+  fin_chart: 'fin.chart.view',
+  fin_treasury: 'fin.treasury.view',
+  fin_vouchers: 'fin.vouchers.view',
+  fin_cheques: 'fin.checks.view',
+  fin_journals: 'fin.entries.view',
+  fin_sales: 'fin.invoices.view',
+  fin_procurement: 'fin.procurement.view',
+  fin_costcenters: 'fin.cost_centers.view',
+  fin_contracts: 'fin.contracts.view',
+  fin_projects: 'fin.projects.view',
+  fin_reports: 'fin.reports.view',
+
+  // 4. Human Resources (HRMS)
+  hr_directory: 'hr.employees.view',
+  hr_payroll: 'hr.payroll.view',
+  hr_disbursement: 'hr.payroll.view',
+  hr_contracts: 'hr.contracts.view',
+  hr_attendance: 'hr.attendance.view',
+  hr_leaves: 'hr.leaves.view',
+  hr_advances_requests: 'hr.advances.view',
+  hr_advances_active: 'hr.advances.view',
+  hr_recruitment: 'hr.recruitment.view',
+  hr_penalties: 'hr.penalties.view',
+  hr_missing_docs: 'hr.employees.view',
+  hr_approvals: 'hr.approvals.view',
+  hr_settings: 'hr.settings.view',
+  hr_audit: 'hr.audit.view',
+  hr_org_tree: 'hr.org.view',
+
+  // 5. Technical Office (Engineering)
+  eng_projects: 'eng.projects.view',
+  eng_schedule: 'eng.timeline.view',
+  eng_ipc: 'eng.invoices.view',
+  eng_contractors: 'eng.contracts.view',
+  eng_rfq: 'eng.rfq.view',
+  eng_po: 'eng.po.view',
+  eng_boq: 'eng.boq.view',
+  eng_submittals: 'eng.submittals.view',
+  eng_rfi: 'eng.site_reports.view',
+
+  // 6. Correspondence & Document Control (CTS)
+  cts_overview: 'cts.inbox.view',
+  cts_log: 'cts.inbox.view',
+  cts_incoming_new: 'cts.inbox.view',
+  cts_outgoing_draft: 'cts.outbox.view',
+
+  // 7. Legal Affairs
+  leg_contracts: 'leg.contracts.view',
+  leg_cases: 'leg.cases.view',
+  leg_poa: 'leg.poa.view',
+  leg_advisory: 'leg.investigations.view',
+
+  // 8. Social Insurance
+  ins_forms: 'ins.forms.view',
+  ins_register: 'ins.employees.view',
+  ins_wages: 'ins.dues.view',
+  ins_compliance: 'ins.compliance.view',
+
+  // 9. Talent Acquisition (ATS)
+  ats_openings: 'ats.jobs.view',
+  ats_pipeline: 'ats.candidates.view',
+  ats_interviews: 'ats.interviews.view',
+  ats_offers: 'ats.offers.view',
+
+  // 10. Administrative Decrees & Circulars
+  dec_decrees: 'dec.orders.view',
+  dec_circulars: 'dec.circulars.view',
+  dec_policies: 'dec.policies.view',
+  dec_bulletins: 'dec.circulars.view',
+
+  // 11. Front Desk & Reception
+  rec_visitors: 'rec.visitors.view',
+  rec_rooms: 'rec.rooms.view',
+  rec_parcels: 'rec.deliveries.view',
+  rec_calls: 'rec.visitors.view',
+  rec_passes: 'rec.visitors.view',
+
+  // 12. Settings & Permissions
+  set_rbac: 'set.rbac.view',
+  set_users: 'set.users.view',
+  set_configurations: 'set.configs.view',
+  set_audit: 'set.audit.view',
+  set_integrations: 'set.general.view',
+  set_upgrades: 'set.general.view',
+};
+
+/**
+ * Clean Arabic Titles Helper: Removes underscores, trims extra spaces,
+ * and strips technical English acronym tags (C-Suite, CFO, HRD, etc.)
+ */
+export function cleanArabicTitle(title?: string): string {
+  if (!title) return '';
+  return title
+    .replace(/_/g, ' ')
+    .replace(/\s+/g, ' ')
+    .replace(/\(C-Suite\)/gi, '')
+    .replace(/\(CFO\)/gi, '')
+    .replace(/\(HRD\)/gi, '')
+    .replace(/\(ATS\)/gi, '')
+    .replace(/\(CTS\)/gi, '')
+    .trim();
+}

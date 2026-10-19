@@ -63,7 +63,7 @@ export const Header: React.FC = () => {
   const { isRtl, t } = useLanguage();
   const { currentUser, toggleMobileDrawer, setSearchModalOpen, categories, selectItem } = useNavigation();
   const { isDark, toggleTheme } = useTheme();
-  const { user, logout } = useAuth();
+  const { user, logout, hasPermission } = useAuth();
   const { canInstall, isStandalone, promptInstall } = usePWA();
 
   const [companyDropdownOpen, setCompanyDropdownOpen] = useState(false);
@@ -830,20 +830,22 @@ export const Header: React.FC = () => {
                     <span className="flex-1 text-start">{t('سجل نشاطي وحركاتي', 'My Activity Log')}</span>
                   </button>
 
-                  {/* Users & Permissions Matrix (Quick Manager) */}
-                  <button
-                    onClick={() => {
-                      setUserDropdownOpen(false);
-                      setPermissionsModalOpen(true);
-                    }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23] transition-colors"
-                  >
-                    <SlidersHorizontal className="w-4 h-4 text-[#D99B26] dark:text-[#EBB34D]" />
-                    <span className="flex-1 text-start">{t('إدارة المستخدمين ومصفوفة الصلاحيات', 'Users & Permissions Matrix')}</span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#1C291E] text-white">
-                      {t('إدارة', 'Admin')}
-                    </span>
-                  </button>
+                  {/* Users & Permissions Matrix (Quick Manager - Strictly Gated by RBAC) */}
+                  {(user?.id === 'usr_root_csuite_01' || user?.username === 'admin' || user?.email === 'admin@hrsup.com' || (hasPermission && (hasPermission('settings.rbac.edit') || hasPermission('settings.view') || hasPermission('manage_users')))) && (
+                    <button
+                      onClick={() => {
+                        setUserDropdownOpen(false);
+                        setPermissionsModalOpen(true);
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23] transition-colors"
+                    >
+                      <SlidersHorizontal className="w-4 h-4 text-[#D99B26] dark:text-[#EBB34D]" />
+                      <span className="flex-1 text-start">{t('إدارة المستخدمين ومصفوفة الصلاحيات', 'Users & Permissions Matrix')}</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#1C291E] text-white">
+                        {t('إدارة', 'Admin')}
+                      </span>
+                    </button>
+                  )}
                 </div>
 
                 {/* 3. Sign Out Trigger */}

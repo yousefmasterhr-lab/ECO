@@ -39,6 +39,8 @@ interface CreatableSelectProps {
 function cleanTitle(text: string): string {
   if (!text) return '';
   return text
+    .replace(/_/g, ' ')
+    .replace(/\s+/g, ' ')
     .replace(/\s*\((?:HRMS|ATS|CTS|CFO|HRD|C-Suite)\)/gi, '')
     .trim();
 }
@@ -134,10 +136,12 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
       }
     };
     window.addEventListener('eco-configurations-updated', handleConfigUpdated);
+    window.addEventListener('eco-data-updated', handleConfigUpdated);
 
     return () => {
       isMounted = false;
       window.removeEventListener('eco-configurations-updated', handleConfigUpdated);
+      window.removeEventListener('eco-data-updated', handleConfigUpdated);
     };
   }, [category]);
 
