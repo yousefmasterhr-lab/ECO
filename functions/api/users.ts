@@ -78,49 +78,64 @@ async function ensureUserSchema(db: any) {
     }
   }
 
-  // Ensure root administrator Yousef Hegazy exists (zero fake national ID)
+  // Ensure system initialization flags table exists to prevent re-seeding / overwriting
   try {
-    const rootUser = await db.prepare(`SELECT id, full_name, national_id FROM users WHERE id = 'usr_root_csuite_01' OR username = 'admin' LIMIT 1`).first();
-    if (!rootUser) {
-      await db.prepare(`
-        INSERT INTO users (
-          id, national_id, full_name, username, email, password_hash, role_id, department,
-          job_title, phone, clearance_level, is_active, permissions_json, allowed_company_ids
-        ) VALUES (
-          'usr_root_csuite_01', '', 'يوسف حجازي', 'admin', 'admin@hrsup.com',
-          '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', 'SUPER_ADMIN',
-          'الإدارة العليا والاستراتيجية', 'مدير النظام العام / رئيس مجلس الإدارة', '+20 100 000 0000',
-          4, 1, ?, '["all"]'
-        )
-      `).bind(JSON.stringify(ALL_COMPANY_PERMS)).run();
-    } else {
-      // Purge 29001010100000 if present & ensure Yousef Hegazy title and all-company access
-      await db.prepare(`
-        UPDATE users
-        SET full_name = 'يوسف حجازي',
-            job_title = 'مدير النظام العام / رئيس مجلس الإدارة',
-            national_id = CASE WHEN national_id = '29001010100000' THEN '' ELSE national_id END,
-            allowed_company_ids = COALESCE(allowed_company_ids, '["all"]')
-        WHERE id = ?
-      `).bind(rootUser.id).run();
-    }
+    await db.prepare(`
+      CREATE TABLE IF NOT EXISTS system_init_flags (
+        flag_key TEXT PRIMARY KEY,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `).run();
 
-    // Ensure HR Manager Taghreed Atef is strictly configured with HR role and single company access
-    const taghreedUser: any = await db.prepare(
-      `SELECT id FROM users WHERE full_name LIKE '%تغريد%' OR username LIKE '%taghreed%' LIMIT 1`
+    const isInitialized = await db.prepare(
+      `SELECT flag_key FROM system_init_flags WHERE flag_key = 'init_users_governance_v4' LIMIT 1`
     ).first();
 
-    if (taghreedUser) {
+    if (!isInitialized) {
+      // Ensure root administrator Yousef Hegazy exists
+      const rootUser = await db.prepare(`SELECT id FROM users WHERE id = 'usr_root_csuite_01' OR username = 'admin' LIMIT 1`).first();
+      if (!rootUser) {
+        await db.prepare(`
+          INSERT INTO users (
+            id, national_id, full_name, username, email, password_hash, role_id, department,
+            job_title, phone, clearance_level, is_active, permissions_json, allowed_company_ids
+          ) VALUES (
+            'usr_root_csuite_01', '', 'يوسف حجازي', 'admin', 'admin@hrsup.com',
+            '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', 'SUPER_ADMIN',
+            'الإدارة العليا والاستراتيجية', 'مدير النظام العام / رئيس مجلس الإدارة', '+20 100 000 0000',
+            4, 1, ?, '["all"]'
+          )
+        `).bind(JSON.stringify(ALL_COMPANY_PERMS)).run();
+      }
+
+      // Check if Taghreed Atef exists, insert only if absent
+      const taghreedUser = await db.prepare(
+        `SELECT id FROM users WHERE id = 'usr_hr_taghreed_01' OR email = 'taghreed@hrsup.com' OR username = 'taghreed' LIMIT 1`
+      ).first();
+
+      if (!taghreedUser) {
+        await db.prepare(`
+          INSERT INTO users (
+            id, national_id, full_name, username, email, password_hash, role_id, department,
+            job_title, phone, clearance_level, is_active, permissions_json, allowed_company_ids
+          ) VALUES (
+            'usr_hr_taghreed_01', '', 'تغريد عاطف', 'taghreed', 'taghreed@hrsup.com',
+            '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', 'HR_MANAGER',
+            'إدارة الموارد البشرية والرواتب', 'مدير الموارد البشرية', '+20 100 000 0001',
+            3, 1, '["companies.directory.view", "companies.licenses.view"]', '["comp_01"]'
+          )
+        `).run();
+      }
+
+      // Clean up legacy titles in users table (strip technical tags like HRMS, CFO, C-Suite)
       await db.prepare(`
         UPDATE users
-        SET role_id = 'HR_MANAGER',
-            job_title = 'مدير الموارد البشرية',
-            department = 'إدارة الموارد البشرية والرواتب',
-            clearance_level = 3,
-            allowed_company_ids = '["comp_01"]',
-            permissions_json = '["hr.*", "insurance.*", "ats.*", "decrees.*", "companies.directory.view", "companies.licenses.view"]'
-        WHERE id = ?
-      `).bind(taghreedUser.id).run();
+        SET job_title = REPLACE(REPLACE(REPLACE(REPLACE(job_title, '(HRMS)', ''), '(ATS)', ''), '(CTS)', ''), '(C-Suite)', '')
+        WHERE job_title LIKE '%(%'
+      `).run().catch(() => null);
+
+      // Record flag so this never runs again and user modifications are 100% persistent
+      await db.prepare(`INSERT OR IGNORE INTO system_init_flags (flag_key) VALUES ('init_users_governance_v4')`).run();
     }
   } catch (err) {
     console.warn('User schema verification notice:', err);

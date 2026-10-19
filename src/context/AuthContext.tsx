@@ -11,7 +11,7 @@ import {
   INITIAL_TAGHREED_USER,
   ALL_COMPANY_PERMISSIONS
 } from '../types/auth';
-import { cleanArabicTitle, SUBMODULE_VIEW_PERMISSION_MAP } from '../types/rbac';
+import { SUBMODULE_VIEW_PERMISSION_MAP } from '../types/rbac';
 import { d1Client, clearSessionToken, setSessionToken } from '../services/d1Client';
 
 interface AuthContextType {
@@ -227,13 +227,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                               matched.customPermissions ||
                               matrixMap.get(`role:${effectiveRole}`);
 
-          const finalPerms = d1UserPerms && Array.isArray(d1UserPerms) && d1UserPerms.length > 0
+          const finalPerms = d1UserPerms && Array.isArray(d1UserPerms)
             ? d1UserPerms
             : (isRoot ? ['*'] : (roleCfg.allowedModuleIds.map(m => `${m}.*`)));
 
           const finalAllowedModules = isRoot
             ? ROLE_CONFIGURATIONS.SUPER_ADMIN.allowedModuleIds
-            : (roleCfg.allowedModuleIds || ['hr', 'companies']);
+            : (roleCfg.allowedModuleIds || ['companies']);
 
           // Non-root users can NEVER have 'all' companies
           const finalAllowedCompanies = isRoot
@@ -249,9 +249,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             email: matched.email,
             username: matched.username,
             role: effectiveRole,
-            roleLabelAr: isRoot ? 'مدير النظام العام / رئيس مجلس الإدارة' : (isTaghreed ? 'مدير الموارد البشرية (HRMS)' : (matched.roleLabelAr || matched.jobTitleAr || roleCfg.titleAr)),
+            roleLabelAr: isRoot ? 'مدير النظام العام / رئيس مجلس الإدارة' : (isTaghreed ? 'مدير الموارد البشرية' : (matched.roleLabelAr || matched.jobTitleAr || roleCfg.titleAr)),
             roleLabelEn: isRoot ? 'System Administrator / CEO' : roleCfg.titleEn,
-            jobTitleAr: isRoot ? 'مدير النظام العام / رئيس مجلس الإدارة' : (isTaghreed ? 'مدير الموارد البشرية (HRMS)' : (matched.jobTitleAr || matched.roleLabelAr || roleCfg.titleAr)),
+            jobTitleAr: isRoot ? 'مدير النظام العام / رئيس مجلس الإدارة' : (isTaghreed ? 'مدير الموارد البشرية' : (matched.jobTitleAr || matched.roleLabelAr || roleCfg.titleAr)),
             jobTitleEn: isRoot ? 'System Administrator / CEO' : (matched.jobTitleEn || roleCfg.titleEn),
             departmentAr: isRoot ? 'الإدارة العليا والاستراتيجية' : (isTaghreed ? 'إدارة الموارد البشرية والرواتب' : (matched.departmentAr || roleCfg.departmentAr)),
             departmentEn: isRoot ? 'Executive Management' : (matched.departmentEn || roleCfg.departmentEn),
@@ -409,8 +409,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             nameEn: isRoot ? 'Yousef Hegazy' : (parsed.nameEn || (isTaghreed ? 'Taghreed Atef' : 'System User')),
             jobTitleAr: isRoot
               ? 'مدير النظام العام / رئيس مجلس الإدارة'
-              : (isTaghreed ? 'مدير الموارد البشرية (HRMS)' : (parsed.jobTitleAr || config.titleAr)),
-            roleLabelAr: isRoot ? 'مدير النظام العام / رئيس مجلس الإدارة' : (isTaghreed ? 'مدير الموارد البشرية (HRMS)' : config.titleAr),
+              : (isTaghreed ? 'مدير الموارد البشرية' : (parsed.jobTitleAr || config.titleAr)),
+            roleLabelAr: isRoot ? 'مدير النظام العام / رئيس مجلس الإدارة' : (isTaghreed ? 'مدير الموارد البشرية' : config.titleAr),
             roleLabelEn: isRoot ? 'System Administrator / CEO' : config.titleEn,
             departmentAr: isRoot ? 'الإدارة العليا والاستراتيجية' : (isTaghreed ? 'إدارة الموارد البشرية والرواتب' : (parsed.departmentAr || config.departmentAr)),
             departmentEn: isRoot ? 'Executive Management' : (parsed.departmentEn || config.departmentEn),
@@ -832,9 +832,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return false;
         });
         if (hasAnySubPerm) return true;
+
+        // When permissions array is present, it is the SOLE authority. Never fall through to allowedModuleIds!
+        return false;
       }
 
-      // Check user's assigned allowedModuleIds
+      // Check user's assigned allowedModuleIds only if permissions is not an array (legacy fallback)
       if (Array.isArray(user.allowedModuleIds) && user.allowedModuleIds.length > 0) {
         return user.allowedModuleIds.includes(moduleId);
       }
@@ -856,23 +859,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 
   // Real User Profile Editor (Syncs to Cloudflare D1 & Local Storage)
+  // Strictly prohibits employees from modifying their official Job Title or Department
   const updateUserProfile = useCallback(
     async (updates: {
       nameAr?: string;
-      jobTitleAr?: string;
       email?: string;
       phone?: string;
       avatarUrl?: string;
+      // jobTitleAr is deliberately ignored for non-admin profile edits
     }): Promise<{ success: boolean; error?: string }> => {
       if (!user) return { success: false, error: 'المستخدم غير مسجل الدخول' };
       try {
-        const sanitizedUpdates = {
-          ...updates,
-          ...(updates.jobTitleAr ? { jobTitleAr: cleanArabicTitle(updates.jobTitleAr) } : {}),
+        const safeUpdates = {
+          nameAr: updates.nameAr ? updates.nameAr.trim() : user.nameAr,
+          email: updates.email ? updates.email.trim() : user.email,
+          phone: updates.phone !== undefined ? updates.phone.trim() : user.phone,
+          avatarUrl: updates.avatarUrl !== undefined ? updates.avatarUrl : user.avatarUrl,
         };
         const updatedUser: AuthUser = {
           ...user,
-          ...sanitizedUpdates,
+          ...safeUpdates,
         };
         setUser(updatedUser);
 
@@ -884,11 +890,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         // Update in managedUsers collection
         setManagedUsers(prev =>
-          prev.map(u => (u.id === user.id ? { ...u, ...updates } : u))
+          prev.map(u => (u.id === user.id ? { ...u, ...safeUpdates } : u))
         );
 
         // Sync with Cloudflare D1
-        await d1Client.updateUser(user.id, updates);
+        await d1Client.updateUser(user.id, safeUpdates);
 
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('eco-data-updated'));

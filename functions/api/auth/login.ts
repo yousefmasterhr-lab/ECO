@@ -83,6 +83,13 @@ export const onRequestPost: PagesFunction<{ DB: D1Database; JWT_SECRET?: string 
       allowedCompanies = ['all'];
     }
 
+    const rawJobTitle = user.job_title || user.role_id;
+    const cleanJobTitle = String(rawJobTitle || '')
+      .replace(/_/g, ' ')
+      .replace(/\s+/g, ' ')
+      .replace(/\(HRMS\)|\(ATS\)|\(CTS\)|\(CFO\)|\(HRD\)|\(C-Suite\)/gi, '')
+      .trim();
+
     // Safe Token Generation without external crashes
     const sanitizedUser = {
       id: user.id,
@@ -93,7 +100,7 @@ export const onRequestPost: PagesFunction<{ DB: D1Database; JWT_SECRET?: string 
       role_id: user.role_id,
       department: user.department,
       clearance_level: user.clearance_level,
-      job_title: user.job_title,
+      job_title: cleanJobTitle,
       phone: user.phone,
       // camelCase compatibility
       nationalId: user.national_id,
@@ -102,7 +109,7 @@ export const onRequestPost: PagesFunction<{ DB: D1Database; JWT_SECRET?: string 
       nameEn: user.username,
       role: user.role_id,
       departmentAr: user.department,
-      jobTitleAr: user.job_title || user.role_id,
+      jobTitleAr: cleanJobTitle,
       phoneStr: user.phone,
       clearanceLevel: user.clearance_level,
       permissions: perms,

@@ -173,7 +173,7 @@ export const SidebarItem: React.FC<SidebarItemProps> = ({ category }) => {
   const visibleSubItems = React.useMemo(() => {
     return category.subItems.filter(sub => {
       const permKey = SUBMODULE_VIEW_PERMISSION_MAP[sub.id];
-      if (!permKey) return true;
+      if (!permKey) return hasPermission(`${category.id}.*`) || hasPermission(`${category.id}.view`);
       return hasPermission(permKey);
     });
   }, [category.subItems, hasPermission]);

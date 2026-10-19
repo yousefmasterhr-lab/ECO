@@ -413,8 +413,8 @@ export const INITIAL_TAGHREED_USER: ManagedUser = {
   passwordHash: 'admin123',
   createdAt: '2026-01-01',
   lastLogin: '2026-10-10 08:30',
-  customPermissions: ['hr.*', 'insurance.*', 'ats.*', 'decrees.*', 'companies.directory.view', 'companies.licenses.view'],
-  permissions: ['hr.*', 'insurance.*', 'ats.*', 'decrees.*', 'companies.directory.view', 'companies.licenses.view'],
+  customPermissions: ['companies.directory.view', 'companies.licenses.view'],
+  permissions: ['companies.directory.view', 'companies.licenses.view'],
   allowedCompanyIds: ['comp_01'],
 };
 
@@ -469,9 +469,9 @@ export const PRECONFIGURED_SEED_USERS: SeedAccount[] = [
       clearanceNameAr: INITIAL_TAGHREED_USER.clearanceNameAr,
       clearanceNameEn: INITIAL_TAGHREED_USER.clearanceNameEn,
       avatarUrl: '',
-      allowedModuleIds: ['hr', 'ats', 'insurance', 'companies', 'decrees'],
+      allowedModuleIds: ['companies'],
       allowedCompanyIds: ['comp_01'],
-      permissions: ['hr.*', 'insurance.*', 'ats.*', 'decrees.*', 'companies.directory.view', 'companies.licenses.view'],
+      permissions: ['companies.directory.view', 'companies.licenses.view'],
       lastLogin: '2026-10-10 08:30',
     },
     passwordHash: 'admin123',

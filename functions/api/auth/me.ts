@@ -67,6 +67,13 @@ export const onRequestGet: PagesFunction = async (context) => {
       allowedCompanies = ['all'];
     }
 
+    const rawJobTitle = user.job_title || user.role_id;
+    const cleanJobTitle = String(rawJobTitle || '')
+      .replace(/_/g, ' ')
+      .replace(/\s+/g, ' ')
+      .replace(/\(HRMS\)|\(ATS\)|\(CTS\)|\(CFO\)|\(HRD\)|\(C-Suite\)/gi, '')
+      .trim();
+
     const safeUser = {
       id: user.id,
       nationalId: user.national_id,
@@ -78,7 +85,7 @@ export const onRequestGet: PagesFunction = async (context) => {
       role: user.role_id,
       department: user.department,
       departmentAr: user.department,
-      jobTitleAr: user.job_title || user.role_id,
+      jobTitleAr: cleanJobTitle,
       phone: user.phone || '',
       clearanceLevel: user.clearance_level,
       permissions: perms,

@@ -141,7 +141,7 @@ export const EmptyCanvas: React.FC = () => {
       .map(cat => {
         const authorizedSubItems = cat.subItems.filter(sub => {
           const permKey = SUBMODULE_VIEW_PERMISSION_MAP[sub.id];
-          if (!permKey) return true;
+          if (!permKey) return hasPermission(`${cat.id}.*`) || hasPermission(`${cat.id}.view`);
           return hasPermission(permKey);
         });
         return {

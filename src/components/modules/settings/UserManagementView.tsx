@@ -180,7 +180,7 @@ export const UserManagementView: React.FC = () => {
     setDepartmentId(user.departmentId || user.departmentAr || '');
     setDepartmentNameAr(user.departmentAr || '');
     setRole(user.role || '');
-    setRoleLabelAr(cleanArabicTitle(user.roleLabelAr || user.role || ''));
+    setRoleLabelAr(cleanArabicTitle(user.jobTitleAr || user.roleLabelAr || user.role || ''));
     setPassword('');
     setAllowedCompanyIds(user.allowedCompanyIds && user.allowedCompanyIds.length > 0 ? user.allowedCompanyIds : ['all']);
     setModalMode('EDIT');
@@ -294,6 +294,8 @@ export const UserManagementView: React.FC = () => {
         departmentAr: departmentNameAr || departmentId || 'الإدارة العامة',
         departmentEn: departmentId || 'General Management',
         role: effectiveRole,
+        jobTitleAr: cleanArabicTitle(roleLabelAr || roleCfg.titleAr),
+        jobTitleEn: roleCfg.titleEn,
         roleLabelAr: cleanArabicTitle(roleLabelAr || roleCfg.titleAr),
         roleLabelEn: roleCfg.titleEn,
         clearanceLevel: (roleCfg.clearanceLevel as 1 | 2 | 3 | 4) || 2,
@@ -321,7 +323,9 @@ export const UserManagementView: React.FC = () => {
         departmentAr: departmentNameAr || selectedUser.departmentAr,
         departmentEn: departmentId || selectedUser.departmentEn,
         role: effectiveRole,
-        roleLabelAr: cleanArabicTitle(roleLabelAr || selectedUser.roleLabelAr),
+        jobTitleAr: cleanArabicTitle(roleLabelAr || selectedUser.jobTitleAr || selectedUser.roleLabelAr),
+        jobTitleEn: roleCfg.titleEn,
+        roleLabelAr: cleanArabicTitle(roleLabelAr || selectedUser.jobTitleAr || selectedUser.roleLabelAr),
         roleLabelEn: roleCfg.titleEn,
         passwordHash: password || selectedUser.passwordHash,
         allowedCompanyIds: allowedCompanyIds.length > 0 ? allowedCompanyIds : ['all'],
@@ -727,7 +731,7 @@ export const UserManagementView: React.FC = () => {
                   <span className="px-2.5 py-1 rounded-xl bg-amber-500/10 text-amber-900 dark:text-amber-300 text-[11px] font-bold flex items-center gap-1 border border-amber-500/30">
                     <Briefcase className="w-3 h-3 text-amber-600 dark:text-amber-400" />
                     <span className="truncate max-w-[140px]">
-                      {isRtl ? cleanArabicTitle(u.roleLabelAr || u.jobTitleAr || u.role) : (u.roleLabelEn || u.role)}
+                      {isRtl ? cleanArabicTitle(u.jobTitleAr || u.roleLabelAr || u.role) : (u.jobTitleEn || u.roleLabelEn || u.role)}
                     </span>
                   </span>
                 </div>
