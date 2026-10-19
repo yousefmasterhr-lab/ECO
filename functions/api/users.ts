@@ -104,8 +104,26 @@ async function ensureUserSchema(db: any) {
         WHERE id = ?
       `).bind(rootUser.id).run();
     }
+
+    // Ensure HR Manager Taghreed Atef is strictly configured with HR role and single company access
+    const taghreedUser: any = await db.prepare(
+      `SELECT id FROM users WHERE full_name LIKE '%تغريد%' OR username LIKE '%taghreed%' LIMIT 1`
+    ).first();
+
+    if (taghreedUser) {
+      await db.prepare(`
+        UPDATE users
+        SET role_id = 'HR_MANAGER',
+            job_title = 'مدير الموارد البشرية (HRMS)',
+            department = 'إدارة الموارد البشرية والرواتب',
+            clearance_level = 3,
+            allowed_company_ids = '["comp_01"]',
+            permissions_json = '["hr.*", "insurance.*", "ats.*", "decrees.*", "companies.directory.view"]'
+        WHERE id = ?
+      `).bind(taghreedUser.id).run();
+    }
   } catch (err) {
-    console.warn('Root user verification notice:', err);
+    console.warn('User schema verification notice:', err);
   }
 }
 

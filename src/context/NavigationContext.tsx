@@ -290,9 +290,9 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     if (!user) return [];
     const isRoot =
       user.id === 'usr_root_csuite_01' ||
+      user.id === 'usr_root_csuite' ||
       user.username === 'admin' ||
-      user.email === 'admin@hrsup.com' ||
-      (Array.isArray(user.permissions) && user.permissions.includes('*'));
+      user.email === 'admin@hrsup.com';
 
     if (isRoot) {
       return DEPARTMENT_CATEGORIES;

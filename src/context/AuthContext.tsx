@@ -8,6 +8,7 @@ import {
   ManagedUser,
   AuditLogEntry,
   INITIAL_ROOT_ADMIN,
+  INITIAL_TAGHREED_USER,
   ALL_COMPANY_PERMISSIONS
 } from '../types/auth';
 import { d1Client, clearSessionToken, setSessionToken } from '../services/d1Client';
@@ -111,7 +112,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (e) {
       console.warn('Failed to parse managed users from localStorage', e);
     }
-    return [INITIAL_ROOT_ADMIN];
+    return [INITIAL_ROOT_ADMIN, INITIAL_TAGHREED_USER];
   });
 
   // 2. Real Dynamic Audit Log State
@@ -196,30 +197,76 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(currentUser => {
           if (!currentUser) return null;
           const matched = mergedUsers.find(
-            u => u.id === currentUser.id || u.email.toLowerCase() === currentUser.email.toLowerCase()
+            u => u.id === currentUser.id || u.email.toLowerCase() === currentUser.email.toLowerCase() || (currentUser.username && u.username.toLowerCase() === currentUser.username.toLowerCase())
           );
 
-          // Priority: direct user matrix in D1 > matched user permissions > role matrix in D1 > existing
-          const d1UserPerms = matrixMap.get(`user:${currentUser.id}`) ||
-                              (matched?.id ? matrixMap.get(`user:${matched.id}`) : undefined) ||
-                              matched?.permissions ||
-                              matrixMap.get(`role:${currentUser.role}`);
+          if (!matched) return currentUser;
+
+          const isRoot =
+            matched.id === INITIAL_ROOT_ADMIN.id ||
+            matched.id === 'usr_root_csuite_01' ||
+            matched.id === 'usr_root_csuite' ||
+            matched.username === 'admin' ||
+            matched.email === 'admin@hrsup.com';
+
+          const isTaghreed =
+            (matched.nameAr && matched.nameAr.includes('تغريد')) ||
+            (matched.username && matched.username.includes('taghreed')) ||
+            (matched.email && matched.email.includes('taghreed'));
+
+          const effectiveRole: UserRole = isRoot
+            ? 'SUPER_ADMIN'
+            : (isTaghreed ? 'HR_MANAGER' : (matched.role === 'SUPER_ADMIN' ? 'HR_MANAGER' : ((matched.role as UserRole) || 'HR_MANAGER')));
+
+          const roleCfg = ROLE_CONFIGURATIONS[effectiveRole] || ROLE_CONFIGURATIONS.HR_MANAGER;
+
+          // Priority: direct user matrix in D1 > matched user permissions > role matrix in D1
+          const d1UserPerms = matrixMap.get(`user:${matched.id}`) ||
+                              matched.permissions ||
+                              matched.customPermissions ||
+                              matrixMap.get(`role:${effectiveRole}`);
 
           const finalPerms = d1UserPerms && Array.isArray(d1UserPerms) && d1UserPerms.length > 0
             ? d1UserPerms
-            : (currentUser.permissions || []);
+            : (isRoot ? ['*'] : (roleCfg.allowedModuleIds.map(m => `${m}.*`)));
 
-          const updated = {
-            ...currentUser,
-            nameAr: matched?.nameAr || currentUser.nameAr,
-            nameEn: matched?.nameEn || currentUser.nameEn,
-            jobTitleAr: matched?.jobTitleAr || currentUser.jobTitleAr,
-            phone: matched?.phone || currentUser.phone,
+          const finalAllowedModules = isRoot
+            ? ROLE_CONFIGURATIONS.SUPER_ADMIN.allowedModuleIds
+            : (roleCfg.allowedModuleIds || ['hr', 'companies']);
+
+          // Non-root users can NEVER have 'all' companies
+          const finalAllowedCompanies = isRoot
+            ? ['all']
+            : (matched.allowedCompanyIds && !matched.allowedCompanyIds.includes('all') && matched.allowedCompanyIds.length > 0
+                ? matched.allowedCompanyIds
+                : ['comp_01']);
+
+          const updated: AuthUser = {
+            id: matched.id,
+            nameAr: isRoot ? 'يوسف حجازي' : (matched.nameAr || (isTaghreed ? 'تغريد عاطف' : matched.username)),
+            nameEn: isRoot ? 'Yousef Hegazy' : (matched.nameEn || (isTaghreed ? 'Taghreed Atef' : matched.username)),
+            email: matched.email,
+            username: matched.username,
+            role: effectiveRole,
+            roleLabelAr: isRoot ? 'مدير النظام العام / رئيس مجلس الإدارة' : (isTaghreed ? 'مدير الموارد البشرية (HRMS)' : (matched.roleLabelAr || matched.jobTitleAr || roleCfg.titleAr)),
+            roleLabelEn: isRoot ? 'System Administrator / CEO' : roleCfg.titleEn,
+            jobTitleAr: isRoot ? 'مدير النظام العام / رئيس مجلس الإدارة' : (isTaghreed ? 'مدير الموارد البشرية (HRMS)' : (matched.jobTitleAr || matched.roleLabelAr || roleCfg.titleAr)),
+            jobTitleEn: isRoot ? 'System Administrator / CEO' : (matched.jobTitleEn || roleCfg.titleEn),
+            departmentAr: isRoot ? 'الإدارة العليا والاستراتيجية' : (isTaghreed ? 'إدارة الموارد البشرية والرواتب' : (matched.departmentAr || roleCfg.departmentAr)),
+            departmentEn: isRoot ? 'Executive Management' : (matched.departmentEn || roleCfg.departmentEn),
+            phone: matched.phone || (isRoot ? '+20 100 000 0000' : '+20 100 000 0001'),
+            clearanceLevel: isRoot ? 4 : (matched.clearanceLevel || roleCfg.clearanceLevel || 2),
+            clearanceNameAr: isRoot ? 'إدارة عليا وحوكمة' : (roleCfg.clearanceNameAr || 'صلاحيات مخصصة'),
+            clearanceNameEn: isRoot ? 'Level 4 - C-Suite Governance' : (roleCfg.clearanceNameEn || 'Custom Role'),
             permissions: finalPerms,
+            allowedModuleIds: finalAllowedModules,
+            allowedCompanyIds: finalAllowedCompanies,
+            lastLogin: currentUser.lastLogin || new Date().toISOString().replace('T', ' ').substring(0, 16),
           };
 
           try {
             localStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify(updated));
+            sessionStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify(updated));
           } catch {}
 
           return updated;
@@ -321,8 +368,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (activeData) {
         const parsed = JSON.parse(activeData) as AuthUser;
-        if (parsed && parsed.id && parsed.role) {
-          const rawRole = (parsed.role as string) || 'HR_MANAGER';
+        if (parsed && parsed.id) {
           const isRoot =
             parsed.id === INITIAL_ROOT_ADMIN.id ||
             parsed.id === 'usr_root_csuite_01' ||
@@ -330,28 +376,58 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             parsed.username === 'admin' ||
             parsed.email === 'admin@hrsup.com';
 
-          const mappedRole: UserRole = isRoot ? 'SUPER_ADMIN' : (rawRole as UserRole);
-          const config = ROLE_CONFIGURATIONS[mappedRole] || ROLE_CONFIGURATIONS.HR_MANAGER;
+          const isTaghreed =
+            (parsed.nameAr && parsed.nameAr.includes('تغريد')) ||
+            (parsed.username && parsed.username.includes('taghreed')) ||
+            (parsed.email && parsed.email.includes('taghreed'));
 
-          setUser({
-            ...parsed,
-            role: mappedRole,
-            nameAr: isRoot ? 'يوسف حجازي' : (parsed.nameAr || (parsed as any).fullName || parsed.username || 'مستخدم المنظومة'),
-            nameEn: isRoot ? 'Yousef Hegazy' : (parsed.nameEn || parsed.username || 'System User'),
+          // Non-root users can NEVER be SUPER_ADMIN
+          const effectiveRole: UserRole = isRoot
+            ? 'SUPER_ADMIN'
+            : (isTaghreed ? 'HR_MANAGER' : (parsed.role === 'SUPER_ADMIN' || (parsed.role as string) === 'admin' ? 'HR_MANAGER' : (parsed.role || 'HR_MANAGER')));
+
+          const config = ROLE_CONFIGURATIONS[effectiveRole] || ROLE_CONFIGURATIONS.HR_MANAGER;
+
+          const allowedModules = isRoot
+            ? ROLE_CONFIGURATIONS.SUPER_ADMIN.allowedModuleIds
+            : (config.allowedModuleIds || ['hr', 'companies']);
+
+          // Non-root users can NEVER have 'all' companies
+          const allowedCompanies = isRoot
+            ? ['all']
+            : (parsed.allowedCompanyIds && !parsed.allowedCompanyIds.includes('all') && parsed.allowedCompanyIds.length > 0
+                ? parsed.allowedCompanyIds
+                : ['comp_01']);
+
+          const restoredUser: AuthUser = {
+            id: parsed.id,
+            email: parsed.email,
+            username: parsed.username,
+            role: effectiveRole,
+            nameAr: isRoot ? 'يوسف حجازي' : (parsed.nameAr || (isTaghreed ? 'تغريد عاطف' : 'مستخدم المنظومة')),
+            nameEn: isRoot ? 'Yousef Hegazy' : (parsed.nameEn || (isTaghreed ? 'Taghreed Atef' : 'System User')),
             jobTitleAr: isRoot
-              ? (parsed.jobTitleAr || 'مدير النظام العام / رئيس مجلس الإدارة')
-              : (parsed.jobTitleAr || parsed.roleLabelAr || config?.titleAr),
-            phone: isRoot ? (parsed.phone || '+20 100 000 0000') : parsed.phone,
-            permissions: Array.isArray(parsed.permissions) && parsed.permissions.length > 0
-              ? parsed.permissions
-              : (isRoot ? ['*'] : (config?.allowedModuleIds?.map(m => `${m}.*`) || [])),
-            allowedModuleIds: (parsed.allowedModuleIds && parsed.allowedModuleIds.length > 0)
-              ? parsed.allowedModuleIds
-              : (config?.allowedModuleIds || []),
-            allowedCompanyIds: (parsed.allowedCompanyIds && parsed.allowedCompanyIds.length > 0)
-              ? parsed.allowedCompanyIds
-              : ['all'],
-          });
+              ? 'مدير النظام العام / رئيس مجلس الإدارة'
+              : (isTaghreed ? 'مدير الموارد البشرية (HRMS)' : (parsed.jobTitleAr || config.titleAr)),
+            roleLabelAr: isRoot ? 'مدير النظام العام / رئيس مجلس الإدارة' : (isTaghreed ? 'مدير الموارد البشرية (HRMS)' : config.titleAr),
+            roleLabelEn: isRoot ? 'System Administrator / CEO' : config.titleEn,
+            departmentAr: isRoot ? 'الإدارة العليا والاستراتيجية' : (isTaghreed ? 'إدارة الموارد البشرية والرواتب' : (parsed.departmentAr || config.departmentAr)),
+            departmentEn: isRoot ? 'Executive Management' : (parsed.departmentEn || config.departmentEn),
+            phone: isRoot ? (parsed.phone || '+20 100 000 0000') : (parsed.phone || '+20 100 000 0001'),
+            clearanceLevel: isRoot ? 4 : (parsed.clearanceLevel || config.clearanceLevel || 2),
+            clearanceNameAr: isRoot ? 'إدارة عليا وحوكمة' : (config.clearanceNameAr || 'صلاحيات مخصصة'),
+            clearanceNameEn: isRoot ? 'Level 4 - C-Suite Governance' : (config.clearanceNameEn || 'Custom Role'),
+            permissions: isRoot ? ['*'] : (parsed.permissions && !parsed.permissions.includes('*') ? parsed.permissions : config.allowedModuleIds.map(m => `${m}.*`)),
+            allowedModuleIds: allowedModules,
+            allowedCompanyIds: allowedCompanies,
+            lastLogin: parsed.lastLogin || new Date().toISOString().replace('T', ' ').substring(0, 16),
+          };
+
+          setUser(restoredUser);
+          try {
+            localStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify(restoredUser));
+            sessionStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify(restoredUser));
+          } catch {}
         }
       } else {
         setUser(null);
@@ -689,21 +765,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!user) return false;
       const isRoot =
         user.id === 'usr_root_csuite_01' ||
+        user.id === 'usr_root_csuite' ||
         user.id === INITIAL_ROOT_ADMIN.id ||
         user.username === 'admin' ||
         user.email === 'admin@hrsup.com';
       if (isRoot) return true;
 
-      // Check wildcard or module-specific permissions
-      if (Array.isArray(user.permissions)) {
-        if (user.permissions.includes('*')) return true;
-        if (user.permissions.includes(`${moduleId}.*`) || user.permissions.includes(moduleId)) return true;
-        if (user.permissions.some(p => p.startsWith(`${moduleId}.`))) return true;
+      // Absolute Barrier: 'settings' and 'executive' can NEVER be accessed by non-root users
+      if (moduleId === 'settings' || moduleId === 'executive') {
+        return false;
       }
 
       // Check user's assigned allowedModuleIds
       if (Array.isArray(user.allowedModuleIds) && user.allowedModuleIds.length > 0) {
         return user.allowedModuleIds.includes(moduleId);
+      }
+
+      // Check module-specific permissions
+      if (Array.isArray(user.permissions)) {
+        if (user.permissions.includes(`${moduleId}.*`) || user.permissions.includes(moduleId)) return true;
+        if (user.permissions.some(p => p.startsWith(`${moduleId}.`))) return true;
       }
 
       return false;

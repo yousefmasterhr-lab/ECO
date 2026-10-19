@@ -124,26 +124,30 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       user.id === 'usr_root_csuite_01' ||
       user.id === 'usr_root_csuite' ||
       user.username === 'admin' ||
-      user.email === 'admin@hrsup.com' ||
-      (Array.isArray(user.permissions) && user.permissions.includes('*'))
+      user.email === 'admin@hrsup.com'
     );
   }, [user]);
 
   // Strictly filter authorized companies against user.allowedCompanyIds
   const companies: Company[] = useMemo(() => {
-    if (!user || isSuperAdmin) return rawCompanies;
+    if (!user) return rawCompanies;
+    if (isSuperAdmin) return rawCompanies;
+
     const allowed = user.allowedCompanyIds;
     if (!allowed || allowed.length === 0 || allowed.includes('all')) {
-      return rawCompanies;
+      return [rawCompanies[0] || COMPANIES_LIST[0]!];
     }
 
     const filtered = rawCompanies.filter(c =>
       allowed.includes(c.id) ||
       allowed.includes(c.code) ||
-      allowed.some(aId =>
-        c.id.toLowerCase().includes(aId.toLowerCase()) ||
-        c.nameAr.toLowerCase().includes(aId.toLowerCase())
-      )
+      allowed.some(aId => {
+        const cleanA = aId.trim().toLowerCase();
+        const cleanId = c.id.trim().toLowerCase();
+        const cleanCode = (c.code || '').trim().toLowerCase();
+        const cleanName = (c.nameAr || '').trim().toLowerCase();
+        return cleanId === cleanA || cleanCode === cleanA || cleanName.includes(cleanA) || cleanA.includes(cleanName);
+      })
     );
 
     return filtered.length > 0 ? filtered : [rawCompanies[0] || COMPANIES_LIST[0]!];

@@ -746,13 +746,13 @@ export const Header: React.FC = () => {
               </div>
               <div className="hidden sm:block text-start leading-tight">
                 <div className="text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6] truncate max-w-[200px]">
-                  {isRtl ? (user?.nameAr || currentUser.nameAr) : (user?.nameEn || currentUser.nameEn)}
+                  {isRtl ? (user?.nameAr || 'مستخدم المنظومة') : (user?.nameEn || 'System User')}
                 </div>
                 <div className="flex items-center gap-1 text-[10px] font-semibold text-[#D99B26] dark:text-[#EBB34D]">
-                  <span className="truncate max-w-[240px]" title={user?.jobTitleAr || currentUser.jobTitleAr || 'مدير النظام العام'}>
+                  <span className="truncate max-w-[240px]">
                     {user?.jobTitleAr?.includes('/')
                       ? user.jobTitleAr.split('/')[0].trim()
-                      : (user?.jobTitleAr || (currentUser.jobTitleAr?.includes('/') ? currentUser.jobTitleAr.split('/')[0].trim() : 'مدير النظام العام'))}
+                      : (user?.jobTitleAr || user?.roleLabelAr || (user?.role === 'SUPER_ADMIN' ? 'مدير النظام العام' : 'إدارة الموارد البشرية'))}
                   </span>
                 </div>
               </div>
@@ -784,10 +784,10 @@ export const Header: React.FC = () => {
                       </div>
                     </div>
                     <p className="text-[11px] font-medium text-[#D99B26] dark:text-[#EBB34D] truncate mt-0.5">
-                      {user?.jobTitleAr || currentUser.jobTitleAr || 'مدير النظام العام / رئيس مجلس الإدارة'}
+                      {user?.jobTitleAr || user?.roleLabelAr || (user?.role === 'SUPER_ADMIN' ? 'مدير النظام العام / رئيس مجلس الإدارة' : 'إدارة الموارد البشرية')}
                     </p>
                     <p className="text-[10px] text-[#5C665E] dark:text-[#8FA392] truncate mt-0.5 font-mono">
-                      {user?.email || currentUser.email || 'admin@hrsup.com'}
+                      {user?.email || 'user@hrsup.com'}
                     </p>
                   </div>
                 </div>

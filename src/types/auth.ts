@@ -390,6 +390,34 @@ export const INITIAL_ROOT_ADMIN: ManagedUser = {
   allowedCompanyIds: ['all'],
 };
 
+export const INITIAL_TAGHREED_USER: ManagedUser = {
+  id: 'usr_hr_taghreed_01',
+  nameAr: 'تغريد عاطف',
+  nameEn: 'Taghreed Atef',
+  nationalId: '',
+  email: 'taghreed@hrsup.com',
+  username: 'taghreed',
+  jobTitleAr: 'مدير الموارد البشرية (HRMS)',
+  jobTitleEn: 'HR Director',
+  phone: '+20 100 000 0001',
+  departmentAr: 'إدارة الموارد البشرية والرواتب',
+  departmentEn: 'HR & Talent Management',
+  departmentId: 'dept_hr',
+  role: 'HR_MANAGER',
+  roleLabelAr: 'مدير الموارد البشرية (HRMS)',
+  roleLabelEn: 'Human Resources Director',
+  clearanceLevel: 3,
+  clearanceNameAr: 'المستوى 3 - إدارة الموارد البشرية',
+  clearanceNameEn: 'Level 3 - HR Management',
+  status: 'ACTIVE',
+  passwordHash: 'admin123',
+  createdAt: '2026-01-01',
+  lastLogin: '2026-10-10 08:30',
+  customPermissions: ['hr.*', 'insurance.*', 'ats.*', 'decrees.*', 'companies.directory.view'],
+  permissions: ['hr.*', 'insurance.*', 'ats.*', 'decrees.*', 'companies.directory.view'],
+  allowedCompanyIds: ['comp_01'],
+};
+
 export interface SeedAccount {
   user: AuthUser;
   passwordHash: string; // Plaintext or token verification for local seed
@@ -416,10 +444,37 @@ export const PRECONFIGURED_SEED_USERS: SeedAccount[] = [
       clearanceNameEn: INITIAL_ROOT_ADMIN.clearanceNameEn,
       avatarUrl: '',
       allowedModuleIds: ROLE_CONFIGURATIONS.SUPER_ADMIN.allowedModuleIds,
+      allowedCompanyIds: ['all'],
       permissions: [...ALL_COMPANY_PERMISSIONS],
       lastLogin: '2026-10-10 08:30',
     },
     passwordHash: INITIAL_ROOT_ADMIN.passwordHash,
+  },
+  {
+    user: {
+      id: INITIAL_TAGHREED_USER.id,
+      email: INITIAL_TAGHREED_USER.email,
+      username: INITIAL_TAGHREED_USER.username,
+      nameAr: INITIAL_TAGHREED_USER.nameAr,
+      nameEn: INITIAL_TAGHREED_USER.nameEn,
+      jobTitleAr: INITIAL_TAGHREED_USER.jobTitleAr,
+      jobTitleEn: INITIAL_TAGHREED_USER.jobTitleEn,
+      phone: INITIAL_TAGHREED_USER.phone,
+      role: INITIAL_TAGHREED_USER.role,
+      roleLabelAr: INITIAL_TAGHREED_USER.roleLabelAr,
+      roleLabelEn: INITIAL_TAGHREED_USER.roleLabelEn,
+      departmentAr: INITIAL_TAGHREED_USER.departmentAr,
+      departmentEn: INITIAL_TAGHREED_USER.departmentEn,
+      clearanceLevel: INITIAL_TAGHREED_USER.clearanceLevel,
+      clearanceNameAr: INITIAL_TAGHREED_USER.clearanceNameAr,
+      clearanceNameEn: INITIAL_TAGHREED_USER.clearanceNameEn,
+      avatarUrl: '',
+      allowedModuleIds: ['hr', 'ats', 'insurance', 'companies', 'decrees'],
+      allowedCompanyIds: ['comp_01'],
+      permissions: ['hr.*', 'insurance.*', 'ats.*', 'decrees.*', 'companies.directory.view'],
+      lastLogin: '2026-10-10 08:30',
+    },
+    passwordHash: 'admin123',
   },
 ];
 
