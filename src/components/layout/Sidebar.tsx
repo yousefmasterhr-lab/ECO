@@ -73,6 +73,7 @@ export const Sidebar: React.FC = () => {
           isCollapsed ? 'px-1.5 flex flex-col items-center' : 'px-2.5'
         }`}
       >
+        {/* Enterprise Departments List (Single-Accordion Enforced: strictly one open category at a time) */}
         {!isCollapsed && (
           <div className="px-3 pb-2 text-[10.5px] font-bold uppercase tracking-wider text-[#5C665E] dark:text-[#8FA392]">
             {t('أقسام المنظومة الإدارية', 'Enterprise Departments')}
