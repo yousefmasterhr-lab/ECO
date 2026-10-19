@@ -3,7 +3,10 @@ export type ConfigurationCategory =
   | 'departments'
   | 'doc_types'
   | 'branch_types'
-  | 'signatory_titles';
+  | 'signatory_titles'
+  | 'meeting_rooms'
+  | 'couriers'
+  | 'work_permits';
 
 export interface SystemConfigurationItem {
   id: string;
@@ -66,4 +69,26 @@ export const CONFIGURATION_CATEGORIES_META: ConfigurationCategoryMeta[] = [
     descriptionAr: 'الصفات القانونية للمفوضين بالتوقيع والتوكيلات البنكية والإدارية',
     iconName: 'Award',
   },
+  {
+    key: 'meeting_rooms',
+    titleAr: 'قاعات الاجتماعات والضيافة',
+    titleEn: 'Meeting Rooms & Boardrooms',
+    descriptionAr: 'تعريف وتجهيزات قاعات المؤتمرات والاجتماعات ومجالس الإدارة بالمنشأة',
+    iconName: 'Building2',
+  },
+  {
+    key: 'couriers',
+    titleAr: 'شركات الشحن والطرود السريعة',
+    titleEn: 'Courier & Shipping Services',
+    descriptionAr: 'قائمة شركات الشحن السريع والبريد المعتمدة للطرود والمراسلات',
+    iconName: 'Package',
+  },
+  {
+    key: 'work_permits',
+    titleAr: 'طبيعة تصاريح العمل الفنية',
+    titleEn: 'Technical Work Permit Scopes',
+    descriptionAr: 'تصنيفات أعمال الصيانة والتركيبات والتعديلات الفنية المسموح بها للمقاولين',
+    iconName: 'HardHat',
+  },
 ];
+

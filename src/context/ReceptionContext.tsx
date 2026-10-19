@@ -1,4 +1,13 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import {
+  receptionStorage,
+  VisitorRecord,
+  RoomBookingRecord,
+  ParcelRecord,
+  CallRecord,
+  ContractorPermitRecord,
+  ReceptionStats
+} from '../services/receptionStorage';
 
 export type VisitorStatus = 'checked_in' | 'expected' | 'checked_out';
 
@@ -20,6 +29,11 @@ export interface Visitor {
   status: VisitorStatus;
   qrCode: string;
   vip?: boolean;
+  vehiclePlate?: string;
+  belongingsNotes?: string;
+  attachmentData?: string | null;
+  attachmentName?: string | null;
+  raw: VisitorRecord;
 }
 
 export interface MeetingRoom {
@@ -51,6 +65,11 @@ export interface RoomReservation {
   cateringRequired: boolean;
   cateringDetailsAr?: string;
   hospitalityStatus: 'ordered' | 'preparing' | 'delivered';
+  bookingDate: string;
+  startTime: string;
+  endTime: string;
+  status: string;
+  raw: RoomBookingRecord;
 }
 
 export type ParcelStatus = 'pending_handover' | 'received';
@@ -67,6 +86,9 @@ export interface InboundParcel {
   status: ParcelStatus;
   handedOverAt?: string;
   isOfficialTransmittal?: boolean;
+  attachmentData?: string | null;
+  attachmentName?: string | null;
+  raw: ParcelRecord;
 }
 
 export interface CallLogEntry {
@@ -79,17 +101,8 @@ export interface CallLogEntry {
   purposeAr: string;
   actionTakenAr: string;
   status: 'transferred' | 'message_taken' | 'callback_requested';
-}
-
-export interface CorporateContact {
-  id: string;
-  nameAr: string;
-  nameEn: string;
-  departmentAr: string;
-  extension: string;
-  mobile: string;
-  roleAr: string;
-  status: 'available' | 'in_meeting' | 'away';
+  priority: string;
+  raw: CallRecord;
 }
 
 export interface ContractorPass {
@@ -105,378 +118,177 @@ export interface ContractorPass {
   safetyBriefingCompleted: boolean;
   registeredToolsAr: string;
   status: 'active' | 'expired' | 'revoked';
+  workersCount: number;
+  attachmentData?: string | null;
+  attachmentName?: string | null;
+  raw: ContractorPermitRecord;
 }
 
 interface ReceptionContextType {
   // Visitors
   visitors: Visitor[];
-  checkInVisitor: (visitorData: Omit<Visitor, 'id' | 'entryTime' | 'status' | 'qrCode'>) => Visitor;
-  checkOutVisitor: (id: string) => void;
+  checkInVisitor: (visitorData: Partial<VisitorRecord>) => Promise<VisitorRecord>;
+  checkOutVisitor: (id: string) => Promise<void>;
+  deleteVisitor: (id: string) => Promise<void>;
   selectedVisitorForBadge: Visitor | null;
   setSelectedVisitorForBadge: (v: Visitor | null) => void;
 
   // Meeting Rooms
   meetingRooms: MeetingRoom[];
   reservations: RoomReservation[];
-  bookMeetingRoom: (reservation: Omit<RoomReservation, 'id' | 'hospitalityStatus'>) => void;
-  updateHospitalityStatus: (resId: string, status: 'ordered' | 'preparing' | 'delivered') => void;
+  bookMeetingRoom: (reservation: Partial<RoomBookingRecord>) => Promise<RoomBookingRecord>;
+  deleteBooking: (id: string) => Promise<void>;
+  updateHospitalityStatus: (resId: string, status: 'ordered' | 'preparing' | 'delivered') => Promise<void>;
 
   // Parcels
   parcels: InboundParcel[];
-  addParcel: (parcel: Omit<InboundParcel, 'id' | 'arrivalTimestamp' | 'status'>) => void;
-  confirmParcelPickup: (id: string) => void;
+  addParcel: (parcel: Partial<ParcelRecord>) => Promise<ParcelRecord>;
+  confirmParcelPickup: (id: string) => Promise<void>;
+  deleteParcel: (id: string) => Promise<void>;
 
-  // Calls & Contacts
+  // Calls
   callLogs: CallLogEntry[];
-  addCallLog: (call: Omit<CallLogEntry, 'id' | 'timestamp'>) => void;
-  corporateDirectory: CorporateContact[];
+  addCallLog: (call: Partial<CallRecord>) => Promise<CallRecord>;
+  deleteCall: (id: string) => Promise<void>;
 
   // Contractor Site Passes
   contractorPasses: ContractorPass[];
-  issueContractorPass: (pass: Omit<ContractorPass, 'id' | 'passNumber' | 'entryTime' | 'status'>) => void;
-  revokeContractorPass: (id: string) => void;
+  issueContractorPass: (pass: Partial<ContractorPermitRecord>) => Promise<ContractorPermitRecord>;
+  revokeContractorPass: (id: string) => Promise<void>;
+  deleteContractorPass: (id: string) => Promise<void>;
 
   // Live KPI Counters
   activeVisitorsCount: number;
   todayScheduledCount: number;
   occupiedRoomsCount: number;
   pendingParcelsCount: number;
+  stats: ReceptionStats;
 
   // Toast notification state
   toastMessage: string | null;
   showToast: (msg: string) => void;
+  syncFromCloud: () => Promise<void>;
 }
 
-const INITIAL_VISITORS: Visitor[] = [
-  {
-    id: 'vis_01',
-    nameAr: 'م. عبد العزيز الشمري',
-    nameEn: 'Eng. Abdulaziz Al-Shammari',
-    company: 'شركة إعمار للتطوير الهندسي',
-    nationalId: '1088492011',
-    mobile: '+966 55 412 8890',
-    hostEmployeeAr: 'م. أحمد مصطفى',
-    hostEmployeeEn: 'Eng. Ahmed Mostafa',
-    hostDepartmentAr: 'المكتب الفني والمشاريع',
-    purposeAr: 'مراجعة المخططات التنفيذية لمشروع برج النخبة',
-    purposeEn: 'Shop drawings review for Elite Tower',
-    badgeNumber: 'V-104',
-    entryTime: '09:15 ص',
-    status: 'checked_in',
-    qrCode: 'ARKAN-VIS-104-2026',
-    vip: true,
-  },
-  {
-    id: 'vis_02',
-    nameAr: 'د. طارق السبيعي',
-    nameEn: 'Dr. Tareq Al-Subaie',
-    company: 'مكتب دار الهندسة للاستشارات',
-    nationalId: '1044738291',
-    mobile: '+966 50 882 1194',
-    hostEmployeeAr: 'أ. كمال إبراهيم',
-    hostEmployeeEn: 'Kamal Ibrahim',
-    hostDepartmentAr: 'الإدارة المالية',
-    purposeAr: 'تسليم ومطابقة مستخلص مقاولي الباطن رقم 4',
-    purposeEn: 'IPC #4 Consultant Verification',
-    badgeNumber: 'V-105',
-    entryTime: '10:00 ص',
-    status: 'checked_in',
-    qrCode: 'ARKAN-VIS-105-2026',
-    vip: false,
-  },
-  {
-    id: 'vis_03',
-    nameAr: 'أ. فهد العصيمي',
-    nameEn: 'Fahad Al-Osaimi',
-    company: 'المصرف الأهلي التجاري',
-    nationalId: '1029481102',
-    mobile: '+966 54 991 3340',
-    hostEmployeeAr: 'م. شريف حسني',
-    hostEmployeeEn: 'Sherif Hosny',
-    hostDepartmentAr: 'الإدارة العليا والاستراتيجية',
-    purposeAr: 'جلسة استعراض التسهيلات الائتمانية وضمانات المشاريع',
-    purposeEn: 'Credit facilities & Bank Guarantees review',
-    badgeNumber: 'V-106',
-    entryTime: '11:30 ص',
-    status: 'expected',
-    qrCode: 'ARKAN-VIS-106-2026',
-    vip: true,
-  },
-  {
-    id: 'vis_04',
-    nameAr: 'م. زياد المنصور',
-    nameEn: 'Eng. Ziad Al-Mansoor',
-    company: 'سبيس إكس ديزاين للديكور',
-    nationalId: '1099238471',
-    mobile: '+966 56 331 8844',
-    hostEmployeeAr: 'أ. نورة الغامدي',
-    hostEmployeeEn: 'Noura Al-Ghamdi',
-    hostDepartmentAr: 'المكتب الفني',
-    purposeAr: 'معاينة عينات الرخام والواجهات الزجاجية',
-    purposeEn: 'Marble & Glazing samples inspection',
-    badgeNumber: 'V-102',
-    entryTime: '08:30 ص',
-    exitTime: '10:15 ص',
-    status: 'checked_out',
-    qrCode: 'ARKAN-VIS-102-2026',
-    vip: false,
-  },
-];
+const mapVisitor = (r: VisitorRecord): Visitor => ({
+  id: r.id,
+  nameAr: r.visitor_name,
+  nameEn: r.visitor_name,
+  company: r.visitor_organization || '',
+  nationalId: r.national_id_or_passport || '',
+  mobile: r.phone || '',
+  hostEmployeeAr: r.host_employee_name || '',
+  hostEmployeeEn: r.host_employee_name || '',
+  hostDepartmentAr: r.department_name || '',
+  purposeAr: r.visit_purpose || '',
+  purposeEn: r.visit_purpose || '',
+  badgeNumber: r.badge_code,
+  entryTime: r.check_in_time || '',
+  exitTime: r.check_out_time || undefined,
+  status: r.status === 'inside' ? 'checked_in' : r.status === 'checked_out' ? 'checked_out' : 'expected',
+  qrCode: `ECO-VIS-${r.badge_code}-${r.visit_date || 'PASS'}`,
+  vip: r.visitor_category?.includes('VIP'),
+  vehiclePlate: r.vehicle_plate,
+  belongingsNotes: r.belongings_notes,
+  attachmentData: r.attachment_data,
+  attachmentName: r.attachment_name,
+  raw: r,
+});
 
-const INITIAL_ROOMS: MeetingRoom[] = [
-  {
-    id: 'room_vip_board',
-    nameAr: 'مجلس أركان التنفيذي (VIP Boardroom)',
-    nameEn: 'Arkan Executive Boardroom',
-    capacity: 18,
-    floor: 'الدور 5 - الإدارة العليا',
-    amenities: ['شاشة 4K تفاعلية 85 بوصة', 'نظام مؤتمرات فيديو Polycom', 'سبورة رقمية ذكية', 'ضيافة VIP'],
-    isOccupied: true,
-    currentMeeting: {
-      titleAr: 'اجتماع مناقشة الموازنة الربع سنوية واعتمادات المشاريع',
-      hostAr: 'م. أحمد مصطفى',
-      time: '10:00 ص - 12:00 م',
-      attendees: 12,
-    },
-  },
-  {
-    id: 'room_innovation',
-    nameAr: 'قاعة الابتكار والمشروعات (Innovation Hub)',
-    nameEn: 'Innovation & Projects Room',
-    capacity: 10,
-    floor: 'الدور 4 - المكتب الفني',
-    amenities: ['شاشات عرض مزدوجة', 'نظام صوتي محيطي', 'سبورة حائطية بانورامية'],
-    isOccupied: false,
-  },
-  {
-    id: 'room_engineering',
-    nameAr: 'قاعة التنسيق الهندسي (BIM Lab)',
-    nameEn: 'Engineering BIM & Design Room',
-    capacity: 8,
-    floor: 'الدور 4 - الهندسة والنمذجة',
-    amenities: ['محطات عمل نمذجة ثلاثية الأبعاد', 'طابعة مخططات معمارية', 'شاشة عرض تفاعلية'],
-    isOccupied: true,
-    currentMeeting: {
-      titleAr: 'جلسة التنسيق المعماري والإلكتروميكانيكي (MEP/BIM)',
-      hostAr: 'م. شريف حسني',
-      time: '11:00 ص - 01:00 م',
-      attendees: 6,
-    },
-  },
-  {
-    id: 'room_meet_compact',
-    nameAr: 'قاعة المقابلات والاجتماعات المصغرة',
-    nameEn: 'Compact Interview Suite',
-    capacity: 4,
-    floor: 'الدور 3 - الموارد البشرية والاستقبال',
-    amenities: ['شاشة عرض 55 بوصة', 'كاميرا اجتماعات ذكية'],
-    isOccupied: false,
-  },
-];
+const mapBooking = (r: RoomBookingRecord): RoomReservation => ({
+  id: r.id,
+  roomId: r.id,
+  roomNameAr: r.room_name,
+  titleAr: r.meeting_title,
+  hostEmployeeAr: r.organizer_name || '',
+  departmentAr: r.department_name || '',
+  timeSlot: `${r.start_time} - ${r.end_time}`,
+  attendeesCount: r.attendees_count,
+  amenities: r.equipment_needed ? [r.equipment_needed] : [],
+  cateringRequired: Boolean(r.hospitality_requests),
+  cateringDetailsAr: r.hospitality_requests,
+  hospitalityStatus: 'ordered',
+  bookingDate: r.booking_date,
+  startTime: r.start_time,
+  endTime: r.end_time,
+  status: r.status,
+  raw: r,
+});
 
-const INITIAL_RESERVATIONS: RoomReservation[] = [
-  {
-    id: 'res_01',
-    roomId: 'room_vip_board',
-    roomNameAr: 'مجلس أركان التنفيذي (VIP Boardroom)',
-    titleAr: 'اجتماع مناقشة الموازنة الربع سنوية واعتمادات المشاريع',
-    hostEmployeeAr: 'م. أحمد مصطفى',
-    departmentAr: 'الإدارة العليا والاستراتيجية',
-    timeSlot: '10:00 ص - 12:00 م',
-    attendeesCount: 12,
-    amenities: ['شاشة 4K تفاعلية 85 بوصة', 'نظام مؤتمرات فيديو Polycom', 'ضيافة VIP'],
-    cateringRequired: true,
-    cateringDetailsAr: 'قهوة سعودية مختصة، تمور فاخرة، شاي بالنعناع، ومشروبات باردة',
-    hospitalityStatus: 'delivered',
-  },
-  {
-    id: 'res_02',
-    roomId: 'room_engineering',
-    roomNameAr: 'قاعة التنسيق الهندسي (BIM Lab)',
-    titleAr: 'جلسة التنسيق المعماري والإلكتروميكانيكي (MEP/BIM)',
-    hostEmployeeAr: 'م. شريف حسني',
-    departmentAr: 'المكتب الفني',
-    timeSlot: '11:00 ص - 01:00 م',
-    attendeesCount: 6,
-    amenities: ['شاشة عرض تفاعلية', 'محطات عمل نمذجة ثلاثية الأبعاد'],
-    cateringRequired: true,
-    cateringDetailsAr: 'شاي وقهوة ومياه معدنية لـ 6 أشخاص',
-    hospitalityStatus: 'preparing',
-  },
-];
+const mapParcel = (r: ParcelRecord): InboundParcel => ({
+  id: r.id,
+  trackingNumber: r.tracking_code,
+  courierName: r.courier_company,
+  packageTypeAr: r.parcel_type,
+  senderName: r.sender_name,
+  recipientEmployeeAr: r.recipient_name,
+  recipientDepartmentAr: r.department_name || '',
+  arrivalTimestamp: r.received_at || '',
+  status: r.status === 'تم التسليم للمستلم' ? 'received' : 'pending_handover',
+  handedOverAt: r.delivered_to_recipient_at || undefined,
+  isOfficialTransmittal: r.parcel_type.includes('مستندات'),
+  attachmentData: r.attachment_data,
+  attachmentName: r.attachment_name,
+  raw: r,
+});
 
-const INITIAL_PARCELS: InboundParcel[] = [
-  {
-    id: 'parc_01',
-    trackingNumber: 'SA-SPL-99201481',
-    courierName: 'البريد السعودي (SPL)',
-    packageTypeAr: 'مستندات تعاقدية أصلية مسجلة',
-    senderName: 'وزارة الإسكان والشؤون القروية',
-    recipientEmployeeAr: 'أ. رأفت عبد العال',
-    recipientDepartmentAr: 'الشؤون القانونية',
-    arrivalTimestamp: '08:45 ص',
-    status: 'pending_handover',
-    isOfficialTransmittal: true,
-  },
-  {
-    id: 'parc_02',
-    trackingNumber: 'DHL-EXP-4820193',
-    courierName: 'DHL Express',
-    packageTypeAr: 'عينات معمارية ومواد كيميائية للبناء',
-    senderName: 'BASF Construction Chemicals - Dubai',
-    recipientEmployeeAr: 'م. أحمد مصطفى',
-    recipientDepartmentAr: 'المكتب الفني',
-    arrivalTimestamp: '09:30 ص',
-    status: 'pending_handover',
-    isOfficialTransmittal: false,
-  },
-  {
-    id: 'parc_03',
-    trackingNumber: 'ARM-DOM-330192',
-    courierName: 'Aramex',
-    packageTypeAr: 'أجهزة مساحة ليزرية للموقع',
-    senderName: 'شركة التجهيزات الجيوديسية',
-    recipientEmployeeAr: 'م. خالد النجار',
-    recipientDepartmentAr: 'عمليات المشاريع الميدانية',
-    arrivalTimestamp: 'أمس - 03:20 م',
-    status: 'received',
-    handedOverAt: 'اليوم - 08:30 ص',
-    isOfficialTransmittal: false,
-  },
-];
+const mapCall = (r: CallRecord): CallLogEntry => ({
+  id: r.id,
+  timestamp: r.call_time || '',
+  callerName: r.caller_name,
+  callerOrganization: r.caller_organization || '',
+  callerPhone: r.caller_phone || '',
+  directedToEmployeeAr: r.target_employee_name || '',
+  purposeAr: r.subject,
+  actionTakenAr: r.call_summary || '',
+  status: r.status === 'تم التحويل' ? 'transferred' : r.status === 'تمت المعالجة' ? 'message_taken' : 'callback_requested',
+  priority: r.priority,
+  raw: r,
+});
 
-const INITIAL_CALLS: CallLogEntry[] = [
-  {
-    id: 'call_01',
-    timestamp: '09:20 ص',
-    callerName: 'المهندس / سامي الجابري',
-    callerOrganization: 'أمانة منطقة الرياض - إدارة الرخص',
-    callerPhone: '+966 11 411 9020',
-    directedToEmployeeAr: 'أ. رأفت عبد العال (الشؤون القانونية)',
-    purposeAr: 'استفسار بشأن تجديد رخصة تعلية برج النخبة',
-    actionTakenAr: 'تم تحويل المكالمة للتحويلة الداخلية (402) بنجاح',
-    status: 'transferred',
-  },
-  {
-    id: 'call_02',
-    timestamp: '09:55 ص',
-    callerName: 'الأستاذة / ريم الحارثي',
-    callerOrganization: 'بنك الراجحي - قطاع الشركات',
-    callerPhone: '+966 11 829 4400',
-    directedToEmployeeAr: 'أ. كمال إبراهيم (المدير المالي)',
-    purposeAr: 'طلب تأكيد صحة إصدار خطاب الضمان النهائي للمشروع',
-    actionTakenAr: 'الموظف في اجتماع - تم تسجيل الملاحظة وإرسال تنبيه عاجل',
-    status: 'message_taken',
-  },
-  {
-    id: 'call_03',
-    timestamp: '10:30 ص',
-    callerName: 'م. عادل الشهري',
-    callerOrganization: 'مؤسسة إمداد للمقاولات الكهروميكانيكية',
-    callerPhone: '+966 50 123 9988',
-    directedToEmployeeAr: 'المكتب الفني (قسم التوريدات)',
-    purposeAr: 'استفسار عن موعد فتح مظاريف مناقصة التكييف المركزي',
-    actionTakenAr: 'بانتظار إعادة الاتصال من مهندس التوريدات بعد 01:00 م',
-    status: 'callback_requested',
-  },
-];
-
-const CORPORATE_DIRECTORY: CorporateContact[] = [
-  {
-    id: 'dir_01',
-    nameAr: 'م. أحمد مصطفى',
-    nameEn: 'Eng. Ahmed Mostafa',
-    departmentAr: 'الإدارة العليا والمكتب الفني',
-    extension: '101',
-    mobile: '+966 50 111 2233',
-    roleAr: 'الرئيس التنفيذي للعمليات (COO)',
-    status: 'in_meeting',
-  },
-  {
-    id: 'dir_02',
-    nameAr: 'أ. كمال إبراهيم',
-    nameEn: 'Kamal Ibrahim',
-    departmentAr: 'الإدارة المالية والمصرفية',
-    extension: '201',
-    mobile: '+966 50 222 3344',
-    roleAr: 'المدير المالي (CFO)',
-    status: 'in_meeting',
-  },
-  {
-    id: 'dir_03',
-    nameAr: 'أ. رأفت عبد العال',
-    nameEn: 'Raafat Abdel Aal',
-    departmentAr: 'الشؤون القانونية والعقود',
-    extension: '402',
-    mobile: '+966 50 444 5566',
-    roleAr: 'مدير الشؤون القانونية',
-    status: 'available',
-  },
-  {
-    id: 'dir_04',
-    nameAr: 'م. شريف حسني',
-    nameEn: 'Eng. Sherif Hosny',
-    departmentAr: 'المكتب الفني والدراسات',
-    extension: '305',
-    mobile: '+966 50 555 6677',
-    roleAr: 'مدير المكتب الفني',
-    status: 'available',
-  },
-  {
-    id: 'dir_05',
-    nameAr: 'أ. نورة الغامدي',
-    nameEn: 'Noura Al-Ghamdi',
-    departmentAr: 'الموارد البشرية والخدمات المشتركة',
-    extension: '501',
-    mobile: '+966 50 777 8899',
-    roleAr: 'مديرة الموارد البشرية',
-    status: 'available',
-  },
-];
-
-const INITIAL_CONTRACTOR_PASSES: ContractorPass[] = [
-  {
-    id: 'pass_01',
-    passNumber: 'CP-2026-081',
-    contractorCompanyAr: 'شركة كولينج إير للتهوية والتكييف',
-    technicianNameAr: 'محمد فوزي الصعيدي',
-    nationalId: '2399104812',
-    workScopeAr: 'صيانة دورية واستبدال فلاتر التكييف المركزي بالدور 4 و 5',
-    supervisedByAr: 'إدارة الخدمات والمرافق (أ. نبيل الفيشاوي)',
-    entryTime: '08:00 ص',
-    validUntil: '04:00 م (نهاية اليوم)',
-    safetyBriefingCompleted: true,
-    registeredToolsAr: 'حقيبة قياس ضغط غاز الفريون، مقياس رقمي، سلم تلسكوبي، ومفك شحن',
-    status: 'active',
-  },
-  {
-    id: 'pass_02',
-    passNumber: 'CP-2026-082',
-    contractorCompanyAr: 'أوتيس العالمية للمصاعد',
-    technicianNameAr: 'م. حسن العبدلي',
-    nationalId: '1099238491',
-    workScopeAr: 'فحص الحساسات الإلكترونية والأمان لمصاعد البرج الرئيسية',
-    supervisedByAr: 'مسؤول الأمن والسلامة المهنية (أ. فيصل الدوسري)',
-    entryTime: '09:10 ص',
-    validUntil: '01:00 م',
-    safetyBriefingCompleted: true,
-    registeredToolsAr: 'جهاز فحص كمبيوتر المصاعد المحمول، عدة يدوية معزولة 1000V',
-    status: 'active',
-  },
-];
+const mapPermit = (r: ContractorPermitRecord): ContractorPass => ({
+  id: r.id,
+  passNumber: r.permit_code,
+  contractorCompanyAr: r.contractor_company,
+  technicianNameAr: r.supervisor_name,
+  nationalId: r.supervisor_national_id || '',
+  workScopeAr: r.work_nature || '',
+  supervisedByAr: '',
+  entryTime: r.daily_hours || '08:00',
+  validUntil: `${r.start_date} إلى ${r.end_date}`,
+  safetyBriefingCompleted: r.safety_approval === 'معتمد',
+  registeredToolsAr: r.tools_and_equipment || '',
+  status: r.status === 'ساري بالمنشأة' ? 'active' : r.status === 'منتهي / مغلق' ? 'expired' : 'revoked',
+  workersCount: r.workers_count,
+  attachmentData: r.attachment_data,
+  attachmentName: r.attachment_name,
+  raw: r,
+});
 
 const ReceptionContext = createContext<ReceptionContextType | undefined>(undefined);
 
 export const ReceptionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [visitors, setVisitors] = useState<Visitor[]>(INITIAL_VISITORS);
-  const [meetingRooms, setMeetingRooms] = useState<MeetingRoom[]>(INITIAL_ROOMS);
-  const [reservations, setReservations] = useState<RoomReservation[]>(INITIAL_RESERVATIONS);
-  const [parcels, setParcels] = useState<InboundParcel[]>(INITIAL_PARCELS);
-  const [callLogs, setCallLogs] = useState<CallLogEntry[]>(INITIAL_CALLS);
-  const [corporateDirectory] = useState<CorporateContact[]>(CORPORATE_DIRECTORY);
-  const [contractorPasses, setContractorPasses] = useState<ContractorPass[]>(INITIAL_CONTRACTOR_PASSES);
+  const [visitorRecords, setVisitorRecords] = useState<VisitorRecord[]>(() => receptionStorage.getVisitors());
+  const [roomRecords, setRoomRecords] = useState<RoomBookingRecord[]>(() => receptionStorage.getBookings());
+  const [parcelRecords, setParcelRecords] = useState<ParcelRecord[]>(() => receptionStorage.getParcels());
+  const [callRecords, setCallRecords] = useState<CallRecord[]>(() => receptionStorage.getCalls());
+  const [permitRecords, setPermitRecords] = useState<ContractorPermitRecord[]>(() => receptionStorage.getPermits());
   const [selectedVisitorForBadge, setSelectedVisitorForBadge] = useState<Visitor | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const refreshState = useCallback(() => {
+    setVisitorRecords(receptionStorage.getVisitors());
+    setRoomRecords(receptionStorage.getBookings());
+    setParcelRecords(receptionStorage.getParcels());
+    setCallRecords(receptionStorage.getCalls());
+    setPermitRecords(receptionStorage.getPermits());
+  }, []);
+
+  useEffect(() => {
+    const handleUpdate = () => refreshState();
+    window.addEventListener('eco-reception-updated', handleUpdate);
+    return () => window.removeEventListener('eco-reception-updated', handleUpdate);
+  }, [refreshState]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -485,136 +297,132 @@ export const ReceptionProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }, 3800);
   };
 
-  // Visitor check-in
-  const checkInVisitor = (visitorData: Omit<Visitor, 'id' | 'entryTime' | 'status' | 'qrCode'>): Visitor => {
-    const badgeNum = `V-${Math.floor(100 + Math.random() * 900)}`;
-    const now = new Date();
-    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} ${now.getHours() >= 12 ? 'م' : 'ص'}`;
-    const newVisitor: Visitor = {
-      ...visitorData,
-      id: `vis_${Date.now()}`,
-      entryTime: timeStr,
-      status: 'checked_in',
-      badgeNumber: badgeNum,
-      qrCode: `ARKAN-VIS-${badgeNum}-${now.getFullYear()}`,
-    };
-
-    setVisitors(prev => [newVisitor, ...prev]);
-    showToast(`تم تسجيل دخول ${newVisitor.nameAr} وإرسال تنبيه فوري للمستضيف: ${newVisitor.hostEmployeeAr}`);
-    return newVisitor;
+  // Actions
+  const checkInVisitor = async (data: Partial<VisitorRecord>): Promise<VisitorRecord> => {
+    const created = await receptionStorage.saveVisitor(data);
+    showToast(`تم تسجيل دخول ${created.visitor_name} بنجاح وإصدار شارة الدخول ${created.badge_code}`);
+    return created;
   };
 
-  // Visitor check-out
-  const checkOutVisitor = (id: string) => {
-    const now = new Date();
-    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} ${now.getHours() >= 12 ? 'م' : 'ص'}`;
-    setVisitors(prev =>
-      prev.map(v => (v.id === id ? { ...v, status: 'checked_out', exitTime: timeStr } : v))
-    );
-    showToast('تم تسجيل مغادرة الزائر واستعادة تصريح الدخول بنجاح');
+  const checkOutVisitor = async (id: string): Promise<void> => {
+    await receptionStorage.checkOutVisitor(id);
+    showToast('تم تسجيل مغادرة الزائر بنجاح وإغلاق تصريح الدخول');
   };
 
-  // Room booking
-  const bookMeetingRoom = (reservation: Omit<RoomReservation, 'id' | 'hospitalityStatus'>) => {
-    const newRes: RoomReservation = {
-      ...reservation,
-      id: `res_${Date.now()}`,
-      hospitalityStatus: reservation.cateringRequired ? 'ordered' : 'delivered',
-    };
-
-    setReservations(prev => [newRes, ...prev]);
-    setMeetingRooms(prev =>
-      prev.map(r =>
-        r.id === reservation.roomId
-          ? {
-              ...r,
-              isOccupied: true,
-              currentMeeting: {
-                titleAr: reservation.titleAr,
-                hostAr: reservation.hostEmployeeAr,
-                time: reservation.timeSlot,
-                attendees: reservation.attendeesCount,
-              },
-            }
-          : r
-      )
-    );
-
-    showToast(`تم حجز ${reservation.roomNameAr} بنجاح ${reservation.cateringRequired ? 'وتوجيه طلب الضيافة للخدمات' : ''}`);
+  const deleteVisitor = async (id: string): Promise<void> => {
+    await receptionStorage.deleteVisitor(id);
+    showToast('تم حذف سجل الزائر بنجاح');
   };
 
-  const updateHospitalityStatus = (resId: string, status: 'ordered' | 'preparing' | 'delivered') => {
-    setReservations(prev =>
-      prev.map(r => (r.id === resId ? { ...r, hospitalityStatus: status } : r))
-    );
-    showToast(`تم تحديث حالة طلب الضيافة إلى: ${status === 'delivered' ? 'تم التقديم' : status === 'preparing' ? 'جاري التحضير' : 'تم الطلب'}`);
+  const bookMeetingRoom = async (data: Partial<RoomBookingRecord>): Promise<RoomBookingRecord> => {
+    const created = await receptionStorage.saveBooking(data);
+    showToast(`تم تأكيد حجز قاعة (${created.room_name}) بنجاح`);
+    return created;
   };
 
-  // Parcel Ingestion
-  const addParcel = (parcel: Omit<InboundParcel, 'id' | 'arrivalTimestamp' | 'status'>) => {
-    const now = new Date();
-    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} ${now.getHours() >= 12 ? 'م' : 'ص'}`;
-    const newParcel: InboundParcel = {
-      ...parcel,
-      id: `parc_${Date.now()}`,
-      arrivalTimestamp: timeStr,
-      status: 'pending_handover',
-    };
-    setParcels(prev => [newParcel, ...prev]);
-    showToast(`تم قيد الشحنة رقم ${newParcel.trackingNumber} وإشعار المستلم ${newParcel.recipientEmployeeAr}`);
+  const deleteBooking = async (id: string): Promise<void> => {
+    await receptionStorage.deleteBooking(id);
+    showToast('تم إلغاء وحذف حجز القاعة بنجاح');
   };
 
-  // Confirm Parcel Pickup
-  const confirmParcelPickup = (id: string) => {
-    const now = new Date();
-    const timeStr = `اليوم - ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} ${now.getHours() >= 12 ? 'م' : 'ص'}`;
-    setParcels(prev =>
-      prev.map(p => (p.id === id ? { ...p, status: 'received', handedOverAt: timeStr } : p))
-    );
-    showToast('تم توثيق استلام الطرد وتوقيع الموظف المستلم بنجاح');
+  const updateHospitalityStatus = async (resId: string, status: 'ordered' | 'preparing' | 'delivered'): Promise<void> => {
+    const booking = roomRecords.find(r => r.id === resId);
+    if (booking) {
+      await receptionStorage.saveBooking({
+        ...booking,
+        status: status === 'delivered' ? 'مكتمل' : 'جاري الآن',
+      });
+      showToast(`تم تحديث حالة الضيافة إلى: ${status === 'delivered' ? 'تم التقديم' : 'جاري التحضير'}`);
+    }
   };
 
-  // Call Log
-  const addCallLog = (call: Omit<CallLogEntry, 'id' | 'timestamp'>) => {
-    const now = new Date();
-    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} ${now.getHours() >= 12 ? 'م' : 'ص'}`;
-    const newCall: CallLogEntry = {
-      ...call,
-      id: `call_${Date.now()}`,
-      timestamp: timeStr,
-    };
-    setCallLogs(prev => [newCall, ...prev]);
-    showToast('تم تسجيل المكالمة في سجل السنترال بنجاح');
+  const addParcel = async (data: Partial<ParcelRecord>): Promise<ParcelRecord> => {
+    const created = await receptionStorage.saveParcel(data);
+    showToast(`تم تسجيل الشحنة رقم ${created.tracking_code} بنجاح في الاستقبال`);
+    return created;
   };
 
-  // Contractor Pass
-  const issueContractorPass = (pass: Omit<ContractorPass, 'id' | 'passNumber' | 'entryTime' | 'status'>) => {
-    const passNum = `CP-2026-${Math.floor(100 + Math.random() * 900)}`;
-    const now = new Date();
-    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} ${now.getHours() >= 12 ? 'م' : 'ص'}`;
-    const newPass: ContractorPass = {
-      ...pass,
-      id: `pass_${Date.now()}`,
-      passNumber: passNum,
-      entryTime: timeStr,
-      status: 'active',
-    };
-    setContractorPasses(prev => [newPass, ...prev]);
-    showToast(`تم إصدار تصريح الدخول رقم ${passNum} للفني ${newPass.technicianNameAr}`);
+  const confirmParcelPickup = async (id: string): Promise<void> => {
+    await receptionStorage.handoverParcel(id);
+    showToast('تم توثيق تسليم الشحنة للمستلم بنجاح');
   };
 
-  const revokeContractorPass = (id: string) => {
-    setContractorPasses(prev =>
-      prev.map(p => (p.id === id ? { ...p, status: 'expired' } : p))
-    );
-    showToast('تم استعادة وإنهاء تصريح الدخول المؤقت');
+  const deleteParcel = async (id: string): Promise<void> => {
+    await receptionStorage.deleteParcel(id);
+    showToast('تم حذف سجل الشحنة بنجاح');
   };
 
-  // KPI Calculations
-  const activeVisitorsCount = visitors.filter(v => v.status === 'checked_in').length;
-  const todayScheduledCount = visitors.filter(v => v.status === 'expected').length + activeVisitorsCount;
-  const occupiedRoomsCount = meetingRooms.filter(r => r.isOccupied).length;
-  const pendingParcelsCount = parcels.filter(p => p.status === 'pending_handover').length;
+  const addCallLog = async (data: Partial<CallRecord>): Promise<CallRecord> => {
+    const created = await receptionStorage.saveCall(data);
+    showToast(`تم قيد مكالمة ${created.caller_name} في السجل بنجاح`);
+    return created;
+  };
+
+  const deleteCall = async (id: string): Promise<void> => {
+    await receptionStorage.deleteCall(id);
+    showToast('تم حذف سجل المكالمة بنجاح');
+  };
+
+  const issueContractorPass = async (data: Partial<ContractorPermitRecord>): Promise<ContractorPermitRecord> => {
+    const created = await receptionStorage.savePermit(data);
+    showToast(`تم إصدار تصريح المقاولين رقم ${created.permit_code} بنجاح`);
+    return created;
+  };
+
+  const revokeContractorPass = async (id: string): Promise<void> => {
+    await receptionStorage.closePermit(id);
+    showToast('تم إنهاء وإغلاق تصريح المقاول بنجاح');
+  };
+
+  const deleteContractorPass = async (id: string): Promise<void> => {
+    await receptionStorage.deletePermit(id);
+    showToast('تم حذف تصريح المقاول بنجاح');
+  };
+
+  const syncFromCloud = async (): Promise<void> => {
+    await receptionStorage.syncFromCloud();
+    refreshState();
+  };
+
+  // Mapped entities for UI consumption
+  const visitors = visitorRecords.map(mapVisitor);
+  const reservations = roomRecords.map(mapBooking);
+  const parcels = parcelRecords.map(mapParcel);
+  const callLogs = callRecords.map(mapCall);
+  const contractorPasses = permitRecords.map(mapPermit);
+
+  // Derived meeting room objects from reservations
+  const meetingRooms: MeetingRoom[] = [
+    {
+      id: 'room_vip_board',
+      nameAr: 'مجلس الإدارة التنفيذي (VIP Boardroom)',
+      nameEn: 'Executive Boardroom',
+      capacity: 18,
+      floor: 'الدور 5 - الإدارة العليا',
+      amenities: ['شاشة 4K تفاعلية 85 بوصة', 'نظام مؤتمرات فيديو Polycom', 'سبورة ذكية', 'بوفيه وضيافة VIP'],
+      isOccupied: reservations.some(r => r.roomNameAr.includes('مجلس') && r.status === 'جاري الآن'),
+    },
+    {
+      id: 'room_innovation',
+      nameAr: 'قاعة الابتكار والمشروعات (Innovation Hub)',
+      nameEn: 'Innovation & Projects Room',
+      capacity: 10,
+      floor: 'الدور 4 - المكتب الفني',
+      amenities: ['شاشات عرض مزدوجة', 'نظام صوتي محيطي', 'سبورة بانورامية'],
+      isOccupied: reservations.some(r => r.roomNameAr.includes('الابتكار') && r.status === 'جاري الآن'),
+    },
+    {
+      id: 'room_meeting_a',
+      nameAr: 'قاعة الاجتماعات الرئيسية (Meeting Hall A)',
+      nameEn: 'Main Meeting Hall A',
+      capacity: 14,
+      floor: 'الدور 3 - العمليات',
+      amenities: ['جهاز إسقاط ضوئي Projector', 'ميكروفونات مدمجة طاولة'],
+      isOccupied: reservations.some(r => r.roomNameAr.includes('Hall A') && r.status === 'جاري الآن'),
+    },
+  ];
+
+  const stats = receptionStorage.getStats();
 
   return (
     <ReceptionContext.Provider
@@ -622,27 +430,33 @@ export const ReceptionProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         visitors,
         checkInVisitor,
         checkOutVisitor,
+        deleteVisitor,
         selectedVisitorForBadge,
         setSelectedVisitorForBadge,
         meetingRooms,
         reservations,
         bookMeetingRoom,
+        deleteBooking,
         updateHospitalityStatus,
         parcels,
         addParcel,
         confirmParcelPickup,
+        deleteParcel,
         callLogs,
         addCallLog,
-        corporateDirectory,
+        deleteCall,
         contractorPasses,
         issueContractorPass,
         revokeContractorPass,
-        activeVisitorsCount,
-        todayScheduledCount,
-        occupiedRoomsCount,
-        pendingParcelsCount,
+        deleteContractorPass,
+        activeVisitorsCount: stats.visitorsInside,
+        todayScheduledCount: stats.visitorsTotal,
+        occupiedRoomsCount: stats.roomsOccupied,
+        pendingParcelsCount: stats.parcelsPending,
+        stats,
         toastMessage,
         showToast,
+        syncFromCloud,
       }}
     >
       {children}

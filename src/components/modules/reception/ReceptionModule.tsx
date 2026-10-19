@@ -1,24 +1,42 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useLanguage } from '../../../context/LanguageContext';
-import { useNavigation } from '../../../context/NavigationContext';
-import { useReception } from '../../../context/ReceptionContext';
+import { useTenant } from '../../../context/TenantContext';
+import { useAuth } from '../../../context/AuthContext';
 import {
-  ConciergeBell,
+  receptionStorage,
+  VisitorRecord,
+  RoomBookingRecord,
+  ParcelRecord,
+  CallRecord,
+  ContractorPermitRecord,
+} from '../../../services/receptionStorage';
+import { branchStorage } from '../companies/branchStorage';
+import { hrStorage } from '../../../services/hrStorage';
+import { CreatableSelect } from '../../common/CreatableSelect';
+import { DocumentPreviewModal } from '../../common/DocumentPreviewModal';
+import { ReceptionHeroHeader } from './ReceptionHeroHeader';
+import { DigitalPassModal, PassData } from './DigitalPassModal';
+import { AuditLogDrawer } from './AuditLogDrawer';
+import {
+  Users,
   Calendar,
   Package,
   PhoneCall,
-  ShieldCheck,
-  Plus,
+  HardHat,
   Search,
-  CheckCircle2,
-  Clock,
+  Plus,
   QrCode,
+  FileText,
+  LogOut,
+  Pencil,
+  Trash2,
+  AlertCircle,
+  CheckCircle2,
+  Building2,
+  Upload,
   Coffee,
   X,
-  Send,
-  Building2,
-  ExternalLink,
+  Clock
 } from 'lucide-react';
 
 interface ReceptionModuleProps {
@@ -27,1755 +45,2340 @@ interface ReceptionModuleProps {
 
 export const ReceptionModule: React.FC<ReceptionModuleProps> = ({ activeSubItemId }) => {
   const { isRtl, t } = useLanguage();
-  const { selectItem } = useNavigation();
-  const {
-    visitors,
-    checkInVisitor,
-    checkOutVisitor,
-    selectedVisitorForBadge,
-    setSelectedVisitorForBadge,
-    meetingRooms,
-    reservations,
-    bookMeetingRoom,
-    updateHospitalityStatus,
-    parcels,
-    addParcel,
-    confirmParcelPickup,
-    callLogs,
-    addCallLog,
-    corporateDirectory,
-    contractorPasses,
-    issueContractorPass,
-    revokeContractorPass,
-    activeVisitorsCount,
-    todayScheduledCount,
-    toastMessage,
-    showToast,
-  } = useReception();
+  const { companies, selectedCompanyIds } = useTenant();
+  const { user } = useAuth();
+  const currentUserName = user?.nameAr || 'مدير النظام';
 
-  // Visitor state
-  const [visitorFilter, setVisitorFilter] = useState<'all' | 'checked_in' | 'expected' | 'checked_out'>('all');
-  const [visitorSearch, setVisitorSearch] = useState('');
-  const [isCheckInModalOpen, setIsCheckInModalOpen] = useState(false);
-
-  // New Visitor Form State
-  const [visNameAr, setVisNameAr] = useState('');
-  const [visCompany, setVisCompany] = useState('');
-  const [visNationalId, setVisNationalId] = useState('');
-  const [visMobile, setVisMobile] = useState('');
-  const [visHostEmployee, setVisHostEmployee] = useState('م. أحمد مصطفى');
-  const visHostDept = 'المكتب الفني';
-  const [visPurpose, setVisPurpose] = useState('');
-  const [visIsVip, setVisIsVip] = useState(false);
-
-  // Meeting Room Booking Modal State
-  const [isRoomModalOpen, setIsRoomModalOpen] = useState(false);
-  const [selectedRoomId, setSelectedRoomId] = useState(meetingRooms[0]?.id || '');
-  const [roomMeetingTitle, setRoomMeetingTitle] = useState('');
-  const roomHost = 'م. أحمد مصطفى';
-  const roomDept = 'الإدارة العليا';
-  const [roomTimeSlot, setRoomTimeSlot] = useState('02:00 م - 03:30 م');
-  const [roomAttendees, setRoomAttendees] = useState(6);
-  const [roomCatering, setRoomCatering] = useState(true);
-  const [roomCateringDetails, setRoomCateringDetails] = useState('قهوة سعودية مختصة وشاي وتمور فاخرة');
-
-  // Parcel Ingestion Modal State
-  const [isParcelModalOpen, setIsParcelModalOpen] = useState(false);
-  const [parcelTracking, setParcelTracking] = useState('');
-  const [parcelCourier, setParcelCourier] = useState('البريد السعودي (SPL)');
-  const [parcelType, setParcelType] = useState('مستندات تعاقدية أصلية');
-  const [parcelSender, setParcelSender] = useState('');
-  const [parcelRecipient, setParcelRecipient] = useState('أ. رأفت عبد العال');
-  const parcelDept = 'الشؤون القانونية';
-  const [parcelIsCTS, setParcelIsCTS] = useState(false);
-
-  // Call Log Modal State
-  const [isCallModalOpen, setIsCallModalOpen] = useState(false);
-  const [callCaller, setCallCaller] = useState('');
-  const [callOrg, setCallOrg] = useState('');
-  const [callPhone, setCallPhone] = useState('');
-  const [callDirectedTo, setCallDirectedTo] = useState('أ. كمال إبراهيم');
-  const [callPurpose, setCallPurpose] = useState('');
-  const [callAction, setCallAction] = useState('تم التحويل');
-  const [callStatus, setCallStatus] = useState<'transferred' | 'message_taken' | 'callback_requested'>('transferred');
-  const [directorySearch, setDirectorySearch] = useState('');
-
-  // Contractor Pass Modal State
-  const [isPassModalOpen, setIsPassModalOpen] = useState(false);
-  const [passCompany, setPassCompany] = useState('');
-  const [passTechName, setPassTechName] = useState('');
-  const [passNatId, setPassNatId] = useState('');
-  const [passWorkScope, setPassWorkScope] = useState('');
-  const passSupervisor = 'أ. نبيل الفيشاوي (إدارة المرافق)';
-  const [passValidUntil, setPassValidUntil] = useState('04:00 م (نهاية اليوم)');
-  const [passSafetyBriefed, setPassSafetyBriefed] = useState(true);
-  const [passTools, setPassTools] = useState('حقيبة عدد يدوية، جهاز فحص رقمي');
-
-  // Fast check-in submit
-  const handleCheckInSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!visNameAr || !visMobile) return;
-
-    const newVisitor = checkInVisitor({
-      nameAr: visNameAr,
-      nameEn: visNameAr,
-      company: visCompany || 'زائر مستقل',
-      nationalId: visNationalId || '10xxxxxxxx',
-      mobile: visMobile,
-      hostEmployeeAr: visHostEmployee,
-      hostEmployeeEn: visHostEmployee,
-      hostDepartmentAr: visHostDept,
-      purposeAr: visPurpose || 'زيارة عمل واجتماع تنسيقي',
-      purposeEn: 'Business meeting',
-      badgeNumber: 'TEMP',
-      vip: visIsVip,
-    });
-
-    // Reset & close
-    setVisNameAr('');
-    setVisCompany('');
-    setVisNationalId('');
-    setVisMobile('');
-    setVisPurpose('');
-    setVisIsVip(false);
-    setIsCheckInModalOpen(false);
-
-    // Auto prompt visitor pass
-    setSelectedVisitorForBadge(newVisitor);
-  };
-
-  // Book room submit
-  const handleBookRoomSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const room = meetingRooms.find(r => r.id === selectedRoomId);
-    if (!room) return;
-
-    bookMeetingRoom({
-      roomId: room.id,
-      roomNameAr: room.nameAr,
-      titleAr: roomMeetingTitle || 'جلسة عمل تنسيقية',
-      hostEmployeeAr: roomHost,
-      departmentAr: roomDept,
-      timeSlot: roomTimeSlot,
-      attendeesCount: roomAttendees,
-      amenities: room.amenities,
-      cateringRequired: roomCatering,
-      cateringDetailsAr: roomCateringDetails,
-    });
-
-    setRoomMeetingTitle('');
-    setIsRoomModalOpen(false);
-  };
-
-  // Add parcel submit
-  const handleAddParcelSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const trackNo = parcelTracking || `TRK-${Math.floor(100000 + Math.random() * 900000)}`;
-
-    addParcel({
-      trackingNumber: trackNo,
-      courierName: parcelCourier,
-      packageTypeAr: parcelType,
-      senderName: parcelSender || 'جهة خارجية',
-      recipientEmployeeAr: parcelRecipient,
-      recipientDepartmentAr: parcelDept,
-      isOfficialTransmittal: parcelIsCTS,
-    });
-
-    setParcelTracking('');
-    setParcelSender('');
-    setIsParcelModalOpen(false);
-  };
-
-  // Add call submit
-  const handleAddCallSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!callCaller) return;
-
-    addCallLog({
-      callerName: callCaller,
-      callerOrganization: callOrg || 'جهة خارجية',
-      callerPhone: callPhone || '+966 11 xxx xxxx',
-      directedToEmployeeAr: callDirectedTo,
-      purposeAr: callPurpose || 'استفسار عام',
-      actionTakenAr: callAction,
-      status: callStatus,
-    });
-
-    setCallCaller('');
-    setCallOrg('');
-    setCallPhone('');
-    setCallPurpose('');
-    setIsCallModalOpen(false);
-  };
-
-  // Issue pass submit
-  const handleIssuePassSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!passTechName || !passCompany) return;
-
-    issueContractorPass({
-      contractorCompanyAr: passCompany,
-      technicianNameAr: passTechName,
-      nationalId: passNatId || '2xxxxxxxxx',
-      workScopeAr: passWorkScope || 'أعمال فحص وصيانة دورية',
-      supervisedByAr: passSupervisor,
-      validUntil: passValidUntil,
-      safetyBriefingCompleted: passSafetyBriefed,
-      registeredToolsAr: passTools,
-    });
-
-    setPassCompany('');
-    setPassTechName('');
-    setPassNatId('');
-    setPassWorkScope('');
-    setIsPassModalOpen(false);
-  };
-
-  // Filter visitors
-  const filteredVisitors = visitors.filter(v => {
-    const matchesFilter = visitorFilter === 'all' || v.status === visitorFilter;
-    const matchesSearch =
-      v.nameAr.toLowerCase().includes(visitorSearch.toLowerCase()) ||
-      v.company.toLowerCase().includes(visitorSearch.toLowerCase()) ||
-      v.hostEmployeeAr.toLowerCase().includes(visitorSearch.toLowerCase()) ||
-      v.badgeNumber.toLowerCase().includes(visitorSearch.toLowerCase());
-    return matchesFilter && matchesSearch;
+  // Active Tab State (sync with sidebar subItem, default to visitors)
+  const [currentTab, setCurrentTab] = useState<string>(() => {
+    if (activeSubItemId === 'rec_rooms') return 'rooms';
+    if (activeSubItemId === 'rec_parcels') return 'parcels';
+    if (activeSubItemId === 'rec_calls') return 'calls';
+    if (activeSubItemId === 'rec_passes' || activeSubItemId === 'rec_permits') return 'permits';
+    return 'visitors';
   });
 
-  // Filter contacts
-  const filteredContacts = corporateDirectory.filter(c =>
-    c.nameAr.toLowerCase().includes(directorySearch.toLowerCase()) ||
-    c.departmentAr.toLowerCase().includes(directorySearch.toLowerCase()) ||
-    c.extension.includes(directorySearch)
-  );
+  useEffect(() => {
+    if (activeSubItemId === 'rec_rooms') setCurrentTab('rooms');
+    else if (activeSubItemId === 'rec_parcels') setCurrentTab('parcels');
+    else if (activeSubItemId === 'rec_calls') setCurrentTab('calls');
+    else if (activeSubItemId === 'rec_passes' || activeSubItemId === 'rec_permits') setCurrentTab('permits');
+    else if (activeSubItemId === 'rec_visitors') setCurrentTab('visitors');
+  }, [activeSubItemId]);
 
-  // --- Sub-View 1: الزوار والدخول الرقمي ---
-  const renderVisitorsView = () => (
-    <div className="space-y-4">
-      {/* KPI Overview Strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="p-3.5 rounded-2xl bg-[#F3EFE6] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628]">
-          <span className="text-[11px] font-bold text-[#5C665E] dark:text-[#8FA392] block">
-            {t('الزوار حالياً بالمنشأة', 'Currently On-Premises')}
-          </span>
-          <span className="text-xl font-black text-emerald-600 dark:text-emerald-400 mt-1 block font-mono">
-            {activeVisitorsCount} <span className="text-xs font-normal">{isRtl ? 'زائر' : 'visitors'}</span>
-          </span>
-        </div>
+  // Selected company and branch context for filters & forms
+  const defaultCompanyId = selectedCompanyIds[0] || companies[0]?.id || 'tarabot';
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string>(defaultCompanyId);
+  const [selectedBranchId, setSelectedBranchId] = useState<string>('all');
 
-        <div className="p-3.5 rounded-2xl bg-[#F3EFE6] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628]">
-          <span className="text-[11px] font-bold text-[#5C665E] dark:text-[#8FA392] block">
-            {t('المواعيد المجدولة اليوم', 'Expected Today')}
-          </span>
-          <span className="text-xl font-black text-[#D99B26] dark:text-[#EBB34D] mt-1 block font-mono">
-            {todayScheduledCount} <span className="text-xs font-normal">{isRtl ? 'موعد' : 'scheduled'}</span>
-          </span>
-        </div>
+  // Live Records State from receptionStorage
+  const [visitors, setVisitors] = useState<VisitorRecord[]>(() => receptionStorage.getVisitors());
+  const [rooms, setRooms] = useState<RoomBookingRecord[]>(() => receptionStorage.getBookings());
+  const [parcels, setParcels] = useState<ParcelRecord[]>(() => receptionStorage.getParcels());
+  const [calls, setCalls] = useState<CallRecord[]>(() => receptionStorage.getCalls());
+  const [permits, setPermits] = useState<ContractorPermitRecord[]>(() => receptionStorage.getPermits());
+  const [stats, setStats] = useState(() => receptionStorage.getStats());
+  const [isSyncing, setIsSyncing] = useState(false);
 
-        <div className="p-3.5 rounded-2xl bg-[#F3EFE6] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628]">
-          <span className="text-[11px] font-bold text-[#5C665E] dark:text-[#8FA392] block">
-            {t('الزوار المغادرون اليوم', 'Departed Today')}
-          </span>
-          <span className="text-xl font-black text-[#5C665E] dark:text-[#8FA392] mt-1 block font-mono">
-            {visitors.filter(v => v.status === 'checked_out').length} <span className="text-xs font-normal">{isRtl ? 'زائر' : 'checked-out'}</span>
-          </span>
-        </div>
+  // Subscribe to reactive storage updates
+  useEffect(() => {
+    const handleUpdate = () => {
+      setVisitors(receptionStorage.getVisitors());
+      setRooms(receptionStorage.getBookings());
+      setParcels(receptionStorage.getParcels());
+      setCalls(receptionStorage.getCalls());
+      setPermits(receptionStorage.getPermits());
+      setStats(receptionStorage.getStats());
+    };
+    window.addEventListener('eco-reception-updated', handleUpdate);
+    return () => window.removeEventListener('eco-reception-updated', handleUpdate);
+  }, []);
 
-        <div className="p-3.5 rounded-2xl bg-[#F3EFE6] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628]">
-          <span className="text-[11px] font-bold text-[#5C665E] dark:text-[#8FA392] block">
-            {t('زوار VIP وكبار الشخصيات', 'VIP Visitors')}
-          </span>
-          <span className="text-xl font-black text-purple-600 dark:text-purple-400 mt-1 block font-mono">
-            {visitors.filter(v => v.vip).length} <span className="text-xs font-normal">{isRtl ? 'شخصية' : 'VIPs'}</span>
-          </span>
-        </div>
-      </div>
+  const handleManualSync = async () => {
+    setIsSyncing(true);
+    await receptionStorage.syncFromCloud();
+    setIsSyncing(false);
+  };
 
-      {/* Action Bar & Search */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-2 overflow-x-auto">
-          {(['all', 'checked_in', 'expected', 'checked_out'] as const).map(tab => (
-            <button
-              key={tab}
-              onClick={() => setVisitorFilter(tab)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all touch-target whitespace-nowrap ${
-                visitorFilter === tab
-                  ? 'bg-[#1C291E] dark:bg-[#F3EFE6] text-[#F3EFE6] dark:text-[#0E1610] shadow-xs'
-                  : 'bg-[#F3EFE6] dark:bg-[#17231A] text-[#5C665E] dark:text-[#8FA392] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23]'
-              }`}
+  // Live Branches matching selected company
+  const companyBranches = useMemo(() => {
+    try {
+      const all = branchStorage.getBranchesSync();
+      if (!selectedCompanyId || selectedCompanyId === 'all') return all;
+      return all.filter(b => b.companyId === selectedCompanyId || (b as any).company_id === selectedCompanyId);
+    } catch {
+      return [];
+    }
+  }, [selectedCompanyId]);
+
+  // Live Employees matching selected company for Host selection
+  const liveEmployees = useMemo(() => {
+    try {
+      return hrStorage.getEmployees();
+    } catch {
+      return [];
+    }
+  }, []);
+
+  // Active Company metadata
+  const currentCompany = companies.find(c => c.id === selectedCompanyId) || companies[0];
+  const companyDisplayName = currentCompany ? (isRtl ? currentCompany.nameAr : currentCompany.nameEn) : 'شركة ترابط للمقاولات والتجارة';
+
+  // Sub-Module Searches & Filters
+  const [visitorSearch, setVisitorSearch] = useState('');
+  const [visitorFilter, setVisitorFilter] = useState<'all' | 'inside' | 'expected' | 'checked_out'>('all');
+
+  const [roomSearch, setRoomSearch] = useState('');
+  const [roomFilter, setRoomFilter] = useState<'all' | 'جاري الآن' | 'مؤكد' | 'مكتمل' | 'ملغي'>('all');
+
+  const [parcelSearch, setParcelSearch] = useState('');
+  const [parcelFilter, setParcelFilter] = useState<'all' | 'في الاستقبال' | 'تم التسليم للمستلم'>('all');
+
+  const [callSearch, setCallSearch] = useState('');
+  const [callFilter, setCallFilter] = useState<'all' | 'بانتظار الرد' | 'تم التحويل' | 'تمت المعالجة'>('all');
+
+  const [permitSearch, setPermitSearch] = useState('');
+  const [permitFilter, setPermitFilter] = useState<'all' | 'ساري بالمنشأة' | 'مجدول' | 'منتهي / مغلق'>('all');
+
+  // Modals & Drawers State
+  const [passModalOpen, setPassModalOpen] = useState(false);
+  const [passData, setPassData] = useState<PassData | null>(null);
+
+  const [auditDrawerOpen, setAuditDrawerOpen] = useState(false);
+  const [auditDrawerTitle, setAuditDrawerTitle] = useState('');
+  const [auditLogsData, setAuditLogsData] = useState<any[]>([]);
+
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
+  const [previewDocData, setPreviewDocData] = useState<{ title: string; fileData?: string; fileName?: string }>({ title: '' });
+
+  // Creation / Editing Modals
+  const [isVisitorModalOpen, setIsVisitorModalOpen] = useState(false);
+  const [editingVisitor, setEditingVisitor] = useState<VisitorRecord | null>(null);
+  const [visForm, setVisForm] = useState<Partial<VisitorRecord>>({});
+
+  const [isRoomModalOpen, setIsRoomModalOpen] = useState(false);
+  const [editingRoom, setEditingRoom] = useState<RoomBookingRecord | null>(null);
+  const [roomForm, setRoomForm] = useState<Partial<RoomBookingRecord>>({});
+
+  const [isParcelModalOpen, setIsParcelModalOpen] = useState(false);
+  const [editingParcel, setEditingParcel] = useState<ParcelRecord | null>(null);
+  const [parcelForm, setParcelForm] = useState<Partial<ParcelRecord>>({});
+
+  const [isCallModalOpen, setIsCallModalOpen] = useState(false);
+  const [editingCall, setEditingCall] = useState<CallRecord | null>(null);
+  const [callForm, setCallForm] = useState<Partial<CallRecord>>({});
+
+  const [isPermitModalOpen, setIsPermitModalOpen] = useState(false);
+  const [editingPermit, setEditingPermit] = useState<ContractorPermitRecord | null>(null);
+  const [permitForm, setPermitForm] = useState<Partial<ContractorPermitRecord>>({});
+
+  const [formError, setFormError] = useState<string | null>(null);
+
+  // File to Base64 helper
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, setter: (data: { base64: string; name: string }) => void) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        setter({ base64: reader.result, name: file.name });
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Filtered Collections
+  const filteredVisitors = useMemo(() => {
+    return visitors.filter(v => {
+      if (selectedCompanyId !== 'all' && v.company_id && v.company_id !== selectedCompanyId) return false;
+      if (selectedBranchId !== 'all' && v.branch_id && v.branch_id !== selectedBranchId) return false;
+      if (visitorFilter !== 'all' && v.status !== visitorFilter) return false;
+      if (visitorSearch.trim()) {
+        const q = visitorSearch.toLowerCase();
+        const nameMatch = v.visitor_name.toLowerCase().includes(q);
+        const codeMatch = v.badge_code.toLowerCase().includes(q);
+        const orgMatch = v.visitor_organization?.toLowerCase().includes(q);
+        const hostMatch = v.host_employee_name?.toLowerCase().includes(q);
+        return nameMatch || codeMatch || orgMatch || hostMatch;
+      }
+      return true;
+    });
+  }, [visitors, selectedCompanyId, selectedBranchId, visitorFilter, visitorSearch]);
+
+  const filteredRooms = useMemo(() => {
+    return rooms.filter(r => {
+      if (selectedCompanyId !== 'all' && r.company_id && r.company_id !== selectedCompanyId) return false;
+      if (selectedBranchId !== 'all' && r.branch_id && r.branch_id !== selectedBranchId) return false;
+      if (roomFilter !== 'all' && r.status !== roomFilter) return false;
+      if (roomSearch.trim()) {
+        const q = roomSearch.toLowerCase();
+        return r.meeting_title.toLowerCase().includes(q) || r.room_name.toLowerCase().includes(q) || r.booking_code.toLowerCase().includes(q);
+      }
+      return true;
+    });
+  }, [rooms, selectedCompanyId, selectedBranchId, roomFilter, roomSearch]);
+
+  const filteredParcels = useMemo(() => {
+    return parcels.filter(p => {
+      if (selectedCompanyId !== 'all' && p.company_id && p.company_id !== selectedCompanyId) return false;
+      if (parcelFilter !== 'all' && p.status !== parcelFilter) return false;
+      if (parcelSearch.trim()) {
+        const q = parcelSearch.toLowerCase();
+        return p.tracking_code.toLowerCase().includes(q) || p.courier_company.toLowerCase().includes(q) || p.recipient_name.toLowerCase().includes(q) || (p.awb_number && p.awb_number.toLowerCase().includes(q));
+      }
+      return true;
+    });
+  }, [parcels, selectedCompanyId, parcelFilter, parcelSearch]);
+
+  const filteredCalls = useMemo(() => {
+    return calls.filter(c => {
+      if (selectedCompanyId !== 'all' && c.company_id && c.company_id !== selectedCompanyId) return false;
+      if (callFilter !== 'all' && c.status !== callFilter) return false;
+      if (callSearch.trim()) {
+        const q = callSearch.toLowerCase();
+        return c.caller_name.toLowerCase().includes(q) || c.subject.toLowerCase().includes(q) || (c.target_employee_name && c.target_employee_name.toLowerCase().includes(q));
+      }
+      return true;
+    });
+  }, [calls, selectedCompanyId, callFilter, callSearch]);
+
+  const filteredPermits = useMemo(() => {
+    return permits.filter(pm => {
+      if (selectedCompanyId !== 'all' && pm.company_id && pm.company_id !== selectedCompanyId) return false;
+      if (permitFilter !== 'all' && pm.status !== permitFilter) return false;
+      if (permitSearch.trim()) {
+        const q = permitSearch.toLowerCase();
+        return pm.permit_code.toLowerCase().includes(q) || pm.contractor_company.toLowerCase().includes(q) || pm.supervisor_name.toLowerCase().includes(q);
+      }
+      return true;
+    });
+  }, [permits, selectedCompanyId, permitFilter, permitSearch]);
+
+  // Open QR Pass Modal
+  const openVisitorPass = (v: VisitorRecord) => {
+    const comp = companies.find(c => c.id === v.company_id);
+    setPassData({
+      type: 'visitor',
+      code: v.badge_code,
+      name: v.visitor_name,
+      organization: v.visitor_organization,
+      nationalId: v.national_id_or_passport,
+      category: v.visitor_category,
+      companyName: comp ? (isRtl ? comp.nameAr : comp.nameEn) : companyDisplayName,
+      hostName: v.host_employee_name,
+      departmentName: v.department_name,
+      purpose: v.visit_purpose,
+      checkInTime: v.check_in_time,
+      date: v.visit_date,
+    });
+    setPassModalOpen(true);
+  };
+
+  const openContractorPass = (pm: ContractorPermitRecord) => {
+    const comp = companies.find(c => c.id === pm.company_id);
+    setPassData({
+      type: 'contractor',
+      code: pm.permit_code,
+      name: `${pm.supervisor_name} (${pm.contractor_company})`,
+      organization: pm.contractor_company,
+      nationalId: pm.supervisor_national_id,
+      companyName: comp ? (isRtl ? comp.nameAr : comp.nameEn) : companyDisplayName,
+      purpose: pm.work_nature,
+      checkInTime: pm.daily_hours,
+      date: pm.start_date,
+      validUntil: pm.end_date,
+      workersCount: pm.workers_count,
+    });
+    setPassModalOpen(true);
+  };
+
+  // Open Audit Log Drawer
+  const openAuditDrawer = (title: string, logs: any) => {
+    setAuditDrawerTitle(title);
+    setAuditLogsData(logs || []);
+    setAuditDrawerOpen(true);
+  };
+
+  // Open Live Document Preview Modal
+  const openDocPreview = (title: string, fileData?: string | null, fileName?: string | null) => {
+    if (!fileData) return;
+    setPreviewDocData({
+      title,
+      fileData,
+      fileName: fileName || 'وثيقة-رسمية.pdf',
+    });
+    setPreviewModalOpen(true);
+  };
+
+  // ==========================================
+  // Form Submission Handlers
+  // ==========================================
+  const handleSaveVisitor = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError(null);
+    if (!visForm.visitor_name?.trim()) {
+      setFormError('اسم الزائر مطلوب');
+      return;
+    }
+    await receptionStorage.saveVisitor({
+      ...visForm,
+      id: editingVisitor ? editingVisitor.id : undefined,
+      company_id: visForm.company_id || selectedCompanyId,
+      branch_id: visForm.branch_id || (selectedBranchId !== 'all' ? selectedBranchId : null),
+    }, currentUserName);
+    setIsVisitorModalOpen(false);
+    setEditingVisitor(null);
+    setVisForm({});
+  };
+
+  const handleSaveRoom = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError(null);
+    if (!roomForm.room_name?.trim() || !roomForm.meeting_title?.trim()) {
+      setFormError('اسم القاعة وعنوان الاجتماع مطلوبان');
+      return;
+    }
+    try {
+      await receptionStorage.saveBooking({
+        ...roomForm,
+        id: editingRoom ? editingRoom.id : undefined,
+        company_id: roomForm.company_id || selectedCompanyId,
+        branch_id: roomForm.branch_id || (selectedBranchId !== 'all' ? selectedBranchId : null),
+      }, currentUserName);
+      setIsRoomModalOpen(false);
+      setEditingRoom(null);
+      setRoomForm({});
+    } catch (err: any) {
+      setFormError(err.message || 'فشل حفظ حجز القاعة');
+    }
+  };
+
+  const handleSaveParcel = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError(null);
+    if (!parcelForm.recipient_name?.trim()) {
+      setFormError('اسم المستلم مطلوب');
+      return;
+    }
+    await receptionStorage.saveParcel({
+      ...parcelForm,
+      id: editingParcel ? editingParcel.id : undefined,
+      company_id: parcelForm.company_id || selectedCompanyId,
+      branch_id: parcelForm.branch_id || (selectedBranchId !== 'all' ? selectedBranchId : null),
+    }, currentUserName);
+    setIsParcelModalOpen(false);
+    setEditingParcel(null);
+    setParcelForm({});
+  };
+
+  const handleSaveCall = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError(null);
+    if (!callForm.caller_name?.trim() || !callForm.subject?.trim()) {
+      setFormError('اسم المتصل وموضوع المكالمة مطلوبان');
+      return;
+    }
+    await receptionStorage.saveCall({
+      ...callForm,
+      id: editingCall ? editingCall.id : undefined,
+      company_id: callForm.company_id || selectedCompanyId,
+      branch_id: callForm.branch_id || (selectedBranchId !== 'all' ? selectedBranchId : null),
+    }, currentUserName);
+    setIsCallModalOpen(false);
+    setEditingCall(null);
+    setCallForm({});
+  };
+
+  const handleSavePermit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError(null);
+    if (!permitForm.contractor_company?.trim() || !permitForm.supervisor_name?.trim()) {
+      setFormError('اسم شركة المقاولات واسم المشرف مطلوبان');
+      return;
+    }
+    await receptionStorage.savePermit({
+      ...permitForm,
+      id: editingPermit ? editingPermit.id : undefined,
+      company_id: permitForm.company_id || selectedCompanyId,
+      branch_id: permitForm.branch_id || (selectedBranchId !== 'all' ? selectedBranchId : null),
+    }, currentUserName);
+    setIsPermitModalOpen(false);
+    setEditingPermit(null);
+    setPermitForm({});
+  };
+
+  return (
+    <div className="w-full max-w-none space-y-6 animate-in fade-in duration-200">
+      {/* 1. 3D Cinematic Reception Hero Header */}
+      <ReceptionHeroHeader
+        stats={stats}
+        activeCompanyId={selectedCompanyId}
+        activeBranchId={selectedBranchId}
+        companyName={companyDisplayName}
+        onRefresh={handleManualSync}
+        isSyncing={isSyncing}
+      />
+
+      {/* 2. Unified Company & Branch Filter Bar */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3 rounded-2xl bg-white dark:bg-[#121B14] border border-slate-200/80 dark:border-[#243628] shadow-xs">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Company Switcher Pill */}
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-[#17231A] border border-slate-200 dark:border-[#243628] text-xs">
+            <Building2 className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+            <span className="text-slate-500 font-medium">{t('المنشأة:', 'Entity:')}</span>
+            <select
+              value={selectedCompanyId}
+              onChange={e => {
+                setSelectedCompanyId(e.target.value);
+                setSelectedBranchId('all');
+              }}
+              className="bg-transparent font-bold text-slate-800 dark:text-[#F3EFE6] focus:outline-hidden cursor-pointer"
             >
-              {tab === 'all'
-                ? isRtl ? 'كافة الزوار' : 'All Visitors'
-                : tab === 'checked_in'
-                ? isRtl ? 'داخل المنشأة' : 'On-Premises'
-                : tab === 'expected'
-                ? isRtl ? 'مواعيد متوقعة' : 'Expected'
-                : isRtl ? 'غادروا المنشأة' : 'Departed'}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex items-center gap-2">
-          <div className="relative flex-1 sm:w-60">
-            <Search className="w-3.5 h-3.5 text-[#5C665E] dark:text-[#8FA392] absolute start-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={visitorSearch}
-              onChange={e => setVisitorSearch(e.target.value)}
-              placeholder={t('بحث بالاسم، الشركة، التصريح...', 'Search visitors...')}
-              className="w-full ps-8 pe-3 py-1.5 rounded-xl text-xs bg-[#F3EFE6] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6] focus:outline-hidden focus:border-[#D99B26]"
-            />
+              {companies.map(c => (
+                <option key={c.id} value={c.id} className="bg-white dark:bg-[#17231A] text-slate-900 dark:text-[#F3EFE6]">
+                  {isRtl ? c.nameAr : c.nameEn}
+                </option>
+              ))}
+            </select>
           </div>
 
+          {/* Branch Filter */}
+          {companyBranches.length > 0 && (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-[#17231A] border border-slate-200 dark:border-[#243628] text-xs">
+              <span className="text-slate-500 font-medium">{t('المقر / الفرع:', 'Site/Branch:')}</span>
+              <select
+                value={selectedBranchId}
+                onChange={e => setSelectedBranchId(e.target.value)}
+                className="bg-transparent font-bold text-slate-800 dark:text-[#F3EFE6] focus:outline-hidden cursor-pointer"
+              >
+                <option value="all" className="bg-white dark:bg-[#17231A]">{t('كافة الفروع والمقرات', 'All Sites')}</option>
+                {companyBranches.map(b => (
+                  <option key={b.id} value={b.id} className="bg-white dark:bg-[#17231A] text-slate-900 dark:text-[#F3EFE6]">
+                    {b.nameAr}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
+
+        {/* Sub-Module Tab Switcher */}
+        <div className="flex items-center gap-1 overflow-x-auto p-1 rounded-xl bg-slate-100 dark:bg-[#0E1610] border border-slate-200/80 dark:border-[#243628]">
           <button
-            onClick={() => setIsCheckInModalOpen(true)}
-            className="flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-[#D99B26] hover:bg-[#C28519] dark:bg-[#EBB34D] dark:hover:bg-[#D99B26] text-[#1C291E] dark:text-[#0E1610] shadow-xs transition-colors shrink-0 touch-target"
+            onClick={() => setCurrentTab('visitors')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 cursor-pointer ${
+              currentTab === 'visitors'
+                ? 'bg-gradient-to-l from-amber-600 to-amber-500 text-white shadow-xs'
+                : 'text-slate-600 dark:text-[#8FA392] hover:text-slate-900 dark:hover:text-[#F3EFE6]'
+            }`}
           >
-            <Plus className="w-4 h-4" />
-            <span>{t('تسجيل دخول زائر', 'New Check-In')}</span>
+            <Users className="w-3.5 h-3.5" />
+            <span>{t(`الزوار (${visitors.length})`, `Visitors (${visitors.length})`)}</span>
+          </button>
+
+          <button
+            onClick={() => setCurrentTab('rooms')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 cursor-pointer ${
+              currentTab === 'rooms'
+                ? 'bg-gradient-to-l from-amber-600 to-amber-500 text-white shadow-xs'
+                : 'text-slate-600 dark:text-[#8FA392] hover:text-slate-900 dark:hover:text-[#F3EFE6]'
+            }`}
+          >
+            <Calendar className="w-3.5 h-3.5" />
+            <span>{t(`القاعات (${rooms.length})`, `Rooms (${rooms.length})`)}</span>
+          </button>
+
+          <button
+            onClick={() => setCurrentTab('parcels')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 cursor-pointer ${
+              currentTab === 'parcels'
+                ? 'bg-gradient-to-l from-amber-600 to-amber-500 text-white shadow-xs'
+                : 'text-slate-600 dark:text-[#8FA392] hover:text-slate-900 dark:hover:text-[#F3EFE6]'
+            }`}
+          >
+            <Package className="w-3.5 h-3.5" />
+            <span>{t(`الطرود (${parcels.length})`, `Parcels (${parcels.length})`)}</span>
+          </button>
+
+          <button
+            onClick={() => setCurrentTab('calls')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 cursor-pointer ${
+              currentTab === 'calls'
+                ? 'bg-gradient-to-l from-amber-600 to-amber-500 text-white shadow-xs'
+                : 'text-slate-600 dark:text-[#8FA392] hover:text-slate-900 dark:hover:text-[#F3EFE6]'
+            }`}
+          >
+            <PhoneCall className="w-3.5 h-3.5" />
+            <span>{t(`المكالمات (${calls.length})`, `Calls (${calls.length})`)}</span>
+          </button>
+
+          <button
+            onClick={() => setCurrentTab('permits')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 cursor-pointer ${
+              currentTab === 'permits'
+                ? 'bg-gradient-to-l from-amber-600 to-amber-500 text-white shadow-xs'
+                : 'text-slate-600 dark:text-[#8FA392] hover:text-slate-900 dark:hover:text-[#F3EFE6]'
+            }`}
+          >
+            <HardHat className="w-3.5 h-3.5" />
+            <span>{t(`التصاريح (${permits.length})`, `Permits (${permits.length})`)}</span>
           </button>
         </div>
       </div>
 
-      {/* Visitor Cards List */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-        {filteredVisitors.map(vis => (
-          <motion.div
-            key={vis.id}
-            whileHover={{ y: -1 }}
-            className="p-4 rounded-2xl border border-[#E0D9CB] dark:border-[#243628] bg-[#F3EFE6] dark:bg-[#17231A] shadow-2xs space-y-3"
-          >
-            {/* Header info */}
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-xl bg-[#1C291E] dark:bg-[#0E1610] text-[#D99B26] dark:text-[#EBB34D] border border-[#D99B26]/30 flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
-                  {vis.badgeNumber}
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h4 className="text-sm font-bold text-[#1A241C] dark:text-[#F3EFE6] leading-snug">
-                      {isRtl ? vis.nameAr : vis.nameEn}
-                    </h4>
-                    {vis.vip && (
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-700 dark:text-purple-400 border border-purple-500/20">
-                        VIP
+      {/* =================================================================== */}
+      {/* SUB-MODULE 1: VISITORS & DIGITAL ACCESS */}
+      {/* =================================================================== */}
+      {currentTab === 'visitors' && (
+        <div className="space-y-4">
+          {/* Action & Filter Bar */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white dark:bg-[#121B14] p-3 rounded-2xl border border-slate-200/80 dark:border-[#243628] shadow-xs">
+            <div className="relative flex-1 w-full">
+              <Search className="w-4 h-4 text-slate-400 absolute top-1/2 -translate-y-1/2 start-3" />
+              <input
+                type="text"
+                value={visitorSearch}
+                onChange={e => setVisitorSearch(e.target.value)}
+                placeholder={t('البحث باسم الزائر، الكود، الجهة، أو الموظف المستضيف...', 'Search visitor name, code, company, or host...')}
+                className="w-full bg-slate-50 dark:bg-[#17231A] border border-slate-200 dark:border-[#243628] rounded-xl ps-9 pe-3 py-2 text-xs text-slate-900 dark:text-[#F3EFE6] focus:outline-hidden focus:border-amber-500"
+              />
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto justify-between sm:justify-end">
+              <div className="flex items-center gap-1 bg-slate-100 dark:bg-[#17231A] p-1 rounded-xl text-xs font-bold">
+                {(['all', 'inside', 'expected', 'checked_out'] as const).map(f => (
+                  <button
+                    key={f}
+                    onClick={() => setVisitorFilter(f)}
+                    className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                      visitorFilter === f
+                        ? 'bg-gradient-to-l from-amber-600 to-amber-500 text-white shadow-xs'
+                        : 'text-slate-600 dark:text-[#8FA392] hover:text-slate-900'
+                    }`}
+                  >
+                    {f === 'all' && t('الكل', 'All')}
+                    {f === 'inside' && t('بالمنشأة', 'Inside')}
+                    {f === 'expected' && t('متوقع', 'Expected')}
+                    {f === 'checked_out' && t('غادر', 'Left')}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingVisitor(null);
+                  setVisForm({
+                    company_id: selectedCompanyId,
+                    visitor_category: 'زائر أعمال',
+                    id_type: 'national_id',
+                    status: 'inside',
+                    visit_date: new Date().toISOString().split('T')[0],
+                    check_in_time: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
+                  });
+                  setIsVisitorModalOpen(true);
+                }}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-l from-amber-600 to-amber-500 hover:from-amber-700 hover:to-amber-600 text-white font-bold text-xs shadow-md shadow-amber-500/20 cursor-pointer transition-all active:scale-95 shrink-0"
+              >
+                <Plus className="w-4 h-4" />
+                <span>{t('تسجيل دخول زائر', 'New Check-In')}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Visitors Zero State or Records Grid */}
+          {filteredVisitors.length === 0 ? (
+            <div className="p-12 rounded-3xl border border-dashed border-slate-300 dark:border-[#243628] bg-white/60 dark:bg-[#121B14]/60 text-center space-y-4">
+              <div className="w-14 h-14 rounded-2xl bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 flex items-center justify-center mx-auto shadow-xs">
+                <Users className="w-7 h-7" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-base font-bold text-slate-900 dark:text-[#F3EFE6]">
+                  {t('لا يوجد زوار مسجلون حالياً', 'No Visitor Records Found')}
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-[#8FA392] max-w-md mx-auto leading-relaxed">
+                  {t('لم يتم تسجيل أي زوار تحت الفلاتر الحالية. اضغط على الزر أدناه لتسجيل أول دخول رقمي وإصدار شارة الدخول فوراً.', 'No visitors found for the active filter. Click below to register the first visitor check-in.')}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingVisitor(null);
+                  setVisForm({ company_id: selectedCompanyId, status: 'inside' });
+                  setIsVisitorModalOpen(true);
+                }}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-l from-amber-600 to-amber-500 text-white font-bold text-xs shadow-md shadow-amber-500/20 hover:from-amber-700 transition-all cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>{t('+ تسجيل دخول زائر الآن', '+ New Visitor Check-In')}</span>
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredVisitors.map(v => {
+                const isInside = v.status === 'inside';
+                const isExpected = v.status === 'expected';
+
+                return (
+                  <div
+                    key={v.id}
+                    className="p-4 rounded-2xl bg-white dark:bg-[#121B14] border border-slate-200/80 dark:border-[#243628] shadow-xs hover:border-amber-500/40 transition-all flex flex-col justify-between gap-4"
+                  >
+                    <div className="space-y-3">
+                      {/* Top Bar: Code + Category Pill + Status */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="px-2.5 py-1 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-800 dark:text-amber-300 font-mono font-bold text-xs">
+                            {v.badge_code}
+                          </span>
+                          {v.visitor_category && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-[#17231A] text-slate-700 dark:text-stone-300 border border-slate-200 dark:border-[#243628]">
+                              {v.visitor_category}
+                            </span>
+                          )}
+                        </div>
+
+                        <span
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                            isInside
+                              ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30'
+                              : isExpected
+                              ? 'bg-blue-500/15 text-blue-700 dark:text-blue-400 border border-blue-500/30'
+                              : 'bg-slate-100 dark:bg-[#17231A] text-slate-500 border border-slate-200 dark:border-[#243628]'
+                          }`}
+                        >
+                          <span className={`w-1.5 h-1.5 rounded-full ${isInside ? 'bg-amber-500 animate-ping' : isExpected ? 'bg-blue-500' : 'bg-slate-400'}`} />
+                          {isInside ? t('بالمنشأة', 'Inside') : isExpected ? t('متوقع', 'Expected') : t('غادر', 'Departed')}
+                        </span>
+                      </div>
+
+                      {/* Visitor Name & Info */}
+                      <div>
+                        <h4 className="text-sm font-extrabold text-slate-900 dark:text-[#F3EFE6]">
+                          {v.visitor_name}
+                        </h4>
+                        {v.visitor_organization && (
+                          <p className="text-xs text-amber-700 dark:text-amber-400 font-medium">
+                            {v.visitor_organization}
+                          </p>
+                        )}
+                        <p className="text-[11px] text-slate-500 dark:text-[#8FA392] mt-0.5">
+                          {v.phone || '—'} {v.national_id_or_passport ? `• ID: ${v.national_id_or_passport}` : ''}
+                        </p>
+                      </div>
+
+                      {/* Host & Department */}
+                      <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[#17231A] border border-slate-200/80 dark:border-[#243628] text-xs space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] text-slate-500">{t('المستضيف:', 'Host:')}</span>
+                          <span className="font-bold text-slate-800 dark:text-stone-200">{v.host_employee_name || 'الاستقبال العام'}</span>
+                        </div>
+                        {v.department_name && (
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className="text-[10px] text-slate-500">{t('الإدارة:', 'Dept:')}</span>
+                            <span className="text-slate-600 dark:text-[#8FA392]">{v.department_name}</span>
+                          </div>
+                        )}
+                        {v.visit_purpose && (
+                          <div className="text-[11px] text-slate-600 dark:text-[#8FA392] pt-1 border-t border-slate-200/60 dark:border-[#243628] line-clamp-2">
+                            {v.visit_purpose}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Bottom Strip: Entry Time & Icon-Only Action Bar */}
+                    <div className="flex items-center justify-between pt-3 border-t border-slate-200/80 dark:border-[#243628]">
+                      <span className="text-[10px] font-mono text-slate-400 flex items-center gap-1" dir="ltr">
+                        <Clock className="w-3 h-3 text-amber-500" />
+                        <span>{v.check_in_time || '—'}</span>
                       </span>
+
+                      {/* Golden Standard Icon-Only Action Bar */}
+                      <div className="flex items-center gap-1">
+                        {/* 1. View QR Digital Pass */}
+                        <button
+                          type="button"
+                          onClick={() => openVisitorPass(v)}
+                          title={t('عرض تصريح الدخول والـ QR', 'View Digital Pass & QR')}
+                          className="p-1.5 rounded-lg text-slate-500 hover:text-amber-600 dark:text-stone-400 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-[#17231A] transition-colors cursor-pointer"
+                        >
+                          <QrCode className="w-4 h-4" />
+                        </button>
+
+                        {/* 2. Document / ID Scan Preview */}
+                        {v.attachment_data && (
+                          <button
+                            type="button"
+                            onClick={() => openDocPreview(`وثيقة إثبات هوية - ${v.visitor_name}`, v.attachment_data, v.attachment_name)}
+                            title={t('معاينة المستند المرفق (صورة الهوية)', 'Preview Attached ID')}
+                            className="p-1.5 rounded-lg text-slate-500 hover:text-amber-600 dark:text-stone-400 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-[#17231A] transition-colors cursor-pointer"
+                          >
+                            <FileText className="w-4 h-4" />
+                          </button>
+                        )}
+
+                        {/* 3. Fast Check-out */}
+                        {isInside && (
+                          <button
+                            type="button"
+                            onClick={() => receptionStorage.checkOutVisitor(v.id, currentUserName)}
+                            title={t('تسجيل خروج فوري', 'Quick Check-Out')}
+                            className="p-1.5 rounded-lg text-slate-500 hover:text-amber-600 dark:text-stone-400 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-[#17231A] transition-colors cursor-pointer"
+                          >
+                            <LogOut className="w-4 h-4" />
+                          </button>
+                        )}
+
+                        {/* 4. Edit Record */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingVisitor(v);
+                            setVisForm({ ...v });
+                            setIsVisitorModalOpen(true);
+                          }}
+                          title={t('تعديل السجل', 'Edit Visitor')}
+                          className="p-1.5 rounded-lg text-slate-500 hover:text-amber-600 dark:text-stone-400 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-[#17231A] transition-colors cursor-pointer"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+
+                        {/* 5. Audit Log Diff */}
+                        <button
+                          type="button"
+                          onClick={() => openAuditDrawer(`الزائر: ${v.visitor_name} (${v.badge_code})`, v.audit_log_json)}
+                          title={t('سجل التدقيق والتعديلات (!)', 'Audit Log (!)')}
+                          className="p-1.5 rounded-lg text-slate-500 hover:text-amber-600 dark:text-stone-400 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-[#17231A] transition-colors cursor-pointer"
+                        >
+                          <AlertCircle className="w-4 h-4" />
+                        </button>
+
+                        {/* 6. Delete Record */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (window.confirm(t('هل أنت متأكد من حذف هذا السجل نهائياً؟', 'Are you sure you want to delete this record?'))) {
+                              receptionStorage.deleteVisitor(v.id);
+                            }
+                          }}
+                          title={t('حذف السجل', 'Delete')}
+                          className="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 dark:text-stone-400 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-[#17231A] transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* =================================================================== */}
+      {/* SUB-MODULE 2: ROOM BOOKINGS & HOSPITALITY */}
+      {/* =================================================================== */}
+      {currentTab === 'rooms' && (
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white dark:bg-[#121B14] p-3 rounded-2xl border border-slate-200/80 dark:border-[#243628] shadow-xs">
+            <div className="relative flex-1 w-full">
+              <Search className="w-4 h-4 text-slate-400 absolute top-1/2 -translate-y-1/2 start-3" />
+              <input
+                type="text"
+                value={roomSearch}
+                onChange={e => setRoomSearch(e.target.value)}
+                placeholder={t('البحث باسم القاعة، عنوان الاجتماع، الكود، أو المنظم...', 'Search room name, title, code, or organizer...')}
+                className="w-full bg-slate-50 dark:bg-[#17231A] border border-slate-200 dark:border-[#243628] rounded-xl ps-9 pe-3 py-2 text-xs text-slate-900 dark:text-[#F3EFE6] focus:outline-hidden focus:border-amber-500"
+              />
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto justify-between sm:justify-end">
+              <div className="flex items-center gap-1 bg-slate-100 dark:bg-[#17231A] p-1 rounded-xl text-xs font-bold">
+                {(['all', 'جاري الآن', 'مؤكد', 'مكتمل', 'ملغي'] as const).map(f => (
+                  <button
+                    key={f}
+                    onClick={() => setRoomFilter(f)}
+                    className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                      roomFilter === f
+                        ? 'bg-gradient-to-l from-amber-600 to-amber-500 text-white shadow-xs'
+                        : 'text-slate-600 dark:text-[#8FA392] hover:text-slate-900'
+                    }`}
+                  >
+                    {f === 'all' && t('الكل', 'All')}
+                    {f === 'جاري الآن' && t('جاري الآن', 'Active')}
+                    {f === 'مؤكد' && t('مؤكد', 'Confirmed')}
+                    {f === 'مكتمل' && t('مكتمل', 'Completed')}
+                    {f === 'ملغي' && t('ملغي', 'Cancelled')}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingRoom(null);
+                  setRoomForm({
+                    company_id: selectedCompanyId,
+                    booking_date: new Date().toISOString().split('T')[0],
+                    start_time: '10:00',
+                    end_time: '11:00',
+                    attendees_count: 6,
+                    status: 'مؤكد',
+                  });
+                  setIsRoomModalOpen(true);
+                }}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-l from-amber-600 to-amber-500 hover:from-amber-700 hover:to-amber-600 text-white font-bold text-xs shadow-md shadow-amber-500/20 cursor-pointer transition-all active:scale-95 shrink-0"
+              >
+                <Plus className="w-4 h-4" />
+                <span>{t('حجز قاعة اجتماع', 'New Reservation')}</span>
+              </button>
+            </div>
+          </div>
+
+          {filteredRooms.length === 0 ? (
+            <div className="p-12 rounded-3xl border border-dashed border-slate-300 dark:border-[#243628] bg-white/60 dark:bg-[#121B14]/60 text-center space-y-4">
+              <div className="w-14 h-14 rounded-2xl bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 flex items-center justify-center mx-auto shadow-xs">
+                <Calendar className="w-7 h-7" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-base font-bold text-slate-900 dark:text-[#F3EFE6]">
+                  {t('لا توجد حجوزات قاعات مسجلة', 'No Room Bookings Found')}
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-[#8FA392] max-w-md mx-auto leading-relaxed">
+                  {t('كافة القاعات متاحة وجاهزة للحجز. اضغط الزر أدناه لجدولة اجتماع جديد وتوجيه طلبات الضيافة والتجهيزات.', 'All rooms are currently vacant and available. Click below to book a room.')}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingRoom(null);
+                  setRoomForm({ company_id: selectedCompanyId, status: 'مؤكد' });
+                  setIsRoomModalOpen(true);
+                }}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-l from-amber-600 to-amber-500 text-white font-bold text-xs shadow-md shadow-amber-500/20 hover:from-amber-700 transition-all cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>{t('+ حجز قاعة اجتماع الآن', '+ Book Meeting Room')}</span>
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredRooms.map(r => (
+                <div
+                  key={r.id}
+                  className="p-4 rounded-2xl bg-white dark:bg-[#121B14] border border-slate-200/80 dark:border-[#243628] shadow-xs hover:border-amber-500/40 transition-all flex flex-col justify-between gap-4"
+                >
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="px-2.5 py-1 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-800 dark:text-amber-300 font-mono font-bold text-xs">
+                        {r.booking_code}
+                      </span>
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30">
+                        {r.status}
+                      </span>
+                    </div>
+
+                    <div>
+                      <h4 className="text-sm font-extrabold text-slate-900 dark:text-[#F3EFE6]">
+                        {r.room_name}
+                      </h4>
+                      <p className="text-xs text-amber-700 dark:text-amber-400 font-bold mt-0.5">
+                        {r.meeting_title}
+                      </p>
+                      <p className="text-[11px] text-slate-500 dark:text-[#8FA392]">
+                        {r.organizer_name ? `${t('المنظم:', 'Organizer:')} ${r.organizer_name}` : ''} {r.department_name ? `(${r.department_name})` : ''}
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="p-2 rounded-xl bg-slate-50 dark:bg-[#17231A] border border-slate-200/80 dark:border-[#243628]">
+                        <span className="text-[10px] text-slate-500 block">{t('التاريخ والتوقيت:', 'Date & Time:')}</span>
+                        <span className="font-bold text-slate-800 dark:text-stone-200 font-mono text-[11px] block mt-0.5" dir="ltr">
+                          {r.booking_date} • {r.start_time} - {r.end_time}
+                        </span>
+                      </div>
+                      <div className="p-2 rounded-xl bg-slate-50 dark:bg-[#17231A] border border-slate-200/80 dark:border-[#243628]">
+                        <span className="text-[10px] text-slate-500 block">{t('الحضور والتجهيزات:', 'Attendees & Gear:')}</span>
+                        <span className="font-bold text-slate-800 dark:text-stone-200 text-[11px] block mt-0.5 truncate">
+                          {r.attendees_count} {t('أفراد', 'people')} {r.equipment_needed ? `• ${r.equipment_needed}` : ''}
+                        </span>
+                      </div>
+                    </div>
+
+                    {r.hospitality_requests && (
+                      <div className="p-2 rounded-xl bg-amber-50/60 dark:bg-[#17231A] border border-amber-200 dark:border-amber-500/20 text-xs text-amber-900 dark:text-amber-300 flex items-center gap-1.5">
+                        <Coffee className="w-3.5 h-3.5 shrink-0 text-amber-600" />
+                        <span className="truncate">{r.hospitality_requests}</span>
+                      </div>
                     )}
                   </div>
-                  <span className="text-xs text-[#5C665E] dark:text-[#8FA392]">
-                    {vis.company}
-                  </span>
+
+                  <div className="flex items-center justify-between pt-3 border-t border-slate-200/80 dark:border-[#243628]">
+                    <span className="text-[10px] text-slate-400 font-mono">
+                      ECO-ROOM
+                    </span>
+
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingRoom(r);
+                          setRoomForm({ ...r });
+                          setIsRoomModalOpen(true);
+                        }}
+                        title={t('تعديل الحجز', 'Edit Booking')}
+                        className="p-1.5 rounded-lg text-slate-500 hover:text-amber-600 dark:text-stone-400 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-[#17231A] transition-colors cursor-pointer"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => openAuditDrawer(`حجز قاعة: ${r.room_name} (${r.booking_code})`, r.audit_log_json)}
+                        title={t('سجل التدقيق والتعديلات (!)', 'Audit Log (!)')}
+                        className="p-1.5 rounded-lg text-slate-500 hover:text-amber-600 dark:text-stone-400 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-[#17231A] transition-colors cursor-pointer"
+                      >
+                        <AlertCircle className="w-4 h-4" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (window.confirm(t('هل أنت متأكد من إلغاء وحذف هذا الحجز؟', 'Cancel and delete booking?'))) {
+                            receptionStorage.deleteBooking(r.id);
+                          }
+                        }}
+                        title={t('إلغاء وحذف', 'Delete')}
+                        className="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 dark:text-stone-400 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-[#17231A] transition-colors cursor-pointer"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              </div>
-
-              <span
-                className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full shrink-0 ${
-                  vis.status === 'checked_in'
-                    ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30'
-                    : vis.status === 'expected'
-                    ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30'
-                    : 'bg-gray-500/15 text-gray-700 dark:text-gray-400 border border-gray-500/30'
-                }`}
-              >
-                {vis.status === 'checked_in'
-                  ? isRtl ? 'بالمنشأة' : 'In-Building'
-                  : vis.status === 'expected'
-                  ? isRtl ? 'متوقع' : 'Expected'
-                  : isRtl ? 'غادر' : 'Departed'}
-              </span>
+              ))}
             </div>
-
-            {/* Visit Details Box */}
-            <div className="p-3 rounded-xl bg-[#FBF9F5] dark:bg-[#0E1610] text-xs space-y-1.5 border border-[#E0D9CB]/60 dark:border-[#243628]">
-              <div className="flex items-center justify-between">
-                <span className="text-[#5C665E] dark:text-[#8FA392]">{t('الموظف المضيف:', 'Host Employee:')}</span>
-                <strong className="text-[#1A241C] dark:text-[#F3EFE6]">{vis.hostEmployeeAr} ({vis.hostDepartmentAr})</strong>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-[#5C665E] dark:text-[#8FA392]">{t('الغرض من الزيارة:', 'Purpose:')}</span>
-                <span className="text-[#1A241C] dark:text-[#F3EFE6] font-medium truncate max-w-[200px]">{vis.purposeAr}</span>
-              </div>
-              <div className="flex items-center justify-between font-mono text-[11px] pt-1 border-t border-[#E0D9CB]/40 dark:border-[#243628]">
-                <span className="text-[#5C665E] dark:text-[#8FA392]">{t('وقت الدخول:', 'Entry:')} {vis.entryTime}</span>
-                {vis.exitTime && (
-                  <span className="text-rose-600 dark:text-rose-400">{t('وقت الخروج:', 'Exit:')} {vis.exitTime}</span>
-                )}
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex items-center justify-between pt-1 gap-2">
-              <button
-                onClick={() => setSelectedVisitorForBadge(vis)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-[#D99B26] dark:text-[#EBB34D] bg-[#D99B26]/12 hover:bg-[#D99B26]/20 border border-[#D99B26]/30 transition-colors touch-target"
-              >
-                <QrCode className="w-3.5 h-3.5" />
-                <span>{t('عرض البطاقة والـ QR', 'Pass & QR Badge')}</span>
-              </button>
-
-              <div className="flex items-center gap-1.5">
-                <button
-                  onClick={() => showToast(`تم إرسال إشعار تنبيه للمضيف ${vis.hostEmployeeAr}`)}
-                  className="p-1.5 rounded-xl text-[#5C665E] dark:text-[#8FA392] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23] touch-target"
-                  title={t('إرسال تنبيه للمضيف', 'Alert Host')}
-                >
-                  <Send className="w-4 h-4" />
-                </button>
-                {vis.status === 'checked_in' && (
-                  <button
-                    onClick={() => checkOutVisitor(vis.id)}
-                    className="px-3 py-1.5 rounded-xl text-xs font-bold bg-rose-500/15 hover:bg-rose-500/25 text-rose-700 dark:text-rose-400 border border-rose-500/30 transition-colors touch-target"
-                  >
-                    {t('تسجيل خروج', 'Check Out')}
-                  </button>
-                )}
-              </div>
-            </div>
-          </motion.div>
-        ))}
-      </div>
-    </div>
-  );
-
-  // --- Sub-View 2: قاعات الاجتماعات والضيافة ---
-  const renderMeetingRoomsView = () => (
-    <div className="space-y-5">
-      {/* Header & Book Button */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#F3EFE6] dark:bg-[#17231A] p-4 rounded-2xl border border-[#E0D9CB] dark:border-[#243628]">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#D99B26]/20 text-[#D99B26] dark:text-[#EBB34D] flex items-center justify-center font-bold">
-            <Calendar className="w-5 h-5" />
-          </div>
-          <div>
-            <h3 className="text-sm font-bold text-[#1A241C] dark:text-[#F3EFE6]">
-              {t('حجز قاعات الاجتماعات والضيافة التنفيذية', 'Meeting Rooms & VIP Hospitality')}
-            </h3>
-            <p className="text-xs text-[#5C665E] dark:text-[#8FA392]">
-              {t('متابعة إشغال القاعات وتوجيه طلبات الضيافة لمسؤولي الخدمات المكتبية', 'Track occupancy and route catering requests to office staff')}
-            </p>
-          </div>
+          )}
         </div>
+      )}
 
-        <button
-          onClick={() => setIsRoomModalOpen(true)}
-          className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-[#D99B26] hover:bg-[#C28519] dark:bg-[#EBB34D] dark:hover:bg-[#D99B26] text-[#1C291E] dark:text-[#0E1610] shadow-xs transition-colors shrink-0 touch-target"
-        >
-          <Plus className="w-4 h-4" />
-          <span>{t('حجز قاعة جديدة', 'Book Room')}</span>
-        </button>
-      </div>
-
-      {/* Rooms Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {meetingRooms.map(room => (
-          <div
-            key={room.id}
-            className="p-4 rounded-2xl border border-[#E0D9CB] dark:border-[#243628] bg-[#F3EFE6] dark:bg-[#17231A] space-y-3 shadow-2xs"
-          >
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <h4 className="text-sm font-bold text-[#1A241C] dark:text-[#F3EFE6]">
-                  {isRtl ? room.nameAr : room.nameEn}
-                </h4>
-                <span className="text-xs text-[#5C665E] dark:text-[#8FA392]">
-                  {room.floor} • {t('السعة:', 'Capacity:')} {room.capacity} {isRtl ? 'مقعد' : 'seats'}
-                </span>
-              </div>
-
-              <span
-                className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
-                  room.isOccupied
-                    ? 'bg-rose-500/15 text-rose-700 dark:text-rose-400 border border-rose-500/30'
-                    : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30'
-                }`}
-              >
-                {room.isOccupied ? (isRtl ? 'مشغولة حالياً' : 'Occupied') : (isRtl ? 'متاحة للحجز' : 'Available')}
-              </span>
+      {/* =================================================================== */}
+      {/* SUB-MODULE 3: PARCELS & SHIPMENTS */}
+      {/* =================================================================== */}
+      {currentTab === 'parcels' && (
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white dark:bg-[#121B14] p-3 rounded-2xl border border-slate-200/80 dark:border-[#243628] shadow-xs">
+            <div className="relative flex-1 w-full">
+              <Search className="w-4 h-4 text-slate-400 absolute top-1/2 -translate-y-1/2 start-3" />
+              <input
+                type="text"
+                value={parcelSearch}
+                onChange={e => setParcelSearch(e.target.value)}
+                placeholder={t('البحث بكود الشحنة، شركة النقل، اسم المستلم، أو رقم البوليصة...', 'Search tracking code, courier, recipient, AWB...')}
+                className="w-full bg-slate-50 dark:bg-[#17231A] border border-slate-200 dark:border-[#243628] rounded-xl ps-9 pe-3 py-2 text-xs text-slate-900 dark:text-[#F3EFE6] focus:outline-hidden focus:border-amber-500"
+              />
             </div>
 
-            {/* Current Meeting Banner if Occupied */}
-            {room.isOccupied && room.currentMeeting && (
-              <div className="p-3 rounded-xl bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/30 text-xs space-y-1">
-                <div className="flex items-center gap-1.5 font-bold text-[#1A241C] dark:text-[#F3EFE6]">
-                  <Clock className="w-3.5 h-3.5 text-[#D99B26] dark:text-[#EBB34D]" />
-                  <span>{room.currentMeeting.titleAr}</span>
+            <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto justify-between sm:justify-end">
+              <div className="flex items-center gap-1 bg-slate-100 dark:bg-[#17231A] p-1 rounded-xl text-xs font-bold">
+                {(['all', 'في الاستقبال', 'تم التسليم للمستلم'] as const).map(f => (
+                  <button
+                    key={f}
+                    onClick={() => setParcelFilter(f)}
+                    className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                      parcelFilter === f
+                        ? 'bg-gradient-to-l from-amber-600 to-amber-500 text-white shadow-xs'
+                        : 'text-slate-600 dark:text-[#8FA392] hover:text-slate-900'
+                    }`}
+                  >
+                    {f === 'all' && t('الكل', 'All')}
+                    {f === 'في الاستقبال' && t('في الاستقبال', 'At Reception')}
+                    {f === 'تم التسليم للمستلم' && t('تم التسليم', 'Delivered')}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingParcel(null);
+                  setParcelForm({
+                    company_id: selectedCompanyId,
+                    direction: 'وارد',
+                    status: 'في الاستقبال',
+                    received_at: new Date().toISOString(),
+                    parcel_type: 'مستندات رسمية',
+                  });
+                  setIsParcelModalOpen(true);
+                }}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-l from-amber-600 to-amber-500 hover:from-amber-700 hover:to-amber-600 text-white font-bold text-xs shadow-md shadow-amber-500/20 cursor-pointer transition-all active:scale-95 shrink-0"
+              >
+                <Plus className="w-4 h-4" />
+                <span>{t('تسجيل طرد أو شحنة', 'New Parcel')}</span>
+              </button>
+            </div>
+          </div>
+
+          {filteredParcels.length === 0 ? (
+            <div className="p-12 rounded-3xl border border-dashed border-slate-300 dark:border-[#243628] bg-white/60 dark:bg-[#121B14]/60 text-center space-y-4">
+              <div className="w-14 h-14 rounded-2xl bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 flex items-center justify-center mx-auto shadow-xs">
+                <Package className="w-7 h-7" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-base font-bold text-slate-900 dark:text-[#F3EFE6]">
+                  {t('لا توجد طرود أو شحنات مقيدة', 'No Parcels Found')}
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-[#8FA392] max-w-md mx-auto leading-relaxed">
+                  {t('سجل البريد والطرود نظيف تماماً. يمكنك قيد الشحنات الواردة أو الصادرة وتوثيق البوليصة وإشعار المستلم.', 'No parcel entries in the active scope. Click below to register inbound/outbound shipments.')}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingParcel(null);
+                  setParcelForm({ company_id: selectedCompanyId, status: 'في الاستقبال' });
+                  setIsParcelModalOpen(true);
+                }}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-l from-amber-600 to-amber-500 text-white font-bold text-xs shadow-md shadow-amber-500/20 hover:from-amber-700 transition-all cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>{t('+ تسجيل طرد أو شحنة الآن', '+ Log Parcel / Shipment')}</span>
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredParcels.map(p => (
+                <div
+                  key={p.id}
+                  className="p-4 rounded-2xl bg-white dark:bg-[#121B14] border border-slate-200/80 dark:border-[#243628] shadow-xs hover:border-amber-500/40 transition-all flex flex-col justify-between gap-4"
+                >
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-1.5">
+                        <span className="px-2.5 py-1 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-800 dark:text-amber-300 font-mono font-bold text-xs">
+                          {p.tracking_code}
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-[#17231A] text-slate-700 dark:text-stone-300 border border-slate-200 dark:border-[#243628]">
+                          {p.direction}
+                        </span>
+                      </div>
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30">
+                        {p.status}
+                      </span>
+                    </div>
+
+                    <div>
+                      <h4 className="text-sm font-extrabold text-slate-900 dark:text-[#F3EFE6]">
+                        {p.courier_company}
+                      </h4>
+                      {p.awb_number && (
+                        <p className="text-xs font-mono text-amber-700 dark:text-amber-400 font-bold">
+                          AWB: {p.awb_number}
+                        </p>
+                      )}
+                      <p className="text-[11px] text-slate-500 dark:text-[#8FA392]">
+                        {t('المستلم:', 'To:')} {p.recipient_name} {p.department_name ? `(${p.department_name})` : ''}
+                      </p>
+                    </div>
+
+                    <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[#17231A] border border-slate-200/80 dark:border-[#243628] text-xs space-y-1">
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="text-[10px] text-slate-500">{t('المرسل:', 'From:')}</span>
+                        <span className="text-slate-800 dark:text-stone-200 font-medium">{p.sender_name || '—'}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="text-[10px] text-slate-500">{t('نوع المحتوى:', 'Content Type:')}</span>
+                        <span className="text-amber-700 dark:text-amber-400 font-bold">{p.parcel_type}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-3 border-t border-slate-200/80 dark:border-[#243628]">
+                    <span className="text-[10px] font-mono text-slate-400" dir="ltr">
+                      {p.received_at ? new Date(p.received_at).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '—'}
+                    </span>
+
+                    <div className="flex items-center gap-1">
+                      {p.attachment_data && (
+                        <button
+                          type="button"
+                          onClick={() => openDocPreview(`بوليصة شحن - ${p.tracking_code}`, p.attachment_data, p.attachment_name)}
+                          title={t('معاينة صورة البوليصة', 'Preview Waybill')}
+                          className="p-1.5 rounded-lg text-slate-500 hover:text-amber-600 dark:text-stone-400 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-[#17231A] transition-colors cursor-pointer"
+                        >
+                          <FileText className="w-4 h-4" />
+                        </button>
+                      )}
+
+                      {p.status === 'في الاستقبال' && (
+                        <button
+                          type="button"
+                          onClick={() => receptionStorage.handoverParcel(p.id, currentUserName)}
+                          title={t('تسليم فوري للمستلم', 'Handover to Recipient')}
+                          className="p-1.5 rounded-lg text-slate-500 hover:text-emerald-600 dark:text-stone-400 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-[#17231A] transition-colors cursor-pointer"
+                        >
+                          <CheckCircle2 className="w-4 h-4" />
+                        </button>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingParcel(p);
+                          setParcelForm({ ...p });
+                          setIsParcelModalOpen(true);
+                        }}
+                        title={t('تعديل', 'Edit')}
+                        className="p-1.5 rounded-lg text-slate-500 hover:text-amber-600 dark:text-stone-400 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-[#17231A] transition-colors cursor-pointer"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => openAuditDrawer(`طرد: ${p.tracking_code}`, p.audit_log_json)}
+                        title={t('سجل التدقيق والتعديلات (!)', 'Audit Log (!)')}
+                        className="p-1.5 rounded-lg text-slate-500 hover:text-amber-600 dark:text-stone-400 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-[#17231A] transition-colors cursor-pointer"
+                      >
+                        <AlertCircle className="w-4 h-4" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (window.confirm(t('حذف هذا الطرد؟', 'Delete parcel?'))) {
+                            receptionStorage.deleteParcel(p.id);
+                          }
+                        }}
+                        title={t('حذف', 'Delete')}
+                        className="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 dark:text-stone-400 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-[#17231A] transition-colors cursor-pointer"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between text-[11px] text-[#5C665E] dark:text-[#8FA392]">
-                  <span>{t('المستضيف:', 'Host:')} {room.currentMeeting.hostAr}</span>
-                  <span className="font-mono">{room.currentMeeting.time}</span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* =================================================================== */}
+      {/* SUB-MODULE 4: CALLS & INQUIRIES */}
+      {/* =================================================================== */}
+      {currentTab === 'calls' && (
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white dark:bg-[#121B14] p-3 rounded-2xl border border-slate-200/80 dark:border-[#243628] shadow-xs">
+            <div className="relative flex-1 w-full">
+              <Search className="w-4 h-4 text-slate-400 absolute top-1/2 -translate-y-1/2 start-3" />
+              <input
+                type="text"
+                value={callSearch}
+                onChange={e => setCallSearch(e.target.value)}
+                placeholder={t('البحث باسم المتصل، الموضوع، أو الموظف المحال إليه...', 'Search caller name, subject, or target staff...')}
+                className="w-full bg-slate-50 dark:bg-[#17231A] border border-slate-200 dark:border-[#243628] rounded-xl ps-9 pe-3 py-2 text-xs text-slate-900 dark:text-[#F3EFE6] focus:outline-hidden focus:border-amber-500"
+              />
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto justify-between sm:justify-end">
+              <div className="flex items-center gap-1 bg-slate-100 dark:bg-[#17231A] p-1 rounded-xl text-xs font-bold">
+                {(['all', 'بانتظار الرد', 'تم التحويل', 'تمت المعالجة'] as const).map(f => (
+                  <button
+                    key={f}
+                    onClick={() => setCallFilter(f)}
+                    className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                      callFilter === f
+                        ? 'bg-gradient-to-l from-amber-600 to-amber-500 text-white shadow-xs'
+                        : 'text-slate-600 dark:text-[#8FA392] hover:text-slate-900'
+                    }`}
+                  >
+                    {f === 'all' && t('الكل', 'All')}
+                    {f === 'بانتظار الرد' && t('بانتظار الرد', 'Pending')}
+                    {f === 'تم التحويل' && t('تم التحويل', 'Transferred')}
+                    {f === 'تمت المعالجة' && t('تمت المعالجة', 'Processed')}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingCall(null);
+                  setCallForm({
+                    company_id: selectedCompanyId,
+                    call_type: 'وارد',
+                    priority: 'عادي',
+                    status: 'بانتظار الرد',
+                    call_time: new Date().toISOString(),
+                  });
+                  setIsCallModalOpen(true);
+                }}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-l from-amber-600 to-amber-500 hover:from-amber-700 hover:to-amber-600 text-white font-bold text-xs shadow-md shadow-amber-500/20 cursor-pointer transition-all active:scale-95 shrink-0"
+              >
+                <Plus className="w-4 h-4" />
+                <span>{t('تسجيل مكالمة واردة', 'Log New Call')}</span>
+              </button>
+            </div>
+          </div>
+
+          {filteredCalls.length === 0 ? (
+            <div className="p-12 rounded-3xl border border-dashed border-slate-300 dark:border-[#243628] bg-white/60 dark:bg-[#121B14]/60 text-center space-y-4">
+              <div className="w-14 h-14 rounded-2xl bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 flex items-center justify-center mx-auto shadow-xs">
+                <PhoneCall className="w-7 h-7" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-base font-bold text-slate-900 dark:text-[#F3EFE6]">
+                  {t('لا توجد مكالمات مسجلة', 'No Call Logs Found')}
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-[#8FA392] max-w-md mx-auto leading-relaxed">
+                  {t('سجل الاتصالات والمكالمات نظيف حالياً. انقر على الزر أدناه لتوثيق اتصالات العملاء والجهات الخارجية فور ورودها.', 'Central directory has no active calls logged. Click below to record inquiries.')}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingCall(null);
+                  setCallForm({ company_id: selectedCompanyId, status: 'بانتظار الرد' });
+                  setIsCallModalOpen(true);
+                }}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-l from-amber-600 to-amber-500 text-white font-bold text-xs shadow-md shadow-amber-500/20 hover:from-amber-700 transition-all cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>{t('+ تسجيل مكالمة واردة الآن', '+ Log Inbound Call')}</span>
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredCalls.map(c => (
+                <div
+                  key={c.id}
+                  className="p-4 rounded-2xl bg-white dark:bg-[#121B14] border border-slate-200/80 dark:border-[#243628] shadow-xs hover:border-amber-500/40 transition-all flex flex-col justify-between gap-4"
+                >
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30">
+                        {c.priority}
+                      </span>
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-[#17231A] text-slate-700 dark:text-stone-300 border border-slate-200 dark:border-[#243628]">
+                        {c.status}
+                      </span>
+                    </div>
+
+                    <div>
+                      <h4 className="text-sm font-extrabold text-slate-900 dark:text-[#F3EFE6]">
+                        {c.caller_name}
+                      </h4>
+                      {c.caller_organization && (
+                        <p className="text-xs text-amber-700 dark:text-amber-400 font-semibold">
+                          {c.caller_organization}
+                        </p>
+                      )}
+                      <p className="text-[11px] text-slate-500 dark:text-[#8FA392]">
+                        {c.caller_phone || '—'}
+                      </p>
+                    </div>
+
+                    <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[#17231A] border border-slate-200/80 dark:border-[#243628] text-xs space-y-1">
+                      <p className="font-bold text-slate-800 dark:text-stone-200">{c.subject}</p>
+                      {c.call_summary && (
+                        <p className="text-[11px] text-slate-600 dark:text-[#8FA392] line-clamp-2">{c.call_summary}</p>
+                      )}
+                      {c.target_employee_name && (
+                        <p className="text-[10px] text-amber-700 dark:text-amber-400 pt-1 font-medium">
+                          {t('محالة إلى:', 'Directed to:')} {c.target_employee_name}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-3 border-t border-slate-200/80 dark:border-[#243628]">
+                    <span className="text-[10px] font-mono text-slate-400" dir="ltr">
+                      {c.call_time ? new Date(c.call_time).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '—'}
+                    </span>
+
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingCall(c);
+                          setCallForm({ ...c });
+                          setIsCallModalOpen(true);
+                        }}
+                        title={t('تعديل', 'Edit')}
+                        className="p-1.5 rounded-lg text-slate-500 hover:text-amber-600 dark:text-stone-400 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-[#17231A] transition-colors cursor-pointer"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => openAuditDrawer(`مكالمة: ${c.caller_name}`, c.audit_log_json)}
+                        title={t('سجل التدقيق والتعديلات (!)', 'Audit Log (!)')}
+                        className="p-1.5 rounded-lg text-slate-500 hover:text-amber-600 dark:text-stone-400 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-[#17231A] transition-colors cursor-pointer"
+                      >
+                        <AlertCircle className="w-4 h-4" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (window.confirm(t('حذف هذا الاتصال؟', 'Delete call?'))) {
+                            receptionStorage.deleteCall(c.id);
+                          }
+                        }}
+                        title={t('حذف', 'Delete')}
+                        className="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 dark:text-stone-400 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-[#17231A] transition-colors cursor-pointer"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* =================================================================== */}
+      {/* SUB-MODULE 5: CONTRACTOR & SITE PASSES */}
+      {/* =================================================================== */}
+      {currentTab === 'permits' && (
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white dark:bg-[#121B14] p-3 rounded-2xl border border-slate-200/80 dark:border-[#243628] shadow-xs">
+            <div className="relative flex-1 w-full">
+              <Search className="w-4 h-4 text-slate-400 absolute top-1/2 -translate-y-1/2 start-3" />
+              <input
+                type="text"
+                value={permitSearch}
+                onChange={e => setPermitSearch(e.target.value)}
+                placeholder={t('البحث بكود التصريح، شركة المقاولات، أو المشرف المسؤول...', 'Search permit code, contractor company, supervisor...')}
+                className="w-full bg-slate-50 dark:bg-[#17231A] border border-slate-200 dark:border-[#243628] rounded-xl ps-9 pe-3 py-2 text-xs text-slate-900 dark:text-[#F3EFE6] focus:outline-hidden focus:border-amber-500"
+              />
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto justify-between sm:justify-end">
+              <div className="flex items-center gap-1 bg-slate-100 dark:bg-[#17231A] p-1 rounded-xl text-xs font-bold">
+                {(['all', 'ساري بالمنشأة', 'مجدول', 'منتهي / مغلق'] as const).map(f => (
+                  <button
+                    key={f}
+                    onClick={() => setPermitFilter(f)}
+                    className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                      permitFilter === f
+                        ? 'bg-gradient-to-l from-amber-600 to-amber-500 text-white shadow-xs'
+                        : 'text-slate-600 dark:text-[#8FA392] hover:text-slate-900'
+                    }`}
+                  >
+                    {f === 'all' && t('الكل', 'All')}
+                    {f === 'ساري بالمنشأة' && t('ساري', 'Active')}
+                    {f === 'مجدول' && t('مجدول', 'Scheduled')}
+                    {f === 'منتهي / مغلق' && t('منتهي', 'Closed')}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingPermit(null);
+                  setPermitForm({
+                    company_id: selectedCompanyId,
+                    start_date: new Date().toISOString().split('T')[0],
+                    end_date: new Date().toISOString().split('T')[0],
+                    daily_hours: '08:00 - 17:00',
+                    workers_count: 2,
+                    safety_approval: 'معتمد',
+                    status: 'ساري بالمنشأة',
+                  });
+                  setIsPermitModalOpen(true);
+                }}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-l from-amber-600 to-amber-500 hover:from-amber-700 hover:to-amber-600 text-white font-bold text-xs shadow-md shadow-amber-500/20 cursor-pointer transition-all active:scale-95 shrink-0"
+              >
+                <Plus className="w-4 h-4" />
+                <span>{t('إصدار تصريح مقاول', 'New Contractor Permit')}</span>
+              </button>
+            </div>
+          </div>
+
+          {filteredPermits.length === 0 ? (
+            <div className="p-12 rounded-3xl border border-dashed border-slate-300 dark:border-[#243628] bg-white/60 dark:bg-[#121B14]/60 text-center space-y-4">
+              <div className="w-14 h-14 rounded-2xl bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 flex items-center justify-center mx-auto shadow-xs">
+                <HardHat className="w-7 h-7" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-base font-bold text-slate-900 dark:text-[#F3EFE6]">
+                  {t('لا توجد تصاريح مقاولين مسجلة', 'No Contractor Permits Found')}
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-[#8FA392] max-w-md mx-auto leading-relaxed">
+                  {t('لم يتم إصدار أي تصاريح عمل فنية للمقاولين أو الفنيين. اضغط الزر أدناه لإصدار تصريح جديد وتوثيق شارة الدخول وعدد العمالة.', 'No technical contractor passes issued. Click below to issue a permit.')}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingPermit(null);
+                  setPermitForm({ company_id: selectedCompanyId, status: 'ساري بالمنشأة' });
+                  setIsPermitModalOpen(true);
+                }}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-l from-amber-600 to-amber-500 text-white font-bold text-xs shadow-md shadow-amber-500/20 hover:from-amber-700 transition-all cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>{t('+ إصدار تصريح مقاول الآن', '+ Issue Contractor Pass')}</span>
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredPermits.map(pm => {
+                const isActive = pm.status === 'ساري بالمنشأة';
+
+                return (
+                  <div
+                    key={pm.id}
+                    className="p-4 rounded-2xl bg-white dark:bg-[#121B14] border border-slate-200/80 dark:border-[#243628] shadow-xs hover:border-amber-500/40 transition-all flex flex-col justify-between gap-4"
+                  >
+                    <div className="space-y-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="px-2.5 py-1 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-800 dark:text-amber-300 font-mono font-bold text-xs">
+                          {pm.permit_code}
+                        </span>
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30">
+                          {pm.status}
+                        </span>
+                      </div>
+
+                      <div>
+                        <h4 className="text-sm font-extrabold text-slate-900 dark:text-[#F3EFE6]">
+                          {pm.contractor_company}
+                        </h4>
+                        <p className="text-xs text-amber-700 dark:text-amber-400 font-semibold mt-0.5">
+                          {t('المشرف:', 'Supervisor:')} {pm.supervisor_name} ({pm.supervisor_phone || '—'})
+                        </p>
+                        {pm.supervisor_national_id && (
+                          <p className="text-[10px] font-mono text-slate-500 dark:text-[#8FA392]">
+                            ID: {pm.supervisor_national_id}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[#17231A] border border-slate-200/80 dark:border-[#243628] text-xs space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] text-slate-500">{t('طبيعة الأعمال:', 'Scope:')}</span>
+                          <span className="font-bold text-slate-800 dark:text-stone-200">{pm.work_nature || 'أعمال صيانة وتشطيبات'}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="text-[10px] text-slate-500">{t('قوة العمالة:', 'Crew Size:')}</span>
+                          <span className="text-amber-700 dark:text-amber-400 font-bold">{pm.workers_count} {t('فنيين وعمال', 'workers')}</span>
+                        </div>
+                        {pm.tools_and_equipment && (
+                          <div className="text-[10px] text-slate-500 pt-1 border-t border-slate-200/60 dark:border-[#243628] truncate">
+                            {t('المعدات:', 'Tools:')} {pm.tools_and_equipment}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-3 border-t border-slate-200/80 dark:border-[#243628]">
+                      <span className="text-[10px] font-mono text-slate-400" dir="ltr">
+                        {pm.start_date} إلى {pm.end_date}
+                      </span>
+
+                      <div className="flex items-center gap-1">
+                        {/* 1. View Digital Contractor QR Pass */}
+                        <button
+                          type="button"
+                          onClick={() => openContractorPass(pm)}
+                          title={t('عرض تصريح الدخول والـ QR', 'View Digital Pass & QR')}
+                          className="p-1.5 rounded-lg text-slate-500 hover:text-amber-600 dark:text-stone-400 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-[#17231A] transition-colors cursor-pointer"
+                        >
+                          <QrCode className="w-4 h-4" />
+                        </button>
+
+                        {/* 2. Document preview */}
+                        {pm.attachment_data && (
+                          <button
+                            type="button"
+                            onClick={() => openDocPreview(`تصريح مقاول - ${pm.contractor_company}`, pm.attachment_data, pm.attachment_name)}
+                            title={t('معاينة المستند المرفق', 'Preview Attachment')}
+                            className="p-1.5 rounded-lg text-slate-500 hover:text-amber-600 dark:text-stone-400 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-[#17231A] transition-colors cursor-pointer"
+                          >
+                            <FileText className="w-4 h-4" />
+                          </button>
+                        )}
+
+                        {/* 3. Fast close/revoke */}
+                        {isActive && (
+                          <button
+                            type="button"
+                            onClick={() => receptionStorage.closePermit(pm.id, currentUserName)}
+                            title={t('إنهاء وإغلاق التصريح', 'Close Permit')}
+                            className="p-1.5 rounded-lg text-slate-500 hover:text-amber-600 dark:text-stone-400 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-[#17231A] transition-colors cursor-pointer"
+                          >
+                            <CheckCircle2 className="w-4 h-4" />
+                          </button>
+                        )}
+
+                        {/* 4. Edit */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingPermit(pm);
+                            setPermitForm({ ...pm });
+                            setIsPermitModalOpen(true);
+                          }}
+                          title={t('تعديل', 'Edit')}
+                          className="p-1.5 rounded-lg text-slate-500 hover:text-amber-600 dark:text-stone-400 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-[#17231A] transition-colors cursor-pointer"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+
+                        {/* 5. Audit Log Diff */}
+                        <button
+                          type="button"
+                          onClick={() => openAuditDrawer(`تصريح مقاول: ${pm.contractor_company} (${pm.permit_code})`, pm.audit_log_json)}
+                          title={t('سجل التدقيق والتعديلات (!)', 'Audit Log (!)')}
+                          className="p-1.5 rounded-lg text-slate-500 hover:text-amber-600 dark:text-stone-400 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-[#17231A] transition-colors cursor-pointer"
+                        >
+                          <AlertCircle className="w-4 h-4" />
+                        </button>
+
+                        {/* 6. Delete */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (window.confirm(t('حذف هذا التصريح؟', 'Delete permit?'))) {
+                              receptionStorage.deletePermit(pm.id);
+                            }
+                          }}
+                          title={t('حذف', 'Delete')}
+                          className="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 dark:text-stone-400 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-[#17231A] transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* =================================================================== */}
+      {/* 3. MODALS & DRAWERS */}
+      {/* =================================================================== */}
+
+      {/* Modal 1: Visitor Form Modal */}
+      {isVisitorModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
+          <div className="relative w-full max-w-lg rounded-3xl bg-white dark:bg-[#0E1610] border border-amber-500/30 shadow-2xl p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-[#243628] pb-3">
+              <h3 className="text-base font-bold text-slate-900 dark:text-[#F3EFE6] flex items-center gap-2">
+                <Users className="w-5 h-5 text-amber-600" />
+                <span>{editingVisitor ? t('تعديل بيانات الزائر', 'Edit Visitor') : t('تسجيل دخول زائر جديد', 'New Visitor Check-In')}</span>
+              </h3>
+              <button onClick={() => setIsVisitorModalOpen(false)} className="text-slate-400 hover:text-slate-700 cursor-pointer">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {formError && (
+              <div className="p-3 rounded-xl bg-rose-50 text-rose-700 text-xs border border-rose-200">
+                {formError}
               </div>
             )}
 
-            {/* Amenities Tags */}
-            <div className="flex flex-wrap gap-1.5 pt-1">
-              {room.amenities.map((item, idx) => (
-                <span
-                  key={idx}
-                  className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-[#EAE4D7] dark:bg-[#1F2E23] text-[#5C665E] dark:text-[#8FA392]"
-                >
-                  {item}
-                </span>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Scheduled Reservations & Hospitality Stepper */}
-      <div className="space-y-3">
-        <h4 className="text-xs font-bold uppercase tracking-wider text-[#5C665E] dark:text-[#8FA392]">
-          {t('حجوزات اليوم ومسار الضيافة (Catering Queue)', 'Today’s Reservations & Hospitality')}
-        </h4>
-
-        <div className="space-y-2.5">
-          {reservations.map(res => (
-            <div
-              key={res.id}
-              className="p-3.5 rounded-2xl border border-[#E0D9CB] dark:border-[#243628] bg-[#F3EFE6] dark:bg-[#17231A] flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs"
-            >
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-mono font-bold text-[#D99B26] dark:text-[#EBB34D]">{res.timeSlot}</span>
-                  <span className="font-bold text-[#1A241C] dark:text-[#F3EFE6]">{res.roomNameAr}</span>
-                </div>
-                <p className="text-[11px] text-[#5C665E] dark:text-[#8FA392]">
-                  {res.titleAr} • {t('المستضيف:', 'Host:')} {res.hostEmployeeAr} ({res.departmentAr})
-                </p>
-                {res.cateringRequired && (
-                  <div className="flex items-center gap-1.5 text-[11px] text-[#D99B26] dark:text-[#EBB34D] font-semibold">
-                    <Coffee className="w-3.5 h-3.5" />
-                    <span>{res.cateringDetailsAr}</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Hospitality Stepper Controls */}
-              {res.cateringRequired && (
-                <div className="flex items-center gap-1.5 self-end md:self-auto shrink-0">
-                  <button
-                    onClick={() => updateHospitalityStatus(res.id, 'ordered')}
-                    className={`px-2.5 py-1 rounded-lg font-bold text-[10.5px] transition-colors ${
-                      res.hospitalityStatus === 'ordered'
-                        ? 'bg-amber-500 text-white'
-                        : 'bg-[#EAE4D7] dark:bg-[#1F2E23] text-[#5C665E] dark:text-[#8FA392]'
-                    }`}
-                  >
-                    {isRtl ? 'تم الطلب' : 'Ordered'}
-                  </button>
-                  <button
-                    onClick={() => updateHospitalityStatus(res.id, 'preparing')}
-                    className={`px-2.5 py-1 rounded-lg font-bold text-[10.5px] transition-colors ${
-                      res.hospitalityStatus === 'preparing'
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-[#EAE4D7] dark:bg-[#1F2E23] text-[#5C665E] dark:text-[#8FA392]'
-                    }`}
-                  >
-                    {isRtl ? 'جاري التحضير' : 'Preparing'}
-                  </button>
-                  <button
-                    onClick={() => updateHospitalityStatus(res.id, 'delivered')}
-                    className={`px-2.5 py-1 rounded-lg font-bold text-[10.5px] transition-colors ${
-                      res.hospitalityStatus === 'delivered'
-                        ? 'bg-emerald-600 text-white'
-                        : 'bg-[#EAE4D7] dark:bg-[#1F2E23] text-[#5C665E] dark:text-[#8FA392]'
-                    }`}
-                  >
-                    {isRtl ? 'تم التقديم' : 'Delivered'}
-                  </button>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-
-  // --- Sub-View 3: الشحنات والطرود البريدية ---
-  const renderParcelsView = () => (
-    <div className="space-y-4">
-      {/* Header & Log Action */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#F3EFE6] dark:bg-[#17231A] p-4 rounded-2xl border border-[#E0D9CB] dark:border-[#243628]">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#0D9488]/20 text-[#0D9488] dark:text-[#2DD4BF] flex items-center justify-center font-bold">
-            <Package className="w-5 h-5" />
-          </div>
-          <div>
-            <h3 className="text-sm font-bold text-[#1A241C] dark:text-[#F3EFE6]">
-              {t('سجل الطرود والشحنات السريعة', 'Couriers & Inbound Packages')}
-            </h3>
-            <p className="text-xs text-[#5C665E] dark:text-[#8FA392]">
-              {t('إثبات استلام الطرود وتسليمها للموظفين مع إمكانية التصعيد للصادر والوارد (CTS)', 'Package handover verification and direct CTS escalation')}
-            </p>
-          </div>
-        </div>
-
-        <button
-          onClick={() => setIsParcelModalOpen(true)}
-          className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-[#D99B26] hover:bg-[#C28519] dark:bg-[#EBB34D] text-[#1C291E] dark:text-[#0E1610] shadow-xs transition-colors shrink-0 touch-target"
-        >
-          <Plus className="w-4 h-4" />
-          <span>{t('قيد شحنة جديدة', 'Log Parcel')}</span>
-        </button>
-      </div>
-
-      {/* Parcels Cards */}
-      <div className="space-y-3">
-        {parcels.map(parcel => (
-          <div
-            key={parcel.id}
-            className="p-4 rounded-2xl border border-[#E0D9CB] dark:border-[#243628] bg-[#F3EFE6] dark:bg-[#17231A] flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs shadow-2xs"
-          >
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="font-mono font-bold px-2 py-0.5 rounded-md bg-[#EAE4D7] dark:bg-[#1F2E23] text-[#5C665E] dark:text-[#8FA392]">
-                  {parcel.trackingNumber}
-                </span>
-                <span className="font-bold text-[#D99B26] dark:text-[#EBB34D]">{parcel.courierName}</span>
-                {parcel.isOfficialTransmittal && (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-700 dark:text-blue-400 border border-blue-500/20">
-                    {isRtl ? 'إرسالية رسمية / CTS' : 'Official Document'}
-                  </span>
-                )}
-              </div>
-
-              <h4 className="font-bold text-[#1A241C] dark:text-[#F3EFE6] text-sm">
-                {parcel.packageTypeAr}
-              </h4>
-              <p className="text-[11px] text-[#5C665E] dark:text-[#8FA392]">
-                {t('المرسل:', 'Sender:')} <strong>{parcel.senderName}</strong> • {t('المستلم الداخلي:', 'Recipient:')}{' '}
-                <strong className="text-[#1A241C] dark:text-[#F3EFE6]">{parcel.recipientEmployeeAr} ({parcel.recipientDepartmentAr})</strong>
-              </p>
-              <span className="font-mono text-[10.5px] text-[#5C665E] dark:text-[#8FA392] block">
-                {t('وقت الوصول للاستقبال:', 'Arrived:')} {parcel.arrivalTimestamp}
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between md:justify-end gap-2.5 pt-2 md:pt-0 border-t md:border-t-0 border-[#E0D9CB]/60 dark:border-[#243628]">
-              {parcel.status === 'received' ? (
-                <div className="text-end">
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    <span>{isRtl ? 'تم التسليم للموظف' : 'Picked Up'}</span>
-                  </span>
-                  <span className="text-[10px] font-mono text-[#5C665E] dark:text-[#8FA392] block mt-0.5">
-                    {parcel.handedOverAt}
-                  </span>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  {parcel.isOfficialTransmittal && (
-                    <button
-                      onClick={() => {
-                        selectItem('cts', 'cts_incoming_new');
-                        showToast(`تم فتح قيد وارد رسمي جديد في منظومة الصادر والوارد (CTS) للشحنة ${parcel.trackingNumber}`);
-                      }}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-[#0D9488]/15 hover:bg-[#0D9488]/25 text-[#0D9488] dark:text-[#2DD4BF] border border-[#0D9488]/30 transition-colors touch-target"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" />
-                      <span>{t('تصعيد لوارد CTS', 'Escalate to CTS')}</span>
-                    </button>
-                  )}
-
-                  <button
-                    onClick={() => confirmParcelPickup(parcel.id)}
-                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition-colors touch-target"
-                  >
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    <span>{t('تأكيد الاستلام والتوقيع', 'Confirm Pickup')}</span>
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-
-  // --- Sub-View 4: سجل المكالمات ودليل التحويلات ---
-  const renderCallsView = () => (
-    <div className="space-y-4">
-      {/* Header & Log Action */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#F3EFE6] dark:bg-[#17231A] p-4 rounded-2xl border border-[#E0D9CB] dark:border-[#243628]">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#6366F1]/20 text-[#6366F1] dark:text-[#818CF8] flex items-center justify-center font-bold">
-            <PhoneCall className="w-5 h-5" />
-          </div>
-          <div>
-            <h3 className="text-sm font-bold text-[#1A241C] dark:text-[#F3EFE6]">
-              {t('سجل المكالمات ودليل التحويلات الداخلية', 'Call Registry & Corporate Directory')}
-            </h3>
-            <p className="text-xs text-[#5C665E] dark:text-[#8FA392]">
-              {t('توثيق اتصالات السنترال وتدوين رسائل الموظفين الغائبين والدليل السريع', 'Log calls, absent staff message pad, and quick corporate directory')}
-            </p>
-          </div>
-        </div>
-
-        <button
-          onClick={() => setIsCallModalOpen(true)}
-          className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-[#D99B26] hover:bg-[#C28519] dark:bg-[#EBB34D] text-[#1C291E] dark:text-[#0E1610] shadow-xs transition-colors shrink-0 touch-target"
-        >
-          <Plus className="w-4 h-4" />
-          <span>{t('تسجيل مكالمة جديدة', 'Log Inbound Call')}</span>
-        </button>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Left 2 Cols: Inbound Call Registry */}
-        <div className="lg:col-span-2 space-y-3">
-          <h4 className="text-xs font-bold uppercase tracking-wider text-[#5C665E] dark:text-[#8FA392]">
-            {t('سجل اتصالات السنترال اليوم', 'Inbound Call Registry')}
-          </h4>
-
-          <div className="space-y-2.5">
-            {callLogs.map(call => (
-              <div
-                key={call.id}
-                className="p-3.5 rounded-2xl border border-[#E0D9CB] dark:border-[#243628] bg-[#F3EFE6] dark:bg-[#17231A] space-y-2 text-xs shadow-2xs"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-[#1A241C] dark:text-[#F3EFE6]">{call.callerName}</span>
-                      <span className="text-[11px] text-[#5C665E] dark:text-[#8FA392]">({call.callerOrganization})</span>
-                    </div>
-                    <span className="font-mono text-[11px] text-[#D99B26] dark:text-[#EBB34D]">{call.callerPhone}</span>
-                  </div>
-
-                  <span
-                    className={`text-[10.5px] font-bold px-2 py-0.5 rounded-full ${
-                      call.status === 'transferred'
-                        ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
-                        : call.status === 'message_taken'
-                        ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400'
-                        : 'bg-rose-500/15 text-rose-700 dark:text-rose-400'
-                    }`}
-                  >
-                    {call.status === 'transferred'
-                      ? isRtl ? 'تم التحويل' : 'Transferred'
-                      : call.status === 'message_taken'
-                      ? isRtl ? 'تم تدوين رسالة' : 'Message Taken'
-                      : isRtl ? 'طلب معاودة اتصال' : 'Callback Needed'}
-                  </span>
-                </div>
-
-                <div className="p-2.5 rounded-xl bg-[#FBF9F5] dark:bg-[#0E1610] text-[11px] text-[#5C665E] dark:text-[#8FA392] space-y-1 border border-[#E0D9CB]/60 dark:border-[#243628]">
-                  <div>
-                    <span className="font-bold text-[#1A241C] dark:text-[#F3EFE6]">{t('المطلوب الاتصال به:', 'Target:')}</span> {call.directedToEmployeeAr}
-                  </div>
-                  <div>
-                    <span className="font-bold text-[#1A241C] dark:text-[#F3EFE6]">{t('موضوع المكالمة:', 'Subject:')}</span> {call.purposeAr}
-                  </div>
-                  <div className="text-emerald-700 dark:text-emerald-400 font-semibold">
-                    <span>{t('الإجراء المنفذ:', 'Action:')}</span> {call.actionTakenAr}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Right 1 Col: Quick Corporate Directory Search */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-[#5C665E] dark:text-[#8FA392]">
-              {t('الدليل الداخلي للتحويلات', 'Extensions Directory')}
-            </h4>
-          </div>
-
-          <div className="relative">
-            <Search className="w-3.5 h-3.5 text-[#5C665E] dark:text-[#8FA392] absolute start-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={directorySearch}
-              onChange={e => setDirectorySearch(e.target.value)}
-              placeholder={t('بحث بالاسم أو القسم...', 'Search directory...')}
-              className="w-full ps-8 pe-3 py-1.5 rounded-xl text-xs bg-[#F3EFE6] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6] focus:outline-hidden focus:border-[#D99B26]"
-            />
-          </div>
-
-          <div className="space-y-2">
-            {filteredContacts.map(contact => (
-              <div
-                key={contact.id}
-                className="p-3 rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-[#F3EFE6] dark:bg-[#17231A] space-y-1 text-xs"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-[#1A241C] dark:text-[#F3EFE6]">{contact.nameAr}</span>
-                  <span className="font-mono font-black text-sm text-[#D99B26] dark:text-[#EBB34D] px-2 py-0.5 rounded-md bg-[#EAE4D7] dark:bg-[#1F2E23]">
-                    {contact.extension}
-                  </span>
-                </div>
-                <p className="text-[11px] text-[#5C665E] dark:text-[#8FA392]">{contact.roleAr} • {contact.departmentAr}</p>
-                <div className="flex items-center justify-between font-mono text-[10.5px] pt-1">
-                  <span className="text-[#5C665E] dark:text-[#8FA392]">{contact.mobile}</span>
-                  <span
-                    className={`px-1.5 py-0.5 rounded-sm font-semibold text-[9.5px] ${
-                      contact.status === 'available'
-                        ? 'bg-emerald-500/15 text-emerald-600'
-                        : 'bg-amber-500/15 text-amber-600'
-                    }`}
-                  >
-                    {contact.status === 'available' ? (isRtl ? 'متاح' : 'Available') : (isRtl ? 'في اجتماع' : 'In Meeting')}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  // --- Sub-View 5: تصاريح المقاولين والفنيين المؤقتة ---
-  const renderPassesView = () => (
-    <div className="space-y-4">
-      {/* Header & Issue Action */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#F3EFE6] dark:bg-[#17231A] p-4 rounded-2xl border border-[#E0D9CB] dark:border-[#243628]">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#B45309]/20 text-[#B45309] dark:text-[#F59E0B] flex items-center justify-center font-bold">
-            <ShieldCheck className="w-5 h-5" />
-          </div>
-          <div>
-            <h3 className="text-sm font-bold text-[#1A241C] dark:text-[#F3EFE6]">
-              {t('تصاريح المقاولين والفنيين المؤقتة', 'Contractor & Maintenance Site Passes')}
-            </h3>
-            <p className="text-xs text-[#5C665E] dark:text-[#8FA392]">
-              {t('إصدار بطاقات الدخول المؤقتة وحصر المعدات وإقرار السلامة والصحة المهنية (HSE)', 'Temporary badges, equipment registry, and HSE safety briefing')}
-            </p>
-          </div>
-        </div>
-
-        <button
-          onClick={() => setIsPassModalOpen(true)}
-          className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-[#D99B26] hover:bg-[#C28519] dark:bg-[#EBB34D] text-[#1C291E] dark:text-[#0E1610] shadow-xs transition-colors shrink-0 touch-target"
-        >
-          <Plus className="w-4 h-4" />
-          <span>{t('إصدار تصريح جديد', 'Issue Pass')}</span>
-        </button>
-      </div>
-
-      {/* Passes List */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {contractorPasses.map(pass => (
-          <div
-            key={pass.id}
-            className="p-4 rounded-2xl border border-[#E0D9CB] dark:border-[#243628] bg-[#F3EFE6] dark:bg-[#17231A] space-y-3 shadow-2xs"
-          >
-            <div className="flex items-start justify-between gap-2">
-              <div className="space-y-0.5">
-                <span className="font-mono font-bold text-xs px-2 py-0.5 rounded-md bg-[#1C291E] dark:bg-[#0E1610] text-[#D99B26] dark:text-[#EBB34D] border border-[#D99B26]/30">
-                  {pass.passNumber}
-                </span>
-                <h4 className="text-sm font-bold text-[#1A241C] dark:text-[#F3EFE6] pt-1">
-                  {pass.technicianNameAr}
-                </h4>
-                <p className="text-xs text-[#5C665E] dark:text-[#8FA392] font-semibold">
-                  {pass.contractorCompanyAr}
-                </p>
-              </div>
-
-              <span
-                className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
-                  pass.status === 'active'
-                    ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30'
-                    : 'bg-gray-500/15 text-gray-700 dark:text-gray-400 border border-gray-500/30'
-                }`}
-              >
-                {pass.status === 'active' ? (isRtl ? 'تصريح ساري' : 'Active Pass') : (isRtl ? 'مستعاد / منتهي' : 'Expired')}
-              </span>
-            </div>
-
-            <div className="p-3 rounded-xl bg-[#FBF9F5] dark:bg-[#0E1610] text-xs space-y-1.5 border border-[#E0D9CB]/60 dark:border-[#243628]">
-              <div>
-                <span className="text-[#5C665E] dark:text-[#8FA392]">{t('طبيعة ونطاق العمل:', 'Work Scope:')}</span>{' '}
-                <strong className="text-[#1A241C] dark:text-[#F3EFE6]">{pass.workScopeAr}</strong>
-              </div>
-              <div>
-                <span className="text-[#5C665E] dark:text-[#8FA392]">{t('تحت إشراف:', 'Supervisor:')}</span> {pass.supervisedByAr}
-              </div>
-              <div className="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400 font-semibold pt-1 border-t border-[#E0D9CB]/40 dark:border-[#243628]">
-                <ShieldCheck className="w-3.5 h-3.5" />
-                <span>{isRtl ? 'تم التوقيع على إقرار السلامة المهنية والمخاطر' : 'HSE Safety Briefing Signed'}</span>
-              </div>
-              <div className="text-[11px] text-[#5C665E] dark:text-[#8FA392]">
-                <span className="font-bold">{t('العدد والمعدات المسجلة:', 'Registered Tools:')}</span> {pass.registeredToolsAr}
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between text-xs pt-1">
-              <span className="font-mono text-[#5C665E] dark:text-[#8FA392]">
-                {t('صالح حتى:', 'Valid Until:')} {pass.validUntil}
-              </span>
-              {pass.status === 'active' && (
-                <button
-                  onClick={() => revokeContractorPass(pass.id)}
-                  className="px-3 py-1.5 rounded-xl text-xs font-bold text-rose-700 dark:text-rose-400 bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 transition-colors touch-target"
-                >
-                  {t('إنهاء واستعادة التصريح', 'Revoke Pass')}
-                </button>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-
-  // Switch Current Sub-View
-  const renderCurrentSubView = () => {
-    switch (activeSubItemId) {
-      case 'rec_rooms':
-        return renderMeetingRoomsView();
-      case 'rec_parcels':
-        return renderParcelsView();
-      case 'rec_calls':
-        return renderCallsView();
-      case 'rec_passes':
-        return renderPassesView();
-      case 'rec_visitors':
-      default:
-        return renderVisitorsView();
-    }
-  };
-
-  return (
-    <div className="space-y-6">
-      {/* Toast Notification */}
-      <AnimatePresence>
-        {toastMessage && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="fixed top-20 z-50 left-1/2 -translate-x-1/2 bg-[#1C291E] text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-xl border border-[#D99B26]/40 flex items-center gap-2"
-          >
-            <CheckCircle2 className="w-4 h-4 text-[#D99B26]" />
-            <span>{toastMessage}</span>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Render Active View */}
-      {renderCurrentSubView()}
-
-      {/* Modal: Fast Check-In Visitor */}
-      <AnimatePresence>
-        {isCheckInModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsCheckInModalOpen(false)}
-              className="fixed inset-0 bg-black/60 backdrop-blur-xs"
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="relative z-10 w-full max-w-lg bg-[#FBF9F5] dark:bg-[#0E1610] rounded-2xl border border-[#E0D9CB] dark:border-[#243628] shadow-2xl p-6 pb-safe max-h-[90vh] overflow-y-auto"
-            >
-              <div className="flex items-center justify-between pb-3 mb-4 border-b border-[#E0D9CB] dark:border-[#243628]">
-                <div className="flex items-center gap-2">
-                  <ConciergeBell className="w-5 h-5 text-[#D99B26] dark:text-[#EBB34D]" />
-                  <h3 className="text-sm font-bold text-[#1A241C] dark:text-[#F3EFE6]">
-                    {t('تسجيل دخول زائر فوري وإصدار تصريح', 'Fast Visitor Check-In')}
-                  </h3>
-                </div>
-                <button
-                  onClick={() => setIsCheckInModalOpen(false)}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center text-[#5C665E] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23] touch-target"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <form onSubmit={handleCheckInSubmit} className="space-y-3.5 text-xs">
-                <div>
-                  <label className="block font-bold text-[#1A241C] dark:text-[#F3EFE6] mb-1">
-                    {t('اسم الزائر ثلاثي *', 'Visitor Full Name *')}
-                  </label>
+            <form onSubmit={handleSaveVisitor} className="space-y-3.5 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2 space-y-1">
+                  <label className="font-bold text-slate-700 dark:text-stone-300">{t('اسم الزائر الرباعي *', 'Visitor Full Name *')}</label>
                   <input
                     type="text"
                     required
-                    value={visNameAr}
-                    onChange={e => setVisNameAr(e.target.value)}
-                    placeholder="مثال: م. خالد عبد الله القحطاني"
-                    className="w-full p-2.5 rounded-xl bg-[#F3EFE6] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6] focus:outline-hidden focus:border-[#D99B26]"
+                    value={visForm.visitor_name || ''}
+                    onChange={e => setVisForm({ ...visForm, visitor_name: e.target.value })}
+                    placeholder={t('أدخل الاسم الرباعي للزائر كما في تحقيق الشخصية', 'Enter full name as on national ID')}
+                    className="w-full bg-slate-50 dark:bg-[#17231A] border border-slate-300 dark:border-[#243628] rounded-xl px-3 py-2 text-slate-900 dark:text-[#F3EFE6] focus:border-amber-500"
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block font-bold text-[#1A241C] dark:text-[#F3EFE6] mb-1">
-                      {t('الجهة / الشركة التابع لها', 'Company / Entity')}
-                    </label>
-                    <input
-                      type="text"
-                      value={visCompany}
-                      onChange={e => setVisCompany(e.target.value)}
-                      placeholder="شركة العمارة الحديثة"
-                      className="w-full p-2.5 rounded-xl bg-[#F3EFE6] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6] focus:outline-hidden focus:border-[#D99B26]"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-bold text-[#1A241C] dark:text-[#F3EFE6] mb-1">
-                      {t('رقم الهوية الوطنية / الإقامة', 'National / Resident ID')}
-                    </label>
-                    <input
-                      type="text"
-                      value={visNationalId}
-                      onChange={e => setVisNationalId(e.target.value)}
-                      placeholder="10xxxxxxxx"
-                      className="w-full p-2.5 rounded-xl bg-[#F3EFE6] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6] focus:outline-hidden focus:border-[#D99B26]"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block font-bold text-[#1A241C] dark:text-[#F3EFE6] mb-1">
-                      {t('رقم الجوال للتواصل *', 'Mobile Number *')}
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={visMobile}
-                      onChange={e => setVisMobile(e.target.value)}
-                      placeholder="+966 5x xxx xxxx"
-                      className="w-full p-2.5 rounded-xl bg-[#F3EFE6] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6] focus:outline-hidden focus:border-[#D99B26]"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-bold text-[#1A241C] dark:text-[#F3EFE6] mb-1">
-                      {t('الموظف المضيف المطلوب زيارته', 'Host Employee')}
-                    </label>
-                    <select
-                      value={visHostEmployee}
-                      onChange={e => setVisHostEmployee(e.target.value)}
-                      className="w-full p-2.5 rounded-xl bg-[#F3EFE6] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6] focus:outline-hidden focus:border-[#D99B26] font-bold"
-                    >
-                      <option value="م. أحمد مصطفى">م. أحمد مصطفى (المكتب الفني)</option>
-                      <option value="أ. كمال إبراهيم">أ. كمال إبراهيم (المالية)</option>
-                      <option value="أ. رأفت عبد العال">أ. رأفت عبد العال (القانونية)</option>
-                      <option value="م. شريف حسني">م. شريف حسني (الدراسات والتصميم)</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block font-bold text-[#1A241C] dark:text-[#F3EFE6] mb-1">
-                    {t('الغرض من الزيارة', 'Purpose of Visit')}
-                  </label>
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700 dark:text-stone-300">{t('الجهة / المنظمة التابع لها', 'Organization / Company')}</label>
                   <input
                     type="text"
-                    value={visPurpose}
-                    onChange={e => setVisPurpose(e.target.value)}
-                    placeholder="اجتماع مراجعة مستخلصات، تسليم عينات..."
-                    className="w-full p-2.5 rounded-xl bg-[#F3EFE6] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6] focus:outline-hidden focus:border-[#D99B26]"
+                    value={visForm.visitor_organization || ''}
+                    onChange={e => setVisForm({ ...visForm, visitor_organization: e.target.value })}
+                    placeholder={t('أدخل اسم الجهة أو الشركة التابع لها الزائر', 'Enter organization or independent')}
+                    className="w-full bg-slate-50 dark:bg-[#17231A] border border-slate-300 dark:border-[#243628] rounded-xl px-3 py-2 text-slate-900 dark:text-[#F3EFE6] focus:border-amber-500"
                   />
                 </div>
 
-                <div className="flex items-center gap-2 pt-1">
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700 dark:text-stone-300">{t('رقم الهاتف / الجوال', 'Mobile Phone')}</label>
                   <input
-                    type="checkbox"
-                    id="vip_check"
-                    checked={visIsVip}
-                    onChange={e => setVisIsVip(e.target.checked)}
-                    className="w-4 h-4 rounded text-[#D99B26]"
+                    type="text"
+                    dir="ltr"
+                    value={visForm.phone || ''}
+                    onChange={e => setVisForm({ ...visForm, phone: e.target.value })}
+                    placeholder="05xxxxxxxx / 01xxxxxxxxx"
+                    className="w-full bg-slate-50 dark:bg-[#17231A] border border-slate-300 dark:border-[#243628] rounded-xl px-3 py-2 text-slate-900 dark:text-[#F3EFE6] focus:border-amber-500 font-mono"
                   />
-                  <label htmlFor="vip_check" className="font-bold text-xs text-[#1A241C] dark:text-[#F3EFE6]">
-                    {t('تصنيف كـ ضيف VIP (تفعيل بروتوكول الضيافة والاستقبال الخاص)', 'Mark as VIP Guest')}
-                  </label>
                 </div>
 
-                <div className="pt-3 border-t border-[#E0D9CB] dark:border-[#243628] flex items-center justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setIsCheckInModalOpen(false)}
-                    className="px-4 py-2 rounded-xl text-xs font-bold text-[#5C665E] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23] touch-target"
-                  >
-                    {t('إلغاء', 'Cancel')}
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-5 py-2.5 rounded-xl text-xs font-bold bg-[#D99B26] hover:bg-[#C28519] dark:bg-[#EBB34D] text-[#1C291E] dark:text-[#0E1610] shadow-md transition-all touch-target"
-                  >
-                    {t('إتمام الدخول وتوليد التصريح', 'Check-In & Generate Pass')}
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* Modal: Digital Visitor Pass & QR Badge */}
-      <AnimatePresence>
-        {selectedVisitorForBadge && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setSelectedVisitorForBadge(null)}
-              className="fixed inset-0 bg-black/60 backdrop-blur-xs"
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="relative z-10 w-full max-w-sm bg-[#FBF9F5] dark:bg-[#0E1610] rounded-3xl border-2 border-[#D99B26]/50 shadow-2xl p-6 text-center space-y-4"
-            >
-              {/* Badge Top Header */}
-              <div className="flex items-center justify-between border-b border-[#E0D9CB] dark:border-[#243628] pb-3">
-                <div className="flex items-center gap-1.5 text-xs font-extrabold text-[#D99B26] dark:text-[#EBB34D]">
-                  <Building2 className="w-4 h-4" />
-                  <span>ARKAN ENTERPRISE PASS</span>
-                </div>
-                <button
-                  onClick={() => setSelectedVisitorForBadge(null)}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center text-[#5C665E] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23]"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              {/* Badge Visual Design */}
-              <div className="space-y-3">
-                <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-tr from-[#1C291E] to-[#D99B26] flex items-center justify-center text-white text-xl font-black shadow-lg">
-                  {selectedVisitorForBadge.nameAr.charAt(0)}
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700 dark:text-stone-300">{t('رقم الهوية / جواز السفر', 'National ID or Passport')}</label>
+                  <input
+                    type="text"
+                    value={visForm.national_id_or_passport || ''}
+                    onChange={e => setVisForm({ ...visForm, national_id_or_passport: e.target.value })}
+                    placeholder={t('أدخل رقم بطاقة الهوية أو جواز السفر', 'Enter ID or passport number')}
+                    className="w-full bg-slate-50 dark:bg-[#17231A] border border-slate-300 dark:border-[#243628] rounded-xl px-3 py-2 text-slate-900 dark:text-[#F3EFE6] focus:border-amber-500 font-mono"
+                  />
                 </div>
 
-                <div>
-                  <span className="text-xs font-mono font-bold px-3 py-1 rounded-full bg-[#D99B26]/15 text-[#D99B26] dark:text-[#EBB34D] border border-[#D99B26]/30">
-                    {selectedVisitorForBadge.badgeNumber}
-                  </span>
-                  <h3 className="text-base font-extrabold text-[#1A241C] dark:text-[#F3EFE6] mt-2">
-                    {selectedVisitorForBadge.nameAr}
-                  </h3>
-                  <p className="text-xs text-[#5C665E] dark:text-[#8FA392]">
-                    {selectedVisitorForBadge.company}
-                  </p>
-                </div>
-
-                {/* Simulated QR Code Canvas */}
-                <div className="p-4 rounded-2xl bg-white dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] shadow-inner inline-block mx-auto">
-                  <div className="w-36 h-36 flex flex-col items-center justify-center bg-gray-50 dark:bg-black/40 rounded-xl p-2 border border-dashed border-[#D99B26]/40">
-                    <QrCode className="w-24 h-24 text-[#1C291E] dark:text-[#EBB34D]" />
-                    <span className="text-[9px] font-mono font-bold text-[#5C665E] dark:text-[#8FA392] mt-1">
-                      {selectedVisitorForBadge.qrCode}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="p-2.5 rounded-xl bg-[#F3EFE6] dark:bg-[#17231A] text-xs text-start space-y-1 border border-[#E0D9CB]/60 dark:border-[#243628]">
-                  <div className="flex justify-between">
-                    <span className="text-[#5C665E] dark:text-[#8FA392]">{t('المستضيف:', 'Host:')}</span>
-                    <strong className="text-[#1A241C] dark:text-[#F3EFE6]">{selectedVisitorForBadge.hostEmployeeAr}</strong>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-[#5C665E] dark:text-[#8FA392]">{t('وقت الدخول:', 'Checked-In:')}</span>
-                    <span className="font-mono text-[#1A241C] dark:text-[#F3EFE6]">{selectedVisitorForBadge.entryTime}</span>
-                  </div>
-                </div>
-              </div>
-
-              <button
-                onClick={() => {
-                  showToast('جاري طباعة بطاقة الزائر الرقمية...');
-                  setSelectedVisitorForBadge(null);
-                }}
-                className="w-full py-2.5 rounded-xl text-xs font-bold bg-[#1C291E] dark:bg-[#EBB34D] text-[#F3EFE6] dark:text-[#0E1610] shadow-md transition-all touch-target"
-              >
-                {t('طباعة بطاقة وتصريح الزائر', 'Print Visitor Pass')}
-              </button>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* Modal: Book Meeting Room */}
-      <AnimatePresence>
-        {isRoomModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsRoomModalOpen(false)}
-              className="fixed inset-0 bg-black/60 backdrop-blur-xs"
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="relative z-10 w-full max-w-lg bg-[#FBF9F5] dark:bg-[#0E1610] rounded-2xl border border-[#E0D9CB] dark:border-[#243628] shadow-2xl p-6 pb-safe max-h-[90vh] overflow-y-auto"
-            >
-              <div className="flex items-center justify-between pb-3 mb-4 border-b border-[#E0D9CB] dark:border-[#243628]">
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-5 h-5 text-[#D99B26] dark:text-[#EBB34D]" />
-                  <h3 className="text-sm font-bold text-[#1A241C] dark:text-[#F3EFE6]">
-                    {t('حجز قاعة اجتماعات وطلب ضيافة', 'Book Meeting Room & Catering')}
-                  </h3>
-                </div>
-                <button
-                  onClick={() => setIsRoomModalOpen(false)}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center text-[#5C665E] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23] touch-target"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <form onSubmit={handleBookRoomSubmit} className="space-y-3.5 text-xs">
-                <div>
-                  <label className="block font-bold text-[#1A241C] dark:text-[#F3EFE6] mb-1">
-                    {t('اختيار القاعة المطلوبة *', 'Select Room *')}
-                  </label>
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700 dark:text-stone-300">{t('تصنيف الزيارة', 'Category')}</label>
                   <select
-                    value={selectedRoomId}
-                    onChange={e => setSelectedRoomId(e.target.value)}
-                    className="w-full p-2.5 rounded-xl bg-[#F3EFE6] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6] font-bold"
+                    value={visForm.visitor_category || 'زائر أعمال'}
+                    onChange={e => setVisForm({ ...visForm, visitor_category: e.target.value })}
+                    className="w-full bg-slate-50 dark:bg-[#17231A] border border-slate-300 dark:border-[#243628] rounded-xl px-3 py-2 text-slate-900 dark:text-[#F3EFE6] focus:border-amber-500 cursor-pointer"
                   >
-                    {meetingRooms.map(r => (
-                      <option key={r.id} value={r.id}>
-                        {r.nameAr} (سعة {r.capacity} مقعد - {r.floor})
+                    <option value="زائر أعمال">{t('زائر أعمال', 'Business Visitor')}</option>
+                    <option value="عميل / مستثمر">{t('عميل / مستثمر', 'Client / Investor')}</option>
+                    <option value="VIP / كبار الشخصيات">{t('VIP / كبار الشخصيات', 'VIP Guest')}</option>
+                    <option value="مندوب جهة حكومية">{t('مندوب جهة حكومية', 'Government Delegate')}</option>
+                    <option value="مقابلة توظيف">{t('مقابلة توظيف', 'Job Interview')}</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700 dark:text-stone-300">{t('الموظف المستضيف', 'Host Staff')}</label>
+                  <select
+                    value={visForm.host_employee_name || ''}
+                    onChange={e => {
+                      const emp = liveEmployees.find(emp => emp.nameAr === e.target.value);
+                      setVisForm({
+                        ...visForm,
+                        host_employee_name: e.target.value,
+                        host_employee_id: emp?.id || null,
+                        department_name: emp?.departmentAr || visForm.department_name,
+                      });
+                    }}
+                    className="w-full bg-slate-50 dark:bg-[#17231A] border border-slate-300 dark:border-[#243628] rounded-xl px-3 py-2 text-slate-900 dark:text-[#F3EFE6] focus:border-amber-500 cursor-pointer"
+                  >
+                    <option value="">{t('اختر الموظف المستضيف...', 'Select host staff...')}</option>
+                    {liveEmployees.map(emp => (
+                      <option key={emp.id} value={emp.nameAr}>
+                        {emp.nameAr} ({emp.jobTitleAr || 'موظف'})
                       </option>
                     ))}
                   </select>
                 </div>
 
-                <div>
-                  <label className="block font-bold text-[#1A241C] dark:text-[#F3EFE6] mb-1">
-                    {t('عنوان وموضوع الاجتماع *', 'Meeting Subject *')}
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={roomMeetingTitle}
-                    onChange={e => setRoomMeetingTitle(e.target.value)}
-                    placeholder="مثال: جلسة اعتماد المخططات الهندسية ومستخلص رقم 5"
-                    className="w-full p-2.5 rounded-xl bg-[#F3EFE6] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6]"
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700 dark:text-stone-300">{t('الإدارة / القسم', 'Department')}</label>
+                  <CreatableSelect
+                    category="departments"
+                    value={visForm.department_name || ''}
+                    onChange={val => setVisForm({ ...visForm, department_name: val })}
+                    placeholder={t('اختر أو أضف الإدارة المستهدفة...', 'Select or add department...')}
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block font-bold text-[#1A241C] dark:text-[#F3EFE6] mb-1">
-                      {t('الفترة الزمنية', 'Time Slot')}
-                    </label>
-                    <input
-                      type="text"
-                      value={roomTimeSlot}
-                      onChange={e => setRoomTimeSlot(e.target.value)}
-                      placeholder="01:00 م - 02:30 م"
-                      className="w-full p-2.5 rounded-xl bg-[#F3EFE6] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6]"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-bold text-[#1A241C] dark:text-[#F3EFE6] mb-1">
-                      {t('عدد الحضور المتوقع', 'Attendees Count')}
-                    </label>
-                    <input
-                      type="number"
-                      min={1}
-                      max={30}
-                      value={roomAttendees}
-                      onChange={e => setRoomAttendees(Number(e.target.value))}
-                      className="w-full p-2.5 rounded-xl bg-[#F3EFE6] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6]"
-                    />
-                  </div>
+                <div className="col-span-2 space-y-1">
+                  <label className="font-bold text-slate-700 dark:text-stone-300">{t('الغرض من الزيارة', 'Visit Purpose')}</label>
+                  <input
+                    type="text"
+                    value={visForm.visit_purpose || ''}
+                    onChange={e => setVisForm({ ...visForm, visit_purpose: e.target.value })}
+                    placeholder={t('أدخل تفاصيل وموضوع الزيارة بالتفصيل', 'Enter detailed meeting or inspection purpose')}
+                    className="w-full bg-slate-50 dark:bg-[#17231A] border border-slate-300 dark:border-[#243628] rounded-xl px-3 py-2 text-slate-900 dark:text-[#F3EFE6] focus:border-amber-500"
+                  />
                 </div>
 
-                <div className="p-3 rounded-xl bg-[#F3EFE6] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] space-y-2">
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700 dark:text-stone-300">{t('رقم لوحة المركبة (إن وجدت)', 'Vehicle Plate')}</label>
+                  <input
+                    type="text"
+                    value={visForm.vehicle_plate || ''}
+                    onChange={e => setVisForm({ ...visForm, vehicle_plate: e.target.value })}
+                    placeholder={t('مثال: أ ب ج 1234', 'e.g. ABC 1234')}
+                    className="w-full bg-slate-50 dark:bg-[#17231A] border border-slate-300 dark:border-[#243628] rounded-xl px-3 py-2 text-slate-900 dark:text-[#F3EFE6] focus:border-amber-500"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700 dark:text-stone-300">{t('الأمانات والمتعلقات المودعة', 'Belongings / Parcels')}</label>
+                  <input
+                    type="text"
+                    value={visForm.belongings_notes || ''}
+                    onChange={e => setVisForm({ ...visForm, belongings_notes: e.target.value })}
+                    placeholder={t('أجهزة، حقائب، أو أدوات مسجلة بالاستقبال', 'Laptops, bags, or items left at desk')}
+                    className="w-full bg-slate-50 dark:bg-[#17231A] border border-slate-300 dark:border-[#243628] rounded-xl px-3 py-2 text-slate-900 dark:text-[#F3EFE6] focus:border-amber-500"
+                  />
+                </div>
+
+                {/* Attachment Upload */}
+                <div className="col-span-2 space-y-1 pt-1">
+                  <label className="font-bold text-slate-700 dark:text-stone-300">{t('إرفاق صورة بطاقة الهوية / المستند (Live Blob Preview)', 'Attach ID Card / Document Scan')}</label>
                   <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id="catering_check"
-                      checked={roomCatering}
-                      onChange={e => setRoomCatering(e.target.checked)}
-                      className="w-4 h-4 rounded text-[#D99B26]"
-                    />
-                    <label htmlFor="catering_check" className="font-bold text-[#1A241C] dark:text-[#F3EFE6]">
-                      {t('طلب خدمات ضيافة ومشروبات للاجتماع', 'Request Catering & Beverages')}
+                    <label className="flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border border-dashed border-amber-500/40 bg-amber-50/20 dark:bg-[#17231A] text-amber-800 dark:text-amber-300 font-bold cursor-pointer hover:bg-amber-50/40 transition-colors">
+                      <Upload className="w-4 h-4" />
+                      <span>{visForm.attachment_name || t('اختر ملف صورة أو PDF لإرفاقه', 'Upload Image or PDF')}</span>
+                      <input
+                        type="file"
+                        accept="image/*,application/pdf"
+                        className="hidden"
+                        onChange={e => handleFileUpload(e, ({ base64, name }) => {
+                          setVisForm({ ...visForm, attachment_data: base64, attachment_name: name });
+                        })}
+                      />
                     </label>
+                    {visForm.attachment_data && (
+                      <button
+                        type="button"
+                        onClick={() => openDocPreview(visForm.visitor_name || 'وثيقة', visForm.attachment_data, visForm.attachment_name)}
+                        className="px-3 py-3 rounded-xl bg-slate-100 dark:bg-[#17231A] text-amber-600 font-bold border border-slate-200 dark:border-[#243628] cursor-pointer"
+                      >
+                        <FileText className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
-                  {roomCatering && (
-                    <input
-                      type="text"
-                      value={roomCateringDetails}
-                      onChange={e => setRoomCateringDetails(e.target.value)}
-                      placeholder="قهوة، شاي، مياه، تمور..."
-                      className="w-full p-2 rounded-lg bg-[#FBF9F5] dark:bg-[#0E1610] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6]"
-                    />
-                  )}
                 </div>
-
-                <div className="pt-3 border-t border-[#E0D9CB] dark:border-[#243628] flex items-center justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setIsRoomModalOpen(false)}
-                    className="px-4 py-2 rounded-xl text-xs font-bold text-[#5C665E] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23] touch-target"
-                  >
-                    {t('إلغاء', 'Cancel')}
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-5 py-2.5 rounded-xl text-xs font-bold bg-[#D99B26] hover:bg-[#C28519] dark:bg-[#EBB34D] text-[#1C291E] dark:text-[#0E1610] shadow-md transition-all touch-target"
-                  >
-                    {t('تأكيد الحجز وتوجيه الضيافة', 'Confirm Booking')}
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* Modal: Log Inbound Parcel */}
-      <AnimatePresence>
-        {isParcelModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsParcelModalOpen(false)}
-              className="fixed inset-0 bg-black/60 backdrop-blur-xs"
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="relative z-10 w-full max-w-lg bg-[#FBF9F5] dark:bg-[#0E1610] rounded-2xl border border-[#E0D9CB] dark:border-[#243628] shadow-2xl p-6 pb-safe max-h-[90vh] overflow-y-auto"
-            >
-              <div className="flex items-center justify-between pb-3 mb-4 border-b border-[#E0D9CB] dark:border-[#243628]">
-                <div className="flex items-center gap-2">
-                  <Package className="w-5 h-5 text-[#0D9488] dark:text-[#2DD4BF]" />
-                  <h3 className="text-sm font-bold text-[#1A241C] dark:text-[#F3EFE6]">
-                    {t('قيد شحنة أو طرد بريدي وارد', 'Log Inbound Parcel')}
-                  </h3>
-                </div>
-                <button
-                  onClick={() => setIsParcelModalOpen(false)}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center text-[#5C665E] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23] touch-target"
-                >
-                  <X className="w-4 h-4" />
-                </button>
               </div>
 
-              <form onSubmit={handleAddParcelSubmit} className="space-y-3.5 text-xs">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block font-bold text-[#1A241C] dark:text-[#F3EFE6] mb-1">
-                      {t('شركة الشحن / التوصيل', 'Courier Service')}
-                    </label>
-                    <select
-                      value={parcelCourier}
-                      onChange={e => setParcelCourier(e.target.value)}
-                      className="w-full p-2.5 rounded-xl bg-[#F3EFE6] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6] font-bold"
-                    >
-                      <option value="البريد السعودي (SPL)">البريد السعودي (SPL)</option>
-                      <option value="DHL Express">DHL Express</option>
-                      <option value="Aramex">Aramex</option>
-                      <option value="SMSA Express">SMSA Express</option>
-                      <option value="مندوب خاص">مندوب خاص مباشر</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block font-bold text-[#1A241C] dark:text-[#F3EFE6] mb-1">
-                      {t('رقم التتبع / البوليصة', 'Tracking Number')}
-                    </label>
-                    <input
-                      type="text"
-                      value={parcelTracking}
-                      onChange={e => setParcelTracking(e.target.value)}
-                      placeholder="SPL-99201..."
-                      className="w-full p-2.5 rounded-xl bg-[#F3EFE6] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6] font-mono"
-                    />
-                  </div>
+              <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-200 dark:border-[#243628]">
+                <button
+                  type="button"
+                  onClick={() => setIsVisitorModalOpen(false)}
+                  className="px-4 py-2 rounded-xl border border-slate-300 dark:border-[#243628] text-slate-700 dark:text-stone-300 font-bold cursor-pointer"
+                >
+                  {t('إلغاء', 'Cancel')}
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-gradient-to-l from-amber-600 to-amber-500 text-white font-bold shadow-md shadow-amber-500/20 hover:from-amber-700 cursor-pointer"
+                >
+                  {editingVisitor ? t('حفظ التعديلات', 'Update') : t('تسجيل الدخول وإصدار الشارة', 'Check-In & Issue Badge')}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal 2: Room Booking Form Modal */}
+      {isRoomModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
+          <div className="relative w-full max-w-lg rounded-3xl bg-white dark:bg-[#0E1610] border border-amber-500/30 shadow-2xl p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-[#243628] pb-3">
+              <h3 className="text-base font-bold text-slate-900 dark:text-[#F3EFE6] flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-amber-600" />
+                <span>{editingRoom ? t('تعديل حجز القاعة', 'Edit Booking') : t('حجز قاعة اجتماعات وضيافة جديدة', 'New Room Reservation')}</span>
+              </h3>
+              <button onClick={() => setIsRoomModalOpen(false)} className="text-slate-400 hover:text-slate-700 cursor-pointer">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {formError && (
+              <div className="p-3 rounded-xl bg-rose-50 text-rose-700 text-xs border border-rose-200">
+                {formError}
+              </div>
+            )}
+
+            <form onSubmit={handleSaveRoom} className="space-y-3.5 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2 space-y-1">
+                  <label className="font-bold text-slate-700 dark:text-stone-300">{t('اسم قاعة الاجتماعات *', 'Meeting Room *')}</label>
+                  <CreatableSelect
+                    category="meeting_rooms"
+                    value={roomForm.room_name || ''}
+                    onChange={val => setRoomForm({ ...roomForm, room_name: val })}
+                    placeholder={t('اختر أو أضف قاعة اجتماعات...', 'Select or add meeting room...')}
+                  />
                 </div>
 
-                <div>
-                  <label className="block font-bold text-[#1A241C] dark:text-[#F3EFE6] mb-1">
-                    {t('نوع ومحتوى الشحنة *', 'Package Content *')}
-                  </label>
+                <div className="col-span-2 space-y-1">
+                  <label className="font-bold text-slate-700 dark:text-stone-300">{t('عنوان الاجتماع وموضوعه *', 'Meeting Title *')}</label>
                   <input
                     type="text"
                     required
-                    value={parcelType}
-                    onChange={e => setParcelType(e.target.value)}
-                    placeholder="مستندات تعاقدية، عينات خرسانة، أجهزة..."
-                    className="w-full p-2.5 rounded-xl bg-[#F3EFE6] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6]"
+                    value={roomForm.meeting_title || ''}
+                    onChange={e => setRoomForm({ ...roomForm, meeting_title: e.target.value })}
+                    placeholder={t('أدخل عنوان الاجتماع أو الغرض المؤسسي', 'Enter meeting title')}
+                    className="w-full bg-slate-50 dark:bg-[#17231A] border border-slate-300 dark:border-[#243628] rounded-xl px-3 py-2 text-slate-900 dark:text-[#F3EFE6] focus:border-amber-500"
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block font-bold text-[#1A241C] dark:text-[#F3EFE6] mb-1">
-                      {t('الجهة أو الشخص المرسل', 'Sender')}
-                    </label>
-                    <input
-                      type="text"
-                      value={parcelSender}
-                      onChange={e => setParcelSender(e.target.value)}
-                      placeholder="وزارة التجارة / دار الهندسة"
-                      className="w-full p-2.5 rounded-xl bg-[#F3EFE6] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6]"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-bold text-[#1A241C] dark:text-[#F3EFE6] mb-1">
-                      {t('الموظف المستلم المعني', 'Recipient Staff')}
-                    </label>
-                    <select
-                      value={parcelRecipient}
-                      onChange={e => setParcelRecipient(e.target.value)}
-                      className="w-full p-2.5 rounded-xl bg-[#F3EFE6] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6] font-bold"
-                    >
-                      <option value="أ. رأفت عبد العال">أ. رأفت عبد العال (الشؤون القانونية)</option>
-                      <option value="م. أحمد مصطفى">م. أحمد مصطفى (المكتب الفني)</option>
-                      <option value="أ. كمال إبراهيم">أ. كمال إبراهيم (المالية)</option>
-                      <option value="م. خالد النجار">م. خالد النجار (المشاريع)</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="p-3 rounded-xl bg-[#0D9488]/10 border border-[#0D9488]/30 flex items-center gap-2">
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700 dark:text-stone-300">{t('تاريخ الحجز', 'Date')}</label>
                   <input
-                    type="checkbox"
-                    id="cts_check"
-                    checked={parcelIsCTS}
-                    onChange={e => setParcelIsCTS(e.target.checked)}
-                    className="w-4 h-4 rounded text-[#0D9488]"
+                    type="date"
+                    required
+                    value={roomForm.booking_date || new Date().toISOString().split('T')[0]}
+                    onChange={e => setRoomForm({ ...roomForm, booking_date: e.target.value })}
+                    className="w-full bg-slate-50 dark:bg-[#17231A] border border-slate-300 dark:border-[#243628] rounded-xl px-3 py-2 text-slate-900 dark:text-[#F3EFE6] focus:border-amber-500 font-mono"
                   />
-                  <label htmlFor="cts_check" className="font-bold text-[#1A241C] dark:text-[#F3EFE6]">
-                    {t('إرسالية رسمية تستوجب القيد والربط بنظام الصادر والوارد (CTS)', 'Official Document (Link with CTS)')}
-                  </label>
                 </div>
 
-                <div className="pt-3 border-t border-[#E0D9CB] dark:border-[#243628] flex items-center justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setIsParcelModalOpen(false)}
-                    className="px-4 py-2 rounded-xl text-xs font-bold text-[#5C665E] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23] touch-target"
-                  >
-                    {t('إلغاء', 'Cancel')}
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-5 py-2.5 rounded-xl text-xs font-bold bg-[#0D9488] hover:bg-[#0F766E] text-white shadow-md transition-all touch-target"
-                  >
-                    {t('قيد الشحنة وإشعار المستلم', 'Save & Notify')}
-                  </button>
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700 dark:text-stone-300">{t('عدد الحضور المتوقع', 'Attendees Count')}</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="100"
+                    value={roomForm.attendees_count || 4}
+                    onChange={e => setRoomForm({ ...roomForm, attendees_count: Number(e.target.value) })}
+                    className="w-full bg-slate-50 dark:bg-[#17231A] border border-slate-300 dark:border-[#243628] rounded-xl px-3 py-2 text-slate-900 dark:text-[#F3EFE6] focus:border-amber-500 font-mono"
+                  />
                 </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
 
-      {/* Modal: Log Inbound Call */}
-      <AnimatePresence>
-        {isCallModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsCallModalOpen(false)}
-              className="fixed inset-0 bg-black/60 backdrop-blur-xs"
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="relative z-10 w-full max-w-lg bg-[#FBF9F5] dark:bg-[#0E1610] rounded-2xl border border-[#E0D9CB] dark:border-[#243628] shadow-2xl p-6 pb-safe max-h-[90vh] overflow-y-auto"
-            >
-              <div className="flex items-center justify-between pb-3 mb-4 border-b border-[#E0D9CB] dark:border-[#243628]">
-                <div className="flex items-center gap-2">
-                  <PhoneCall className="w-5 h-5 text-[#6366F1] dark:text-[#818CF8]" />
-                  <h3 className="text-sm font-bold text-[#1A241C] dark:text-[#F3EFE6]">
-                    {t('تسجيل مكالمة هاتفية واردة للسنترال', 'Log Inbound Call')}
-                  </h3>
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700 dark:text-stone-300">{t('وقت البدء (Start)', 'Start Time')}</label>
+                  <input
+                    type="time"
+                    required
+                    value={roomForm.start_time || '10:00'}
+                    onChange={e => setRoomForm({ ...roomForm, start_time: e.target.value })}
+                    className="w-full bg-slate-50 dark:bg-[#17231A] border border-slate-300 dark:border-[#243628] rounded-xl px-3 py-2 text-slate-900 dark:text-[#F3EFE6] focus:border-amber-500 font-mono"
+                  />
                 </div>
-                <button
-                  onClick={() => setIsCallModalOpen(false)}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center text-[#5C665E] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23] touch-target"
-                >
-                  <X className="w-4 h-4" />
-                </button>
+
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700 dark:text-stone-300">{t('وقت الانتهاء (End)', 'End Time')}</label>
+                  <input
+                    type="time"
+                    required
+                    value={roomForm.end_time || '11:00'}
+                    onChange={e => setRoomForm({ ...roomForm, end_time: e.target.value })}
+                    className="w-full bg-slate-50 dark:bg-[#17231A] border border-slate-300 dark:border-[#243628] rounded-xl px-3 py-2 text-slate-900 dark:text-[#F3EFE6] focus:border-amber-500 font-mono"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700 dark:text-stone-300">{t('المنظم المسؤول', 'Organizer')}</label>
+                  <input
+                    type="text"
+                    value={roomForm.organizer_name || ''}
+                    onChange={e => setRoomForm({ ...roomForm, organizer_name: e.target.value })}
+                    placeholder={t('اسم منظم الاجتماع', 'Organizer name')}
+                    className="w-full bg-slate-50 dark:bg-[#17231A] border border-slate-300 dark:border-[#243628] rounded-xl px-3 py-2 text-slate-900 dark:text-[#F3EFE6] focus:border-amber-500"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700 dark:text-stone-300">{t('التجهيزات المطلوبة', 'Equipment')}</label>
+                  <input
+                    type="text"
+                    value={roomForm.equipment_needed || ''}
+                    onChange={e => setRoomForm({ ...roomForm, equipment_needed: e.target.value })}
+                    placeholder={t('شاشة عرض، فيديو كونفرنس، سبورة ذكية', 'Display screen, VC, smart board')}
+                    className="w-full bg-slate-50 dark:bg-[#17231A] border border-slate-300 dark:border-[#243628] rounded-xl px-3 py-2 text-slate-900 dark:text-[#F3EFE6] focus:border-amber-500"
+                  />
+                </div>
+
+                <div className="col-span-2 space-y-1">
+                  <label className="font-bold text-slate-700 dark:text-stone-300">{t('طلبات الضيافة والبوفيه (VIP Catering)', 'Hospitality Requests')}</label>
+                  <input
+                    type="text"
+                    value={roomForm.hospitality_requests || ''}
+                    onChange={e => setRoomForm({ ...roomForm, hospitality_requests: e.target.value })}
+                    placeholder={t('مشروبات ساخنة، عصائر، مياه معدنية، ضيافة VIP', 'Coffee, tea, water, VIP refreshments')}
+                    className="w-full bg-slate-50 dark:bg-[#17231A] border border-slate-300 dark:border-[#243628] rounded-xl px-3 py-2 text-slate-900 dark:text-[#F3EFE6] focus:border-amber-500"
+                  />
+                </div>
               </div>
 
-              <form onSubmit={handleAddCallSubmit} className="space-y-3.5 text-xs">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block font-bold text-[#1A241C] dark:text-[#F3EFE6] mb-1">
-                      {t('اسم المتصل *', 'Caller Name *')}
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={callCaller}
-                      onChange={e => setCallCaller(e.target.value)}
-                      placeholder="م. عبد العزيز الشمري"
-                      className="w-full p-2.5 rounded-xl bg-[#F3EFE6] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6]"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-bold text-[#1A241C] dark:text-[#F3EFE6] mb-1">
-                      {t('الجهة / المنظمة', 'Organization')}
-                    </label>
-                    <input
-                      type="text"
-                      value={callOrg}
-                      onChange={e => setCallOrg(e.target.value)}
-                      placeholder="أمانة منطقة الرياض"
-                      className="w-full p-2.5 rounded-xl bg-[#F3EFE6] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6]"
-                    />
-                  </div>
+              <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-200 dark:border-[#243628]">
+                <button
+                  type="button"
+                  onClick={() => setIsRoomModalOpen(false)}
+                  className="px-4 py-2 rounded-xl border border-slate-300 dark:border-[#243628] text-slate-700 dark:text-stone-300 font-bold cursor-pointer"
+                >
+                  {t('إلغاء', 'Cancel')}
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-gradient-to-l from-amber-600 to-amber-500 text-white font-bold shadow-md shadow-amber-500/20 hover:from-amber-700 cursor-pointer"
+                >
+                  {editingRoom ? t('حفظ التعديلات', 'Update') : t('تأكيد الحجز فوراً', 'Confirm Booking')}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal 3: Parcel Form Modal */}
+      {isParcelModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
+          <div className="relative w-full max-w-lg rounded-3xl bg-white dark:bg-[#0E1610] border border-amber-500/30 shadow-2xl p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-[#243628] pb-3">
+              <h3 className="text-base font-bold text-slate-900 dark:text-[#F3EFE6] flex items-center gap-2">
+                <Package className="w-5 h-5 text-amber-600" />
+                <span>{editingParcel ? t('تعديل قيد الشحنة', 'Edit Parcel') : t('تسجيل طرد أو شحنة جديدة', 'New Parcel Log')}</span>
+              </h3>
+              <button onClick={() => setIsParcelModalOpen(false)} className="text-slate-400 hover:text-slate-700 cursor-pointer">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {formError && (
+              <div className="p-3 rounded-xl bg-rose-50 text-rose-700 text-xs border border-rose-200">
+                {formError}
+              </div>
+            )}
+
+            <form onSubmit={handleSaveParcel} className="space-y-3.5 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700 dark:text-stone-300">{t('اتجاه الشحنة', 'Direction')}</label>
+                  <select
+                    value={parcelForm.direction || 'وارد'}
+                    onChange={e => setParcelForm({ ...parcelForm, direction: e.target.value as any })}
+                    className="w-full bg-slate-50 dark:bg-[#17231A] border border-slate-300 dark:border-[#243628] rounded-xl px-3 py-2 text-slate-900 dark:text-[#F3EFE6] focus:border-amber-500 cursor-pointer"
+                  >
+                    <option value="وارد">{t('شحنة واردة (Inbound)', 'Inbound')}</option>
+                    <option value="صادر">{t('شحنة صادرة (Outbound)', 'Outbound')}</option>
+                  </select>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block font-bold text-[#1A241C] dark:text-[#F3EFE6] mb-1">
-                      {t('رقم الهاتف للتواصل', 'Phone Number')}
-                    </label>
-                    <input
-                      type="text"
-                      value={callPhone}
-                      onChange={e => setCallPhone(e.target.value)}
-                      placeholder="+966 11 xxx xxxx"
-                      className="w-full p-2.5 rounded-xl bg-[#F3EFE6] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6]"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-bold text-[#1A241C] dark:text-[#F3EFE6] mb-1">
-                      {t('المطلوب الاتصال به', 'Directed To')}
-                    </label>
-                    <input
-                      type="text"
-                      value={callDirectedTo}
-                      onChange={e => setCallDirectedTo(e.target.value)}
-                      className="w-full p-2.5 rounded-xl bg-[#F3EFE6] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6]"
-                    />
-                  </div>
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700 dark:text-stone-300">{t('شركة الشحن / الناقل *', 'Courier *')}</label>
+                  <CreatableSelect
+                    category="couriers"
+                    value={parcelForm.courier_company || ''}
+                    onChange={val => setParcelForm({ ...parcelForm, courier_company: val })}
+                    placeholder={t('اختر أو أضف شركة الشحن...', 'Select or add courier...')}
+                  />
                 </div>
 
-                <div>
-                  <label className="block font-bold text-[#1A241C] dark:text-[#F3EFE6] mb-1">
-                    {t('موضوع المكالمة والرسالة', 'Subject & Message')}
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700 dark:text-stone-300">{t('رقم بوليصة الشحن (AWB)', 'Tracking / AWB #')}</label>
+                  <input
+                    type="text"
+                    dir="ltr"
+                    value={parcelForm.awb_number || ''}
+                    onChange={e => setParcelForm({ ...parcelForm, awb_number: e.target.value })}
+                    placeholder="AWB-123456789"
+                    className="w-full bg-slate-50 dark:bg-[#17231A] border border-slate-300 dark:border-[#243628] rounded-xl px-3 py-2 text-slate-900 dark:text-[#F3EFE6] focus:border-amber-500 font-mono"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700 dark:text-stone-300">{t('نوع الطرد أو المحتوى', 'Type')}</label>
+                  <select
+                    value={parcelForm.parcel_type || 'مستندات رسمية'}
+                    onChange={e => setParcelForm({ ...parcelForm, parcel_type: e.target.value })}
+                    className="w-full bg-slate-50 dark:bg-[#17231A] border border-slate-300 dark:border-[#243628] rounded-xl px-3 py-2 text-slate-900 dark:text-[#F3EFE6] focus:border-amber-500 cursor-pointer"
+                  >
+                    <option value="مستندات رسمية">{t('مستندات رسمية', 'Official Documents')}</option>
+                    <option value="طرد بضائع / عينات">{t('طرد بضائع / عينات', 'Goods & Samples')}</option>
+                    <option value="أجهزة ومعدات">{t('أجهزة ومعدات', 'Devices & Hardware')}</option>
+                    <option value="شيكات / أوراق مالية">{t('شيكات / أوراق مالية', 'Cheques & Financial')}</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700 dark:text-stone-300">{t('اسم الراسل', 'Sender')}</label>
+                  <input
+                    type="text"
+                    value={parcelForm.sender_name || ''}
+                    onChange={e => setParcelForm({ ...parcelForm, sender_name: e.target.value })}
+                    placeholder={t('أدخل اسم الراسل أو الجهة المصدرة', 'Sender name or organization')}
+                    className="w-full bg-slate-50 dark:bg-[#17231A] border border-slate-300 dark:border-[#243628] rounded-xl px-3 py-2 text-slate-900 dark:text-[#F3EFE6] focus:border-amber-500"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700 dark:text-stone-300">{t('اسم المستلم *', 'Recipient *')}</label>
+                  <input
+                    type="text"
+                    required
+                    value={parcelForm.recipient_name || ''}
+                    onChange={e => setParcelForm({ ...parcelForm, recipient_name: e.target.value })}
+                    placeholder={t('اسم الموظف أو القسم المستلم', 'Recipient employee or dept')}
+                    className="w-full bg-slate-50 dark:bg-[#17231A] border border-slate-300 dark:border-[#243628] rounded-xl px-3 py-2 text-slate-900 dark:text-[#F3EFE6] focus:border-amber-500"
+                  />
+                </div>
+
+                <div className="col-span-2 space-y-1">
+                  <label className="font-bold text-slate-700 dark:text-stone-300">{t('صورة بوليصة الشحن أو إيصال الاستلام (Blob Preview)', 'Attach AWB Photo / Receipt')}</label>
+                  <label className="flex items-center justify-center gap-2 p-3 rounded-xl border border-dashed border-amber-500/40 bg-amber-50/20 dark:bg-[#17231A] text-amber-800 dark:text-amber-300 font-bold cursor-pointer hover:bg-amber-50/40 transition-colors">
+                    <Upload className="w-4 h-4" />
+                    <span>{parcelForm.attachment_name || t('اختر صورة البوليصة أو إيصال التسليم', 'Upload Waybill Scan')}</span>
+                    <input
+                      type="file"
+                      accept="image/*,application/pdf"
+                      className="hidden"
+                      onChange={e => handleFileUpload(e, ({ base64, name }) => {
+                        setParcelForm({ ...parcelForm, attachment_data: base64, attachment_name: name });
+                      })}
+                    />
                   </label>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-200 dark:border-[#243628]">
+                <button
+                  type="button"
+                  onClick={() => setIsParcelModalOpen(false)}
+                  className="px-4 py-2 rounded-xl border border-slate-300 dark:border-[#243628] text-slate-700 dark:text-stone-300 font-bold cursor-pointer"
+                >
+                  {t('إلغاء', 'Cancel')}
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-gradient-to-l from-amber-600 to-amber-500 text-white font-bold shadow-md shadow-amber-500/20 hover:from-amber-700 cursor-pointer"
+                >
+                  {editingParcel ? t('حفظ التعديلات', 'Update') : t('قيد الشحنة بالاستقبال', 'Log Parcel')}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal 4: Call Form Modal */}
+      {isCallModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
+          <div className="relative w-full max-w-lg rounded-3xl bg-white dark:bg-[#0E1610] border border-amber-500/30 shadow-2xl p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-[#243628] pb-3">
+              <h3 className="text-base font-bold text-slate-900 dark:text-[#F3EFE6] flex items-center gap-2">
+                <PhoneCall className="w-5 h-5 text-amber-600" />
+                <span>{editingCall ? t('تعديل قيد المكالمة', 'Edit Call') : t('تسجيل مكالمة جديدة', 'New Call Log')}</span>
+              </h3>
+              <button onClick={() => setIsCallModalOpen(false)} className="text-slate-400 hover:text-slate-700 cursor-pointer">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {formError && (
+              <div className="p-3 rounded-xl bg-rose-50 text-rose-700 text-xs border border-rose-200">
+                {formError}
+              </div>
+            )}
+
+            <form onSubmit={handleSaveCall} className="space-y-3.5 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700 dark:text-stone-300">{t('اسم المتصل *', 'Caller Name *')}</label>
+                  <input
+                    type="text"
+                    required
+                    value={callForm.caller_name || ''}
+                    onChange={e => setCallForm({ ...callForm, caller_name: e.target.value })}
+                    placeholder={t('أدخل اسم المتصل', 'Caller name')}
+                    className="w-full bg-slate-50 dark:bg-[#17231A] border border-slate-300 dark:border-[#243628] rounded-xl px-3 py-2 text-slate-900 dark:text-[#F3EFE6] focus:border-amber-500"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700 dark:text-stone-300">{t('رقم الهاتف', 'Phone Number')}</label>
+                  <input
+                    type="text"
+                    dir="ltr"
+                    value={callForm.caller_phone || ''}
+                    onChange={e => setCallForm({ ...callForm, caller_phone: e.target.value })}
+                    placeholder="05xxxxxxxx / 01xxxxxxxxx"
+                    className="w-full bg-slate-50 dark:bg-[#17231A] border border-slate-300 dark:border-[#243628] rounded-xl px-3 py-2 text-slate-900 dark:text-[#F3EFE6] focus:border-amber-500 font-mono"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700 dark:text-stone-300">{t('الجهة / المنظمة', 'Organization')}</label>
+                  <input
+                    type="text"
+                    value={callForm.caller_organization || ''}
+                    onChange={e => setCallForm({ ...callForm, caller_organization: e.target.value })}
+                    placeholder={t('اسم الشركة أو جهة الاتصال', 'Organization name')}
+                    className="w-full bg-slate-50 dark:bg-[#17231A] border border-slate-300 dark:border-[#243628] rounded-xl px-3 py-2 text-slate-900 dark:text-[#F3EFE6] focus:border-amber-500"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700 dark:text-stone-300">{t('الأهمية / الأولوية', 'Priority')}</label>
+                  <select
+                    value={callForm.priority || 'عادي'}
+                    onChange={e => setCallForm({ ...callForm, priority: e.target.value as any })}
+                    className="w-full bg-slate-50 dark:bg-[#17231A] border border-slate-300 dark:border-[#243628] rounded-xl px-3 py-2 text-slate-900 dark:text-[#F3EFE6] focus:border-amber-500 cursor-pointer"
+                  >
+                    <option value="عادي">{t('عادي', 'Normal')}</option>
+                    <option value="مهم">{t('مهم', 'Important')}</option>
+                    <option value="عاجل جداً">{t('عاجل جداً', 'Urgent')}</option>
+                  </select>
+                </div>
+
+                <div className="col-span-2 space-y-1">
+                  <label className="font-bold text-slate-700 dark:text-stone-300">{t('موضوع المكالمة *', 'Subject *')}</label>
+                  <input
+                    type="text"
+                    required
+                    value={callForm.subject || ''}
+                    onChange={e => setCallForm({ ...callForm, subject: e.target.value })}
+                    placeholder={t('أدخل موضوع المكالمة بإيجاز', 'Brief call subject')}
+                    className="w-full bg-slate-50 dark:bg-[#17231A] border border-slate-300 dark:border-[#243628] rounded-xl px-3 py-2 text-slate-900 dark:text-[#F3EFE6] focus:border-amber-500"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700 dark:text-stone-300">{t('الموظف المحال إليه', 'Target Employee')}</label>
+                  <input
+                    type="text"
+                    value={callForm.target_employee_name || ''}
+                    onChange={e => setCallForm({ ...callForm, target_employee_name: e.target.value })}
+                    placeholder={t('اسم الموظف أو المحول إليه', 'Target staff')}
+                    className="w-full bg-slate-50 dark:bg-[#17231A] border border-slate-300 dark:border-[#243628] rounded-xl px-3 py-2 text-slate-900 dark:text-[#F3EFE6] focus:border-amber-500"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700 dark:text-stone-300">{t('الحالة والإجراء', 'Status')}</label>
+                  <select
+                    value={callForm.status || 'بانتظار الرد'}
+                    onChange={e => setCallForm({ ...callForm, status: e.target.value as any })}
+                    className="w-full bg-slate-50 dark:bg-[#17231A] border border-slate-300 dark:border-[#243628] rounded-xl px-3 py-2 text-slate-900 dark:text-[#F3EFE6] focus:border-amber-500 cursor-pointer"
+                  >
+                    <option value="بانتظار الرد">{t('بانتظار الرد', 'Pending Response')}</option>
+                    <option value="تم التحويل">{t('تم التحويل', 'Transferred')}</option>
+                    <option value="تمت المعالجة">{t('تمت المعالجة', 'Processed')}</option>
+                  </select>
+                </div>
+
+                <div className="col-span-2 space-y-1">
+                  <label className="font-bold text-slate-700 dark:text-stone-300">{t('ملخص المكالمة والرسالة', 'Summary & Message')}</label>
                   <textarea
-                    rows={2}
-                    value={callPurpose}
-                    onChange={e => setCallPurpose(e.target.value)}
-                    placeholder="استفسار بشأن تجديد الرخصة..."
-                    className="w-full p-2.5 rounded-xl bg-[#F3EFE6] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6]"
+                    rows={3}
+                    value={callForm.call_summary || ''}
+                    onChange={e => setCallForm({ ...callForm, call_summary: e.target.value })}
+                    placeholder={t('تفاصيل الرسالة أو ملخص الحوار', 'Call summary and message notes')}
+                    className="w-full bg-slate-50 dark:bg-[#17231A] border border-slate-300 dark:border-[#243628] rounded-xl px-3 py-2 text-slate-900 dark:text-[#F3EFE6] focus:border-amber-500"
                   />
                 </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block font-bold text-[#1A241C] dark:text-[#F3EFE6] mb-1">
-                      {t('حالة الإجراء', 'Status')}
-                    </label>
-                    <select
-                      value={callStatus}
-                      onChange={e => setCallStatus(e.target.value as any)}
-                      className="w-full p-2.5 rounded-xl bg-[#F3EFE6] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6] font-bold"
-                    >
-                      <option value="transferred">تم التحويل بنجاح</option>
-                      <option value="message_taken">الموظف مشغول - تم تدوين رسالة</option>
-                      <option value="callback_requested">مطلوب معاودة الاتصال</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block font-bold text-[#1A241C] dark:text-[#F3EFE6] mb-1">
-                      {t('الإجراء المنفذ', 'Action Taken')}
-                    </label>
-                    <input
-                      type="text"
-                      value={callAction}
-                      onChange={e => setCallAction(e.target.value)}
-                      placeholder="تم التحويل للتحويلة 201"
-                      className="w-full p-2.5 rounded-xl bg-[#F3EFE6] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6]"
-                    />
-                  </div>
-                </div>
-
-                <div className="pt-3 border-t border-[#E0D9CB] dark:border-[#243628] flex items-center justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setIsCallModalOpen(false)}
-                    className="px-4 py-2 rounded-xl text-xs font-bold text-[#5C665E] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23] touch-target"
-                  >
-                    {t('إلغاء', 'Cancel')}
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-5 py-2.5 rounded-xl text-xs font-bold bg-[#6366F1] hover:bg-[#4F46E5] text-white shadow-md transition-all touch-target"
-                  >
-                    {t('حفظ المكالمة في السجل', 'Save to Log')}
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* Modal: Issue Contractor Pass */}
-      <AnimatePresence>
-        {isPassModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsPassModalOpen(false)}
-              className="fixed inset-0 bg-black/60 backdrop-blur-xs"
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="relative z-10 w-full max-w-lg bg-[#FBF9F5] dark:bg-[#0E1610] rounded-2xl border border-[#E0D9CB] dark:border-[#243628] shadow-2xl p-6 pb-safe max-h-[90vh] overflow-y-auto"
-            >
-              <div className="flex items-center justify-between pb-3 mb-4 border-b border-[#E0D9CB] dark:border-[#243628]">
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="w-5 h-5 text-[#B45309] dark:text-[#F59E0B]" />
-                  <h3 className="text-sm font-bold text-[#1A241C] dark:text-[#F3EFE6]">
-                    {t('إصدار تصريح مؤقت لمقاول / فني صيانة', 'Issue Temporary Contractor Pass')}
-                  </h3>
-                </div>
-                <button
-                  onClick={() => setIsPassModalOpen(false)}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center text-[#5C665E] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23] touch-target"
-                >
-                  <X className="w-4 h-4" />
-                </button>
               </div>
 
-              <form onSubmit={handleIssuePassSubmit} className="space-y-3.5 text-xs">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block font-bold text-[#1A241C] dark:text-[#F3EFE6] mb-1">
-                      {t('اسم الفني / المقاول *', 'Technician Name *')}
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={passTechName}
-                      onChange={e => setPassTechName(e.target.value)}
-                      placeholder="محمد حسن"
-                      className="w-full p-2.5 rounded-xl bg-[#F3EFE6] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6]"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-bold text-[#1A241C] dark:text-[#F3EFE6] mb-1">
-                      {t('شركة المقاولات *', 'Contractor Firm *')}
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={passCompany}
-                      onChange={e => setPassCompany(e.target.value)}
-                      placeholder="شركة كولينج للتهوية"
-                      className="w-full p-2.5 rounded-xl bg-[#F3EFE6] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6]"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block font-bold text-[#1A241C] dark:text-[#F3EFE6] mb-1">
-                      {t('رقم الهوية / الإقامة', 'National ID')}
-                    </label>
-                    <input
-                      type="text"
-                      value={passNatId}
-                      onChange={e => setPassNatId(e.target.value)}
-                      placeholder="2xxxxxxxxx"
-                      className="w-full p-2.5 rounded-xl bg-[#F3EFE6] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6]"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-bold text-[#1A241C] dark:text-[#F3EFE6] mb-1">
-                      {t('الصلاحية الزمنية للتصريح', 'Validity')}
-                    </label>
-                    <input
-                      type="text"
-                      value={passValidUntil}
-                      onChange={e => setPassValidUntil(e.target.value)}
-                      placeholder="04:00 م (نهاية اليوم)"
-                      className="w-full p-2.5 rounded-xl bg-[#F3EFE6] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6]"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block font-bold text-[#1A241C] dark:text-[#F3EFE6] mb-1">
-                    {t('طبيعة ونطاق العمل بالموقع', 'Work Scope')}
-                  </label>
-                  <input
-                    type="text"
-                    value={passWorkScope}
-                    onChange={e => setPassWorkScope(e.target.value)}
-                    placeholder="صيانة مصاعد، كابلات ألياف بصرية، فحص إنذار حريق..."
-                    className="w-full p-2.5 rounded-xl bg-[#F3EFE6] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-[#1A241C] dark:text-[#F3EFE6] mb-1">
-                    {t('العدد والأجهزة والمعدات المسجلة بالدخول', 'Registered Tools')}
-                  </label>
-                  <input
-                    type="text"
-                    value={passTools}
-                    onChange={e => setPassTools(e.target.value)}
-                    placeholder="حقيبة عدد يدوية، جهاز قياس رقمي..."
-                    className="w-full p-2.5 rounded-xl bg-[#F3EFE6] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6]"
-                  />
-                </div>
-
-                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="safety_check"
-                    checked={passSafetyBriefed}
-                    onChange={e => setPassSafetyBriefed(e.target.checked)}
-                    className="w-4 h-4 rounded text-amber-600"
-                  />
-                  <label htmlFor="safety_check" className="font-bold text-[#1A241C] dark:text-[#F3EFE6]">
-                    {t('تم تقديم إقرار وتوجيهات السلامة والصحة المهنية (HSE) للفني', 'HSE Safety Briefing Completed')}
-                  </label>
-                </div>
-
-                <div className="pt-3 border-t border-[#E0D9CB] dark:border-[#243628] flex items-center justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setIsPassModalOpen(false)}
-                    className="px-4 py-2 rounded-xl text-xs font-bold text-[#5C665E] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23] touch-target"
-                  >
-                    {t('إلغاء', 'Cancel')}
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-5 py-2.5 rounded-xl text-xs font-bold bg-[#B45309] hover:bg-[#92400E] text-white shadow-md transition-all touch-target"
-                  >
-                    {t('إصدار التصريح وتسليم البطاقة', 'Issue Pass')}
-                  </button>
-                </div>
-              </form>
-            </motion.div>
+              <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-200 dark:border-[#243628]">
+                <button
+                  type="button"
+                  onClick={() => setIsCallModalOpen(false)}
+                  className="px-4 py-2 rounded-xl border border-slate-300 dark:border-[#243628] text-slate-700 dark:text-stone-300 font-bold cursor-pointer"
+                >
+                  {t('إلغاء', 'Cancel')}
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-gradient-to-l from-amber-600 to-amber-500 text-white font-bold shadow-md shadow-amber-500/20 hover:from-amber-700 cursor-pointer"
+                >
+                  {editingCall ? t('حفظ التعديلات', 'Update') : t('قيد المكالمة بالسجل', 'Log Call')}
+                </button>
+              </div>
+            </form>
           </div>
-        )}
-      </AnimatePresence>
+        </div>
+      )}
+
+      {/* Modal 5: Contractor Permit Form Modal */}
+      {isPermitModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
+          <div className="relative w-full max-w-lg rounded-3xl bg-white dark:bg-[#0E1610] border border-amber-500/30 shadow-2xl p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-[#243628] pb-3">
+              <h3 className="text-base font-bold text-slate-900 dark:text-[#F3EFE6] flex items-center gap-2">
+                <HardHat className="w-5 h-5 text-amber-600" />
+                <span>{editingPermit ? t('تعديل تصريح المقاول', 'Edit Permit') : t('إصدار تصريح عمل لمقاول / فني', 'New Contractor Pass')}</span>
+              </h3>
+              <button onClick={() => setIsPermitModalOpen(false)} className="text-slate-400 hover:text-slate-700 cursor-pointer">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {formError && (
+              <div className="p-3 rounded-xl bg-rose-50 text-rose-700 text-xs border border-rose-200">
+                {formError}
+              </div>
+            )}
+
+            <form onSubmit={handleSavePermit} className="space-y-3.5 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700 dark:text-stone-300">{t('شركة المقاولات / المنفذة *', 'Contractor Company *')}</label>
+                  <input
+                    type="text"
+                    required
+                    value={permitForm.contractor_company || ''}
+                    onChange={e => setPermitForm({ ...permitForm, contractor_company: e.target.value })}
+                    placeholder={t('أدخل اسم شركة المقاولات', 'Contractor company name')}
+                    className="w-full bg-slate-50 dark:bg-[#17231A] border border-slate-300 dark:border-[#243628] rounded-xl px-3 py-2 text-slate-900 dark:text-[#F3EFE6] focus:border-amber-500"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700 dark:text-stone-300">{t('اسم المشرف الفني *', 'Supervisor Name *')}</label>
+                  <input
+                    type="text"
+                    required
+                    value={permitForm.supervisor_name || ''}
+                    onChange={e => setPermitForm({ ...permitForm, supervisor_name: e.target.value })}
+                    placeholder={t('اسم المشرف المسؤول بالموقع', 'Supervisor full name')}
+                    className="w-full bg-slate-50 dark:bg-[#17231A] border border-slate-300 dark:border-[#243628] rounded-xl px-3 py-2 text-slate-900 dark:text-[#F3EFE6] focus:border-amber-500"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700 dark:text-stone-300">{t('هاتف المشرف', 'Supervisor Phone')}</label>
+                  <input
+                    type="text"
+                    dir="ltr"
+                    value={permitForm.supervisor_phone || ''}
+                    onChange={e => setPermitForm({ ...permitForm, supervisor_phone: e.target.value })}
+                    placeholder="05xxxxxxxx / 01xxxxxxxxx"
+                    className="w-full bg-slate-50 dark:bg-[#17231A] border border-slate-300 dark:border-[#243628] rounded-xl px-3 py-2 text-slate-900 dark:text-[#F3EFE6] focus:border-amber-500 font-mono"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700 dark:text-stone-300">{t('رقم بطاقة المشرف', 'Supervisor National ID')}</label>
+                  <input
+                    type="text"
+                    value={permitForm.supervisor_national_id || ''}
+                    onChange={e => setPermitForm({ ...permitForm, supervisor_national_id: e.target.value })}
+                    placeholder={t('أدخل رقم بطاقة الهوية للمشرف', 'Enter national ID number')}
+                    className="w-full bg-slate-50 dark:bg-[#17231A] border border-slate-300 dark:border-[#243628] rounded-xl px-3 py-2 text-slate-900 dark:text-[#F3EFE6] focus:border-amber-500 font-mono"
+                  />
+                </div>
+
+                <div className="col-span-2 space-y-1">
+                  <label className="font-bold text-slate-700 dark:text-stone-300">{t('طبيعة الأعمال والتصريح *', 'Work Nature *')}</label>
+                  <CreatableSelect
+                    category="work_permits"
+                    value={permitForm.work_nature || ''}
+                    onChange={val => setPermitForm({ ...permitForm, work_nature: val })}
+                    placeholder={t('اختر أو أضف طبيعة الأعمال (صيانة، تركيبات، تكييف، كهرباء)...', 'Select or add work nature...')}
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700 dark:text-stone-300">{t('عدد الفنيين والعمال', 'Workers Count')}</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="100"
+                    value={permitForm.workers_count || 1}
+                    onChange={e => setPermitForm({ ...permitForm, workers_count: Number(e.target.value) })}
+                    className="w-full bg-slate-50 dark:bg-[#17231A] border border-slate-300 dark:border-[#243628] rounded-xl px-3 py-2 text-slate-900 dark:text-[#F3EFE6] focus:border-amber-500 font-mono"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700 dark:text-stone-300">{t('ساعات العمل اليومية المصرحة', 'Daily Hours')}</label>
+                  <input
+                    type="text"
+                    value={permitForm.daily_hours || '08:00 - 17:00'}
+                    onChange={e => setPermitForm({ ...permitForm, daily_hours: e.target.value })}
+                    placeholder="08:00 - 17:00"
+                    className="w-full bg-slate-50 dark:bg-[#17231A] border border-slate-300 dark:border-[#243628] rounded-xl px-3 py-2 text-slate-900 dark:text-[#F3EFE6] focus:border-amber-500"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700 dark:text-stone-300">{t('تاريخ بدء التصريح', 'Start Date')}</label>
+                  <input
+                    type="date"
+                    required
+                    value={permitForm.start_date || new Date().toISOString().split('T')[0]}
+                    onChange={e => setPermitForm({ ...permitForm, start_date: e.target.value })}
+                    className="w-full bg-slate-50 dark:bg-[#17231A] border border-slate-300 dark:border-[#243628] rounded-xl px-3 py-2 text-slate-900 dark:text-[#F3EFE6] focus:border-amber-500 font-mono"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700 dark:text-stone-300">{t('تاريخ انتهاء التصريح', 'End Date')}</label>
+                  <input
+                    type="date"
+                    required
+                    value={permitForm.end_date || new Date().toISOString().split('T')[0]}
+                    onChange={e => setPermitForm({ ...permitForm, end_date: e.target.value })}
+                    className="w-full bg-slate-50 dark:bg-[#17231A] border border-slate-300 dark:border-[#243628] rounded-xl px-3 py-2 text-slate-900 dark:text-[#F3EFE6] focus:border-amber-500 font-mono"
+                  />
+                </div>
+
+                <div className="col-span-2 space-y-1">
+                  <label className="font-bold text-slate-700 dark:text-stone-300">{t('الأدوات والمعدات المصرح بدخولها', 'Authorized Tools')}</label>
+                  <input
+                    type="text"
+                    value={permitForm.tools_and_equipment || ''}
+                    onChange={e => setPermitForm({ ...permitForm, tools_and_equipment: e.target.value })}
+                    placeholder={t('أدوات يدوية، سلالم، أجهزة لحام، معدات فحص', 'Hand tools, ladders, diagnostic gear')}
+                    className="w-full bg-slate-50 dark:bg-[#17231A] border border-slate-300 dark:border-[#243628] rounded-xl px-3 py-2 text-slate-900 dark:text-[#F3EFE6] focus:border-amber-500"
+                  />
+                </div>
+
+                <div className="col-span-2 space-y-1">
+                  <label className="font-bold text-slate-700 dark:text-stone-300">{t('إرفاق تصريح الأمن / كشف العمال (Blob Preview)', 'Attach Safety Approval / Crew List')}</label>
+                  <label className="flex items-center justify-center gap-2 p-3 rounded-xl border border-dashed border-amber-500/40 bg-amber-50/20 dark:bg-[#17231A] text-amber-800 dark:text-amber-300 font-bold cursor-pointer hover:bg-amber-50/40 transition-colors">
+                    <Upload className="w-4 h-4" />
+                    <span>{permitForm.attachment_name || t('اختر ملف تصريح الأمن أو كشف الأسماء', 'Upload Permit Document')}</span>
+                    <input
+                      type="file"
+                      accept="image/*,application/pdf"
+                      className="hidden"
+                      onChange={e => handleFileUpload(e, ({ base64, name }) => {
+                        setPermitForm({ ...permitForm, attachment_data: base64, attachment_name: name });
+                      })}
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-200 dark:border-[#243628]">
+                <button
+                  type="button"
+                  onClick={() => setIsPermitModalOpen(false)}
+                  className="px-4 py-2 rounded-xl border border-slate-300 dark:border-[#243628] text-slate-700 dark:text-stone-300 font-bold cursor-pointer"
+                >
+                  {t('إلغاء', 'Cancel')}
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-gradient-to-l from-amber-600 to-amber-500 text-white font-bold shadow-md shadow-amber-500/20 hover:from-amber-700 cursor-pointer"
+                >
+                  {editingPermit ? t('حفظ التعديلات', 'Update') : t('إصدار التصريح فوراً', 'Issue Permit')}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Interactive 3D Digital Pass Modal with Real QR Code */}
+      <DigitalPassModal
+        isOpen={passModalOpen}
+        onClose={() => {
+          setPassModalOpen(false);
+          setPassData(null);
+        }}
+        data={passData}
+      />
+
+      {/* Drawer: Detailed Change Audit Log */}
+      <AuditLogDrawer
+        isOpen={auditDrawerOpen}
+        onClose={() => setAuditDrawerOpen(false)}
+        title={auditDrawerTitle}
+        auditLogs={auditLogsData}
+      />
+
+      {/* Modal: Universal Live Blob URL Document Preview Modal */}
+      <DocumentPreviewModal
+        isOpen={previewModalOpen}
+        onClose={() => setPreviewModalOpen(false)}
+        title={previewDocData.title}
+        fileName={previewDocData.fileName}
+        fileData={previewDocData.fileData}
+      />
     </div>
   );
 };
