@@ -382,7 +382,7 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   const toggleCategoryExpand = (catId: string) => {
     setExpandedCategories(prev =>
-      prev.includes(catId) ? prev.filter(id => id !== catId) : [...prev, catId]
+      prev.includes(catId) ? [] : [catId]
     );
   };
 
@@ -413,8 +413,8 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
     setActiveCategoryId(catId || null);
     setActiveSubItemId(subId || null);
-    if (catId && !expandedCategories.includes(catId)) {
-      setExpandedCategories(prev => [...prev, catId]);
+    if (catId) {
+      setExpandedCategories([catId]);
     }
     if (isMobileOpen) {
       setIsMobileOpen(false);

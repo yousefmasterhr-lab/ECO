@@ -151,6 +151,7 @@ export interface AuthUser {
   clearanceNameEn: string;
   avatarUrl?: string;
   allowedModuleIds: string[];
+  allowedCompanyIds?: string[];
   permissions?: string[];
   lastLogin?: string;
 }
@@ -343,6 +344,7 @@ export interface ManagedUser {
   lastLogin?: string;
   customPermissions?: string[];
   permissions?: string[];
+  allowedCompanyIds?: string[];
 }
 
 export interface AuditLogEntry {
@@ -364,7 +366,7 @@ export const INITIAL_ROOT_ADMIN: ManagedUser = {
   id: 'usr_root_csuite_01',
   nameAr: 'يوسف حجازي',
   nameEn: 'Yousef Hegazy',
-  nationalId: '29001010100000',
+  nationalId: '',
   email: 'admin@hrsup.com',
   username: 'admin',
   jobTitleAr: 'مدير النظام العام / رئيس مجلس الإدارة',
@@ -385,6 +387,7 @@ export const INITIAL_ROOT_ADMIN: ManagedUser = {
   lastLogin: '2026-10-10 08:30',
   customPermissions: [...ALL_COMPANY_PERMISSIONS],
   permissions: [...ALL_COMPANY_PERMISSIONS],
+  allowedCompanyIds: ['all'],
 };
 
 export interface SeedAccount {

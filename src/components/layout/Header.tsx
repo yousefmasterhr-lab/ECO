@@ -91,37 +91,14 @@ export const Header: React.FC = () => {
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const [currentPromptIdx, setCurrentPromptIdx] = useState(0);
-  const [placeholderText, setPlaceholderText] = useState('');
-  const [isDeletingPlaceholder, setIsDeletingPlaceholder] = useState(false);
 
   useEffect(() => {
     if (isSearchFocused || searchQuery) return;
-    const currentPrompt = SEARCH_PROMPTS[currentPromptIdx];
-    let timer: any;
-
-    if (!isDeletingPlaceholder) {
-      if (placeholderText.length < currentPrompt.length) {
-        timer = setTimeout(() => {
-          setPlaceholderText(currentPrompt.slice(0, placeholderText.length + 1));
-        }, 65);
-      } else {
-        timer = setTimeout(() => {
-          setIsDeletingPlaceholder(true);
-        }, 2600);
-      }
-    } else {
-      if (placeholderText.length > 0) {
-        timer = setTimeout(() => {
-          setPlaceholderText(currentPrompt.slice(0, placeholderText.length - 1));
-        }, 30);
-      } else {
-        setIsDeletingPlaceholder(false);
-        setCurrentPromptIdx(prev => (prev + 1) % SEARCH_PROMPTS.length);
-      }
-    }
-
-    return () => clearTimeout(timer);
-  }, [placeholderText, isDeletingPlaceholder, currentPromptIdx, isSearchFocused, searchQuery]);
+    const interval = setInterval(() => {
+      setCurrentPromptIdx(prev => (prev + 1) % SEARCH_PROMPTS.length);
+    }, 3500);
+    return () => clearInterval(interval);
+  }, [isSearchFocused, searchQuery]);
 
   // Global Ctrl + K listener & Escape listener
   useEffect(() => {
@@ -547,7 +524,7 @@ export const Header: React.FC = () => {
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
                   onFocus={() => setIsSearchFocused(true)}
-                  placeholder={placeholderText || t('البحث السريع في الأقسام والمستندات...', 'Quick search modules & records...')}
+                  placeholder={SEARCH_PROMPTS[currentPromptIdx] || t('البحث السريع في الأقسام والمستندات...', 'Quick search modules & records...')}
                   className="w-full bg-transparent border-none outline-hidden text-[#1A241C] dark:text-[#F3EFE6] placeholder:text-[#5C665E]/70 dark:placeholder:text-[#8FA392]/70 text-xs font-medium cursor-text caret-amber-500"
                 />
                 {searchQuery && (

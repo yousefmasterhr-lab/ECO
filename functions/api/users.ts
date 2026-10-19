@@ -67,7 +67,8 @@ async function ensureUserSchema(db: any) {
   const alterColumns = [
     'ALTER TABLE users ADD COLUMN job_title TEXT',
     'ALTER TABLE users ADD COLUMN phone TEXT',
-    'ALTER TABLE users ADD COLUMN permissions_json TEXT'
+    'ALTER TABLE users ADD COLUMN permissions_json TEXT',
+    'ALTER TABLE users ADD COLUMN allowed_company_ids TEXT'
   ];
   for (const sql of alterColumns) {
     try {
@@ -77,29 +78,31 @@ async function ensureUserSchema(db: any) {
     }
   }
 
-  // Ensure root administrator Yousef Hegazy exists
+  // Ensure root administrator Yousef Hegazy exists (zero fake national ID)
   try {
-    const rootUser = await db.prepare(`SELECT id, full_name FROM users WHERE id = 'usr_root_csuite_01' OR username = 'admin' LIMIT 1`).first();
+    const rootUser = await db.prepare(`SELECT id, full_name, national_id FROM users WHERE id = 'usr_root_csuite_01' OR username = 'admin' LIMIT 1`).first();
     if (!rootUser) {
       await db.prepare(`
         INSERT INTO users (
           id, national_id, full_name, username, email, password_hash, role_id, department,
-          job_title, phone, clearance_level, is_active, permissions_json
+          job_title, phone, clearance_level, is_active, permissions_json, allowed_company_ids
         ) VALUES (
-          'usr_root_csuite_01', '29001010100000', 'يوسف حجازي', 'admin', 'admin@hrsup.com',
+          'usr_root_csuite_01', '', 'يوسف حجازي', 'admin', 'admin@hrsup.com',
           '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', 'SUPER_ADMIN',
           'الإدارة العليا والاستراتيجية', 'مدير النظام العام / رئيس مجلس الإدارة', '+20 100 000 0000',
-          4, 1, ?
+          4, 1, ?, '["all"]'
         )
       `).bind(JSON.stringify(ALL_COMPANY_PERMS)).run();
-    } else if (rootUser.full_name === 'م. أحمد مصطفى') {
+    } else {
+      // Purge 29001010100000 if present & ensure Yousef Hegazy title and all-company access
       await db.prepare(`
         UPDATE users
         SET full_name = 'يوسف حجازي',
             job_title = 'مدير النظام العام / رئيس مجلس الإدارة',
-            permissions_json = ?
+            national_id = CASE WHEN national_id = '29001010100000' THEN '' ELSE national_id END,
+            allowed_company_ids = COALESCE(allowed_company_ids, '["all"]')
         WHERE id = ?
-      `).bind(JSON.stringify(ALL_COMPANY_PERMS), rootUser.id).run();
+      `).bind(rootUser.id).run();
     }
   } catch (err) {
     console.warn('Root user verification notice:', err);
@@ -117,7 +120,7 @@ export const onRequestGet: PagesFunction = async (context) => {
     await ensureUserSchema(env.DB);
 
     const result = await env.DB.prepare(
-      `SELECT id, national_id, full_name, username, email, role_id, department, job_title, phone, clearance_level, is_active, permissions_json, created_at
+      `SELECT id, national_id, full_name, username, email, role_id, department, job_title, phone, clearance_level, is_active, permissions_json, allowed_company_ids, created_at
        FROM users
        ORDER BY created_at DESC`
     ).all();
@@ -136,12 +139,25 @@ export const onRequestGet: PagesFunction = async (context) => {
         perms = [...ALL_COMPANY_PERMS];
       }
 
+      let allowedCompanyIds: string[] = ['all'];
+      try {
+        if (row.allowed_company_ids) {
+          allowedCompanyIds = JSON.parse(row.allowed_company_ids);
+        }
+      } catch {
+        allowedCompanyIds = ['all'];
+      }
+
+      // Purge fake national ID 29001010100000 or internal fallback tokens
+      const rawNatId = String(row.national_id || '').trim();
+      const nationalId = (rawNatId === '29001010100000' || rawNatId.startsWith('NID_UNSET_')) ? '' : rawNatId;
+
       const nameAr = (row.id === 'usr_root_csuite_01' && (row.full_name === 'م. أحمد مصطفى' || !row.full_name)) ? 'يوسف حجازي' : row.full_name;
       const jobTitleAr = row.job_title || (isSuper ? 'مدير النظام العام / رئيس مجلس الإدارة' : row.role_id);
 
       return {
         id: row.id,
-        nationalId: row.national_id,
+        nationalId,
         nameAr,
         nameEn: row.username,
         fullName: nameAr,
@@ -161,6 +177,7 @@ export const onRequestGet: PagesFunction = async (context) => {
         status: row.is_active === 1 ? 'ACTIVE' : 'SUSPENDED',
         permissions: perms,
         customPermissions: perms,
+        allowedCompanyIds,
         createdAt: row.created_at,
       };
     });
@@ -208,12 +225,16 @@ export const onRequestPost: PagesFunction = async (context) => {
       ? JSON.stringify(body.permissions)
       : (body.permissions_json || (roleId === 'SUPER_ADMIN' ? JSON.stringify(ALL_COMPANY_PERMS) : '[]'));
 
+    const allowedCompanyIds = Array.isArray(body.allowedCompanyIds) && body.allowedCompanyIds.length > 0
+      ? JSON.stringify(body.allowedCompanyIds)
+      : '["all"]';
+
     // Strict Validations
     if (!fullName) {
       return errorResponse('يرجى إدخال الاسم بالكامل', 400);
     }
 
-    if (!nationalId || nationalId.length !== 14 || !/^\d{14}$/.test(nationalId)) {
+    if (nationalId && (!/^\d{14}$/.test(nationalId))) {
       return errorResponse('الرقم القومي يجب أن يتكون من 14 رقماً بصورة صحيحة (14 digits required)', 400);
     }
 
@@ -230,20 +251,26 @@ export const onRequestPost: PagesFunction = async (context) => {
     }
 
     // Duplicate Prevention
-    const existing: any = await env.DB.prepare(
-      `SELECT national_id, username, email FROM users
-       WHERE national_id = ? OR LOWER(username) = ? OR LOWER(email) = ?
-       LIMIT 1`
-    ).bind(nationalId, username, email).first();
-
-    if (existing) {
-      if (existing.national_id === nationalId) {
+    if (nationalId) {
+      const existingNatId: any = await env.DB.prepare(
+        `SELECT national_id FROM users WHERE national_id = ? LIMIT 1`
+      ).bind(nationalId).first();
+      if (existingNatId) {
         return errorResponse('الرقم القومي مسجل بالفعل لمستخدم آخر', 409);
       }
-      if (existing.username.toLowerCase() === username) {
+    }
+
+    const existingUserOrEmail: any = await env.DB.prepare(
+      `SELECT username, email FROM users
+       WHERE LOWER(username) = ? OR LOWER(email) = ?
+       LIMIT 1`
+    ).bind(username, email).first();
+
+    if (existingUserOrEmail) {
+      if (existingUserOrEmail.username.toLowerCase() === username) {
         return errorResponse('اسم المستخدم مسجل بالفعل، يرجى اختيار اسم آخر', 409);
       }
-      if (existing.email.toLowerCase() === email) {
+      if (existingUserOrEmail.email.toLowerCase() === email) {
         return errorResponse('البريد الإلكتروني مسجل بالفعل لمستخدم آخر', 409);
       }
     }
@@ -251,16 +278,17 @@ export const onRequestPost: PagesFunction = async (context) => {
     // Hash Password
     const passwordHash = await sha256Hex(password);
     const newUserId = body.id || ('usr_' + crypto.randomUUID());
+    const storedNationalId = nationalId || ('NID_UNSET_' + newUserId);
 
     // Insert into D1 DB
     await env.DB.prepare(
       `INSERT INTO users (
         id, national_id, full_name, username, email, password_hash,
-        role_id, department, job_title, phone, clearance_level, is_active, permissions_json, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`
+        role_id, department, job_title, phone, clearance_level, is_active, permissions_json, allowed_company_ids, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`
     ).bind(
       newUserId,
-      nationalId,
+      storedNationalId,
       fullName,
       username,
       email,
@@ -271,7 +299,8 @@ export const onRequestPost: PagesFunction = async (context) => {
       phone,
       clearanceLevel,
       isActive,
-      permissions
+      permissions,
+      allowedCompanyIds
     ).run();
 
     // Log Action into audit_logs
@@ -286,10 +315,17 @@ export const onRequestPost: PagesFunction = async (context) => {
         fullName,
         'حسابات المستخدمين',
         'إنشاء حساب مستخدم جديد',
-        `تم إنشاء حساب مستخدم جديد: ${fullName} (${jobTitle}) بالرقم القومي: ${nationalId}`
+        `تم إنشاء حساب مستخدم جديد: ${fullName} (${jobTitle}) - الرقم القومي: ${nationalId || 'غير مسجل'}`
       ).run();
     } catch (logErr) {
       console.warn('Failed to insert audit log for user creation:', logErr);
+    }
+
+    let parsedAllowedCompanies: string[] = ['all'];
+    try {
+      parsedAllowedCompanies = JSON.parse(allowedCompanyIds);
+    } catch {
+      parsedAllowedCompanies = ['all'];
     }
 
     const createdUser = {
@@ -311,6 +347,7 @@ export const onRequestPost: PagesFunction = async (context) => {
       clearanceLevel,
       status: isActive === 1 ? 'ACTIVE' : 'SUSPENDED',
       permissions: Array.isArray(body.permissions) ? body.permissions : (roleId === 'SUPER_ADMIN' ? ALL_COMPANY_PERMS : []),
+      allowedCompanyIds: parsedAllowedCompanies,
       createdAt: new Date().toISOString().split('T')[0],
     };
 
@@ -340,12 +377,14 @@ export const onRequestPut: PagesFunction = async (context) => {
     }
 
     const targetUser: any = await env.DB.prepare(
-      `SELECT id, national_id, full_name, is_active, role_id, department, job_title, phone, permissions_json FROM users WHERE id = ? LIMIT 1`
+      `SELECT id, national_id, full_name, is_active, role_id, department, job_title, phone, permissions_json, allowed_company_ids FROM users WHERE id = ? LIMIT 1`
     ).bind(body.id).first();
 
     // If not found, execute UPSERT / INSERT
     if (!targetUser) {
-      const nationalId = body.nationalId || body.national_id || '29000000000000';
+      const newUserId = body.id;
+      const rawNatId = (body.nationalId || body.national_id || '').trim();
+      const nationalId = (rawNatId && rawNatId !== '29001010100000') ? rawNatId : ('NID_UNSET_' + newUserId);
       const fullName = body.fullName || body.nameAr || 'مستخدم جديد';
       const username = body.username || `user_${Date.now()}`;
       const email = body.email || `${username}@hrsup.com`;
@@ -355,11 +394,14 @@ export const onRequestPut: PagesFunction = async (context) => {
       const jobTitle = body.jobTitleAr || body.job_title || roleId;
       const phone = body.phone || '';
       const permissions = Array.isArray(body.permissions) ? JSON.stringify(body.permissions) : '[]';
+      const allowedCompanyIds = Array.isArray(body.allowedCompanyIds) && body.allowedCompanyIds.length > 0
+        ? JSON.stringify(body.allowedCompanyIds)
+        : '["all"]';
 
       await env.DB.prepare(`
-        INSERT INTO users (id, national_id, full_name, username, email, password_hash, role_id, department, job_title, phone, clearance_level, is_active, permissions_json)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 2, 1, ?)
-      `).bind(body.id, nationalId, fullName, username, email, pwd, roleId, department, jobTitle, phone, permissions).run();
+        INSERT INTO users (id, national_id, full_name, username, email, password_hash, role_id, department, job_title, phone, clearance_level, is_active, permissions_json, allowed_company_ids)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 2, 1, ?, ?)
+      `).bind(body.id, nationalId, fullName, username, email, pwd, roleId, department, jobTitle, phone, permissions, allowedCompanyIds).run();
 
       return jsonResponse({ success: true, message: 'تم إنشاء المستخدم وحفظه بنجاح (UPSERT)' });
     }
@@ -377,9 +419,23 @@ export const onRequestPut: PagesFunction = async (context) => {
       permissionsJson = JSON.stringify(body.permissions);
     }
 
+    let allowedCompanyIdsJson = targetUser.allowed_company_ids || '["all"]';
+    if (Array.isArray(body.allowedCompanyIds)) {
+      allowedCompanyIdsJson = JSON.stringify(body.allowedCompanyIds.length > 0 ? body.allowedCompanyIds : ['all']);
+    }
+
+    let nationalIdClause = '';
+    const queryParams: any[] = [fullName, roleId, department, jobTitle, phone, isActive, permissionsJson, allowedCompanyIdsJson];
+
+    if (body.nationalId !== undefined) {
+      const rawNid = String(body.nationalId).trim();
+      const storedNid = (rawNid && rawNid !== '29001010100000') ? rawNid : ('NID_UNSET_' + body.id);
+      nationalIdClause = ', national_id = ?';
+      queryParams.push(storedNid);
+    }
+
     // Optional password update
     let passwordClause = '';
-    const queryParams: any[] = [fullName, roleId, department, jobTitle, phone, isActive, permissionsJson];
 
     if (clearanceLevel !== undefined) {
       queryParams.push(clearanceLevel);
@@ -395,7 +451,8 @@ export const onRequestPut: PagesFunction = async (context) => {
 
     await env.DB.prepare(
       `UPDATE users
-       SET full_name = ?, role_id = ?, department = ?, job_title = ?, phone = ?, is_active = ?, permissions_json = ?
+       SET full_name = ?, role_id = ?, department = ?, job_title = ?, phone = ?, is_active = ?, permissions_json = ?, allowed_company_ids = ?
+       ${nationalIdClause}
        ${clearanceLevel !== undefined ? ', clearance_level = ?' : ''}
        ${passwordClause}
        WHERE id = ?`

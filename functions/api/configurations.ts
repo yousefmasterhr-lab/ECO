@@ -27,26 +27,37 @@ export interface SystemConfigurationRecord {
 }
 
 const DEFAULT_CONFIG_SEEDS: Omit<SystemConfigurationRecord, 'created_at' | 'updated_at'>[] = [
-  // 1. Roles & Job Titles (الأدوار والمسميات الوظيفية)
+  // 1. Roles & Job Titles (الأدوار والمسميات الوظيفية - مسميات عربية احترافية بدون اختصارات إنجليزية)
   {
-    id: 'cfg_role_csuite',
+    id: 'cfg_role_chair',
     category: 'roles',
-    code: 'SUPER_ADMIN',
-    name_ar: 'الرئيس التنفيذي (C-Suite)',
-    name_en: 'Chief Executive Officer',
-    description_ar: 'إدارة عليا وحوكمة مؤسسية شاملة لكافة المجموعات والشركات',
+    code: 'CHAIRMAN',
+    name_ar: 'رئيس مجلس الإدارة',
+    name_en: 'Chairman of the Board',
+    description_ar: 'حوكمة استراتيجية وقرارات سيادية عليا',
     color_var: '#D99B26',
     is_system: 1,
     is_active: 1,
   },
   {
-    id: 'cfg_role_cfo',
+    id: 'cfg_role_ceo',
     category: 'roles',
-    code: 'FINANCE_OFFICER',
-    name_ar: 'المدير المالي التنفيذي (CFO)',
-    name_en: 'Chief Financial Officer',
-    description_ar: 'إدارة الحسابات العامة، السيولة النقدية، الميزانيات والاعتمادات البنكية',
-    color_var: '#059669',
+    code: 'CEO',
+    name_ar: 'المدير التنفيذي',
+    name_en: 'Chief Executive Officer',
+    description_ar: 'إدارة تشغيلية عليا وتنفيذ الاستراتيجيات العامة',
+    color_var: '#D97706',
+    is_system: 1,
+    is_active: 1,
+  },
+  {
+    id: 'cfg_role_csuite',
+    category: 'roles',
+    code: 'SUPER_ADMIN',
+    name_ar: 'مدير النظام العام',
+    name_en: 'System Administrator',
+    description_ar: 'إشراف عام وصلاحيات النظام المؤسسي',
+    color_var: '#B45309',
     is_system: 1,
     is_active: 1,
   },
@@ -54,10 +65,32 @@ const DEFAULT_CONFIG_SEEDS: Omit<SystemConfigurationRecord, 'created_at' | 'upda
     id: 'cfg_role_hr',
     category: 'roles',
     code: 'HR_MANAGER',
-    name_ar: 'مدير الموارد البشرية (HRD)',
+    name_ar: 'مدير الموارد البشرية',
     name_en: 'Human Resources Director',
-    description_ar: 'شؤون الموظفين، مسير الرواتب، التأمينات والامتثال العمالي',
+    description_ar: 'شؤون الموظفين، مسير الرواتب والتطوير الإداري',
     color_var: '#EBB34D',
+    is_system: 1,
+    is_active: 1,
+  },
+  {
+    id: 'cfg_role_cfo',
+    category: 'roles',
+    code: 'FINANCE_DIRECTOR',
+    name_ar: 'مدير مالي',
+    name_en: 'Finance Director',
+    description_ar: 'الحسابات العامة، الميزانيات والسيولة النقدية',
+    color_var: '#059669',
+    is_system: 1,
+    is_active: 1,
+  },
+  {
+    id: 'cfg_role_accountant',
+    category: 'roles',
+    code: 'ACCOUNTANT',
+    name_ar: 'محاسب عام',
+    name_en: 'General Accountant',
+    description_ar: 'قيود اليومية ومطابقة الحسابات والتقارير',
+    color_var: '#10B981',
     is_system: 1,
     is_active: 1,
   },
@@ -65,20 +98,20 @@ const DEFAULT_CONFIG_SEEDS: Omit<SystemConfigurationRecord, 'created_at' | 'upda
     id: 'cfg_role_projects',
     category: 'roles',
     code: 'PROJECTS_ENGINEER',
-    name_ar: 'مدير المكتب الفني والمشاريع',
-    name_en: 'Technical Office & Projects Director',
-    description_ar: 'إدارة مشاريع المقاولات، المستخلصات الفنية، والجدول الزمني',
+    name_ar: 'مهندس مكتب فني',
+    name_en: 'Technical Office Engineer',
+    description_ar: 'المستخلصات الفنية، التسعير وحصر الكميات',
     color_var: '#2563EB',
     is_system: 1,
     is_active: 1,
   },
   {
-    id: 'cfg_role_legal',
+    id: 'cfg_role_gov',
     category: 'roles',
-    code: 'LEGAL_COUNSEL',
-    name_ar: 'المستشار القانوني العام',
-    name_en: 'General Legal Counsel',
-    description_ar: 'العقود والاتفاقيات، التوكيلات، النزاعات القضائية والامتثال النظامي',
+    code: 'GOV_RELATIONS',
+    name_ar: 'مسؤول علاقات حكومية وتأمينات',
+    name_en: 'Government Relations & Insurance Officer',
+    description_ar: 'التأمينات الاجتماعية والجهات الحكومية والامتثال',
     color_var: '#7C3AED',
     is_system: 1,
     is_active: 1,
@@ -86,46 +119,24 @@ const DEFAULT_CONFIG_SEEDS: Omit<SystemConfigurationRecord, 'created_at' | 'upda
   {
     id: 'cfg_role_reception',
     category: 'roles',
-    code: 'RECEPTION_SECURITY',
-    name_ar: 'مسؤول الاستقبال والأمن المؤسسي',
-    name_en: 'Front Desk & Security Officer',
-    description_ar: 'إدارة البوابات والزوار الرقمي، قاعات الاجتماعات والطرود',
+    code: 'RECEPTIONIST',
+    name_ar: 'موظف استقبال',
+    name_en: 'Receptionist',
+    description_ar: 'إدارة الاستقبال وبوابة الزوار والاتصالات الإدارية',
     color_var: '#0D9488',
     is_system: 1,
     is_active: 1,
   },
 
-  // 2. Departments & Specializations (الأقسام والإدارات والتخصصات)
+  // 2. Departments & Specializations (الأقسام والإدارات القياسية النقية)
   {
-    id: 'cfg_dept_exec',
+    id: 'cfg_dept_top',
     category: 'departments',
     code: 'executive',
-    name_ar: 'الإدارة العليا والاستراتيجية',
-    name_en: 'Executive Management & Strategy',
-    description_ar: 'مجلس الإدارة، الرقابة العامة ومؤشرات الأداء',
+    name_ar: 'الإدارة العليا',
+    name_en: 'Executive Management',
+    description_ar: 'القيادة المؤسسية والتخطيط الاستراتيجي',
     color_var: '#D99B26',
-    is_system: 1,
-    is_active: 1,
-  },
-  {
-    id: 'cfg_dept_comp',
-    category: 'departments',
-    code: 'companies',
-    name_ar: 'إدارة الشركات والفروع',
-    name_en: 'Companies & Subsidiaries Management',
-    description_ar: 'حوكمة الشركات الشقيقة، التراخيص والسجلات التجارية والمفوضين',
-    color_var: '#D97706',
-    is_system: 1,
-    is_active: 1,
-  },
-  {
-    id: 'cfg_dept_fin',
-    category: 'departments',
-    code: 'finance',
-    name_ar: 'الشؤون المالية والخزينة',
-    name_en: 'Financial Affairs & Treasury',
-    description_ar: 'الأستاذ العام، سندات القبض والصرف، الضرائب ومحاسبة التكاليف',
-    color_var: '#059669',
     is_system: 1,
     is_active: 1,
   },
@@ -133,32 +144,32 @@ const DEFAULT_CONFIG_SEEDS: Omit<SystemConfigurationRecord, 'created_at' | 'upda
     id: 'cfg_dept_hr',
     category: 'departments',
     code: 'hr',
-    name_ar: 'إدارة الموارد البشرية (HRMS)',
-    name_en: 'Human Resources (HRMS)',
-    description_ar: 'إدارة المواهب، كشوف الأجور، الإجازات وتقييم الأداء',
+    name_ar: 'الموارد البشرية',
+    name_en: 'Human Resources',
+    description_ar: 'رأس المال البشري والشؤون الإدارية',
     color_var: '#EBB34D',
     is_system: 1,
     is_active: 1,
   },
   {
-    id: 'cfg_dept_eng',
+    id: 'cfg_dept_fin',
     category: 'departments',
-    code: 'engineering',
-    name_ar: 'المكتب الفني والمشاريع الإنشائية',
-    name_en: 'Technical Office & Construction Projects',
-    description_ar: 'التسعير، حصر الكميات، ومتابعة تنفيذ المواقع الميدانية',
-    color_var: '#2563EB',
+    code: 'finance',
+    name_ar: 'الشؤون المالية',
+    name_en: 'Financial Affairs',
+    description_ar: 'الإدارة المالية والمحاسبة والخزينة',
+    color_var: '#059669',
     is_system: 1,
     is_active: 1,
   },
   {
-    id: 'cfg_dept_cts',
+    id: 'cfg_dept_projects',
     category: 'departments',
-    code: 'cts',
-    name_ar: 'الصادر والوارد والاتصالات الإدارية (CTS)',
-    name_en: 'Correspondence Tracking (CTS)',
-    description_ar: 'أرشفة الخطابات، المعاملات السرية والبريد الرسمي',
-    color_var: '#0284C7',
+    code: 'engineering',
+    name_ar: 'المكتب الفني والمشاريع',
+    name_en: 'Technical Office & Projects',
+    description_ar: 'الدراسات الهندسية وتنفيذ المشاريع',
+    color_var: '#2563EB',
     is_system: 1,
     is_active: 1,
   },
@@ -166,42 +177,42 @@ const DEFAULT_CONFIG_SEEDS: Omit<SystemConfigurationRecord, 'created_at' | 'upda
     id: 'cfg_dept_legal',
     category: 'departments',
     code: 'legal',
-    name_ar: 'الشؤون القانونية والتوثيق',
-    name_en: 'Legal Affairs & Compliance',
-    description_ar: 'العقود والاتفاقيات والتوكيلات ومتابعة القضايا',
+    name_ar: 'الشؤون القانونية',
+    name_en: 'Legal Affairs',
+    description_ar: 'الحوكمة القانونية والتوثيق والنزاعات',
     color_var: '#7C3AED',
     is_system: 1,
     is_active: 1,
   },
   {
-    id: 'cfg_dept_ins',
+    id: 'cfg_dept_it',
     category: 'departments',
-    code: 'insurance',
-    name_ar: 'التأمينات الاجتماعية والامتثال',
-    name_en: 'Social Insurance & Compliance',
-    description_ar: 'نماذج س1 وس2 والمستحقات والاشتراكات التأمينية',
-    color_var: '#4F46E5',
+    code: 'it',
+    name_ar: 'تكنولوجيا المعلومات',
+    name_en: 'Information Technology',
+    description_ar: 'البنية التقنية والأنظمة الرقمية والأمن السيبراني',
+    color_var: '#0284C7',
     is_system: 1,
     is_active: 1,
   },
   {
-    id: 'cfg_dept_ats',
+    id: 'cfg_dept_proc',
     category: 'departments',
-    code: 'ats',
-    name_ar: 'استقطاب الكفاءات والتوظيف (ATS)',
-    name_en: 'Talent Acquisition (ATS)',
-    description_ar: 'بوابة التوظيف وفرز السير الذاتية والمقابلات',
-    color_var: '#EA580C',
+    code: 'procurement',
+    name_ar: 'المشتريات والتعاقدات',
+    name_en: 'Procurement & Contracts',
+    description_ar: 'سلاسل الإمداد ومناقصات الموردين',
+    color_var: '#D97706',
     is_system: 1,
     is_active: 1,
   },
   {
-    id: 'cfg_dept_rec',
+    id: 'cfg_dept_pr',
     category: 'departments',
     code: 'reception',
-    name_ar: 'الاستقبال وضبط البوابات',
-    name_en: 'Front Desk & Gate Control',
-    description_ar: 'سجل الزوار اليومي، بطاقات الدخول وتصاريح الموقع',
+    name_ar: 'العلاقات العامة والاستقبال',
+    name_en: 'Public Relations & Reception',
+    description_ar: 'إدارة المراسم والضيافة والزوار',
     color_var: '#0D9488',
     is_system: 1,
     is_active: 1,
@@ -398,31 +409,36 @@ export async function ensureConfigurationSchema(db: D1Database): Promise<void> {
       db.prepare(`CREATE INDEX IF NOT EXISTS idx_sys_cfg_code ON system_configurations(category, code)`)
     ]);
 
-    // Check if table is empty, seed defaults
-    const countRow = await db.prepare(`SELECT COUNT(*) as count FROM system_configurations`).first<{ count: number }>();
-    if (!countRow || countRow.count === 0) {
-      const stmts = DEFAULT_CONFIG_SEEDS.map(seed =>
-        db.prepare(`
-          INSERT INTO system_configurations (
-            id, category, code, name_ar, name_en, description_ar, color_var, is_system, is_active
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `).bind(
-          seed.id,
-          seed.category,
-          seed.code,
-          seed.name_ar,
-          seed.name_en || null,
-          seed.description_ar || null,
-          seed.color_var || null,
-          seed.is_system || 0,
-          seed.is_active !== undefined ? seed.is_active : 1
-        )
-      );
+    // Ensure and sync default system seeds
+    const stmts = DEFAULT_CONFIG_SEEDS.map(seed =>
+      db.prepare(`
+        INSERT INTO system_configurations (
+          id, category, code, name_ar, name_en, description_ar, color_var, is_system, is_active
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET
+          category = excluded.category,
+          code = excluded.code,
+          name_ar = excluded.name_ar,
+          name_en = excluded.name_en,
+          description_ar = excluded.description_ar,
+          color_var = excluded.color_var
+        WHERE system_configurations.is_system = 1
+      `).bind(
+        seed.id,
+        seed.category,
+        seed.code,
+        seed.name_ar,
+        seed.name_en || null,
+        seed.description_ar || null,
+        seed.color_var || null,
+        seed.is_system || 0,
+        seed.is_active !== undefined ? seed.is_active : 1
+      )
+    );
 
-      // Execute in batches of 10
-      for (let i = 0; i < stmts.length; i += 10) {
-        await db.batch(stmts.slice(i, i + 10));
-      }
+    // Execute in batches of 10
+    for (let i = 0; i < stmts.length; i += 10) {
+      await db.batch(stmts.slice(i, i + 10));
     }
   } catch (err) {
     console.warn('[ensureConfigurationSchema] Schema auto-init notice:', err);

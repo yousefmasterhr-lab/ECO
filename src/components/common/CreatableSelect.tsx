@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useLanguage } from '../../context/LanguageContext';
 import { d1Client } from '../../services/d1Client';
+import { departmentStorage } from '../modules/companies/departmentStorage';
 import { ConfigurationCategory, SystemConfigurationItem } from '../../types/configurations';
 import {
   ChevronDown,
@@ -35,6 +36,13 @@ interface CreatableSelectProps {
   onCreateOption?: (newItem: SystemConfigurationItem) => void;
 }
 
+function cleanTitle(text: string): string {
+  if (!text) return '';
+  return text
+    .replace(/\s*\((?:HRMS|ATS|CTS|CFO|HRD|C-Suite)\)/gi, '')
+    .trim();
+}
+
 export const CreatableSelect: React.FC<CreatableSelectProps> = ({
   category,
   value,
@@ -58,24 +66,57 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
   const [isCreating, setIsCreating] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Load options from Cloudflare D1 for this category
+  // Load options from Cloudflare D1 and sync with departmentStorage when category is departments
   useEffect(() => {
     let isMounted = true;
     const load = async () => {
       setIsLoading(true);
       try {
         const configs = await d1Client.fetchConfigurations(category);
-        if (isMounted && configs.length > 0) {
-          const mapped: CreatableSelectOption[] = configs.map(c => ({
+        let mapped: CreatableSelectOption[] = [];
+
+        if (configs && configs.length > 0) {
+          mapped = configs.map(c => ({
             id: c.id,
-            value: c.code || c.id,
-            labelAr: c.nameAr,
+            value: cleanTitle(c.nameAr) || c.code || c.id,
+            labelAr: cleanTitle(c.nameAr),
             labelEn: c.nameEn,
             descriptionAr: c.descriptionAr,
             colorVar: c.colorVar,
             isSystem: c.isSystem,
           }));
-          setInternalOptions(mapped);
+        }
+
+        // If category is departments, dynamically merge real departments from departmentStorage
+        if (category === 'departments') {
+          try {
+            const orgDepts = await departmentStorage.getDepartments();
+            if (orgDepts && orgDepts.length > 0) {
+              const deptOpts: CreatableSelectOption[] = orgDepts.map(d => ({
+                id: d.id,
+                value: cleanTitle(d.nameAr),
+                labelAr: cleanTitle(d.nameAr),
+                descriptionAr: d.responsibilities,
+                colorVar: '#2563EB',
+                isSystem: false,
+              }));
+              mapped = [...mapped, ...deptOpts];
+            }
+          } catch (deptErr) {
+            console.warn('[CreatableSelect] Could not load org departments:', deptErr);
+          }
+        }
+
+        if (isMounted) {
+          // Deduplicate by clean labelAr
+          const uniqueMap = new Map<string, CreatableSelectOption>();
+          mapped.forEach(item => {
+            const key = item.labelAr.toLowerCase().trim();
+            if (key && !uniqueMap.has(key)) {
+              uniqueMap.set(key, item);
+            }
+          });
+          setInternalOptions(Array.from(uniqueMap.values()));
         }
       } catch (e) {
         console.warn(`[CreatableSelect] Error loading ${category}:`, e);
@@ -90,13 +131,20 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
     };
   }, [category]);
 
-  // Combine external and internal options (deduplicating by value)
+  // Combine external and internal options (deduplicating by clean labelAr / value)
   const allOptions = useMemo(() => {
     const combined = [...(externalOptions || []), ...internalOptions];
     const map = new Map<string, CreatableSelectOption>();
     combined.forEach(opt => {
-      if (!map.has(opt.value)) {
-        map.set(opt.value, opt);
+      const cleanLabel = cleanTitle(opt.labelAr);
+      const optClean: CreatableSelectOption = {
+        ...opt,
+        labelAr: cleanLabel,
+        value: cleanLabel || opt.value,
+      };
+      const key = cleanLabel.toLowerCase().trim() || opt.value.toLowerCase().trim();
+      if (key && !map.has(key)) {
+        map.set(key, optClean);
       }
     });
     return Array.from(map.values());
@@ -313,7 +361,7 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
                         <span className="block truncate">
                           {isRtl ? option.labelAr : (option.labelEn || option.labelAr)}
                         </span>
-                        {option.descriptionAr && (
+                        {option.descriptionAr && category !== 'departments' && category !== 'roles' && (
                           <span className="text-[10px] text-slate-400 dark:text-[#8FA392] truncate block opacity-80">
                             {option.descriptionAr}
                           </span>
