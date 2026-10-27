@@ -14,7 +14,7 @@ import {
   Shield
 } from 'lucide-react';
 import { EcoOfficialLogo } from '../common/EcoOfficialLogo';
-import { hasModuleAccess } from '../../types/rbac';
+import { canViewModule, canViewSubModule } from '../../types/rbac';
 
 export const Sidebar: React.FC = () => {
   const { isRtl, t } = useLanguage();
@@ -30,7 +30,21 @@ export const Sidebar: React.FC = () => {
   } = useNavigation();
 
   const visibleCategories = React.useMemo(() => {
-    return (categories || []).filter(category => hasModuleAccess(user, category.id));
+    if (!user) return [];
+    return (categories || [])
+      .map(category => {
+        if (!canViewModule(user, category.id)) {
+          return { ...category, subItems: [] };
+        }
+        const allowedSubItems = (category.subItems || []).filter(sub =>
+          canViewSubModule(user, sub.id)
+        );
+        return {
+          ...category,
+          subItems: allowedSubItems,
+        };
+      })
+      .filter(category => category.subItems.length > 0);
   }, [categories, user]);
 
   const sidebarWidth = isCollapsed ? 'w-[72px] min-w-[72px] max-w-[72px]' : 'w-72 min-w-72 max-w-72';

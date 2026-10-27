@@ -6,7 +6,12 @@ import { ManagedUser, UserRole, ROLE_CONFIGURATIONS } from '../../../types/auth'
 import { CreatableSelect } from '../../common/CreatableSelect';
 import { hrStorage } from '../../../services/hrStorage';
 import { UserPermissionsModal } from '../auth/UserPermissionsModal';
-import { cleanArabicTitle, dispatchPermissionsUpdate } from '../../../types/rbac';
+import {
+  cleanArabicTitle,
+  dispatchPermissionsUpdate,
+  isSuperAdminUser,
+  sanitizeUserPermissions,
+} from '../../../types/rbac';
 import {
   Users,
   UserPlus,
@@ -82,6 +87,7 @@ export const UserManagementView: React.FC = () => {
     addManagedUser,
     updateManagedUser,
     deleteManagedUser,
+    refreshCurrentUserPermissions,
     auditLogs
   } = useAuth();
 
@@ -283,6 +289,7 @@ export const UserManagementView: React.FC = () => {
         return;
       }
 
+      const initialPerms = effectiveRole === 'SUPER_ADMIN' ? ['*'] : [];
       const created = addManagedUser({
         nameAr: nameAr.trim(),
         nameEn: nameEn.trim() || username.trim(),
@@ -303,12 +310,20 @@ export const UserManagementView: React.FC = () => {
         clearanceNameEn: roleCfg.clearanceNameEn,
         status: 'ACTIVE',
         passwordHash: password,
+        permissions: initialPerms,
+        customPermissions: initialPerms,
         allowedCompanyIds: allowedCompanyIds.length > 0 ? allowedCompanyIds : ['all'],
       });
 
+      refreshCurrentUserPermissions(initialPerms, created.id);
+      window.dispatchEvent(
+        new CustomEvent('eco-rbac-updated', {
+          detail: { userId: created.id, permissions: initialPerms },
+        })
+      );
       dispatchPermissionsUpdate({
         userId: created.id,
-        permissions: created.permissions || created.customPermissions || [],
+        permissions: initialPerms,
         user: created,
       });
 
@@ -318,6 +333,10 @@ export const UserManagementView: React.FC = () => {
         resetForm();
       }, 700);
     } else if (modalMode === 'EDIT' && selectedUser) {
+      const preservedPerms = sanitizeUserPermissions(
+        selectedUser.permissions || selectedUser.customPermissions || [],
+        isSuperAdminUser(selectedUser) || effectiveRole === 'SUPER_ADMIN'
+      );
       const updatedFields = {
         nameAr: nameAr.trim(),
         nameEn: nameEn.trim() || selectedUser.nameEn,
@@ -334,14 +353,21 @@ export const UserManagementView: React.FC = () => {
         roleLabelAr: cleanArabicTitle(roleLabelAr || selectedUser.jobTitleAr || selectedUser.roleLabelAr),
         roleLabelEn: roleCfg.titleEn,
         passwordHash: password || selectedUser.passwordHash,
+        permissions: preservedPerms,
+        customPermissions: preservedPerms,
         allowedCompanyIds: allowedCompanyIds.length > 0 ? allowedCompanyIds : ['all'],
       };
 
       updateManagedUser(selectedUser.id, updatedFields);
-
+      refreshCurrentUserPermissions(preservedPerms, selectedUser.id);
+      window.dispatchEvent(
+        new CustomEvent('eco-rbac-updated', {
+          detail: { userId: selectedUser.id, permissions: preservedPerms },
+        })
+      );
       dispatchPermissionsUpdate({
         userId: selectedUser.id,
-        permissions: selectedUser.permissions || selectedUser.customPermissions || [],
+        permissions: preservedPerms,
         user: { ...selectedUser, ...updatedFields },
       });
 

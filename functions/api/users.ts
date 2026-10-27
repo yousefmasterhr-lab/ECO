@@ -88,10 +88,21 @@ async function ensureUserSchema(db: any) {
     `).run();
 
     const isInitialized = await db.prepare(
-      `SELECT flag_key FROM system_init_flags WHERE flag_key = 'init_users_governance_v4' LIMIT 1`
+      `SELECT flag_key FROM system_init_flags WHERE flag_key = 'init_users_governance_v5_strict_rbac' LIMIT 1`
     ).first();
 
     if (!isInitialized) {
+      await db.prepare(`
+        CREATE TABLE IF NOT EXISTS rbac_matrices (
+          target_type TEXT,
+          target_id TEXT,
+          permissions_json TEXT,
+          updated_by TEXT,
+          updated_at TEXT,
+          PRIMARY KEY (target_type, target_id)
+        )
+      `).run().catch(() => null);
+
       // Ensure root administrator Yousef Hegazy exists
       const rootUser = await db.prepare(`SELECT id FROM users WHERE id = 'usr_root_csuite_01' OR username = 'admin' LIMIT 1`).first();
       if (!rootUser) {
@@ -103,15 +114,17 @@ async function ensureUserSchema(db: any) {
             'usr_root_csuite_01', '', 'يوسف حجازي', 'admin', 'admin@hrsup.com',
             '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', 'SUPER_ADMIN',
             'الإدارة العليا والاستراتيجية', 'مدير النظام العام / رئيس مجلس الإدارة', '+20 100 000 0000',
-            4, 1, ?, '["all"]'
+            4, 1, '["*"]', '["all"]'
           )
-        `).bind(JSON.stringify(ALL_COMPANY_PERMS)).run();
+        `).run();
       }
 
-      // Check if Taghreed Atef exists, insert only if absent
-      const taghreedUser = await db.prepare(
-        `SELECT id FROM users WHERE id = 'usr_hr_taghreed_01' OR email = 'taghreed@hrsup.com' OR username = 'taghreed' LIMIT 1`
+      // Check if Taghreed Atef exists, insert or sanitize her stale wildcard permissions once
+      const taghreedUser: any = await db.prepare(
+        `SELECT id, permissions_json FROM users WHERE id = 'usr_hr_taghreed_01' OR email = 'taghreed@hrsup.com' OR username = 'taghreed' LIMIT 1`
       ).first();
+
+      const taghreedStrictPerms = JSON.stringify(['companies.directory.view', 'companies.licenses.view']);
 
       if (!taghreedUser) {
         await db.prepare(`
@@ -122,10 +135,29 @@ async function ensureUserSchema(db: any) {
             'usr_hr_taghreed_01', '', 'تغريد عاطف', 'taghreed', 'taghreed@hrsup.com',
             '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', 'HR_MANAGER',
             'إدارة الموارد البشرية والرواتب', 'مدير الموارد البشرية', '+20 100 000 0001',
-            3, 1, '["companies.directory.view", "companies.licenses.view"]', '["comp_01"]'
+            3, 1, ?, '["comp_01"]'
           )
-        `).run();
+        `).bind(taghreedStrictPerms).run();
+      } else {
+        // Strip legacy 'hr.*', 'ats.*' wildcards from Taghreed's user row & rbac_matrices
+        await db.prepare(`
+          UPDATE users SET permissions_json = ? WHERE id = ?
+        `).bind(taghreedStrictPerms, taghreedUser.id).run().catch(() => null);
       }
+
+      await db.prepare(`
+        INSERT INTO rbac_matrices (target_type, target_id, permissions_json, updated_by, updated_at)
+        VALUES ('user', ?, ?, 'System Governance v5', CURRENT_TIMESTAMP)
+        ON CONFLICT(target_type, target_id) DO UPDATE SET
+          permissions_json = excluded.permissions_json,
+          updated_by = excluded.updated_by,
+          updated_at = CURRENT_TIMESTAMP
+      `).bind(taghreedUser?.id || 'usr_hr_taghreed_01', taghreedStrictPerms).run().catch(() => null);
+
+      // Remove any non-admin role fallback templates from rbac_matrices
+      await db.prepare(`
+        DELETE FROM rbac_matrices WHERE target_type = 'role' AND target_id != 'SUPER_ADMIN'
+      `).run().catch(() => null);
 
       // Clean up legacy titles in users table (strip technical tags like HRMS, CFO, C-Suite and fix typos)
       await db.prepare(`
@@ -135,8 +167,8 @@ async function ensureUserSchema(db: any) {
         WHERE job_title LIKE '%(%' OR job_title LIKE '%موادر%' OR department LIKE '%موادر%'
       `).run().catch(() => null);
 
-      // Record flag so this never runs again and user modifications are 100% persistent
-      await db.prepare(`INSERT OR IGNORE INTO system_init_flags (flag_key) VALUES ('init_users_governance_v4')`).run();
+      // Record flag so this never runs again and user modifications are 100% persistent across F5 refreshes
+      await db.prepare(`INSERT OR IGNORE INTO system_init_flags (flag_key) VALUES ('init_users_governance_v5_strict_rbac')`).run();
     }
   } catch (err) {
     console.warn('User schema verification notice:', err);
@@ -159,18 +191,41 @@ export const onRequestGet: PagesFunction = async (context) => {
        ORDER BY created_at DESC`
     ).all();
 
+    // Also load user-specific RBAC matrices to ensure single source of truth
+    const userMatrixMap = new Map<string, string[]>();
+    try {
+      const matRes = await env.DB.prepare(
+        `SELECT target_id, permissions_json FROM rbac_matrices WHERE target_type = 'user'`
+      ).all();
+      (matRes.results || []).forEach((m: any) => {
+        if (m.target_id && m.permissions_json) {
+          try {
+            const parsed = JSON.parse(m.permissions_json);
+            if (Array.isArray(parsed)) {
+              userMatrixMap.set(m.target_id, parsed);
+            }
+          } catch {}
+        }
+      });
+    } catch {}
+
     const users = (result.results || []).map((row: any) => {
-      const isSuper = row.role_id === 'SUPER_ADMIN' || row.id === 'usr_root_csuite_01';
+      const isSuper = row.role_id === 'SUPER_ADMIN' || row.id === 'usr_root_csuite_01' || row.username === 'admin';
       let perms: string[] = [];
       try {
-        if (row.permissions_json) {
+        if (userMatrixMap.has(row.id)) {
+          perms = userMatrixMap.get(row.id)!;
+        } else if (row.permissions_json) {
           perms = JSON.parse(row.permissions_json);
         }
       } catch {
         perms = [];
       }
-      if (isSuper && perms.length === 0) {
-        perms = [...ALL_COMPANY_PERMS];
+      if (isSuper) {
+        perms = ['*'];
+      } else {
+        // Strict Deny-By-Default: strip any wildcard entries ('*', 'hr.*', 'ats.*') from non-admin users
+        perms = Array.isArray(perms) ? perms.filter((k: any) => typeof k === 'string' && !k.includes('*')) : [];
       }
 
       let allowedCompanyIds: string[] = ['all'];
@@ -466,8 +521,22 @@ export const onRequestPut: PagesFunction = async (context) => {
     const isActive = body.status !== undefined ? (body.status === 'ACTIVE' ? 1 : 0) : targetUser.is_active;
 
     let permissionsJson = targetUser.permissions_json;
+    const isSuperTarget = roleId === 'SUPER_ADMIN' || body.id === 'usr_root_csuite_01';
     if (Array.isArray(body.permissions)) {
-      permissionsJson = JSON.stringify(body.permissions);
+      const cleanPerms = isSuperTarget
+        ? ['*']
+        : body.permissions.filter((k: any) => typeof k === 'string' && !k.includes('*'));
+      permissionsJson = JSON.stringify(cleanPerms);
+
+      // Keep rbac_matrices in atomic sync whenever user permissions are updated via PUT /api/users
+      await env.DB.prepare(`
+        INSERT INTO rbac_matrices (target_type, target_id, permissions_json, updated_by, updated_at)
+        VALUES ('user', ?, ?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(target_type, target_id) DO UPDATE SET
+          permissions_json = excluded.permissions_json,
+          updated_by = excluded.updated_by,
+          updated_at = CURRENT_TIMESTAMP
+      `).bind(body.id, permissionsJson, fullName || 'مدير النظام').run().catch(() => null);
     }
 
     let allowedCompanyIdsJson = targetUser.allowed_company_ids || '["all"]';

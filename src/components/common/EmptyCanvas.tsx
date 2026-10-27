@@ -17,7 +17,7 @@ import { useAuth } from '../../context/AuthContext';
 import { branchStorage } from '../modules/companies/branchStorage';
 import { licenseStorage } from '../modules/companies/licenseStorage';
 import { signatoryStorage } from '../modules/companies/signatoryStorage';
-import { SUBMODULE_VIEW_PERMISSION_MAP, cleanArabicTitle, hasModuleAccess } from '../../types/rbac';
+import { cleanArabicTitle, canViewModule, canViewSubModule } from '../../types/rbac';
 import {
   HardHat,
   Scale,
@@ -133,26 +133,23 @@ export const EmptyCanvas: React.FC = () => {
   const { categories, activeCategoryId, activeSubItemId, selectItem, currentUser } = useNavigation();
   const { summary: finSummary, costCenters: finCostCenters } = useFinancial();
   const { stats: hrStats, employees } = useHR();
-  const { user, managedUsers, checkModuleAccess, hasPermission } = useAuth();
+  const { user, managedUsers, checkModuleAccess } = useAuth();
 
   const visibleCards = useMemo(() => {
-    if (!categories) return [];
-    const activeUser = user || currentUser;
+    if (!categories || !user) return [];
     return categories
-      .filter(cat => hasModuleAccess(activeUser, cat.id))
+      .filter(cat => canViewModule(user, cat.id))
       .map(cat => {
-        const authorizedSubItems = cat.subItems.filter(sub => {
-          const permKey = SUBMODULE_VIEW_PERMISSION_MAP[sub.id];
-          if (!permKey) return hasPermission(`${cat.id}.*`) || hasPermission(`${cat.id}.view`);
-          return hasPermission(permKey);
-        });
+        const authorizedSubItems = cat.subItems.filter(sub =>
+          canViewSubModule(user, sub.id)
+        );
         return {
           ...cat,
           authorizedSubItems,
         };
       })
       .filter(cat => cat.authorizedSubItems.length > 0);
-  }, [categories, user, currentUser, hasPermission]);
+  }, [categories, user]);
 
   const displayCategories = visibleCards;
 
@@ -485,31 +482,31 @@ export const EmptyCanvas: React.FC = () => {
     );
   }
 
-  // Helper to construct smart live micro-KPIs for each module card
+  // Helper to construct smart live micro-KPIs for each module card (Strictly Brand Amber & Slate Palette)
   const getModuleKpis = (catId: string) => {
     switch (catId) {
       case 'executive':
         return [
-          { label: isRtl ? 'المخاطر' : 'Risks', value: isRtl ? '0 مخاطر' : '0 Risks', color: 'text-emerald-600 dark:text-emerald-400 font-bold' },
+          { label: isRtl ? 'المخاطر' : 'Risks', value: isRtl ? '0 مخاطر' : '0 Risks', color: 'text-slate-900 dark:text-white font-bold' },
           { label: isRtl ? 'المؤشرات' : 'KPIs', value: isRtl ? '0 مؤشرات' : '0 KPIs', color: 'text-amber-600 dark:text-[#EBB34D] font-bold' },
-          { label: isRtl ? 'الحالة' : 'Status', value: isRtl ? 'نشط' : 'Active', color: 'text-emerald-600 dark:text-emerald-400 font-bold' },
+          { label: isRtl ? 'الحالة' : 'Status', value: isRtl ? 'نشط' : 'Active', color: 'text-amber-600 dark:text-[#EBB34D] font-bold' },
         ];
       case 'companies':
         return [
           { label: isRtl ? 'الشركات' : 'Entities', value: `${companies.length} ${isRtl ? 'مسجلة' : 'Total'}`, color: 'text-amber-600 dark:text-[#EBB34D] font-bold' },
           { label: isRtl ? 'الفروع' : 'Branches', value: `${branchesCount} ${isRtl ? 'فرع' : 'Sites'}`, color: 'text-slate-900 dark:text-white font-bold' },
-          { label: isRtl ? 'التراخيص' : 'Licenses', value: `${licensesCount} ${isRtl ? 'وثيقة' : 'Docs'}`, color: 'text-emerald-600 dark:text-emerald-400 font-bold' },
+          { label: isRtl ? 'التراخيص' : 'Licenses', value: `${licensesCount} ${isRtl ? 'وثيقة' : 'Docs'}`, color: 'text-amber-700 dark:text-amber-300 font-bold' },
         ];
       case 'finance':
         return [
           { label: isRtl ? 'الحسابات' : 'Accounts', value: `${finSummary?.totalAccounts || 0}`, color: 'text-amber-600 dark:text-[#EBB34D] font-bold' },
           { label: isRtl ? 'مراكز التكلفة' : 'Cost Centers', value: `${finCostCenters.length || 0}`, color: 'text-slate-900 dark:text-white font-bold' },
-          { label: isRtl ? 'حالة الدليل' : 'GL State', value: isRtl ? 'متزن' : 'Balanced', color: 'text-emerald-600 dark:text-emerald-400 font-bold' },
+          { label: isRtl ? 'حالة الدليل' : 'GL State', value: isRtl ? 'متزن' : 'Balanced', color: 'text-amber-700 dark:text-amber-300 font-bold' },
         ];
       case 'hr':
         return [
           { label: isRtl ? 'قوة العمل' : 'Staff', value: `${totalEmployeesCount}`, color: 'text-amber-600 dark:text-[#EBB34D] font-bold' },
-          { label: isRtl ? 'الحضور' : 'Attendance', value: `${totalEmployeesCount > 0 ? (hrStats?.attendanceTodayRate ?? 0) : 0}%`, color: 'text-emerald-600 dark:text-emerald-400 font-bold' },
+          { label: isRtl ? 'الحضور' : 'Attendance', value: `${totalEmployeesCount > 0 ? (hrStats?.attendanceTodayRate ?? 0) : 0}%`, color: 'text-slate-900 dark:text-white font-bold' },
           { label: isRtl ? 'الإجازات' : 'Leaves', value: `${hrStats?.onLeaveCount || 0} ${isRtl ? 'طلبات' : 'Req'}`, color: 'text-slate-700 dark:text-[#8FA392] font-bold' },
         ];
       case 'engineering':
@@ -527,14 +524,14 @@ export const EmptyCanvas: React.FC = () => {
       case 'legal':
         return [
           { label: isRtl ? 'العقود' : 'Contracts', value: isRtl ? '0 عقد' : '0 Contracts', color: 'text-slate-900 dark:text-white font-bold' },
-          { label: isRtl ? 'النزاعات' : 'Disputes', value: isRtl ? '0' : '0 Cases', color: 'text-emerald-600 dark:text-emerald-400 font-bold' },
+          { label: isRtl ? 'النزاعات' : 'Disputes', value: isRtl ? '0' : '0 Cases', color: 'text-slate-700 dark:text-[#8FA392] font-bold' },
           { label: isRtl ? 'التوكيلات' : 'POAs', value: `${signatoriesCount} ${isRtl ? 'توكيل' : 'POAs'}`, color: 'text-amber-600 dark:text-[#EBB34D] font-bold' },
         ];
       case 'insurance':
         return [
           { label: isRtl ? 'المؤمن عليهم' : 'Insured', value: `${totalEmployeesCount}`, color: 'text-amber-600 dark:text-[#EBB34D] font-bold' },
           { label: isRtl ? 'النماذج' : 'Forms', value: isRtl ? '0 استمارات' : '0 Forms', color: 'text-slate-900 dark:text-white font-bold' },
-          { label: isRtl ? 'الامتثال' : 'Audit', value: isRtl ? 'جاهز' : 'Compliant', color: 'text-emerald-600 dark:text-emerald-400 font-bold' },
+          { label: isRtl ? 'الامتثال' : 'Audit', value: isRtl ? 'جاهز' : 'Compliant', color: 'text-amber-700 dark:text-amber-300 font-bold' },
         ];
       case 'ats':
         return [
@@ -558,11 +555,11 @@ export const EmptyCanvas: React.FC = () => {
         return [
           { label: isRtl ? 'المستخدمون' : 'Users', value: `${usersCount} ${isRtl ? 'مستخدم' : 'Users'}`, color: 'text-amber-600 dark:text-[#EBB34D] font-bold' },
           { label: isRtl ? 'الأدوار' : 'Roles', value: `${rolesCount} ${isRtl ? 'أدوار' : 'Roles'}`, color: 'text-slate-900 dark:text-white font-bold' },
-          { label: isRtl ? 'قواعد SQL' : 'SQL Fleet', value: isRtl ? 'متصلة' : 'Online', color: 'text-emerald-600 dark:text-emerald-400 font-bold' },
+          { label: isRtl ? 'قواعد SQL' : 'SQL Fleet', value: isRtl ? 'متصلة' : 'Online', color: 'text-amber-700 dark:text-amber-300 font-bold' },
         ];
       default:
         return [
-          { label: isRtl ? 'الحالة' : 'Status', value: isRtl ? 'نشط' : 'Active', color: 'text-emerald-600 dark:text-emerald-400 font-bold' },
+          { label: isRtl ? 'الحالة' : 'Status', value: isRtl ? 'نشط' : 'Active', color: 'text-amber-600 dark:text-[#EBB34D] font-bold' },
           { label: isRtl ? 'الخدمات' : 'Services', value: 'جاهز', color: 'text-amber-600 dark:text-[#EBB34D] font-bold' },
           { label: isRtl ? 'الربط' : 'Link', value: isRtl ? 'مباشر' : 'Live', color: 'text-slate-900 dark:text-white font-bold' },
         ];
@@ -698,7 +695,9 @@ export const EmptyCanvas: React.FC = () => {
         </div>
 
         <span className="px-3 py-1 rounded-full bg-[#F3EFE6] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] text-xs font-bold font-mono text-[#D99B26] dark:text-[#EBB34D] shadow-2xs">
-          {visibleCards.length} {t('منظومات متصلة', 'Connected Suites')}
+          {visibleCards.length === 1
+            ? t('1 منظومة متصلة', '1 Connected Suite')
+            : `${visibleCards.length} ${t('منظومات متصلة', 'Connected Suites')}`}
         </span>
       </div>
 
@@ -711,8 +710,7 @@ export const EmptyCanvas: React.FC = () => {
       >
         {displayCategories.map(cat => {
           const Icon = ICON_MAP[cat.iconName] || CircleDot;
-          const title = isRtl ? cat.titleAr : cat.titleEn;
-          const badge = isRtl ? cat.badgeAr : cat.badgeEn;
+          const title = isRtl ? cleanArabicTitle(cat.titleAr) : cat.titleEn;
           const descObj = MODULE_DESCRIPTIONS[cat.id];
           const description = descObj ? (isRtl ? descObj.ar : descObj.en) : (isRtl ? 'المنظومة التشغيلية المتكاملة' : 'Integrated operational suite');
           const kpis = getModuleKpis(cat.id);
@@ -730,22 +728,14 @@ export const EmptyCanvas: React.FC = () => {
               <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none bg-[radial-gradient(circle_at_top,rgba(217,155,38,0.14),transparent_70%)]" />
 
               <div>
-                {/* Top Bar of Card: Brand Amber Frosted Glass Icon + Amber Badge */}
+                {/* Top Bar of Card: Brand Amber Frosted Glass Icon (Redundant mixed badges removed) */}
                 <div className="flex items-center justify-between gap-2 mb-3.5">
                   <div className="flex items-center gap-2.5">
                     <div
-                      className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 border border-amber-500/25 bg-amber-500/10 text-amber-600 dark:text-amber-400 transition-transform duration-300 group-hover:scale-108 shadow-xs"
+                      className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 border border-amber-500/20 bg-amber-500/10 text-amber-800 dark:text-amber-300 transition-transform duration-300 group-hover:scale-108 shadow-xs"
                     >
                       <Icon className="w-5 h-5" />
                     </div>
-
-                    {badge && (
-                      <span
-                        className="text-[11px] font-bold px-2.5 py-1 rounded-full border border-amber-500/25 bg-amber-500/10 text-amber-700 dark:text-amber-300 shadow-2xs"
-                      >
-                        {badge}
-                      </span>
-                    )}
                   </div>
                 </div>
 

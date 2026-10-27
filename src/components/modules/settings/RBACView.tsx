@@ -8,6 +8,9 @@ import {
   ERP_MODULES_MATRIX_CONFIG,
   ALL_12_ERP_MODULES,
   SubModuleMatrixRow,
+  isSuperAdminUser,
+  sanitizeUserPermissions,
+  dispatchPermissionsUpdate,
 } from '../../../types/rbac';
 import { UserRole } from '../../../types/auth';
 import { d1Client } from '../../../services/d1Client';
@@ -73,7 +76,13 @@ const EXECUTIVE_ROLES: ExecutiveRoleOption[] = [
 
 export const RBACView: React.FC = () => {
   const { isRtl, t } = useLanguage();
-  const { user, managedUsers, updateUserPermissions, logAuditEvent } = useAuth();
+  const {
+    user,
+    managedUsers,
+    updateUserPermissions,
+    refreshCurrentUserPermissions,
+    logAuditEvent,
+  } = useAuth();
 
   // Mode: Per User vs. Per Role
   const [targetType, setTargetType] = useState<'user' | 'role'>('user');
@@ -96,96 +105,105 @@ export const RBACView: React.FC = () => {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // In-memory permissions dictionary:
-  // Key: either `user:<userId>` or `role:<roleName>` -> Set of granted permission strings
-  const [permissionsRepo, setPermissionsRepo] = useState<Record<string, Set<string>>>(() => {
-    const repo: Record<string, Set<string>> = {};
-
-    // 1. Collect all valid system permission keys across all 12 modules
-    const allSystemKeys: string[] = [];
+  // All valid system permission keys across all 12 modules (used ONLY for Super Admin)
+  const allSystemKeys = useMemo(() => {
+    const keys: string[] = [];
     ALL_12_ERP_MODULES.forEach(m => {
       m.subModules.forEach(s => {
         Object.values(s.actions).forEach(a => {
-          if (a?.key) allSystemKeys.push(a.key);
+          if (a?.key) keys.push(a.key);
         });
       });
     });
+    return keys;
+  }, []);
 
-    // 2. Pre-populate role defaults
+  // In-memory permissions dictionary (Strict Deny-By-Default: ZERO non-admin role/department templates)
+  const [permissionsRepo, setPermissionsRepo] = useState<Record<string, Set<string>>>(() => {
+    const repo: Record<string, Set<string>> = {};
+
+    // Super Admin gets all keys; all non-admin roles start with ZERO permissions (Deny-By-Default)
     repo['role:SUPER_ADMIN'] = new Set(allSystemKeys);
+    repo['role:FINANCE_OFFICER'] = new Set();
+    repo['role:HR_MANAGER'] = new Set();
+    repo['role:PROJECTS_ENGINEER'] = new Set();
+    repo['role:LEGAL_COUNSEL'] = new Set();
+    repo['role:RECEPTION_SECURITY'] = new Set();
 
-    // Finance Officer defaults
-    const finKeys = new Set<string>();
-    ALL_12_ERP_MODULES.find(m => m.id === 'finance')?.allPermissionKeys.forEach(k => finKeys.add(k));
-    ALL_12_ERP_MODULES.find(m => m.id === 'companies')?.subModules.forEach(s => {
-      if (s.actions.view?.key) finKeys.add(s.actions.view.key);
-      if (s.actions.docs?.key) finKeys.add(s.actions.docs.key);
-    });
-    repo['role:FINANCE_OFFICER'] = finKeys;
+    // Hydrate from localStorage cache if available
+    try {
+      const saved = localStorage.getItem('eco_rbac_matrix_v3');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object') {
+          Object.entries(parsed).forEach(([k, val]) => {
+            if (Array.isArray(val)) {
+              const isRootKey =
+                k === 'role:SUPER_ADMIN' ||
+                k.includes('usr_root') ||
+                k === 'user:admin';
+              repo[k] = new Set(
+                isRootKey ? allSystemKeys : sanitizeUserPermissions(val as string[], false)
+              );
+            }
+          });
+        }
+      }
+    } catch {}
 
-    // HR Manager defaults
-    const hrKeys = new Set<string>();
-    ['hr', 'insurance', 'ats', 'decrees'].forEach(deptId => {
-      ALL_12_ERP_MODULES.find(m => m.id === deptId)?.allPermissionKeys.forEach(k => hrKeys.add(k));
+    // Hydrate initial managedUsers without role fallback
+    managedUsers.forEach(u => {
+      const uKey = `user:${u.id}`;
+      const isRoot = isSuperAdminUser(u);
+      repo[uKey] = new Set(
+        isRoot ? allSystemKeys : sanitizeUserPermissions(u.permissions || [], false)
+      );
     });
-    ALL_12_ERP_MODULES.find(m => m.id === 'companies')?.subModules.forEach(s => {
-      if (s.actions.view?.key) hrKeys.add(s.actions.view.key);
-    });
-    repo['role:HR_MANAGER'] = hrKeys;
-
-    // Projects Director defaults
-    const engKeys = new Set<string>();
-    ALL_12_ERP_MODULES.find(m => m.id === 'engineering')?.allPermissionKeys.forEach(k => engKeys.add(k));
-    ALL_12_ERP_MODULES.find(m => m.id === 'companies')?.subModules.forEach(s => {
-      if (s.actions.view?.key) engKeys.add(s.actions.view.key);
-      if (s.actions.docs?.key) engKeys.add(s.actions.docs.key);
-    });
-    repo['role:PROJECTS_ENGINEER'] = engKeys;
-
-    // Legal Counsel defaults
-    const legalKeys = new Set<string>();
-    ['legal', 'decrees'].forEach(deptId => {
-      ALL_12_ERP_MODULES.find(m => m.id === deptId)?.allPermissionKeys.forEach(k => legalKeys.add(k));
-    });
-    ALL_12_ERP_MODULES.find(m => m.id === 'companies')?.subModules.forEach(s => {
-      if (s.actions.view?.key) legalKeys.add(s.actions.view.key);
-      if (s.actions.docs?.key) legalKeys.add(s.actions.docs.key);
-    });
-    repo['role:LEGAL_COUNSEL'] = legalKeys;
-
-    // Front Desk & Admin defaults
-    const recKeys = new Set<string>();
-    ['reception', 'cts'].forEach(deptId => {
-      ALL_12_ERP_MODULES.find(m => m.id === deptId)?.allPermissionKeys.forEach(k => recKeys.add(k));
-    });
-    ALL_12_ERP_MODULES.find(m => m.id === 'companies')?.subModules.forEach(s => {
-      if (s.actions.view?.key) recKeys.add(s.actions.view.key);
-    });
-    repo['role:RECEPTION_SECURITY'] = recKeys;
 
     return repo;
   });
 
-  // Hydrate permissionsRepo from Cloudflare D1 on mount
-  useEffect(() => {
-    d1Client.fetchRbacMatrices().then(matrices => {
-      if (Array.isArray(matrices) && matrices.length > 0) {
-        setPermissionsRepo(prev => {
-          const next = { ...prev };
-          matrices.forEach(m => {
-            if (m.targetType && m.targetId && Array.isArray(m.permissions)) {
-              next[`${m.targetType}:${m.targetId}`] = new Set(m.permissions);
-            }
-          });
-          return next;
-        });
-      }
-    }).catch(err => {
-      console.warn('Failed to load RBAC matrices from D1:', err);
-    });
-  }, []);
+  // Helper to persist repo snapshot to localStorage
+  const persistRepoToLocalStorage = (repoObj: Record<string, Set<string>>) => {
+    try {
+      const serialized: Record<string, string[]> = {};
+      Object.entries(repoObj).forEach(([k, setVal]) => {
+        serialized[k] = Array.from(setVal);
+      });
+      localStorage.setItem('eco_rbac_matrix_v3', JSON.stringify(serialized));
+    } catch {}
+  };
 
-  // Sync users from managedUsers into permissionsRepo without overwriting D1 data
+  // Hydrate permissionsRepo from Cloudflare D1 on mount (User-specific matrices only, never role fallbacks)
+  useEffect(() => {
+    d1Client
+      .fetchRbacMatrices()
+      .then(matrices => {
+        if (Array.isArray(matrices) && matrices.length > 0) {
+          setPermissionsRepo(prev => {
+            const next = { ...prev };
+            matrices.forEach(m => {
+              if (m.targetType === 'user' && m.targetId && Array.isArray(m.permissions)) {
+                const isRoot =
+                  m.targetId === 'admin' ||
+                  m.targetId === 'usr_root_csuite_01' ||
+                  m.targetId === 'usr_root_csuite';
+                next[`user:${m.targetId}`] = new Set(
+                  isRoot ? allSystemKeys : sanitizeUserPermissions(m.permissions, false)
+                );
+              }
+            });
+            persistRepoToLocalStorage(next);
+            return next;
+          });
+        }
+      })
+      .catch(err => {
+        console.warn('Failed to load RBAC matrices from D1:', err);
+      });
+  }, [allSystemKeys]);
+
+  // Sync users from managedUsers into permissionsRepo (NEVER fall back to role templates!)
   useEffect(() => {
     if (!managedUsers || managedUsers.length === 0) return;
 
@@ -195,20 +213,23 @@ export const RBACView: React.FC = () => {
 
       managedUsers.forEach(u => {
         const uKey = `user:${u.id}`;
+        const isRoot = isSuperAdminUser(u);
+        const sanitized = isRoot
+          ? allSystemKeys
+          : sanitizeUserPermissions(u.permissions || [], false);
+
         if (!next[uKey]) {
           changed = true;
-          if (Array.isArray(u.permissions) && u.permissions.length > 0) {
-            next[uKey] = new Set(u.permissions);
-          } else {
-            const roleKey = `role:${u.role}`;
-            next[uKey] = new Set(prev[roleKey] || []);
-          }
+          next[uKey] = new Set(sanitized);
         }
       });
 
+      if (changed) {
+        persistRepoToLocalStorage(next);
+      }
       return changed ? next : prev;
     });
-  }, [managedUsers]);
+  }, [managedUsers, allSystemKeys]);
 
   // Listen to external request to open RBAC for a specific user
   useEffect(() => {
@@ -225,47 +246,90 @@ export const RBACView: React.FC = () => {
   // Current target key in repo
   const currentTargetKey = targetType === 'user' ? `user:${selectedUserId}` : `role:${selectedRole}`;
 
-  // Current active set of permissions
-  const activePermissions = useMemo(() => {
-    return permissionsRepo[currentTargetKey] || new Set<string>();
-  }, [permissionsRepo, currentTargetKey]);
-
   // Active user profile (when in Per User mode)
   const currentTargetUser = useMemo(() => {
-    return managedUsers.find(u => u.id === selectedUserId) || (user?.id === selectedUserId ? user : managedUsers[0]);
+    return (
+      managedUsers.find(u => u.id === selectedUserId) ||
+      (user?.id === selectedUserId ? user : managedUsers[0])
+    );
   }, [managedUsers, selectedUserId, user]);
 
   const isSuperAdminTarget = useMemo(() => {
     if (targetType === 'role') return selectedRole === 'SUPER_ADMIN';
-    return (
-      currentTargetUser?.role === 'SUPER_ADMIN' ||
-      currentTargetUser?.id === 'usr_root_csuite_01' ||
-      currentTargetUser?.id === 'usr_root_csuite'
-    );
+    return isSuperAdminUser(currentTargetUser);
   }, [targetType, selectedRole, currentTargetUser]);
 
+  // Current active set of permissions
+  const activePermissions = useMemo(() => {
+    if (isSuperAdminTarget) {
+      return new Set<string>(allSystemKeys);
+    }
+    return permissionsRepo[currentTargetKey] || new Set<string>();
+  }, [permissionsRepo, currentTargetKey, isSuperAdminTarget, allSystemKeys]);
+
   // Active module object
-  const activeModule = ERP_MODULES_MATRIX_CONFIG[activeModuleId] || ERP_MODULES_MATRIX_CONFIG.companies;
+  const activeModule =
+    ERP_MODULES_MATRIX_CONFIG[activeModuleId] || ERP_MODULES_MATRIX_CONFIG.companies;
   const ActiveModuleIcon = activeModule.icon || Building2;
 
-  // Toggle a single permission
+  // Instant Zero-Refresh Sync & D1 Persistence Helper called on every toggle and save
+  const syncAndPersistImmediately = (nextSet: Set<string>) => {
+    const targetId =
+      targetType === 'user' ? currentTargetUser?.id || selectedUserId : selectedRole;
+    const cleanArray = isSuperAdminTarget
+      ? ['*']
+      : sanitizeUserPermissions(Array.from(nextSet), false);
+
+    if (targetType === 'user' && targetId) {
+      // 1. Immediately update AuthContext state & localStorage synchronously (Zero-Refresh)
+      refreshCurrentUserPermissions(cleanArray, targetId);
+
+      // 2. Immediately broadcast custom events across window & tabs
+      const detailPayload = {
+        userId: targetId,
+        permissions: cleanArray,
+      };
+      window.dispatchEvent(new CustomEvent('eco-rbac-updated', { detail: detailPayload }));
+      dispatchPermissionsUpdate(detailPayload);
+
+      // 3. Persist to Cloudflare D1 (/api/rbac and /api/users)
+      updateUserPermissions(targetId, cleanArray).catch(err => {
+        console.warn('Immediate D1 RBAC sync warning:', err);
+      });
+    } else if (targetType === 'role') {
+      d1Client
+        .saveRbacMatrix('role', targetId, cleanArray, user?.nameAr || 'مدير النظام')
+        .catch(() => {});
+    }
+  };
+
+  // Toggle a single permission (Immediate Zero-Refresh Sync + D1 Persistence)
   const handleTogglePermission = (permKey: string) => {
+    if (isSuperAdminTarget) return;
+    const currentSet = new Set(
+      sanitizeUserPermissions(Array.from(permissionsRepo[currentTargetKey] || []), false)
+    );
+    if (currentSet.has(permKey)) {
+      currentSet.delete(permKey);
+    } else {
+      currentSet.add(permKey);
+    }
+
     setPermissionsRepo(prev => {
-      const currentSet = new Set(prev[currentTargetKey] || []);
-      if (currentSet.has(permKey)) {
-        currentSet.delete(permKey);
-      } else {
-        currentSet.add(permKey);
-      }
-      return {
+      const next = {
         ...prev,
         [currentTargetKey]: currentSet,
       };
+      persistRepoToLocalStorage(next);
+      return next;
     });
+
+    syncAndPersistImmediately(currentSet);
   };
 
-  // Toggle entire row (sub-module)
+  // Toggle entire row (sub-module) (Immediate Zero-Refresh Sync + D1 Persistence)
   const handleToggleSubModuleRow = (subModule: SubModuleMatrixRow) => {
+    if (isSuperAdminTarget) return;
     const rowKeys: string[] = [];
     Object.values(subModule.actions).forEach(a => {
       if (a?.key) rowKeys.push(a.key);
@@ -274,52 +338,77 @@ export const RBACView: React.FC = () => {
     if (rowKeys.length === 0) return;
 
     const allGranted = rowKeys.every(k => activePermissions.has(k));
+    const currentSet = new Set(
+      sanitizeUserPermissions(Array.from(permissionsRepo[currentTargetKey] || []), false)
+    );
+    if (allGranted) {
+      rowKeys.forEach(k => currentSet.delete(k));
+    } else {
+      rowKeys.forEach(k => currentSet.add(k));
+    }
 
     setPermissionsRepo(prev => {
-      const currentSet = new Set(prev[currentTargetKey] || []);
-      if (allGranted) {
-        rowKeys.forEach(k => currentSet.delete(k));
-      } else {
-        rowKeys.forEach(k => currentSet.add(k));
-      }
-      return {
+      const next = {
         ...prev,
         [currentTargetKey]: currentSet,
       };
+      persistRepoToLocalStorage(next);
+      return next;
     });
+
+    syncAndPersistImmediately(currentSet);
   };
 
-  // Grant all in active sector
+  // Grant all in active sector (Immediate Zero-Refresh Sync + D1 Persistence)
   const handleGrantAllInModule = () => {
+    if (isSuperAdminTarget) return;
     const moduleKeys = activeModule.allPermissionKeys;
+    const currentSet = new Set(
+      sanitizeUserPermissions(Array.from(permissionsRepo[currentTargetKey] || []), false)
+    );
+    moduleKeys.forEach(k => currentSet.add(k));
+
     setPermissionsRepo(prev => {
-      const currentSet = new Set(prev[currentTargetKey] || []);
-      moduleKeys.forEach(k => currentSet.add(k));
-      return {
+      const next = {
         ...prev,
         [currentTargetKey]: currentSet,
       };
+      persistRepoToLocalStorage(next);
+      return next;
     });
+
+    syncAndPersistImmediately(currentSet);
   };
 
-  // Revoke all in active sector
+  // Revoke all in active sector (Immediate Zero-Refresh Sync + D1 Persistence)
   const handleRevokeAllInModule = () => {
+    if (isSuperAdminTarget) return;
     const moduleKeys = activeModule.allPermissionKeys;
+    const currentSet = new Set(
+      sanitizeUserPermissions(Array.from(permissionsRepo[currentTargetKey] || []), false)
+    );
+    moduleKeys.forEach(k => currentSet.delete(k));
+
     setPermissionsRepo(prev => {
-      const currentSet = new Set(prev[currentTargetKey] || []);
-      moduleKeys.forEach(k => currentSet.delete(k));
-      return {
+      const next = {
         ...prev,
         [currentTargetKey]: currentSet,
       };
+      persistRepoToLocalStorage(next);
+      return next;
     });
+
+    syncAndPersistImmediately(currentSet);
   };
 
   // Save changes to Cloudflare D1
   const handleSave = async () => {
     setIsSaving(true);
-    const permArray = Array.from(activePermissions);
-    const targetId = targetType === 'user' ? (currentTargetUser?.id || selectedUserId) : selectedRole;
+    const permArray = isSuperAdminTarget
+      ? ['*']
+      : sanitizeUserPermissions(Array.from(activePermissions), false);
+    const targetId =
+      targetType === 'user' ? currentTargetUser?.id || selectedUserId : selectedRole;
 
     try {
       // 1. Persist directly to Cloudflare D1 rbac_matrices table
@@ -336,19 +425,16 @@ export const RBACView: React.FC = () => {
 
       // 2. Update user state if target is user
       if (targetType === 'user' && currentTargetUser) {
+        await refreshCurrentUserPermissions(permArray, currentTargetUser.id);
         await updateUserPermissions(currentTargetUser.id, permArray);
 
-        // Dispatch real-time sync event across all tabs & components
-        window.dispatchEvent(
-          new CustomEvent('eco-permissions-updated', {
-            detail: {
-              userId: currentTargetUser.id,
-              permissions: permArray,
-            },
-          })
-        );
+        const detailPayload = {
+          userId: currentTargetUser.id,
+          permissions: permArray,
+        };
+        window.dispatchEvent(new CustomEvent('eco-rbac-updated', { detail: detailPayload }));
+        dispatchPermissionsUpdate(detailPayload);
       } else {
-        // Log role update in audit log
         logAuditEvent({
           actionAr: `تحديث مصفوفة صلاحيات دور (${EXECUTIVE_ROLES.find(r => r.id === selectedRole)?.titleAr || selectedRole})`,
           actionEn: `Updated RBAC Role Matrix for ${selectedRole}`,
@@ -356,13 +442,6 @@ export const RBACView: React.FC = () => {
           detailsAr: `تم تحديث وتثبيت ${permArray.length} صلاحية لدور ${selectedRole} في Cloudflare D1`,
           detailsEn: `Saved ${permArray.length} permissions for role ${selectedRole} in Cloudflare D1`,
           status: 'SUCCESS',
-        });
-
-        // Also update any managed users having this role
-        managedUsers.forEach(u => {
-          if (u.role === selectedRole) {
-            updateUserPermissions(u.id, permArray).catch(() => {});
-          }
         });
       }
 

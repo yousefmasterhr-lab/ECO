@@ -573,6 +573,16 @@
   4. **عزل كروت اللوحة الرئيسية والعداد (`EmptyCanvas.tsx`):** قصر الكروت والعداد العلوي على الموديولات المصرح بها فعلياً (`visibleCards.length`)، ليظهر للمستخدم المقيد مثل تغريد `1 منظومة متصلة` حصراً.
   5. **تصحيح الإملاء وتأمين الترويسة:** تنظيف وتصحيح كلمة "موادر" إلى "موارد" في قواعد البيانات والجلسات وواجهة المستخدم، وضبط حاوية العنوان الفرعي إلى `min-w-[190px] whitespace-nowrap` لمنع أي قص بصري.
 
+### ❌ الخطأ 3.35: تسرب صلاحيات الموارد البشرية (15 خدمات) والتوظيف (4 خدمات) عبر القوالب والـ Wildcards وإعادة الكتابة عند تحديث المتصفح F5
+- **وصف المشكلة:**
+  1. بقاء رموز شاملة قديمة (`hr.*`, `ats.*`) أو قوالب صلاحيات الأدوار (`repo['role:HR_MANAGER']` و `matrixMap.get('role:' + u.role)`) للمستخدمين غير الجذريين (مثل `تغريد عاطف` بقسم الموارد البشرية)، مما جعل مصفوفة RBAC تعرض `0 / 56 (0%)` للموارد البشرية و `0 / 28 (0%)` لاستقطاب الكفاءات بينما تعرض اللوحة الرئيسية والقائمة الجانبية `15 خدمات` للموارد البشرية و `4 خدمات` للتوظيف.
+  2. عند تحديث الصفحة (`F5`)، كان `AuthContext` يعيد جلب أو دمج قوالب الأدوار الافتراضية أو بيانات D1 القديمة فوق `localStorage`.
+  3. وجود شارات مختلطة مكررة بجوار أيقونات الكروت (`HRMS`, `توظيف`, `الشركات`) ولون أخضر شاذ (`text-emerald-600`) على عداد `1 وثيقة` في كروت `EmptyCanvas.tsx`.
+- **القاعدة الصارمة والحل الجذري المعتمد:**
+  1. **Never grant fallback module access based on `user.department` or `user.role`:** If an RBAC matrix has `0` permissions in HR for an HR employee, HR must be 100% hidden (`Deny-by-Default`). Only Super Admin (`user.id === 'admin'` / `'usr_root_csuite_01'` or `user.role === 'SUPER_ADMIN'`) has default access; all other users have **ZERO** default permissions and all wildcard strings (`hr.*`, `ats.*`, `*`) are strictly stripped via `sanitizeUserPermissions()`.
+  2. **Never allow page refresh (`F5`) to re-seed or overwrite custom RBAC permissions:** Every toggle/save in `RBACView.tsx` and `UserManagementView.tsx` immediately persists to Cloudflare D1 (`/api/rbac` & `/api/users`), synchronously updates `localStorage`, and invokes `refreshCurrentUserPermissions()` + `eco-rbac-updated` / `storage` / `focus` listeners without ever merging role/department seeds on reload.
+  3. **توحيد هوية كروت اللوحة الرئيسية (`EmptyCanvas.tsx`):** إزالة الشارات المكررة بجوار الأيقونة وتوحيد ألوان جميع عدادات الكروت (بما فيها `1 وثيقة`) ضمن بالتة الكهرمان الذهبي والرمادي الصخري (`Brand Amber / Slate`).
+
 ---
 
 ## 4. ملخص البروتوكول الإلزامي قبل كتابة أي كود جديد

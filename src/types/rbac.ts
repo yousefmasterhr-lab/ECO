@@ -1235,7 +1235,8 @@ export const MULTI_DEPARTMENT_RBAC_DATA: Record<DepartmentKey, DepartmentRbacGro
 
 /**
  * Universal Sub-Module View Permission Map covering ALL 12 ERP Modules
- * Enables strict, real-time RBAC gating across all sidebar items and workspace tabs.
+ * Aligned 1:1 with ERP_MODULES_MATRIX_CONFIG .view keys so the RBAC Matrix
+ * is the single source of truth for Sidebar and Dashboard visibility.
  */
 export const SUBMODULE_VIEW_PERMISSION_MAP: Record<string, string> = {
   // 1. Companies Management
@@ -1248,75 +1249,84 @@ export const SUBMODULE_VIEW_PERMISSION_MAP: Record<string, string> = {
   // 2. Executive Management & Strategy
   exec_kpi: 'exec.kpi.view',
   exec_risks: 'exec.risks.view',
-  exec_financial: 'exec.kpi.view',
+  exec_financial: 'exec.financial.view',
+  exec_governance: 'exec.governance.view',
 
   // 3. Financial Affairs
   fin_chart: 'fin.chart.view',
   fin_treasury: 'fin.treasury.view',
   fin_vouchers: 'fin.vouchers.view',
-  fin_cheques: 'fin.checks.view',
-  fin_journals: 'fin.entries.view',
-  fin_sales: 'fin.invoices.view',
+  fin_cheques: 'fin.cheques.view',
+  fin_journals: 'fin.journals.view',
+  fin_sales: 'fin.sales.view',
   fin_procurement: 'fin.procurement.view',
-  fin_costcenters: 'fin.cost_centers.view',
-  fin_contracts: 'fin.contracts.view',
-  fin_projects: 'fin.projects.view',
+  fin_costcenters: 'fin.chart.view',
+  fin_contracts: 'fin.procurement.view',
+  fin_projects: 'fin.reports.view',
   fin_reports: 'fin.reports.view',
 
   // 4. Human Resources (HRMS)
-  hr_directory: 'hr.employees.view',
+  hr_directory: 'hr.directory.view',
   hr_payroll: 'hr.payroll.view',
-  hr_disbursement: 'hr.payroll.view',
+  hr_disbursement: 'hr.disbursement.view',
   hr_contracts: 'hr.contracts.view',
   hr_attendance: 'hr.attendance.view',
   hr_leaves: 'hr.leaves.view',
+  hr_advances: 'hr.advances.view',
   hr_advances_requests: 'hr.advances.view',
   hr_advances_active: 'hr.advances.view',
-  hr_recruitment: 'hr.recruitment.view',
+  hr_recruitment: 'hr.directory.create',
   hr_penalties: 'hr.penalties.view',
-  hr_missing_docs: 'hr.employees.view',
-  hr_approvals: 'hr.approvals.view',
-  hr_settings: 'hr.settings.view',
-  hr_audit: 'hr.audit.view',
-  hr_org_tree: 'hr.org.view',
+  hr_missing_docs: 'hr.directory.docs',
+  hr_approvals: 'hr.leaves.status',
+  hr_settings: 'hr.directory.edit',
+  hr_audit: 'hr.directory.audit',
+  hr_org_tree: 'hr.directory.view',
 
   // 5. Technical Office (Engineering)
   eng_projects: 'eng.projects.view',
-  eng_schedule: 'eng.timeline.view',
-  eng_ipc: 'eng.invoices.view',
-  eng_contractors: 'eng.contracts.view',
-  eng_rfq: 'eng.rfq.view',
-  eng_po: 'eng.po.view',
+  eng_schedule: 'eng.schedule.view',
+  eng_ipc: 'eng.ipc.view',
+  eng_contractors: 'eng.ipc.view',
+  eng_rfq: 'eng.boq.view',
+  eng_po: 'eng.boq.view',
   eng_boq: 'eng.boq.view',
   eng_submittals: 'eng.submittals.view',
-  eng_rfi: 'eng.site_reports.view',
+  eng_rfi: 'eng.rfi.view',
 
   // 6. Correspondence & Document Control (CTS)
-  cts_overview: 'cts.inbox.view',
-  cts_log: 'cts.inbox.view',
-  cts_incoming_new: 'cts.inbox.view',
-  cts_outgoing_draft: 'cts.outbox.view',
+  cts_incoming: 'cts.incoming.view',
+  cts_outgoing: 'cts.outgoing.view',
+  cts_routing: 'cts.routing.view',
+  cts_archive: 'cts.archive.view',
+  cts_confidential: 'cts.confidential.view',
+  cts_overview: 'cts.incoming.view',
+  cts_log: 'cts.incoming.view',
+  cts_incoming_new: 'cts.incoming.create',
+  cts_outgoing_draft: 'cts.outgoing.view',
 
   // 7. Legal Affairs
   leg_contracts: 'leg.contracts.view',
   leg_cases: 'leg.cases.view',
   leg_poa: 'leg.poa.view',
-  leg_advisory: 'leg.investigations.view',
+  leg_notices: 'leg.notices.view',
+  leg_advisory: 'leg.advisory.view',
 
   // 8. Social Insurance
   ins_forms: 'ins.forms.view',
-  ins_register: 'ins.employees.view',
-  ins_wages: 'ins.dues.view',
-  ins_compliance: 'ins.compliance.view',
+  ins_register: 'ins.register.view',
+  ins_wages: 'ins.wages.view',
+  ins_sites: 'ins.sites.view',
+  ins_compliance: 'ins.sites.view',
 
   // 9. Talent Acquisition (ATS)
-  ats_openings: 'ats.jobs.view',
-  ats_pipeline: 'ats.candidates.view',
+  ats_openings: 'ats.openings.view',
+  ats_pipeline: 'ats.pipeline.view',
   ats_interviews: 'ats.interviews.view',
   ats_offers: 'ats.offers.view',
 
   // 10. Administrative Decrees & Circulars
-  dec_decrees: 'dec.orders.view',
+  dec_decrees: 'dec.decrees.view',
   dec_circulars: 'dec.circulars.view',
   dec_policies: 'dec.policies.view',
   dec_bulletins: 'dec.circulars.view',
@@ -1324,18 +1334,84 @@ export const SUBMODULE_VIEW_PERMISSION_MAP: Record<string, string> = {
   // 11. Front Desk & Reception
   rec_visitors: 'rec.visitors.view',
   rec_rooms: 'rec.rooms.view',
-  rec_parcels: 'rec.deliveries.view',
+  rec_parcels: 'rec.parcels.view',
   rec_calls: 'rec.visitors.view',
-  rec_passes: 'rec.visitors.view',
+  rec_passes: 'rec.passes.view',
 
   // 12. Settings & Permissions
   set_rbac: 'set.rbac.view',
   set_users: 'set.users.view',
-  set_configurations: 'set.configs.view',
+  set_configurations: 'set.configurations.view',
   set_audit: 'set.audit.view',
-  set_integrations: 'set.general.view',
-  set_upgrades: 'set.general.view',
+  set_integrations: 'set.integrations.view',
+  set_upgrades: 'set.integrations.view',
 };
+
+/**
+ * Set of all valid granular permission keys defined across the 12 ERP modules in the RBAC Matrix
+ */
+export const ALL_VALID_MATRIX_PERMISSION_KEYS: Set<string> = new Set(
+  ALL_12_ERP_MODULES.flatMap(mod => mod.allPermissionKeys)
+);
+
+/**
+ * Strict Super Admin Identification
+ * ONLY Super Admin has full access by default. All other users have ZERO default permissions.
+ */
+export function isSuperAdminUser(
+  user: { id?: string; username?: string; email?: string; role?: string; jobTitleAr?: string } | null | undefined
+): boolean {
+  if (!user) return false;
+  return (
+    user.id === 'admin' ||
+    user.id === 'usr_root_csuite_01' ||
+    user.id === 'usr_root_csuite' ||
+    user.username === 'admin' ||
+    user.email === 'admin@hrsup.com' ||
+    user.role === 'SUPER_ADMIN' ||
+    user.role === 'admin' ||
+    user.role === 'مدير النظام العام / رئيس مجلس الإدارة' ||
+    user.jobTitleAr === 'مدير النظام العام / رئيس مجلس الإدارة'
+  );
+}
+
+/**
+ * Sanitizes a user's permissions array under Strict Deny-By-Default rules:
+ * - For Super Admin: returns ['*'].
+ * - For Non-Admin users: strips all wildcards ('*', 'hr.*', 'ats.*', etc.) and legacy
+ *   non-matrix keys so ONLY explicit RBAC Matrix keys are retained.
+ */
+export function sanitizeUserPermissions(
+  userOrPerms:
+    | { id?: string; username?: string; email?: string; role?: string; jobTitleAr?: string; permissions?: string[] }
+    | string[]
+    | null
+    | undefined,
+  isSuperAdminOverride = false
+): string[] {
+  if (!userOrPerms) return [];
+  if (Array.isArray(userOrPerms)) {
+    if (isSuperAdminOverride) return ['*'];
+    return Array.from(
+      new Set(
+        userOrPerms.filter(
+          k => typeof k === 'string' && !k.includes('*') && ALL_VALID_MATRIX_PERMISSION_KEYS.has(k)
+        )
+      )
+    );
+  }
+  if (isSuperAdminUser(userOrPerms)) {
+    return ['*'];
+  }
+  const raw = Array.isArray(userOrPerms.permissions) ? userOrPerms.permissions : [];
+  return Array.from(
+    new Set(
+      raw.filter(
+        k => typeof k === 'string' && !k.includes('*') && ALL_VALID_MATRIX_PERMISSION_KEYS.has(k)
+      )
+    )
+  );
+}
 
 /**
  * Clean Arabic Titles Helper: Removes underscores, trims extra spaces,
@@ -1350,6 +1426,7 @@ export function cleanArabicTitle(title?: string): string {
     .replace(/\(C-Suite\)/gi, '')
     .replace(/\(CFO\)/gi, '')
     .replace(/\(HRD\)/gi, '')
+    .replace(/\(HRMS\)/gi, '')
     .replace(/\(ATS\)/gi, '')
     .replace(/\(CTS\)/gi, '')
     .trim();
@@ -1360,6 +1437,7 @@ export function cleanArabicTitle(title?: string): string {
  * Enables zero-refresh permission updates and instantaneous UI re-gating
  */
 export const ECO_PERMISSIONS_UPDATED_EVENT = 'eco-permissions-updated';
+export const ECO_RBAC_UPDATED_EVENT = 'eco-rbac-updated';
 
 export interface PermissionsUpdatedEventDetail {
   userId?: string;
@@ -1375,6 +1453,9 @@ export function dispatchPermissionsUpdate(detail?: PermissionsUpdatedEventDetail
   if (typeof window !== 'undefined') {
     window.dispatchEvent(
       new CustomEvent(ECO_PERMISSIONS_UPDATED_EVENT, { detail: detail || {} })
+    );
+    window.dispatchEvent(
+      new CustomEvent(ECO_RBAC_UPDATED_EVENT, { detail: detail || {} })
     );
     window.dispatchEvent(new CustomEvent('eco-data-updated'));
 
@@ -1392,54 +1473,62 @@ export function dispatchPermissionsUpdate(detail?: PermissionsUpdatedEventDetail
 }
 
 /**
- * Pure, Uncompromising RBAC Module Access Gating Engine
- * A module is accessible IF AND ONLY IF:
- * 1. The user is Super Admin (role === 'admin' | 'SUPER_ADMIN', root user ID, or '*' permission wildcard)
- * 2. OR the user possesses at least ONE explicit permission matching the module's key or allowed prefixes.
- * Hardcoded role-based or department-based fallbacks are STRICTLY PROHIBITED.
+ * Strict Deny-By-Default Sub-Module View Check:
+ * Returns true IF AND ONLY IF:
+ * 1. The user is Super Admin, OR
+ * 2. The sub-module's explicit `.view` (or mapped) permission key is saved in the user's RBAC matrix.
+ * Zero department or role fallbacks.
  */
-export function hasModuleAccess(
-  user: { id?: string; role?: string; permissions?: string[] } | null | undefined,
+export function canViewSubModule(
+  user: { id?: string; username?: string; email?: string; role?: string; jobTitleAr?: string; permissions?: string[] } | null | undefined,
+  subModuleId: string
+): boolean {
+  if (!user) return false;
+  if (isSuperAdminUser(user)) return true;
+
+  const permKey = SUBMODULE_VIEW_PERMISSION_MAP[subModuleId];
+  if (!permKey) return false;
+
+  const explicitPerms = sanitizeUserPermissions(user);
+  return explicitPerms.includes(permKey);
+}
+
+/**
+ * Strict Deny-By-Default Module View Check:
+ * Returns true IF AND ONLY IF:
+ * 1. The user is Super Admin, OR
+ * 2. At least one sub-module within this module has `view: true` explicitly saved in the user's RBAC matrix.
+ * Zero department or role fallbacks.
+ */
+export function canViewModule(
+  user: { id?: string; username?: string; email?: string; role?: string; jobTitleAr?: string; permissions?: string[] } | null | undefined,
   moduleId: string
 ): boolean {
   if (!user) return false;
+  if (isSuperAdminUser(user)) return true;
 
-  // 1. Super Admin Wildcard Bypass
-  if (
-    user.role === 'admin' ||
-    user.role === 'SUPER_ADMIN' ||
-    user.id?.includes('root') ||
-    user.permissions?.includes('*')
-  ) {
-    return true;
+  const explicitPerms = sanitizeUserPermissions(user);
+  if (explicitPerms.length === 0) return false;
+
+  const modConfig = ERP_MODULES_MATRIX_CONFIG[moduleId as DepartmentKey];
+  if (modConfig) {
+    const viewKeys = modConfig.subModules
+      .map(sub => sub.actions.view?.key)
+      .filter((k): k is string => Boolean(k));
+    return viewKeys.some(k => explicitPerms.includes(k));
   }
 
-  // 2. Strict RBAC Prefix Map for all ERP Modules (supports both underscore and dot-notation)
-  const prefixMap: Record<string, string[]> = {
-    companies: ['comp_', 'companies_', 'companies.', 'comp.'],
-    hr: ['hr_', 'hr.'],
-    ats: ['ats_', 'ats.'],
-    finance: ['fin_', 'finance_', 'fin.', 'finance.'],
-    tech_office: ['tech_', 'projects_', 'eng_', 'eng.', 'tech.'],
-    engineering: ['tech_', 'projects_', 'eng_', 'eng.', 'tech.'],
-    legal: ['legal_', 'leg_', 'legal.', 'leg.'],
-    insurance: ['ins_', 'insurance_', 'ins.', 'insurance.'],
-    reception: ['rec_', 'reception_', 'rec.', 'reception.'],
-    decisions: ['dec_', 'decisions_', 'decrees_', 'dec.', 'decrees.'],
-    decrees: ['dec_', 'decisions_', 'decrees_', 'dec.', 'decrees.'],
-    cts: ['cts_', 'cts.'],
-    c_suite: ['csuite_', 'exec_', 'csuite.', 'exec.'],
-    executive: ['csuite_', 'exec_', 'csuite.', 'exec.'],
-    settings: ['settings_', 'users_manage', 'set_', 'settings.', 'set.']
-  };
+  return false;
+}
 
-  const allowedPrefixes = prefixMap[moduleId] || [moduleId, `${moduleId}_`, `${moduleId}.`];
-  return (user.permissions || []).some(perm => 
-    perm === moduleId ||
-    perm === `${moduleId}.*` ||
-    perm === `${moduleId}.view` ||
-    allowedPrefixes.some(prefix => perm.startsWith(prefix))
-  );
+/**
+ * Backwards-compatible alias for canViewModule — enforces strict Deny-By-Default
+ */
+export function hasModuleAccess(
+  user: { id?: string; username?: string; email?: string; role?: string; jobTitleAr?: string; permissions?: string[] } | null | undefined,
+  moduleId: string
+): boolean {
+  return canViewModule(user, moduleId);
 }
 
 

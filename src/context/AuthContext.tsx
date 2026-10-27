@@ -13,9 +13,13 @@ import {
 } from '../types/auth';
 import {
   ECO_PERMISSIONS_UPDATED_EVENT,
+  ECO_RBAC_UPDATED_EVENT,
   PermissionsUpdatedEventDetail,
   dispatchPermissionsUpdate,
-  hasModuleAccess,
+  canViewModule,
+  canViewSubModule,
+  isSuperAdminUser,
+  sanitizeUserPermissions,
   cleanArabicTitle,
 } from '../types/rbac';
 import { d1Client, clearSessionToken, setSessionToken } from '../services/d1Client';
@@ -34,8 +38,14 @@ interface AuthContextType {
   logout: () => void;
   switchUserRole: (role: UserRole) => void;
   checkModuleAccess: (moduleId: string) => boolean;
+  canViewModule: (moduleId: string) => boolean;
+  canViewSubModule: (subModuleId: string) => boolean;
   hasRole: (roles: UserRole | UserRole[]) => boolean;
   hasPermission: (userOrKey: any, maybeKey?: string) => boolean;
+  refreshCurrentUserPermissions: (
+    overridePermissions?: string[],
+    targetUserId?: string
+  ) => Promise<void>;
   updateUserProfile: (updates: {
     nameAr?: string;
     jobTitleAr?: string;
@@ -108,13 +118,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setShowWelcomeSplash(false);
   }, []);
 
-  // 1. Managed Users State (Initialized with Root Administrator only, zero dummy mock clutter)
+  // 1. Managed Users State (Sanitized under Strict Deny-By-Default)
   const [managedUsers, setManagedUsers] = useState<ManagedUser[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY_USERS);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map((u: ManagedUser) => {
+            const cleanPerms = sanitizeUserPermissions(u);
+            return {
+              ...u,
+              permissions: cleanPerms,
+              customPermissions: cleanPerms,
+            };
+          });
+        }
       }
     } catch (e) {
       console.warn('Failed to parse managed users from localStorage', e);
@@ -168,133 +187,241 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [auditLogs]);
 
-  // Sync with Cloudflare D1 Edge database
-  useEffect(() => {
-    // Sync with Cloudflare D1 Edge database: fetch users & RBAC matrices
-    Promise.all([
-      d1Client.fetchUsers(),
-      d1Client.fetchRbacMatrices(),
-    ]).then(([liveUsers, liveMatrices]) => {
-      // Build lookup map for stored matrices
-      const matrixMap = new Map<string, string[]>();
-      if (Array.isArray(liveMatrices)) {
-        liveMatrices.forEach(m => {
-          if (m.targetType && m.targetId && Array.isArray(m.permissions)) {
-            matrixMap.set(`${m.targetType}:${m.targetId}`, m.permissions);
-          }
-        });
-      }
-
-      if (liveUsers && liveUsers.length > 0) {
-        // Hydrate each user with their persisted D1 permissions
-        const mergedUsers = liveUsers.map(u => {
-          const userPerms = matrixMap.get(`user:${u.id}`);
-          const rolePerms = matrixMap.get(`role:${u.role}`);
-          const perms = userPerms || u.permissions || rolePerms || [];
-          return {
-            ...u,
-            permissions: perms,
-            customPermissions: perms,
-          };
-        });
-
-        setManagedUsers(mergedUsers);
-
-        // Automatically sync current logged-in user profile & permissions from D1
-        setUser(currentUser => {
-          if (!currentUser) return null;
-          const matched = mergedUsers.find(
-            u => u.id === currentUser.id || u.email.toLowerCase() === currentUser.email.toLowerCase() || (currentUser.username && u.username.toLowerCase() === currentUser.username.toLowerCase())
-          );
-
-          if (!matched) return currentUser;
-
-          const isRoot =
-            matched.id === INITIAL_ROOT_ADMIN.id ||
-            matched.id === 'usr_root_csuite_01' ||
-            matched.id === 'usr_root_csuite' ||
-            matched.username === 'admin' ||
-            matched.email === 'admin@hrsup.com';
-
-          const isTaghreed =
-            (matched.nameAr && matched.nameAr.includes('تغريد')) ||
-            (matched.username && matched.username.includes('taghreed')) ||
-            (matched.email && matched.email.includes('taghreed'));
-
-          const effectiveRole: UserRole = isRoot
-            ? 'SUPER_ADMIN'
-            : (isTaghreed ? 'HR_MANAGER' : (matched.role === 'SUPER_ADMIN' ? 'HR_MANAGER' : ((matched.role as UserRole) || 'HR_MANAGER')));
-
-          const roleCfg = ROLE_CONFIGURATIONS[effectiveRole] || ROLE_CONFIGURATIONS.HR_MANAGER;
-
-          // Priority: direct user matrix in D1 > matched user permissions > matched customPermissions
-          // Strict RBAC: Never fall back to role matrix or role templates for non-root users!
-          const d1UserPerms = matrixMap.get(`user:${matched.id}`) ||
-                              matched.permissions ||
-                              matched.customPermissions;
-
-          const finalPerms = isRoot
-            ? ['*']
-            : (d1UserPerms && Array.isArray(d1UserPerms) ? d1UserPerms : []);
-
-          const finalAllowedModules = isRoot
-            ? ROLE_CONFIGURATIONS.SUPER_ADMIN.allowedModuleIds
-            : (Array.isArray((matched as any).allowedModuleIds) && (matched as any).allowedModuleIds.length > 0 ? (matched as any).allowedModuleIds : ['companies']);
-
-          // Non-root users can NEVER have 'all' companies
-          const finalAllowedCompanies = isRoot
-            ? ['all']
-            : (matched.allowedCompanyIds && !matched.allowedCompanyIds.includes('all') && matched.allowedCompanyIds.length > 0
-                ? matched.allowedCompanyIds
-                : ['comp_01']);
-
-          const updated: AuthUser = {
-            id: matched.id,
-            nameAr: isRoot ? 'يوسف حجازي' : (matched.nameAr || (isTaghreed ? 'تغريد عاطف' : matched.username)),
-            nameEn: isRoot ? 'Yousef Hegazy' : (matched.nameEn || (isTaghreed ? 'Taghreed Atef' : matched.username)),
-            email: matched.email,
-            username: matched.username,
-            role: effectiveRole,
-            roleLabelAr: isRoot ? 'مدير النظام العام / رئيس مجلس الإدارة' : (isTaghreed ? 'مدير الموارد البشرية' : cleanArabicTitle(matched.roleLabelAr || matched.jobTitleAr || roleCfg.titleAr)),
-            roleLabelEn: isRoot ? 'System Administrator / CEO' : roleCfg.titleEn,
-            jobTitleAr: isRoot ? 'مدير النظام العام / رئيس مجلس الإدارة' : (isTaghreed ? 'مدير الموارد البشرية' : cleanArabicTitle(matched.jobTitleAr || matched.roleLabelAr || roleCfg.titleAr)),
-            jobTitleEn: isRoot ? 'System Administrator / CEO' : (matched.jobTitleEn || roleCfg.titleEn),
-            departmentAr: isRoot ? 'الإدارة العليا والاستراتيجية' : (isTaghreed ? 'إدارة الموارد البشرية والرواتب' : cleanArabicTitle(matched.departmentAr || roleCfg.departmentAr)),
-            departmentEn: isRoot ? 'Executive Management' : (matched.departmentEn || roleCfg.departmentEn),
-            phone: matched.phone || (isRoot ? '+20 100 000 0000' : '+20 100 000 0001'),
-            clearanceLevel: isRoot ? 4 : (matched.clearanceLevel || roleCfg.clearanceLevel || 2),
-            clearanceNameAr: isRoot ? 'إدارة عليا وحوكمة' : (roleCfg.clearanceNameAr || 'صلاحيات مخصصة'),
-            clearanceNameEn: isRoot ? 'Level 4 - C-Suite Governance' : (roleCfg.clearanceNameEn || 'Custom Role'),
-            permissions: finalPerms,
-            allowedModuleIds: finalAllowedModules,
-            allowedCompanyIds: finalAllowedCompanies,
-            lastLogin: currentUser.lastLogin || new Date().toISOString().replace('T', ' ').substring(0, 16),
-          };
-
+  // Core D1 & LocalStorage Permission Synchronization Engine (Zero Role/Dept Fallbacks)
+  const refreshCurrentUserPermissions = useCallback(
+    async (overridePermissions?: string[], targetUserId?: string): Promise<void> => {
+      // 1. If an immediate override is provided, apply it synchronously before any network roundtrip
+      if (overridePermissions !== undefined) {
+        setManagedUsers(prev => {
+          const next = prev.map(u => {
+            if (!targetUserId || u.id === targetUserId) {
+              const cleanPerms = sanitizeUserPermissions(
+                overridePermissions,
+                isSuperAdminUser(u)
+              );
+              return {
+                ...u,
+                permissions: cleanPerms,
+                customPermissions: cleanPerms,
+              };
+            }
+            return u;
+          });
           try {
-            localStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify(updated));
-            sessionStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify(updated));
+            localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(next));
           } catch {}
-
-          return updated;
+          return next;
         });
-      } else if (liveMatrices && liveMatrices.length > 0) {
+
         setUser(currentUser => {
           if (!currentUser) return null;
-          const d1UserPerms = matrixMap.get(`user:${currentUser.id}`) || matrixMap.get(`role:${currentUser.role}`);
-          if (d1UserPerms && Array.isArray(d1UserPerms)) {
-            const updated = { ...currentUser, permissions: d1UserPerms };
+          if (!targetUserId || currentUser.id === targetUserId) {
+            const cleanPerms = sanitizeUserPermissions(
+              overridePermissions,
+              isSuperAdminUser(currentUser)
+            );
+            const updated: AuthUser = {
+              ...currentUser,
+              permissions: cleanPerms,
+              allowedModuleIds: isSuperAdminUser(currentUser)
+                ? ROLE_CONFIGURATIONS.SUPER_ADMIN.allowedModuleIds
+                : [],
+            };
             try {
               localStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify(updated));
+              sessionStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify(updated));
             } catch {}
             return updated;
           }
           return currentUser;
         });
+        return;
       }
-    }).catch(err => {
-      console.warn('Failed to sync users and RBAC matrices on startup:', err);
-    });
+
+      // 2. Otherwise, fetch latest users & user-specific RBAC matrices from Cloudflare D1
+      try {
+        const [liveUsers, liveMatrices] = await Promise.all([
+          d1Client.fetchUsers(),
+          d1Client.fetchRbacMatrices(),
+        ]);
+
+        // Build lookup map strictly for user matrices (NEVER role matrices!)
+        const userMatrixMap = new Map<string, string[]>();
+        if (Array.isArray(liveMatrices)) {
+          liveMatrices.forEach(m => {
+            if (m.targetType === 'user' && m.targetId && Array.isArray(m.permissions)) {
+              userMatrixMap.set(m.targetId, m.permissions);
+            }
+          });
+        }
+
+        if (liveUsers && liveUsers.length > 0) {
+          const mergedUsers = liveUsers.map(u => {
+            const isRoot = isSuperAdminUser(u);
+            const rawPerms = userMatrixMap.has(u.id)
+              ? userMatrixMap.get(u.id)!
+              : Array.isArray(u.permissions)
+                ? u.permissions
+                : [];
+            const cleanPerms = sanitizeUserPermissions(rawPerms, isRoot);
+
+            // Auto-heal D1 if non-root user had legacy wildcard keys ('hr.*', 'ats.*', etc.)
+            if (
+              !isRoot &&
+              Array.isArray(rawPerms) &&
+              rawPerms.some(k => typeof k === 'string' && k.includes('*'))
+            ) {
+              d1Client.saveRbacMatrix('user', u.id, cleanPerms, 'System Strict RBAC Sanitizer').catch(() => {});
+            }
+
+            return {
+              ...u,
+              permissions: cleanPerms,
+              customPermissions: cleanPerms,
+            };
+          });
+
+          setManagedUsers(mergedUsers);
+          try {
+            localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(mergedUsers));
+          } catch {}
+
+          setUser(currentUser => {
+            if (!currentUser) return null;
+            const matched = mergedUsers.find(
+              u =>
+                u.id === currentUser.id ||
+                u.email.toLowerCase() === currentUser.email.toLowerCase() ||
+                (currentUser.username &&
+                  u.username.toLowerCase() === currentUser.username.toLowerCase())
+            );
+
+            if (!matched) return currentUser;
+
+            const isRoot = isSuperAdminUser(matched);
+            const isTaghreed =
+              (matched.nameAr && matched.nameAr.includes('تغريد')) ||
+              (matched.username && matched.username.includes('taghreed')) ||
+              (matched.email && matched.email.includes('taghreed'));
+
+            const effectiveRole: UserRole = isRoot
+              ? 'SUPER_ADMIN'
+              : isTaghreed
+                ? 'HR_MANAGER'
+                : matched.role === 'SUPER_ADMIN'
+                  ? 'HR_MANAGER'
+                  : (matched.role as UserRole) || 'HR_MANAGER';
+
+            const roleCfg =
+              ROLE_CONFIGURATIONS[effectiveRole] || ROLE_CONFIGURATIONS.HR_MANAGER;
+
+            const finalPerms = isRoot
+              ? ['*']
+              : sanitizeUserPermissions(matched.permissions || [], false);
+
+            const finalAllowedModules = isRoot
+              ? ROLE_CONFIGURATIONS.SUPER_ADMIN.allowedModuleIds
+              : [];
+
+            const finalAllowedCompanies = isRoot
+              ? ['all']
+              : matched.allowedCompanyIds &&
+                  !matched.allowedCompanyIds.includes('all') &&
+                  matched.allowedCompanyIds.length > 0
+                ? matched.allowedCompanyIds
+                : ['comp_01'];
+
+            const updated: AuthUser = {
+              id: matched.id,
+              nameAr: isRoot
+                ? 'يوسف حجازي'
+                : matched.nameAr || (isTaghreed ? 'تغريد عاطف' : matched.username),
+              nameEn: isRoot
+                ? 'Yousef Hegazy'
+                : matched.nameEn || (isTaghreed ? 'Taghreed Atef' : matched.username),
+              email: matched.email,
+              username: matched.username,
+              role: effectiveRole,
+              roleLabelAr: isRoot
+                ? 'مدير النظام العام / رئيس مجلس الإدارة'
+                : isTaghreed
+                  ? 'مدير الموارد البشرية'
+                  : cleanArabicTitle(
+                      matched.roleLabelAr || matched.jobTitleAr || roleCfg.titleAr
+                    ),
+              roleLabelEn: isRoot ? 'System Administrator / CEO' : roleCfg.titleEn,
+              jobTitleAr: isRoot
+                ? 'مدير النظام العام / رئيس مجلس الإدارة'
+                : isTaghreed
+                  ? 'مدير الموارد البشرية'
+                  : cleanArabicTitle(
+                      matched.jobTitleAr || matched.roleLabelAr || roleCfg.titleAr
+                    ),
+              jobTitleEn: isRoot
+                ? 'System Administrator / CEO'
+                : matched.jobTitleEn || roleCfg.titleEn,
+              departmentAr: isRoot
+                ? 'الإدارة العليا والاستراتيجية'
+                : isTaghreed
+                  ? 'إدارة الموارد البشرية والرواتب'
+                  : cleanArabicTitle(matched.departmentAr || roleCfg.departmentAr),
+              departmentEn: isRoot
+                ? 'Executive Management'
+                : matched.departmentEn || roleCfg.departmentEn,
+              phone:
+                matched.phone || (isRoot ? '+20 100 000 0000' : '+20 100 000 0001'),
+              clearanceLevel: isRoot
+                ? 4
+                : matched.clearanceLevel || roleCfg.clearanceLevel || 2,
+              clearanceNameAr: isRoot
+                ? 'إدارة عليا وحوكمة'
+                : roleCfg.clearanceNameAr || 'صلاحيات مخصصة',
+              clearanceNameEn: isRoot
+                ? 'Level 4 - C-Suite Governance'
+                : roleCfg.clearanceNameEn || 'Custom Role',
+              permissions: finalPerms,
+              allowedModuleIds: finalAllowedModules,
+              allowedCompanyIds: finalAllowedCompanies,
+              lastLogin:
+                currentUser.lastLogin ||
+                new Date().toISOString().replace('T', ' ').substring(0, 16),
+            };
+
+            try {
+              localStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify(updated));
+              sessionStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify(updated));
+            } catch {}
+
+            return updated;
+          });
+        } else if (liveMatrices && liveMatrices.length > 0) {
+          setUser(currentUser => {
+            if (!currentUser) return null;
+            if (userMatrixMap.has(currentUser.id)) {
+              const cleanPerms = sanitizeUserPermissions(
+                userMatrixMap.get(currentUser.id)!,
+                isSuperAdminUser(currentUser)
+              );
+              const updated = { ...currentUser, permissions: cleanPerms };
+              try {
+                localStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify(updated));
+                sessionStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify(updated));
+              } catch {}
+              return updated;
+            }
+            return currentUser;
+          });
+        }
+      } catch (err) {
+        console.warn('Failed to sync users and RBAC matrices from D1:', err);
+      }
+    },
+    []
+  );
+
+  // Sync with Cloudflare D1 Edge database on mount, focus, storage, and custom RBAC events
+  useEffect(() => {
+    refreshCurrentUserPermissions();
 
     d1Client.fetchAuditLogs().then(liveLogs => {
       if (liveLogs && liveLogs.length > 0) {
@@ -309,7 +436,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const targetUserId = detail.userId || detail.user?.id;
       const targetPermissions = Array.isArray(detail.permissions)
         ? detail.permissions
-        : (Array.isArray(detail.user?.permissions) ? detail.user.permissions : undefined);
+        : Array.isArray(detail.user?.permissions)
+          ? detail.user.permissions
+          : undefined;
 
       // 1. Instantly update managedUsers collection in React state
       setManagedUsers(prev => {
@@ -319,17 +448,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const isMatch =
               u.id === targetUserId ||
               (detail.user && detail.user.id === u.id) ||
-              (detail.user?.email && u.email && detail.user.email.toLowerCase() === u.email.toLowerCase()) ||
-              (detail.user?.username && u.username && detail.user.username.toLowerCase() === u.username.toLowerCase()) ||
-              (targetUserId && u.email && targetUserId.toLowerCase() === u.email.toLowerCase()) ||
-              (targetUserId && u.username && targetUserId.toLowerCase() === u.username.toLowerCase());
+              (detail.user?.email &&
+                u.email &&
+                detail.user.email.toLowerCase() === u.email.toLowerCase()) ||
+              (detail.user?.username &&
+                u.username &&
+                detail.user.username.toLowerCase() === u.username.toLowerCase()) ||
+              (targetUserId &&
+                u.email &&
+                targetUserId.toLowerCase() === u.email.toLowerCase()) ||
+              (targetUserId &&
+                u.username &&
+                targetUserId.toLowerCase() === u.username.toLowerCase());
 
             if (isMatch) {
+              const cleanPerms =
+                targetPermissions !== undefined
+                  ? sanitizeUserPermissions(targetPermissions, isSuperAdminUser(u))
+                  : sanitizeUserPermissions(u);
               return {
                 ...u,
                 ...(detail.user || {}),
-                permissions: targetPermissions !== undefined ? targetPermissions : u.permissions,
-                customPermissions: targetPermissions !== undefined ? targetPermissions : u.customPermissions,
+                permissions: cleanPerms,
+                customPermissions: cleanPerms,
               };
             }
             return u;
@@ -340,7 +481,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (saved) {
               const parsed = JSON.parse(saved);
               if (Array.isArray(parsed) && parsed.length > 0) {
-                updatedList = parsed;
+                updatedList = parsed.map((u: ManagedUser) => {
+                  const cleanPerms = sanitizeUserPermissions(u);
+                  return { ...u, permissions: cleanPerms, customPermissions: cleanPerms };
+                });
               } else {
                 updatedList = prev;
               }
@@ -362,13 +506,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (!currentUser) return null;
 
         const isCurrentMatch =
-          !targetUserId || // Global broadcast with no target = refresh current session
+          !targetUserId ||
           currentUser.id === targetUserId ||
           (detail.user && currentUser.id === detail.user.id) ||
-          (detail.user?.email && currentUser.email && detail.user.email.toLowerCase() === detail.user.email.toLowerCase()) ||
-          (detail.user?.username && currentUser.username && detail.user.username.toLowerCase() === currentUser.username.toLowerCase()) ||
-          (targetUserId && currentUser.email && targetUserId.toLowerCase() === currentUser.email.toLowerCase()) ||
-          (targetUserId && currentUser.username && targetUserId.toLowerCase() === currentUser.username.toLowerCase()) ||
+          (detail.user?.email &&
+            currentUser.email &&
+            detail.user.email.toLowerCase() === currentUser.email.toLowerCase()) ||
+          (detail.user?.username &&
+            currentUser.username &&
+            detail.user.username.toLowerCase() === currentUser.username.toLowerCase()) ||
+          (targetUserId &&
+            currentUser.email &&
+            targetUserId.toLowerCase() === currentUser.email.toLowerCase()) ||
+          (targetUserId &&
+            currentUser.username &&
+            targetUserId.toLowerCase() === currentUser.username.toLowerCase()) ||
           (currentUser.id.includes('root') && targetUserId.includes('root'));
 
         if (isCurrentMatch) {
@@ -379,8 +531,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               if (savedUsers) {
                 const parsed: ManagedUser[] = JSON.parse(savedUsers);
                 const found = parsed.find(
-                  u => u.id === currentUser.id ||
-                       (currentUser.email && u.email && u.email.toLowerCase() === currentUser.email.toLowerCase())
+                  u =>
+                    u.id === currentUser.id ||
+                    (currentUser.email &&
+                      u.email &&
+                      u.email.toLowerCase() === currentUser.email.toLowerCase())
                 );
                 if (found && Array.isArray(found.permissions)) {
                   resolvedPerms = found.permissions;
@@ -389,19 +544,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             } catch {}
           }
 
-          const finalPerms = resolvedPerms !== undefined ? resolvedPerms : currentUser.permissions;
+          const rawPerms =
+            resolvedPerms !== undefined ? resolvedPerms : currentUser.permissions;
+          const finalPerms = sanitizeUserPermissions(
+            rawPerms,
+            isSuperAdminUser(currentUser)
+          );
 
           const updatedSession: AuthUser = {
             ...currentUser,
-            ...(detail.user ? {
-              nameAr: detail.user.nameAr || currentUser.nameAr,
-              nameEn: detail.user.nameEn || currentUser.nameEn,
-              role: detail.user.role || currentUser.role,
-              roleLabelAr: detail.user.roleLabelAr || currentUser.roleLabelAr,
-              jobTitleAr: detail.user.jobTitleAr || currentUser.jobTitleAr,
-              departmentAr: detail.user.departmentAr || currentUser.departmentAr,
-              allowedCompanyIds: detail.user.allowedCompanyIds || currentUser.allowedCompanyIds,
-            } : {}),
+            ...(detail.user
+              ? {
+                  nameAr: detail.user.nameAr || currentUser.nameAr,
+                  nameEn: detail.user.nameEn || currentUser.nameEn,
+                  role: detail.user.role || currentUser.role,
+                  roleLabelAr: detail.user.roleLabelAr || currentUser.roleLabelAr,
+                  jobTitleAr: detail.user.jobTitleAr || currentUser.jobTitleAr,
+                  departmentAr: detail.user.departmentAr || currentUser.departmentAr,
+                  allowedCompanyIds:
+                    detail.user.allowedCompanyIds || currentUser.allowedCompanyIds,
+                }
+              : {}),
             permissions: finalPerms,
           };
 
@@ -418,14 +581,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     window.addEventListener(ECO_PERMISSIONS_UPDATED_EVENT, handlePermissionsUpdated);
-    window.addEventListener('eco-permissions-updated', handlePermissionsUpdated);
+    window.addEventListener(ECO_RBAC_UPDATED_EVENT, handlePermissionsUpdated);
 
     // Cross-tab broadcast channel listener
     let bc: BroadcastChannel | null = null;
     if (typeof BroadcastChannel !== 'undefined') {
       try {
         bc = new BroadcastChannel('eco_rbac_channel');
-        bc.onmessage = (event) => {
+        bc.onmessage = event => {
           if (event.data?.type === 'PERMISSIONS_UPDATED') {
             handlePermissionsUpdated(
               new CustomEvent(ECO_PERMISSIONS_UPDATED_EVENT, {
@@ -437,37 +600,94 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } catch {}
     }
 
-    // Cross-tab storage listener
+    // Cross-tab storage listener: updates active session immediately if Admin edits permissions in another tab
     const handleStorageEvent = (e: StorageEvent) => {
       if (e.key === STORAGE_KEY_AUTH && e.newValue) {
         try {
           const parsed = JSON.parse(e.newValue);
           if (parsed && parsed.id) {
-            setUser(parsed);
+            setUser({
+              ...parsed,
+              permissions: sanitizeUserPermissions(parsed),
+            });
           }
         } catch {}
       } else if (e.key === STORAGE_KEY_USERS && e.newValue) {
         try {
           const parsed = JSON.parse(e.newValue);
           if (Array.isArray(parsed)) {
-            setManagedUsers(parsed);
+            const sanitizedList = parsed.map((u: ManagedUser) => {
+              const cleanPerms = sanitizeUserPermissions(u);
+              return { ...u, permissions: cleanPerms, customPermissions: cleanPerms };
+            });
+            setManagedUsers(sanitizedList);
+            setUser(currentUser => {
+              if (!currentUser) return null;
+              const matched = sanitizedList.find(
+                (u: ManagedUser) =>
+                  u.id === currentUser.id ||
+                  (currentUser.email &&
+                    u.email &&
+                    u.email.toLowerCase() === currentUser.email.toLowerCase())
+              );
+              if (matched) {
+                const updated = {
+                  ...currentUser,
+                  permissions: matched.permissions,
+                };
+                try {
+                  localStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify(updated));
+                  sessionStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify(updated));
+                } catch {}
+                return updated;
+              }
+              return currentUser;
+            });
           }
+        } catch {}
+      } else if (e.key === 'eco_rbac_matrix_v3' && e.newValue) {
+        try {
+          const repo = JSON.parse(e.newValue);
+          setUser(currentUser => {
+            if (!currentUser) return null;
+            const uPerms = repo[`user:${currentUser.id}`];
+            if (Array.isArray(uPerms)) {
+              const cleanPerms = sanitizeUserPermissions(
+                uPerms,
+                isSuperAdminUser(currentUser)
+              );
+              const updated = { ...currentUser, permissions: cleanPerms };
+              try {
+                localStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify(updated));
+                sessionStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify(updated));
+              } catch {}
+              return updated;
+            }
+            return currentUser;
+          });
         } catch {}
       }
     };
     window.addEventListener('storage', handleStorageEvent);
 
+    // Window focus listener: syncs latest D1 permissions when user switches back to tab/window
+    const handleWindowFocus = () => {
+      refreshCurrentUserPermissions();
+    };
+    window.addEventListener('focus', handleWindowFocus);
+
     return () => {
       window.removeEventListener(ECO_PERMISSIONS_UPDATED_EVENT, handlePermissionsUpdated);
-      window.removeEventListener('eco-permissions-updated', handlePermissionsUpdated);
+      window.removeEventListener(ECO_RBAC_UPDATED_EVENT, handlePermissionsUpdated);
       window.removeEventListener('storage', handleStorageEvent);
+      window.removeEventListener('focus', handleWindowFocus);
       if (bc) {
         try {
           bc.close();
         } catch {}
       }
     };
-  }, []);
+  }, [refreshCurrentUserPermissions]);
 
   // Dynamic audit event logger
   const logAuditEvent = useCallback(
@@ -506,7 +726,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     [user]
   );
 
-  // Restore session on initial load
+  // Restore session on initial load (Never re-seed or overwrite custom RBAC permissions)
   useEffect(() => {
     try {
       const storedLocal = localStorage.getItem(STORAGE_KEY_AUTH);
@@ -516,12 +736,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (activeData) {
         const parsed = JSON.parse(activeData) as AuthUser;
         if (parsed && parsed.id) {
-          const isRoot =
-            parsed.id === INITIAL_ROOT_ADMIN.id ||
-            parsed.id === 'usr_root_csuite_01' ||
-            parsed.id === 'usr_root_csuite' ||
-            parsed.username === 'admin' ||
-            parsed.email === 'admin@hrsup.com';
+          const isRoot = isSuperAdminUser(parsed);
 
           const isTaghreed =
             (parsed.nameAr && parsed.nameAr.includes('تغريد')) ||
@@ -531,43 +746,95 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // Non-root users can NEVER be SUPER_ADMIN
           const effectiveRole: UserRole = isRoot
             ? 'SUPER_ADMIN'
-            : (isTaghreed ? 'HR_MANAGER' : (parsed.role === 'SUPER_ADMIN' || (parsed.role as string) === 'admin' ? 'HR_MANAGER' : (parsed.role || 'HR_MANAGER')));
+            : isTaghreed
+              ? 'HR_MANAGER'
+              : parsed.role === 'SUPER_ADMIN' || (parsed.role as string) === 'admin'
+                ? 'HR_MANAGER'
+                : parsed.role || 'HR_MANAGER';
 
           const config = ROLE_CONFIGURATIONS[effectiveRole] || ROLE_CONFIGURATIONS.HR_MANAGER;
 
           const allowedModules = isRoot
             ? ROLE_CONFIGURATIONS.SUPER_ADMIN.allowedModuleIds
-            : (Array.isArray(parsed.allowedModuleIds) && parsed.allowedModuleIds.length > 0 ? parsed.allowedModuleIds : ['companies']);
+            : [];
 
           // Non-root users can NEVER have 'all' companies
           const allowedCompanies = isRoot
             ? ['all']
-            : (parsed.allowedCompanyIds && !parsed.allowedCompanyIds.includes('all') && parsed.allowedCompanyIds.length > 0
-                ? parsed.allowedCompanyIds
-                : ['comp_01']);
+            : parsed.allowedCompanyIds &&
+                !parsed.allowedCompanyIds.includes('all') &&
+                parsed.allowedCompanyIds.length > 0
+              ? parsed.allowedCompanyIds
+              : ['comp_01'];
+
+          // Check if eco_managed_users or eco_rbac_matrix_v3 in localStorage has explicit permissions for this user
+          let rawPerms: string[] = Array.isArray(parsed.permissions) ? parsed.permissions : [];
+          try {
+            const savedMatrix = localStorage.getItem('eco_rbac_matrix_v3');
+            if (savedMatrix) {
+              const repo = JSON.parse(savedMatrix);
+              if (Array.isArray(repo[`user:${parsed.id}`])) {
+                rawPerms = repo[`user:${parsed.id}`];
+              }
+            } else {
+              const savedUsers = localStorage.getItem(STORAGE_KEY_USERS);
+              if (savedUsers) {
+                const usersArr: ManagedUser[] = JSON.parse(savedUsers);
+                const foundUser = usersArr.find(u => u.id === parsed.id);
+                if (foundUser && Array.isArray(foundUser.permissions)) {
+                  rawPerms = foundUser.permissions;
+                }
+              }
+            }
+          } catch {}
+
+          const cleanPerms = sanitizeUserPermissions(rawPerms, isRoot);
 
           const restoredUser: AuthUser = {
             id: parsed.id,
             email: parsed.email,
             username: parsed.username,
             role: effectiveRole,
-            nameAr: isRoot ? 'يوسف حجازي' : (parsed.nameAr || (isTaghreed ? 'تغريد عاطف' : 'مستخدم المنظومة')),
-            nameEn: isRoot ? 'Yousef Hegazy' : (parsed.nameEn || (isTaghreed ? 'Taghreed Atef' : 'System User')),
+            nameAr: isRoot
+              ? 'يوسف حجازي'
+              : parsed.nameAr || (isTaghreed ? 'تغريد عاطف' : 'مستخدم المنظومة'),
+            nameEn: isRoot
+              ? 'Yousef Hegazy'
+              : parsed.nameEn || (isTaghreed ? 'Taghreed Atef' : 'System User'),
             jobTitleAr: isRoot
               ? 'مدير النظام العام / رئيس مجلس الإدارة'
-              : (isTaghreed ? 'مدير الموارد البشرية' : cleanArabicTitle(parsed.jobTitleAr || config.titleAr)),
-            roleLabelAr: isRoot ? 'مدير النظام العام / رئيس مجلس الإدارة' : (isTaghreed ? 'مدير الموارد البشرية' : cleanArabicTitle(config.titleAr)),
+              : isTaghreed
+                ? 'مدير الموارد البشرية'
+                : cleanArabicTitle(parsed.jobTitleAr || config.titleAr),
+            roleLabelAr: isRoot
+              ? 'مدير النظام العام / رئيس مجلس الإدارة'
+              : isTaghreed
+                ? 'مدير الموارد البشرية'
+                : cleanArabicTitle(config.titleAr),
             roleLabelEn: isRoot ? 'System Administrator / CEO' : config.titleEn,
-            departmentAr: isRoot ? 'الإدارة العليا والاستراتيجية' : (isTaghreed ? 'إدارة الموارد البشرية والرواتب' : cleanArabicTitle(parsed.departmentAr || config.departmentAr)),
-            departmentEn: isRoot ? 'Executive Management' : (parsed.departmentEn || config.departmentEn),
-            phone: isRoot ? (parsed.phone || '+20 100 000 0000') : (parsed.phone || '+20 100 000 0001'),
-            clearanceLevel: isRoot ? 4 : (parsed.clearanceLevel || config.clearanceLevel || 2),
-            clearanceNameAr: isRoot ? 'إدارة عليا وحوكمة' : (config.clearanceNameAr || 'صلاحيات مخصصة'),
-            clearanceNameEn: isRoot ? 'Level 4 - C-Suite Governance' : (config.clearanceNameEn || 'Custom Role'),
-            permissions: isRoot ? ['*'] : (Array.isArray(parsed.permissions) && !parsed.permissions.includes('*') ? parsed.permissions : []),
+            departmentAr: isRoot
+              ? 'الإدارة العليا والاستراتيجية'
+              : isTaghreed
+                ? 'إدارة الموارد البشرية والرواتب'
+                : cleanArabicTitle(parsed.departmentAr || config.departmentAr),
+            departmentEn: isRoot
+              ? 'Executive Management'
+              : parsed.departmentEn || config.departmentEn,
+            phone: isRoot
+              ? parsed.phone || '+20 100 000 0000'
+              : parsed.phone || '+20 100 000 0001',
+            clearanceLevel: isRoot ? 4 : parsed.clearanceLevel || config.clearanceLevel || 2,
+            clearanceNameAr: isRoot
+              ? 'إدارة عليا وحوكمة'
+              : config.clearanceNameAr || 'صلاحيات مخصصة',
+            clearanceNameEn: isRoot
+              ? 'Level 4 - C-Suite Governance'
+              : config.clearanceNameEn || 'Custom Role',
+            permissions: cleanPerms,
             allowedModuleIds: allowedModules,
             allowedCompanyIds: allowedCompanies,
-            lastLogin: parsed.lastLogin || new Date().toISOString().replace('T', ' ').substring(0, 16),
+            lastLogin:
+              parsed.lastLogin || new Date().toISOString().replace('T', ' ').substring(0, 16),
           };
 
           setUser(restoredUser);
@@ -624,25 +891,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const edgeRes = await d1Client.login(cleanInput, password);
         if (edgeRes.success && edgeRes.user) {
           const rawRole = (edgeRes.user.role as string) || (edgeRes.user as any).role_id || 'HR_MANAGER';
-          const isRoot =
-            edgeRes.user.id === INITIAL_ROOT_ADMIN.id ||
-            edgeRes.user.id === 'usr_root_csuite_01' ||
-            edgeRes.user.username === 'admin' ||
-            edgeRes.user.email === 'admin@hrsup.com';
+          const isRoot = isSuperAdminUser(edgeRes.user);
 
           const mappedRole: UserRole = isRoot ? 'SUPER_ADMIN' : (rawRole as UserRole);
           const config = ROLE_CONFIGURATIONS[mappedRole] || ROLE_CONFIGURATIONS.HR_MANAGER;
 
-          const allowedCompanies = (edgeRes.user as any).allowedCompanyIds || ['all'];
-          const userPermissions = isRoot
-            ? ['*']
-            : (Array.isArray(edgeRes.user.permissions) && edgeRes.user.permissions.length > 0
-                ? edgeRes.user.permissions
-                : []);
+          const allowedCompanies = isRoot
+            ? ['all']
+            : ((edgeRes.user as any).allowedCompanyIds && !(edgeRes.user as any).allowedCompanyIds.includes('all')
+                ? (edgeRes.user as any).allowedCompanyIds
+                : ['comp_01']);
+
+          const userPermissions = sanitizeUserPermissions(
+            Array.isArray(edgeRes.user.permissions) ? edgeRes.user.permissions : [],
+            isRoot
+          );
 
           const allowedModules = isRoot
             ? ROLE_CONFIGURATIONS.SUPER_ADMIN.allowedModuleIds
-            : (Array.isArray(edgeRes.user.allowedModuleIds) && edgeRes.user.allowedModuleIds.length > 0 ? edgeRes.user.allowedModuleIds : ['companies']);
+            : [];
 
           const authenticatedUser: AuthUser = {
             id: edgeRes.user.id,
@@ -683,6 +950,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (edgeRes.token) {
             setSessionToken(edgeRes.token, isRemember);
           }
+
+          // Pull latest user RBAC matrix from D1 right after login
+          refreshCurrentUserPermissions();
 
           // Activate 3D Cinematic Post-Login Welcome Splash Screen in both localStorage and sessionStorage
           if (typeof window !== 'undefined') {
@@ -754,11 +1024,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
 
         const config = ROLE_CONFIGURATIONS[foundInManaged.role];
-        const isRoot =
-          foundInManaged.id === INITIAL_ROOT_ADMIN.id ||
-          foundInManaged.id === 'usr_root_csuite_01' ||
-          foundInManaged.username === 'admin' ||
-          foundInManaged.email === 'admin@hrsup.com';
+        const isRoot = isSuperAdminUser(foundInManaged);
 
         authenticatedUser = {
           id: foundInManaged.id,
@@ -777,9 +1043,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           clearanceLevel: foundInManaged.clearanceLevel,
           clearanceNameAr: foundInManaged.clearanceNameAr,
           clearanceNameEn: foundInManaged.clearanceNameEn,
-          allowedModuleIds: isRoot ? ROLE_CONFIGURATIONS.SUPER_ADMIN.allowedModuleIds : ((foundInManaged as any).allowedModuleIds || []),
-          allowedCompanyIds: foundInManaged.allowedCompanyIds || ['all'],
-          permissions: isRoot ? ['*'] : (foundInManaged.permissions || foundInManaged.customPermissions || []),
+          allowedModuleIds: isRoot ? ROLE_CONFIGURATIONS.SUPER_ADMIN.allowedModuleIds : [],
+          allowedCompanyIds: isRoot ? ['all'] : (foundInManaged.allowedCompanyIds || ['comp_01']),
+          permissions: sanitizeUserPermissions(
+            foundInManaged.permissions || foundInManaged.customPermissions || [],
+            isRoot
+          ),
           lastLogin: new Date().toISOString().replace('T', ' ').substring(0, 16),
         };
       } else if (foundInSeed) {
@@ -799,9 +1068,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           };
         }
 
+        const isSeedRoot = isSuperAdminUser(foundInSeed.user);
         authenticatedUser = {
           ...foundInSeed.user,
-          permissions: foundInSeed.user.permissions || (foundInSeed.user.role === 'SUPER_ADMIN' ? [...ALL_COMPANY_PERMISSIONS] : []),
+          allowedModuleIds: isSeedRoot ? ROLE_CONFIGURATIONS.SUPER_ADMIN.allowedModuleIds : [],
+          permissions: sanitizeUserPermissions(
+            foundInSeed.user.permissions || (isSeedRoot ? [...ALL_COMPANY_PERMISSIONS] : []),
+            isSeedRoot
+          ),
           lastLogin: new Date().toISOString().replace('T', ' ').substring(0, 16),
         };
       }
@@ -855,7 +1129,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(false);
       return { success: true, user: authenticatedUser };
     },
-    [rememberMe, managedUsers, logAuditEvent]
+    [rememberMe, managedUsers, logAuditEvent, refreshCurrentUserPermissions]
   );
 
   const logout = useCallback(() => {
@@ -885,8 +1159,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     (role: UserRole) => {
       const seed = PRECONFIGURED_SEED_USERS.find(acc => acc.user.role === role);
       if (seed) {
+        const isSeedRoot = isSuperAdminUser(seed.user);
         const updated = {
           ...seed.user,
+          permissions: sanitizeUserPermissions(seed.user.permissions || [], isSeedRoot),
           lastLogin: new Date().toISOString().replace('T', ' ').substring(0, 16),
         };
         setUser(updated);
@@ -909,38 +1185,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     [rememberMe, logAuditEvent]
   );
 
-  // Granular Action-Level RBAC Checker with live reactive enforcement
-  // Supports both hasPermission('perm.key') and hasPermission(user, 'perm.key')
+  // Strict Deny-By-Default Action-Level RBAC Checker
+  // Zero department/role fallbacks, zero non-admin wildcard expansion
   const hasPermission = useCallback(
     (userOrKey: any, maybeKey?: string): boolean => {
       const targetKey: string = (maybeKey || userOrKey || '') as string;
       const targetUser: AuthUser | null = maybeKey ? userOrKey : user;
 
-      if (!targetUser) return false;
-      const isRoot =
-        targetUser.id === 'usr_root_csuite_01' ||
-        targetUser.id === 'usr_root_csuite' ||
-        targetUser.id === INITIAL_ROOT_ADMIN.id ||
-        targetUser.username === 'admin' ||
-        targetUser.email === 'admin@hrsup.com';
-      if (isRoot) return true;
+      if (!targetUser || !targetKey) return false;
+      if (isSuperAdminUser(targetUser)) return true;
 
-      // If user has an explicit permissions list, enforce it with wildcard support
-      if (Array.isArray(targetUser.permissions)) {
-        if (targetUser.permissions.includes('*')) return true;
-        const parts = targetKey.split('.');
-        if (parts.length > 1 && targetUser.permissions.includes(`${parts[0]}.*`)) return true;
-        if (parts.length > 2 && targetUser.permissions.includes(`${parts[0]}.${parts[1]}.*`)) return true;
-        return targetUser.permissions.includes(targetKey);
-      }
-      return false;
+      const explicitPerms = sanitizeUserPermissions(targetUser);
+      return explicitPerms.includes(targetKey);
     },
     [user]
   );
 
   const checkModuleAccess = useCallback(
     (moduleId: string): boolean => {
-      return hasModuleAccess(user, moduleId);
+      return canViewModule(user, moduleId);
+    },
+    [user]
+  );
+
+  const checkCanViewModule = useCallback(
+    (moduleId: string): boolean => {
+      return canViewModule(user, moduleId);
+    },
+    [user]
+  );
+
+  const checkCanViewSubModule = useCallback(
+    (subModuleId: string): boolean => {
+      return canViewSubModule(user, subModuleId);
     },
     [user]
   );
@@ -1057,7 +1334,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     [user, managedUsers, logAuditEvent]
   );
 
-  // Granular RBAC Permissions Matrix Updater (Syncs to D1 /api/permissions)
+  // Granular RBAC Permissions Matrix Updater (Syncs to D1 /api/rbac & /api/users + LocalStorage)
   const updateUserPermissions = useCallback(
     async (
       userId: string,
@@ -1068,12 +1345,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           u => u.id === userId || (u.email && u.email.toLowerCase() === userId.toLowerCase())
         );
         const targetName = target ? target.nameAr : userId;
+        const isTargetRoot = target ? isSuperAdminUser(target) : userId.includes('root');
+        const cleanPerms = sanitizeUserPermissions(permissions, isTargetRoot);
 
-        // 1. Immediately update managedUsers in React state
+        // 1. Immediately update managedUsers in React state & localStorage
         setManagedUsers(prev => {
           const updated = prev.map(u =>
             u.id === userId || (target && u.id === target.id) || (u.email && u.email.toLowerCase() === userId.toLowerCase())
-              ? { ...u, permissions, customPermissions: permissions }
+              ? { ...u, permissions: cleanPerms, customPermissions: cleanPerms }
               : u
           );
           try {
@@ -1082,7 +1361,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return updated;
         });
 
-        // 2. Immediately update active user session in React state if matched
+        // 2. Immediately update active user session in React state & localStorage if matched
         setUser(currentUser => {
           if (!currentUser) return null;
           const isMatch =
@@ -1095,7 +1374,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (isMatch) {
             const updatedActive: AuthUser = {
               ...currentUser,
-              permissions,
+              permissions: cleanPerms,
             };
             try {
               localStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify(updatedActive));
@@ -1106,26 +1385,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return currentUser;
         });
 
-        // 3. Immediately broadcast reactive zero-refresh event mesh
+        // 3. Immediately broadcast reactive zero-refresh event mesh ('eco-rbac-updated' + 'eco-permissions-updated')
         const eventDetail: PermissionsUpdatedEventDetail = {
           userId,
-          permissions,
-          user: target ? { ...target, permissions, customPermissions: permissions } : undefined,
+          permissions: cleanPerms,
+          user: target ? { ...target, permissions: cleanPerms, customPermissions: cleanPerms } : undefined,
         };
         dispatchPermissionsUpdate(eventDetail);
 
-        // 4. Persist to Cloudflare D1
-        const res = await d1Client.saveUserPermissions(userId, permissions, targetName);
-        if (!res.success) {
-          throw new Error(res.error || 'Failed to save permissions to D1');
+        // 4. Persist to Cloudflare D1 (/api/rbac AND /api/users)
+        const [rbacRes] = await Promise.all([
+          d1Client.saveUserPermissions(userId, cleanPerms, targetName),
+          d1Client.updateUser(userId, { permissions: cleanPerms }),
+        ]);
+        if (!rbacRes.success) {
+          throw new Error(rbacRes.error || 'Failed to save permissions to D1');
         }
 
         logAuditEvent({
           actionAr: 'تعديل مصفوفة الصلاحيات',
           actionEn: 'Update Permissions Matrix',
           category: 'RBAC',
-          detailsAr: `تم تحديث صلاحيات المستخدم (${targetName}) بعدد ${permissions.length} صلاحية`,
-          detailsEn: `Updated permissions matrix for ${userId} (${permissions.length} permissions assigned)`,
+          detailsAr: `تم تحديث صلاحيات المستخدم (${targetName}) بعدد ${cleanPerms.length} صلاحية`,
+          detailsEn: `Updated permissions matrix for ${userId} (${cleanPerms.length} permissions assigned)`,
           status: 'SUCCESS',
         });
 
@@ -1141,8 +1423,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // User Management Actions (Synced with Cloudflare D1)
   const addManagedUser = useCallback(
     (userData: Omit<ManagedUser, 'id' | 'createdAt'>): ManagedUser => {
+      const isNewRoot = isSuperAdminUser(userData);
+      const cleanPerms = sanitizeUserPermissions(userData.permissions || [], isNewRoot);
       const newUser: ManagedUser = {
         ...userData,
+        permissions: cleanPerms,
+        customPermissions: cleanPerms,
         id: `usr_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
         createdAt: new Date().toISOString().split('T')[0],
       };
@@ -1176,10 +1462,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const updateManagedUser = useCallback(
     (id: string, updates: Partial<ManagedUser>) => {
+      const sanitizedUpdates: Partial<ManagedUser> = {
+        ...updates,
+        ...(updates.permissions !== undefined
+          ? {
+              permissions: sanitizeUserPermissions(
+                updates.permissions,
+                isSuperAdminUser({ id, ...updates })
+              ),
+              customPermissions: sanitizeUserPermissions(
+                updates.permissions,
+                isSuperAdminUser({ id, ...updates })
+              ),
+            }
+          : {}),
+      };
+
       setManagedUsers(prev => {
         const nextList = prev.map(u => {
           if (u.id === id) {
-            return { ...u, ...updates };
+            return { ...u, ...sanitizedUpdates };
           }
           return u;
         });
@@ -1194,20 +1496,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (!currentUser) return null;
         const isMatch =
           currentUser.id === id ||
-          (updates.email && currentUser.email && updates.email.toLowerCase() === currentUser.email.toLowerCase()) ||
-          (updates.username && currentUser.username && updates.username.toLowerCase() === currentUser.username.toLowerCase());
+          (sanitizedUpdates.email && currentUser.email && sanitizedUpdates.email.toLowerCase() === currentUser.email.toLowerCase()) ||
+          (sanitizedUpdates.username && currentUser.username && sanitizedUpdates.username.toLowerCase() === currentUser.username.toLowerCase());
 
         if (isMatch) {
           const updatedActive: AuthUser = {
             ...currentUser,
-            ...(updates.nameAr ? { nameAr: updates.nameAr } : {}),
-            ...(updates.nameEn ? { nameEn: updates.nameEn } : {}),
-            ...(updates.role ? { role: updates.role } : {}),
-            ...(updates.roleLabelAr ? { roleLabelAr: updates.roleLabelAr } : {}),
-            ...(updates.jobTitleAr ? { jobTitleAr: updates.jobTitleAr } : {}),
-            ...(updates.departmentAr ? { departmentAr: updates.departmentAr } : {}),
-            ...(updates.allowedCompanyIds ? { allowedCompanyIds: updates.allowedCompanyIds } : {}),
-            ...(updates.permissions ? { permissions: updates.permissions } : {}),
+            ...(sanitizedUpdates.nameAr ? { nameAr: sanitizedUpdates.nameAr } : {}),
+            ...(sanitizedUpdates.nameEn ? { nameEn: sanitizedUpdates.nameEn } : {}),
+            ...(sanitizedUpdates.role ? { role: sanitizedUpdates.role } : {}),
+            ...(sanitizedUpdates.roleLabelAr ? { roleLabelAr: sanitizedUpdates.roleLabelAr } : {}),
+            ...(sanitizedUpdates.jobTitleAr ? { jobTitleAr: sanitizedUpdates.jobTitleAr } : {}),
+            ...(sanitizedUpdates.departmentAr ? { departmentAr: sanitizedUpdates.departmentAr } : {}),
+            ...(sanitizedUpdates.allowedCompanyIds ? { allowedCompanyIds: sanitizedUpdates.allowedCompanyIds } : {}),
+            ...(sanitizedUpdates.permissions ? { permissions: sanitizedUpdates.permissions } : {}),
           };
           try {
             localStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify(updatedActive));
@@ -1219,16 +1521,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       // Async sync to Cloudflare D1
-      d1Client.updateUser(id, updates).catch(e => console.warn('D1 user update sync error:', e));
+      d1Client.updateUser(id, sanitizedUpdates).catch(e => console.warn('D1 user update sync error:', e));
+      if (sanitizedUpdates.permissions !== undefined) {
+        d1Client.saveRbacMatrix('user', id, sanitizedUpdates.permissions, sanitizedUpdates.nameAr || id).catch(() => {});
+      }
 
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('eco-data-updated'));
         window.dispatchEvent(new CustomEvent('eco-users-updated'));
-        if (updates.permissions || updates.role || updates.status) {
+        if (sanitizedUpdates.permissions || sanitizedUpdates.role || sanitizedUpdates.status) {
           dispatchPermissionsUpdate({
             userId: id,
-            permissions: updates.permissions,
-            user: updates,
+            permissions: sanitizedUpdates.permissions,
+            user: sanitizedUpdates,
           });
         }
       }
@@ -1291,8 +1596,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         logout,
         switchUserRole,
         checkModuleAccess,
+        canViewModule: checkCanViewModule,
+        canViewSubModule: checkCanViewSubModule,
         hasRole,
         hasPermission,
+        refreshCurrentUserPermissions,
         updateUserProfile,
         changePassword,
         updateUserPermissions,
