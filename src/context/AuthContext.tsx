@@ -11,7 +11,12 @@ import {
   INITIAL_TAGHREED_USER,
   ALL_COMPANY_PERMISSIONS
 } from '../types/auth';
-import { SUBMODULE_VIEW_PERMISSION_MAP } from '../types/rbac';
+import {
+  SUBMODULE_VIEW_PERMISSION_MAP,
+  ECO_PERMISSIONS_UPDATED_EVENT,
+  PermissionsUpdatedEventDetail,
+  dispatchPermissionsUpdate,
+} from '../types/rbac';
 import { d1Client, clearSessionToken, setSessionToken } from '../services/d1Client';
 
 interface AuthContextType {
@@ -298,28 +303,168 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Real-time synchronization event listener for permissions matrix updates
     const handlePermissionsUpdated = (e: Event) => {
-      const ce = e as CustomEvent<{ userId?: string; permissions?: string[] }>;
-      if (ce.detail?.userId && Array.isArray(ce.detail?.permissions)) {
-        const { userId, permissions } = ce.detail;
-        setManagedUsers(prev =>
-          prev.map(u => (u.id === userId ? { ...u, permissions, customPermissions: permissions } : u))
-        );
-        setUser(currentUser => {
-          if (currentUser && currentUser.id === userId) {
-            const updated = { ...currentUser, permissions };
-            try {
-              localStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify(updated));
-            } catch {}
-            return updated;
+      const ce = e as CustomEvent<PermissionsUpdatedEventDetail>;
+      const detail = ce.detail || {};
+      const targetUserId = detail.userId || detail.user?.id;
+      const targetPermissions = Array.isArray(detail.permissions)
+        ? detail.permissions
+        : (Array.isArray(detail.user?.permissions) ? detail.user.permissions : undefined);
+
+      // 1. Instantly update managedUsers collection in React state
+      setManagedUsers(prev => {
+        let updatedList: ManagedUser[];
+        if (targetUserId) {
+          updatedList = prev.map(u => {
+            const isMatch =
+              u.id === targetUserId ||
+              (detail.user && detail.user.id === u.id) ||
+              (detail.user?.email && u.email && detail.user.email.toLowerCase() === u.email.toLowerCase()) ||
+              (detail.user?.username && u.username && detail.user.username.toLowerCase() === u.username.toLowerCase()) ||
+              (targetUserId && u.email && targetUserId.toLowerCase() === u.email.toLowerCase()) ||
+              (targetUserId && u.username && targetUserId.toLowerCase() === u.username.toLowerCase());
+
+            if (isMatch) {
+              return {
+                ...u,
+                ...(detail.user || {}),
+                permissions: targetPermissions !== undefined ? targetPermissions : u.permissions,
+                customPermissions: targetPermissions !== undefined ? targetPermissions : u.customPermissions,
+              };
+            }
+            return u;
+          });
+        } else {
+          try {
+            const saved = localStorage.getItem(STORAGE_KEY_USERS);
+            if (saved) {
+              const parsed = JSON.parse(saved);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                updatedList = parsed;
+              } else {
+                updatedList = prev;
+              }
+            } else {
+              updatedList = prev;
+            }
+          } catch {
+            updatedList = prev;
           }
-          return currentUser;
-        });
-      }
+        }
+        try {
+          localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(updatedList));
+        } catch {}
+        return updatedList;
+      });
+
+      // 2. Instantly update current active user session (currentUser) in real time
+      setUser(currentUser => {
+        if (!currentUser) return null;
+
+        const isCurrentMatch =
+          !targetUserId || // Global broadcast with no target = refresh current session
+          currentUser.id === targetUserId ||
+          (detail.user && currentUser.id === detail.user.id) ||
+          (detail.user?.email && currentUser.email && detail.user.email.toLowerCase() === detail.user.email.toLowerCase()) ||
+          (detail.user?.username && currentUser.username && detail.user.username.toLowerCase() === currentUser.username.toLowerCase()) ||
+          (targetUserId && currentUser.email && targetUserId.toLowerCase() === currentUser.email.toLowerCase()) ||
+          (targetUserId && currentUser.username && targetUserId.toLowerCase() === currentUser.username.toLowerCase()) ||
+          (currentUser.id.includes('root') && targetUserId.includes('root'));
+
+        if (isCurrentMatch) {
+          let resolvedPerms = targetPermissions;
+          if (resolvedPerms === undefined) {
+            try {
+              const savedUsers = localStorage.getItem(STORAGE_KEY_USERS);
+              if (savedUsers) {
+                const parsed: ManagedUser[] = JSON.parse(savedUsers);
+                const found = parsed.find(
+                  u => u.id === currentUser.id ||
+                       (currentUser.email && u.email && u.email.toLowerCase() === currentUser.email.toLowerCase())
+                );
+                if (found && Array.isArray(found.permissions)) {
+                  resolvedPerms = found.permissions;
+                }
+              }
+            } catch {}
+          }
+
+          const finalPerms = resolvedPerms !== undefined ? resolvedPerms : currentUser.permissions;
+
+          const updatedSession: AuthUser = {
+            ...currentUser,
+            ...(detail.user ? {
+              nameAr: detail.user.nameAr || currentUser.nameAr,
+              nameEn: detail.user.nameEn || currentUser.nameEn,
+              role: detail.user.role || currentUser.role,
+              roleLabelAr: detail.user.roleLabelAr || currentUser.roleLabelAr,
+              jobTitleAr: detail.user.jobTitleAr || currentUser.jobTitleAr,
+              departmentAr: detail.user.departmentAr || currentUser.departmentAr,
+              allowedCompanyIds: detail.user.allowedCompanyIds || currentUser.allowedCompanyIds,
+            } : {}),
+            permissions: finalPerms,
+          };
+
+          try {
+            localStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify(updatedSession));
+            sessionStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify(updatedSession));
+          } catch {}
+
+          return updatedSession;
+        }
+
+        return currentUser;
+      });
     };
 
+    window.addEventListener(ECO_PERMISSIONS_UPDATED_EVENT, handlePermissionsUpdated);
     window.addEventListener('eco-permissions-updated', handlePermissionsUpdated);
+
+    // Cross-tab broadcast channel listener
+    let bc: BroadcastChannel | null = null;
+    if (typeof BroadcastChannel !== 'undefined') {
+      try {
+        bc = new BroadcastChannel('eco_rbac_channel');
+        bc.onmessage = (event) => {
+          if (event.data?.type === 'PERMISSIONS_UPDATED') {
+            handlePermissionsUpdated(
+              new CustomEvent(ECO_PERMISSIONS_UPDATED_EVENT, {
+                detail: event.data.detail,
+              })
+            );
+          }
+        };
+      } catch {}
+    }
+
+    // Cross-tab storage listener
+    const handleStorageEvent = (e: StorageEvent) => {
+      if (e.key === STORAGE_KEY_AUTH && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (parsed && parsed.id) {
+            setUser(parsed);
+          }
+        } catch {}
+      } else if (e.key === STORAGE_KEY_USERS && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (Array.isArray(parsed)) {
+            setManagedUsers(parsed);
+          }
+        } catch {}
+      }
+    };
+    window.addEventListener('storage', handleStorageEvent);
+
     return () => {
+      window.removeEventListener(ECO_PERMISSIONS_UPDATED_EVENT, handlePermissionsUpdated);
       window.removeEventListener('eco-permissions-updated', handlePermissionsUpdated);
+      window.removeEventListener('storage', handleStorageEvent);
+      if (bc) {
+        try {
+          bc.close();
+        } catch {}
+      }
     };
   }, []);
 
@@ -834,7 +979,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (hasAnySubPerm) return true;
 
         // When permissions array is present, it is the SOLE authority. Never fall through to allowedModuleIds!
-        return false;
+        if (isRoot && user.permissions.length === 0) return true;
+        return isRoot && user.permissions.includes('*');
       }
 
       // Check user's assigned allowedModuleIds only if permissions is not an array (legacy fallback)
@@ -966,41 +1112,60 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       permissions: string[]
     ): Promise<{ success: boolean; error?: string }> => {
       try {
-        const target = managedUsers.find(u => u.id === userId);
+        const target = managedUsers.find(
+          u => u.id === userId || (u.email && u.email.toLowerCase() === userId.toLowerCase())
+        );
         const targetName = target ? target.nameAr : userId;
 
-        // Update managedUsers in state
-        setManagedUsers(prev =>
-          prev.map(u =>
-            u.id === userId
+        // 1. Immediately update managedUsers in React state
+        setManagedUsers(prev => {
+          const updated = prev.map(u =>
+            u.id === userId || (target && u.id === target.id) || (u.email && u.email.toLowerCase() === userId.toLowerCase())
               ? { ...u, permissions, customPermissions: permissions }
               : u
-          )
-        );
+          );
+          try {
+            localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(updated));
+          } catch {}
+          return updated;
+        });
 
-        // If the updated user is currently logged in, update active user state immediately
-        if (user && user.id === userId) {
-          const updatedActive: AuthUser = {
-            ...user,
-            permissions,
-          };
-          setUser(updatedActive);
-          if (rememberMe) {
-            localStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify(updatedActive));
-          } else {
-            sessionStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify(updatedActive));
+        // 2. Immediately update active user session in React state if matched
+        setUser(currentUser => {
+          if (!currentUser) return null;
+          const isMatch =
+            currentUser.id === userId ||
+            (target && currentUser.id === target.id) ||
+            (target && currentUser.email && target.email && currentUser.email.toLowerCase() === target.email.toLowerCase()) ||
+            (target && currentUser.username && target.username && currentUser.username.toLowerCase() === target.username.toLowerCase()) ||
+            (currentUser.id.includes('root') && userId.includes('root'));
+
+          if (isMatch) {
+            const updatedActive: AuthUser = {
+              ...currentUser,
+              permissions,
+            };
+            try {
+              localStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify(updatedActive));
+              sessionStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify(updatedActive));
+            } catch {}
+            return updatedActive;
           }
-        }
+          return currentUser;
+        });
 
-        // Persist to Cloudflare D1
+        // 3. Immediately broadcast reactive zero-refresh event mesh
+        const eventDetail: PermissionsUpdatedEventDetail = {
+          userId,
+          permissions,
+          user: target ? { ...target, permissions, customPermissions: permissions } : undefined,
+        };
+        dispatchPermissionsUpdate(eventDetail);
+
+        // 4. Persist to Cloudflare D1
         const res = await d1Client.saveUserPermissions(userId, permissions, targetName);
         if (!res.success) {
           throw new Error(res.error || 'Failed to save permissions to D1');
-        }
-
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('eco-data-updated'));
-          window.dispatchEvent(new CustomEvent('eco-permissions-updated'));
         }
 
         logAuditEvent({
@@ -1018,7 +1183,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { success: false, error: err?.message || 'فشل حفظ الصلاحيات في قاعدة البيانات' };
       }
     },
-    [user, managedUsers, rememberMe, logAuditEvent]
+    [managedUsers, logAuditEvent]
   );
 
   // User Management Actions (Synced with Cloudflare D1)
@@ -1059,32 +1224,71 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const updateManagedUser = useCallback(
     (id: string, updates: Partial<ManagedUser>) => {
-      setManagedUsers(prev =>
-        prev.map(u => {
+      setManagedUsers(prev => {
+        const nextList = prev.map(u => {
           if (u.id === id) {
-            const updated = { ...u, ...updates };
-
-            // Async sync to Cloudflare D1
-            d1Client.updateUser(id, updates).catch(e => console.warn('D1 user update sync error:', e));
-
-            if (typeof window !== 'undefined') {
-              window.dispatchEvent(new CustomEvent('eco-data-updated'));
-              window.dispatchEvent(new CustomEvent('eco-users-updated'));
-            }
-
-            logAuditEvent({
-              actionAr: 'تعديل بيانات وصلاحيات مستخدم',
-              actionEn: 'Update User Profile & Permissions',
-              category: 'USER_MGMT',
-              detailsAr: `تم تحديث بيانات المستخدم ${updated.nameAr} (${updated.roleLabelAr})`,
-              detailsEn: `Updated credentials and role for ${updated.nameEn}`,
-              status: 'SUCCESS',
-            });
-            return updated;
+            return { ...u, ...updates };
           }
           return u;
-        })
-      );
+        });
+        try {
+          localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(nextList));
+        } catch {}
+        return nextList;
+      });
+
+      // Synchronously update currentUser state if edited user is the active user
+      setUser(currentUser => {
+        if (!currentUser) return null;
+        const isMatch =
+          currentUser.id === id ||
+          (updates.email && currentUser.email && updates.email.toLowerCase() === currentUser.email.toLowerCase()) ||
+          (updates.username && currentUser.username && updates.username.toLowerCase() === currentUser.username.toLowerCase());
+
+        if (isMatch) {
+          const updatedActive: AuthUser = {
+            ...currentUser,
+            ...(updates.nameAr ? { nameAr: updates.nameAr } : {}),
+            ...(updates.nameEn ? { nameEn: updates.nameEn } : {}),
+            ...(updates.role ? { role: updates.role } : {}),
+            ...(updates.roleLabelAr ? { roleLabelAr: updates.roleLabelAr } : {}),
+            ...(updates.jobTitleAr ? { jobTitleAr: updates.jobTitleAr } : {}),
+            ...(updates.departmentAr ? { departmentAr: updates.departmentAr } : {}),
+            ...(updates.allowedCompanyIds ? { allowedCompanyIds: updates.allowedCompanyIds } : {}),
+            ...(updates.permissions ? { permissions: updates.permissions } : {}),
+          };
+          try {
+            localStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify(updatedActive));
+            sessionStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify(updatedActive));
+          } catch {}
+          return updatedActive;
+        }
+        return currentUser;
+      });
+
+      // Async sync to Cloudflare D1
+      d1Client.updateUser(id, updates).catch(e => console.warn('D1 user update sync error:', e));
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('eco-data-updated'));
+        window.dispatchEvent(new CustomEvent('eco-users-updated'));
+        if (updates.permissions || updates.role || updates.status) {
+          dispatchPermissionsUpdate({
+            userId: id,
+            permissions: updates.permissions,
+            user: updates,
+          });
+        }
+      }
+
+      logAuditEvent({
+        actionAr: 'تعديل بيانات وصلاحيات مستخدم',
+        actionEn: 'Update User Profile & Permissions',
+        category: 'USER_MGMT',
+        detailsAr: `تم تحديث بيانات وصلاحيات المستخدم (${id})`,
+        detailsEn: `Updated credentials and permissions for user ${id}`,
+        status: 'SUCCESS',
+      });
     },
     [logAuditEvent]
   );

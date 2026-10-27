@@ -1353,3 +1353,40 @@ export function cleanArabicTitle(title?: string): string {
     .replace(/\(CTS\)/gi, '')
     .trim();
 }
+
+/**
+ * Real-Time Reactive RBAC Event Protocol
+ * Enables zero-refresh permission updates and instantaneous UI re-gating
+ */
+export const ECO_PERMISSIONS_UPDATED_EVENT = 'eco-permissions-updated';
+
+export interface PermissionsUpdatedEventDetail {
+  userId?: string;
+  permissions?: string[];
+  user?: any;
+}
+
+/**
+ * Universal dispatcher for zero-refresh reactive RBAC state synchronization
+ * Broadcasts across local window event mesh and cross-tab BroadcastChannel
+ */
+export function dispatchPermissionsUpdate(detail?: PermissionsUpdatedEventDetail): void {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(
+      new CustomEvent(ECO_PERMISSIONS_UPDATED_EVENT, { detail: detail || {} })
+    );
+    window.dispatchEvent(new CustomEvent('eco-data-updated'));
+
+    if (typeof BroadcastChannel !== 'undefined') {
+      try {
+        const bc = new BroadcastChannel('eco_rbac_channel');
+        bc.postMessage({
+          type: 'PERMISSIONS_UPDATED',
+          detail: detail || {},
+        });
+        bc.close();
+      } catch {}
+    }
+  }
+}
+

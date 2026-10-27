@@ -6,7 +6,8 @@ export type ConfigurationCategory =
   | 'signatory_titles'
   | 'meeting_rooms'
   | 'couriers'
-  | 'work_permits';
+  | 'work_permits'
+  | 'reception_lists';
 
 export interface SystemConfigurationItem {
   id: string;

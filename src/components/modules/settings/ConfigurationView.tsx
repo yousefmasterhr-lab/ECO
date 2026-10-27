@@ -31,7 +31,7 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 
-type PracticalCategoryKey = ConfigurationCategory | 'reception_lists';
+type PracticalCategoryKey = ConfigurationCategory;
 
 interface PracticalCategoryMeta {
   key: PracticalCategoryKey;

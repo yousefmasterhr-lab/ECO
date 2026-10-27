@@ -323,7 +323,7 @@ export const onRequestPost: PagesFunction = async (context) => {
           body.start_time,
           body.start_time,
           body.end_time
-        ).first();
+        ).first<any>();
 
         if (conflict) {
           return errorResponse(`القاعة (${body.room_name}) محجوزة بالفعل في نفس التوقيت والتاريخ (${conflict.start_time} - ${conflict.end_time})`, 409);

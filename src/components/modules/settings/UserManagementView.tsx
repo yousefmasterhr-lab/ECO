@@ -5,8 +5,8 @@ import { useTenant } from '../../../context/TenantContext';
 import { ManagedUser, UserRole, ROLE_CONFIGURATIONS } from '../../../types/auth';
 import { CreatableSelect } from '../../common/CreatableSelect';
 import { hrStorage } from '../../../services/hrStorage';
-import { PermissionsManagerModal } from '../auth/PermissionsManagerModal';
-import { cleanArabicTitle } from '../../../types/rbac';
+import { UserPermissionsModal } from '../auth/UserPermissionsModal';
+import { cleanArabicTitle, dispatchPermissionsUpdate } from '../../../types/rbac';
 import {
   Users,
   UserPlus,
@@ -283,7 +283,7 @@ export const UserManagementView: React.FC = () => {
         return;
       }
 
-      addManagedUser({
+      const created = addManagedUser({
         nameAr: nameAr.trim(),
         nameEn: nameEn.trim() || username.trim(),
         nationalId: cleanNationalId,
@@ -306,13 +306,19 @@ export const UserManagementView: React.FC = () => {
         allowedCompanyIds: allowedCompanyIds.length > 0 ? allowedCompanyIds : ['all'],
       });
 
+      dispatchPermissionsUpdate({
+        userId: created.id,
+        permissions: created.permissions || created.customPermissions || [],
+        user: created,
+      });
+
       setFormSuccess(t('تم إنشاء وحفظ حساب المستخدم بنجاح.', 'User created successfully!'));
       setTimeout(() => {
         setModalMode('NONE');
         resetForm();
       }, 700);
     } else if (modalMode === 'EDIT' && selectedUser) {
-      updateManagedUser(selectedUser.id, {
+      const updatedFields = {
         nameAr: nameAr.trim(),
         nameEn: nameEn.trim() || selectedUser.nameEn,
         nationalId: cleanNationalId,
@@ -329,6 +335,14 @@ export const UserManagementView: React.FC = () => {
         roleLabelEn: roleCfg.titleEn,
         passwordHash: password || selectedUser.passwordHash,
         allowedCompanyIds: allowedCompanyIds.length > 0 ? allowedCompanyIds : ['all'],
+      };
+
+      updateManagedUser(selectedUser.id, updatedFields);
+
+      dispatchPermissionsUpdate({
+        userId: selectedUser.id,
+        permissions: selectedUser.permissions || selectedUser.customPermissions || [],
+        user: { ...selectedUser, ...updatedFields },
       });
 
       setFormSuccess(t('تم تحديث بيانات وصلاحيات المستخدم بنجاح.', 'User updated successfully!'));
@@ -346,6 +360,10 @@ export const UserManagementView: React.FC = () => {
     }
     const nextStatus = u.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE';
     updateManagedUser(u.id, { status: nextStatus });
+    dispatchPermissionsUpdate({
+      userId: u.id,
+      user: { ...u, status: nextStatus },
+    });
   };
 
   const handleDelete = (u: ManagedUser) => {
@@ -355,6 +373,7 @@ export const UserManagementView: React.FC = () => {
     }
     if (confirm(t(`هل أنت متأكد من حذف حساب "${u.nameAr}" نهائياً من المنظومة؟`, `Permanently delete account for "${u.nameAr}"?`))) {
       deleteManagedUser(u.id);
+      dispatchPermissionsUpdate({ userId: u.id });
     }
   };
 
@@ -363,6 +382,7 @@ export const UserManagementView: React.FC = () => {
     e.preventDefault();
     if (!resetPasswordUser || !newPasswordVal || newPasswordVal.length < 6) return;
     updateManagedUser(resetPasswordUser.id, { passwordHash: newPasswordVal });
+    dispatchPermissionsUpdate({ userId: resetPasswordUser.id });
     setResetSuccess(true);
     setTimeout(() => {
       setResetPasswordUser(null);
@@ -1502,7 +1522,7 @@ export const UserManagementView: React.FC = () => {
       {/* =========================================================================
           6. RBAC PERMISSIONS MATRIX MODAL
          ========================================================================= */}
-      <PermissionsManagerModal
+      <UserPermissionsModal
         isOpen={permissionsModalOpen}
         initialUserId={selectedPermissionUserId}
         onClose={() => {

@@ -598,6 +598,20 @@
    - منع الالتفاف عبر `allowedModuleIds`: عند وجود `user.permissions`، تكون هي المرجع الحصري الوحيد لمنح أو حجب الموديولات والتبويبات.
    - حجب الموديولات غير المصرح بها بالكامل وتصفير عداداتها الحية على اللوحة الرئيسية والقائمة الجانبية.
 
+### 8.26 معمارية التحديث اللحظي للصلاحيات ومزامنة الجلسات بدون ريفريش (Zero-Refresh Reactive RBAC & Instant UI Re-Gating Architecture)
+1. **بروتوكول شبكة الأحداث الحية الموحدة (`eco-permissions-updated` Event Protocol):**
+   - تعريف حدث المتصفح الموحد `ECO_PERMISSIONS_UPDATED_EVENT` في `src/types/rbac.ts` مع دالة البث `dispatchPermissionsUpdate`.
+   - تمرير حمولة تفصيلية دائمة `{ userId, permissions, user }` لضمان تعرف الجلسة فورياً على التعديلات.
+2. **التحديث المتزامن لجلسة المستخدم النشطة (`currentUser` Instant State Dispatch):**
+   - تحديث دالتي `setUser` و `setManagedUsers` داخل `AuthContext.tsx` بشكل متزامن لحظي في الذاكرة مع الحفظ في `localStorage` و `sessionStorage`.
+   - لا ينتظر تحديث الواجهة طلبات الشبكة أو التخزين السحابي D1، بل ينعكس في نفس جزء الثانية.
+3. **إعادة البوابات التلقائية لكافة الموديولات (Automatic UI Re-Gating):**
+   - نظراً لاعتماد `hasPermission()` و `checkModuleAccess()` على `user` في `AuthContext`، يؤدي تحديث الحالة إلى إعادة توليد الدوال فورياً.
+   - يعاد تصيير (`Re-render`) كافة المكونات التابعة (`Sidebar.tsx`, `SidebarItem.tsx`, `EmptyCanvas.tsx`, `CompaniesModule.tsx`، وحراس المسارات وأزرار الإجراءات) وتُقفل أو تُفتح التبويبات والموديولات في التو واللحظة دون أي إعادة تحميل للصفحة (`Zero Refresh`).
+4. **المزامنة العابرة لعلامات التبويب (`BroadcastChannel` Multi-Tab Sync):**
+   - إنشاء قناة بث `BroadcastChannel('eco_rbac_channel')` ومستمع لأحداث التخزين `storage` لمزامنة كافة علامات التبويب المفتوحة للمستخدم أو للموظفين في نفس المتصفح دون ريفريش.
+
+
 
 
 

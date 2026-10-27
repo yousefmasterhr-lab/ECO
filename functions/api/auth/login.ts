@@ -1,4 +1,4 @@
-import { PagesFunction } from '../_utils';
+import { PagesFunction, D1Database } from '../_utils';
 
 export const onRequestOptions: PagesFunction = async () => {
   return new Response(null, {
