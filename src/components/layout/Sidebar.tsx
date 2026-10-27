@@ -14,6 +14,7 @@ import {
   Shield
 } from 'lucide-react';
 import { EcoOfficialLogo } from '../common/EcoOfficialLogo';
+import { hasModuleAccess } from '../../types/rbac';
 
 export const Sidebar: React.FC = () => {
   const { isRtl, t } = useLanguage();
@@ -27,6 +28,10 @@ export const Sidebar: React.FC = () => {
     activeCategoryId,
     selectItem
   } = useNavigation();
+
+  const visibleCategories = React.useMemo(() => {
+    return (categories || []).filter(category => hasModuleAccess(user, category.id));
+  }, [categories, user]);
 
   const sidebarWidth = isCollapsed ? 'w-[72px] min-w-[72px] max-w-[72px]' : 'w-72 min-w-72 max-w-72';
 
@@ -79,7 +84,7 @@ export const Sidebar: React.FC = () => {
             {t('أقسام المنظومة الإدارية', 'Enterprise Departments')}
           </div>
         )}
-        {categories.map(category => (
+        {visibleCategories.map(category => (
           <SidebarItem key={category.id} category={category} />
         ))}
       </div>
@@ -201,7 +206,7 @@ export const Sidebar: React.FC = () => {
 
               {/* Drawer Content */}
               <div id="mobile-sidebar-nav-container" className="flex-1 min-h-0 overflow-y-auto sidebar-scrollbar p-3 space-y-1">
-                {categories.map(category => (
+                {visibleCategories.map(category => (
                   <SidebarItem key={category.id} category={category} />
                 ))}
               </div>

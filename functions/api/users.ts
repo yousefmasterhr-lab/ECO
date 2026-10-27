@@ -127,11 +127,12 @@ async function ensureUserSchema(db: any) {
         `).run();
       }
 
-      // Clean up legacy titles in users table (strip technical tags like HRMS, CFO, C-Suite)
+      // Clean up legacy titles in users table (strip technical tags like HRMS, CFO, C-Suite and fix typos)
       await db.prepare(`
         UPDATE users
-        SET job_title = REPLACE(REPLACE(REPLACE(REPLACE(job_title, '(HRMS)', ''), '(ATS)', ''), '(CTS)', ''), '(C-Suite)', '')
-        WHERE job_title LIKE '%(%'
+        SET job_title = REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(job_title, '(HRMS)', ''), '(ATS)', ''), '(CTS)', ''), '(C-Suite)', ''), 'موادر', 'موارد'),
+            department = REPLACE(department, 'موادر', 'موارد')
+        WHERE job_title LIKE '%(%' OR job_title LIKE '%موادر%' OR department LIKE '%موادر%'
       `).run().catch(() => null);
 
       // Record flag so this never runs again and user modifications are 100% persistent
@@ -254,9 +255,10 @@ export const onRequestPost: PagesFunction = async (context) => {
     const email = (body.email || '').toString().trim().toLowerCase();
     const password = (body.password || body.passwordHash || '').toString();
     const roleId = (body.roleId || body.role_id || body.role || 'HR_MANAGER').toString();
-    const department = (body.department || body.departmentAr || 'إدارة الموارد البشرية').toString();
+    const department = (body.department || body.departmentAr || 'إدارة الموارد البشرية').toString().replace(/موادر/g, 'موارد');
     const rawJt = (body.jobTitleAr || body.jobTitle || body.job_title || roleId).toString().trim();
     const jobTitle = rawJt
+      .replace(/موادر/g, 'موارد')
       .replace(/_/g, ' ')
       .replace(/\s+/g, ' ')
       .replace(/\(HRMS\)|\(ATS\)|\(CTS\)|\(CFO\)|\(HRD\)|\(C-Suite\)/gi, '')
@@ -451,9 +453,10 @@ export const onRequestPut: PagesFunction = async (context) => {
 
     const fullName = body.fullName || body.nameAr || targetUser.full_name;
     const roleId = body.roleId || body.role || targetUser.role_id;
-    const department = body.department || body.departmentAr || targetUser.department;
+    const department = (body.department || body.departmentAr || targetUser.department).toString().replace(/موادر/g, 'موارد');
     const rawPutJt = (body.jobTitleAr || body.job_title || targetUser.job_title || roleId).toString();
     const jobTitle = rawPutJt
+      .replace(/موادر/g, 'موارد')
       .replace(/_/g, ' ')
       .replace(/\s+/g, ' ')
       .replace(/\(HRMS\)|\(ATS\)|\(CTS\)|\(CFO\)|\(HRD\)|\(C-Suite\)/gi, '')

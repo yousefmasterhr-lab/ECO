@@ -17,7 +17,7 @@ import { useAuth } from '../../context/AuthContext';
 import { branchStorage } from '../modules/companies/branchStorage';
 import { licenseStorage } from '../modules/companies/licenseStorage';
 import { signatoryStorage } from '../modules/companies/signatoryStorage';
-import { SUBMODULE_VIEW_PERMISSION_MAP, cleanArabicTitle } from '../../types/rbac';
+import { SUBMODULE_VIEW_PERMISSION_MAP, cleanArabicTitle, hasModuleAccess } from '../../types/rbac';
 import {
   HardHat,
   Scale,
@@ -135,9 +135,11 @@ export const EmptyCanvas: React.FC = () => {
   const { stats: hrStats, employees } = useHR();
   const { user, managedUsers, checkModuleAccess, hasPermission } = useAuth();
 
-  const displayCategories = useMemo(() => {
+  const visibleCards = useMemo(() => {
     if (!categories) return [];
+    const activeUser = user || currentUser;
     return categories
+      .filter(cat => hasModuleAccess(activeUser, cat.id))
       .map(cat => {
         const authorizedSubItems = cat.subItems.filter(sub => {
           const permKey = SUBMODULE_VIEW_PERMISSION_MAP[sub.id];
@@ -150,7 +152,9 @@ export const EmptyCanvas: React.FC = () => {
         };
       })
       .filter(cat => cat.authorizedSubItems.length > 0);
-  }, [categories, hasPermission]);
+  }, [categories, user, currentUser, hasPermission]);
+
+  const displayCategories = visibleCards;
 
   const [branchesCount, setBranchesCount] = useState<number>(() => {
     try {
@@ -694,7 +698,7 @@ export const EmptyCanvas: React.FC = () => {
         </div>
 
         <span className="px-3 py-1 rounded-full bg-[#F3EFE6] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] text-xs font-bold font-mono text-[#D99B26] dark:text-[#EBB34D] shadow-2xs">
-          {displayCategories.length} {t('منظومات متصلة', 'Connected Suites')}
+          {visibleCards.length} {t('منظومات متصلة', 'Connected Suites')}
         </span>
       </div>
 

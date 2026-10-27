@@ -1344,6 +1344,7 @@ export const SUBMODULE_VIEW_PERMISSION_MAP: Record<string, string> = {
 export function cleanArabicTitle(title?: string): string {
   if (!title) return '';
   return title
+    .replace(/موادر/g, 'موارد')
     .replace(/_/g, ' ')
     .replace(/\s+/g, ' ')
     .replace(/\(C-Suite\)/gi, '')
@@ -1389,4 +1390,56 @@ export function dispatchPermissionsUpdate(detail?: PermissionsUpdatedEventDetail
     }
   }
 }
+
+/**
+ * Pure, Uncompromising RBAC Module Access Gating Engine
+ * A module is accessible IF AND ONLY IF:
+ * 1. The user is Super Admin (role === 'admin' | 'SUPER_ADMIN', root user ID, or '*' permission wildcard)
+ * 2. OR the user possesses at least ONE explicit permission matching the module's key or allowed prefixes.
+ * Hardcoded role-based or department-based fallbacks are STRICTLY PROHIBITED.
+ */
+export function hasModuleAccess(
+  user: { id?: string; role?: string; permissions?: string[] } | null | undefined,
+  moduleId: string
+): boolean {
+  if (!user) return false;
+
+  // 1. Super Admin Wildcard Bypass
+  if (
+    user.role === 'admin' ||
+    user.role === 'SUPER_ADMIN' ||
+    user.id?.includes('root') ||
+    user.permissions?.includes('*')
+  ) {
+    return true;
+  }
+
+  // 2. Strict RBAC Prefix Map for all ERP Modules (supports both underscore and dot-notation)
+  const prefixMap: Record<string, string[]> = {
+    companies: ['comp_', 'companies_', 'companies.', 'comp.'],
+    hr: ['hr_', 'hr.'],
+    ats: ['ats_', 'ats.'],
+    finance: ['fin_', 'finance_', 'fin.', 'finance.'],
+    tech_office: ['tech_', 'projects_', 'eng_', 'eng.', 'tech.'],
+    engineering: ['tech_', 'projects_', 'eng_', 'eng.', 'tech.'],
+    legal: ['legal_', 'leg_', 'legal.', 'leg.'],
+    insurance: ['ins_', 'insurance_', 'ins.', 'insurance.'],
+    reception: ['rec_', 'reception_', 'rec.', 'reception.'],
+    decisions: ['dec_', 'decisions_', 'decrees_', 'dec.', 'decrees.'],
+    decrees: ['dec_', 'decisions_', 'decrees_', 'dec.', 'decrees.'],
+    cts: ['cts_', 'cts.'],
+    c_suite: ['csuite_', 'exec_', 'csuite.', 'exec.'],
+    executive: ['csuite_', 'exec_', 'csuite.', 'exec.'],
+    settings: ['settings_', 'users_manage', 'set_', 'settings.', 'set.']
+  };
+
+  const allowedPrefixes = prefixMap[moduleId] || [moduleId, `${moduleId}_`, `${moduleId}.`];
+  return (user.permissions || []).some(perm => 
+    perm === moduleId ||
+    perm === `${moduleId}.*` ||
+    perm === `${moduleId}.view` ||
+    allowedPrefixes.some(prefix => perm.startsWith(prefix))
+  );
+}
+
 

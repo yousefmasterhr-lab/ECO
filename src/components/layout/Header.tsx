@@ -243,7 +243,7 @@ export const Header: React.FC = () => {
             </div>
             
             {/* Centered 2-Line Brand Typography Lockup (ECO centered on top, ERP Company Operations full typewriter below) */}
-            <div className="hidden lg:flex flex-col items-center justify-center text-center shrink-0 min-w-[175px]">
+            <div className="hidden lg:flex flex-col items-center justify-center text-center shrink-0 min-w-[190px] whitespace-nowrap">
               {/* Top Line: ECO Centered, text-xl, bold high contrast */}
               <span className="text-xl font-black tracking-wider bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 dark:from-amber-400 dark:via-amber-300 dark:to-amber-500 bg-clip-text text-transparent drop-shadow-xs leading-none">
                 ECO
@@ -252,7 +252,7 @@ export const Header: React.FC = () => {
               {/* Bottom Line: Full ERP Company Operations with Typewriter Motion & Blinking Amber Cursor */}
               <div
                 dir="ltr"
-                className="min-w-[180px] text-center inline-flex items-center justify-center min-h-[16px] mt-1 leading-none whitespace-nowrap overflow-visible"
+                className="min-w-[190px] text-center inline-flex items-center justify-center min-h-[16px] mt-1 leading-none whitespace-nowrap overflow-visible"
               >
                 <TypewriterText
                   text="ERP Company Operations"
