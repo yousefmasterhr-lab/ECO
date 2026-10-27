@@ -2,7 +2,10 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useLanguage } from '../../../context/LanguageContext';
 import { useTenant } from '../../../context/TenantContext';
 import { useAuth } from '../../../context/AuthContext';
-import { isSuperAdminUser } from '../../../types/rbac';
+import { useNavigation } from '../../../context/NavigationContext';
+import { isSuperAdminUser, SUBMODULE_VIEW_PERMISSION_MAP } from '../../../types/rbac';
+
+SUBMODULE_VIEW_PERMISSION_MAP['ins_analytics'] = 'ins.sites.view';
 import {
   insuranceStorage,
   InsuranceOperationRecord,
@@ -37,23 +40,29 @@ export const InsuranceModule: React.FC<InsuranceModuleProps> = ({ activeSubItemI
   const { t } = useLanguage();
   const { companies, selectedCompanyIds } = useTenant();
   const { user, hasPermission } = useAuth();
+  const { selectItem } = useNavigation();
   const currentUserName = user?.nameAr || 'مدير النظام';
 
-  // Active tab state synced with Sidebar activeSubItemId
+  // Active tab state synced with Sidebar activeSubItemId (default landing tab: ins_analytics)
   const [activeTab, setActiveTab] = useState<string>(() => {
     if (activeSubItemId === 'ins_forms') return 'ins_forms';
+    if (activeSubItemId === 'ins_operations') return 'ins_operations';
     if (activeSubItemId === 'ins_register') return 'ins_register';
     if (activeSubItemId === 'ins_wages') return 'ins_wages';
-    if (activeSubItemId === 'ins_compliance') return 'ins_compliance';
-    return 'ins_operations';
+    if (activeSubItemId === 'ins_analytics' || activeSubItemId === 'ins_compliance') return 'ins_analytics';
+    return 'ins_analytics';
   });
 
   useEffect(() => {
-    if (activeSubItemId === 'ins_operations') setActiveTab('ins_operations');
-    else if (activeSubItemId === 'ins_forms') setActiveTab('ins_forms');
+    if (activeSubItemId === 'ins_forms') setActiveTab('ins_forms');
+    else if (activeSubItemId === 'ins_operations') setActiveTab('ins_operations');
     else if (activeSubItemId === 'ins_register') setActiveTab('ins_register');
     else if (activeSubItemId === 'ins_wages') setActiveTab('ins_wages');
-    else if (activeSubItemId === 'ins_compliance') setActiveTab('ins_compliance');
+    else if (activeSubItemId === 'ins_analytics' || activeSubItemId === 'ins_compliance') {
+      setActiveTab('ins_analytics');
+    } else if (!activeSubItemId) {
+      setActiveTab('ins_analytics');
+    }
   }, [activeSubItemId]);
 
   // Quick-jump state when clicking "س1" or "س6" next to an employee in the Registry
@@ -152,12 +161,25 @@ export const InsuranceModule: React.FC<InsuranceModuleProps> = ({ activeSubItemI
 
   // Granular RBAC permissions for current active sub-module
   const isSuperAdmin = isSuperAdminUser(user);
-  const canCreate = isSuperAdmin || hasPermission(activeTab, 'create');
-  const canEdit = isSuperAdmin || hasPermission(activeTab, 'edit');
-  const canDelete = isSuperAdmin || hasPermission(activeTab, 'delete');
-  const canExport = isSuperAdmin || hasPermission(activeTab, 'export');
+  const rbacSubKey = activeTab === 'ins_analytics' ? 'ins_sites' : activeTab;
+  const canCreate = isSuperAdmin || hasPermission(rbacSubKey, 'create') || hasPermission(activeTab, 'create');
+  const canEdit = isSuperAdmin || hasPermission(rbacSubKey, 'edit') || hasPermission(activeTab, 'edit');
+  const canDelete = isSuperAdmin || hasPermission(rbacSubKey, 'delete') || hasPermission(activeTab, 'delete');
+  const canExport = isSuperAdmin || hasPermission(rbacSubKey, 'export') || hasPermission(activeTab, 'export');
 
   const navTabs = [
+    {
+      id: 'ins_analytics',
+      label: t('لوحة التحليلات والامتثال', 'Analytics & Compliance'),
+      icon: BarChart3,
+      count: complianceChecks.length,
+    },
+    {
+      id: 'ins_forms',
+      label: t('مركز الاستمارات (س1 / س2 / س6)', 'Forms Center (S1 / S2 / S6)'),
+      icon: FileText,
+      count: forms.length,
+    },
     {
       id: 'ins_operations',
       label: t('مركز العمليات التأمينية', 'Operations Center'),
@@ -165,14 +187,8 @@ export const InsuranceModule: React.FC<InsuranceModuleProps> = ({ activeSubItemI
       count: operations.length,
     },
     {
-      id: 'ins_forms',
-      label: t('استمارات س1 / س2 / س6', 'Official Forms S1/S2/S6'),
-      icon: FileText,
-      count: forms.length,
-    },
-    {
       id: 'ins_register',
-      label: t('السجل التأميني للعاملين', 'Insured Employees Registry'),
+      label: t('جداول الموظفين (السجل التأميني)', 'Insured Employees Registry'),
       icon: Users,
       count: employees.length,
     },
@@ -182,18 +198,18 @@ export const InsuranceModule: React.FC<InsuranceModuleProps> = ({ activeSubItemI
       icon: Calculator,
       count: remittances.length,
     },
-    {
-      id: 'ins_compliance',
-      label: t('التحليلات والفحص والامتثال', 'Analytics & Compliance'),
-      icon: BarChart3,
-      count: complianceChecks.length,
-    },
   ];
+
+  const handleTabSelect = (tabId: string) => {
+    setActiveTab(tabId);
+    selectItem('insurance', tabId);
+  };
 
   const handleOpenFormForEmployee = (formType: 'س1' | 'س2' | 'س6', employeeId: string) => {
     setTargetFormType(formType);
     setTargetEmployeeId(employeeId);
     setActiveTab('ins_forms');
+    selectItem('insurance', 'ins_forms');
   };
 
   return (
@@ -217,7 +233,7 @@ export const InsuranceModule: React.FC<InsuranceModuleProps> = ({ activeSubItemI
             <button
               key={tab.id}
               type="button"
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => handleTabSelect(tab.id)}
               className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 isActive
                   ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 shadow-md shadow-amber-500/20'
@@ -323,7 +339,7 @@ export const InsuranceModule: React.FC<InsuranceModuleProps> = ({ activeSubItemI
         />
       )}
 
-      {activeTab === 'ins_compliance' && (
+      {(activeTab === 'ins_analytics' || activeTab === 'ins_compliance') && (
         <InsuranceAnalyticsAndComplianceView
           employees={employees}
           operations={operations}

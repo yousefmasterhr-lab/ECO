@@ -169,10 +169,6 @@ export const InsuranceHeroHeader: React.FC<InsuranceHeroHeaderProps> = ({
                   <Sparkles className="w-3 h-3" />
                   {t('منظومة التأمينات الاجتماعية المصرية (قانون 148)', 'Egyptian Social Insurance Hub')}
                 </span>
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  {t('متصل سحابياً بـ Cloudflare D1', 'Cloudflare D1 Live Sync')}
-                </span>
               </div>
               <h1 className="text-xl md:text-2xl font-black text-slate-900 dark:text-[#F5F2EB] tracking-tight">
                 {t(
@@ -329,3 +325,4 @@ export const InsuranceHeroHeader: React.FC<InsuranceHeroHeaderProps> = ({
     </div>
   );
 };
+

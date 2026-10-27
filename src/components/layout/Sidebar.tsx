@@ -14,7 +14,18 @@ import {
   Shield
 } from 'lucide-react';
 import { EcoOfficialLogo } from '../common/EcoOfficialLogo';
-import { canViewModule, canViewSubModule } from '../../types/rbac';
+import { canViewModule, canViewSubModule, SUBMODULE_VIEW_PERMISSION_MAP } from '../../types/rbac';
+
+// Ensure ins_analytics route maps seamlessly to the Insurance Analytics & Compliance RBAC key
+SUBMODULE_VIEW_PERMISSION_MAP['ins_analytics'] = 'ins.sites.view';
+
+const INSURANCE_ORDERED_SUBITEMS = [
+  { id: 'ins_analytics', titleAr: 'لوحة التحليلات والامتثال', titleEn: 'Analytics & Compliance' },
+  { id: 'ins_forms', titleAr: 'مركز الاستمارات (س1 / س2 / س6)', titleEn: 'Forms Center (S1 / S2 / S6)' },
+  { id: 'ins_operations', titleAr: 'مركز العمليات التأمينية', titleEn: 'Operations Center' },
+  { id: 'ins_register', titleAr: 'جداول الموظفين (السجل التأميني)', titleEn: 'Insured Employees Registry' },
+  { id: 'ins_wages', titleAr: 'وعاء الأجور والاشتراكات', titleEn: 'Wages & Contributions' },
+];
 
 export const Sidebar: React.FC = () => {
   const { isRtl, t } = useLanguage();
@@ -36,7 +47,9 @@ export const Sidebar: React.FC = () => {
         if (!canViewModule(user, category.id)) {
           return { ...category, subItems: [] };
         }
-        const allowedSubItems = (category.subItems || []).filter(sub =>
+        const sourceSubItems =
+          category.id === 'insurance' ? INSURANCE_ORDERED_SUBITEMS : category.subItems || [];
+        const allowedSubItems = sourceSubItems.filter(sub =>
           canViewSubModule(user, sub.id)
         );
         return {
