@@ -22,5 +22,6 @@
       "@erp/ui-system": ["src/ui-system/index.ts"]
     }
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": ["Insurance", "node_modules", "dist"]
 }

@@ -162,14 +162,15 @@ export const DEPARTMENT_CATEGORIES: DepartmentNavCategory[] = [
     iconName: 'ShieldCheck',
     titleAr: 'التأمينات الاجتماعية',
     titleEn: 'Social Insurance',
-    colorVar: '#15803D', // Deep Emerald Olive
+    colorVar: '#D99B26', // Brand Amber
     badgeAr: 'تأمينات',
     badgeEn: 'Insurance',
     subItems: [
+      { id: 'ins_operations', titleAr: 'مركز العمليات التأمينية', titleEn: 'Operations Center' },
       { id: 'ins_forms', titleAr: 'استمارات (س1 / س2 / س6)', titleEn: 'Forms (S1 / S2 / S6)' },
       { id: 'ins_register', titleAr: 'السجل التأميني للعاملين', titleEn: 'Insured Employees' },
       { id: 'ins_wages', titleAr: 'وعاء الأجور والاشتراكات', titleEn: 'Wages & Dues' },
-      { id: 'ins_compliance', titleAr: 'الفحص والامتثال الدوري', titleEn: 'Audit & Compliance' },
+      { id: 'ins_compliance', titleAr: 'التحليلات والفحص والامتثال', titleEn: 'Analytics & Compliance' },
     ],
   },
   {

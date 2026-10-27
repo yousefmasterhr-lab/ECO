@@ -7,6 +7,7 @@ import { CompaniesModule } from '../modules/companies/CompaniesModule';
 import { EngineeringModule } from '../modules/engineering/EngineeringModule';
 import { LegalModule } from '../modules/legal/LegalModule';
 import { ReceptionModule } from '../modules/reception/ReceptionModule';
+import { InsuranceModule } from '../modules/insurance/InsuranceModule';
 import { FinancialAffairsModule } from '../modules/finance/FinancialAffairsModule';
 import { HRModule } from '../modules/hr/HRModule';
 import { SettingsModule } from '../modules/settings/SettingsModule';
@@ -17,6 +18,7 @@ import { useAuth } from '../../context/AuthContext';
 import { branchStorage } from '../modules/companies/branchStorage';
 import { licenseStorage } from '../modules/companies/licenseStorage';
 import { signatoryStorage } from '../modules/companies/signatoryStorage';
+import { insuranceStorage } from '../../services/insuranceStorage';
 import { cleanArabicTitle, canViewModule, canViewSubModule } from '../../types/rbac';
 import {
   HardHat,
@@ -177,6 +179,10 @@ export const EmptyCanvas: React.FC = () => {
     }
   });
 
+  const [insEmployeesCount, setInsEmployeesCount] = useState<number>(0);
+  const [insOperationsCount, setInsOperationsCount] = useState<number>(0);
+  const [insFormsCount, setInsFormsCount] = useState<number>(0);
+
   useEffect(() => {
     const refreshCounts = () => {
       branchStorage.getBranches().then(list => {
@@ -190,16 +196,30 @@ export const EmptyCanvas: React.FC = () => {
       signatoryStorage.getSignatories().then(list => {
         if (list && Array.isArray(list)) setSignatoriesCount(list.length);
       }).catch(() => {});
+
+      insuranceStorage.getEmployees().then(list => {
+        if (Array.isArray(list)) setInsEmployeesCount(list.length);
+      }).catch(() => {});
+
+      insuranceStorage.getOperations().then(list => {
+        if (Array.isArray(list)) setInsOperationsCount(list.length);
+      }).catch(() => {});
+
+      insuranceStorage.getForms().then(list => {
+        if (Array.isArray(list)) setInsFormsCount(list.length);
+      }).catch(() => {});
     };
 
     refreshCounts();
 
     window.addEventListener('eco-data-updated', refreshCounts);
+    window.addEventListener('eco-insurance-updated', refreshCounts);
     window.addEventListener('eco-configurations-updated', refreshCounts);
     window.addEventListener('eco-users-updated', refreshCounts);
 
     return () => {
       window.removeEventListener('eco-data-updated', refreshCounts);
+      window.removeEventListener('eco-insurance-updated', refreshCounts);
       window.removeEventListener('eco-configurations-updated', refreshCounts);
       window.removeEventListener('eco-users-updated', refreshCounts);
     };
@@ -444,6 +464,8 @@ export const EmptyCanvas: React.FC = () => {
           <EngineeringModule activeSubItemId={activeSubItemId} />
         ) : activeCategory.id === 'legal' ? (
           <LegalModule activeSubItemId={activeSubItemId} />
+        ) : activeCategory.id === 'insurance' ? (
+          <InsuranceModule activeSubItemId={activeSubItemId} />
         ) : activeCategory.id === 'reception' ? (
           <ReceptionModule activeSubItemId={activeSubItemId} />
         ) : activeCategory.id === 'settings' ? (
@@ -529,9 +551,9 @@ export const EmptyCanvas: React.FC = () => {
         ];
       case 'insurance':
         return [
-          { label: isRtl ? 'المؤمن عليهم' : 'Insured', value: `${totalEmployeesCount}`, color: 'text-amber-600 dark:text-[#EBB34D] font-bold' },
-          { label: isRtl ? 'النماذج' : 'Forms', value: isRtl ? '0 استمارات' : '0 Forms', color: 'text-slate-900 dark:text-white font-bold' },
-          { label: isRtl ? 'الامتثال' : 'Audit', value: isRtl ? 'جاهز' : 'Compliant', color: 'text-amber-700 dark:text-amber-300 font-bold' },
+          { label: isRtl ? 'المؤمن عليهم' : 'Insured', value: `${insEmployeesCount}`, color: 'text-amber-600 dark:text-[#EBB34D] font-bold' },
+          { label: isRtl ? 'العمليات' : 'Ops', value: `${insOperationsCount} ${isRtl ? 'عملية' : 'Ops'}`, color: 'text-slate-900 dark:text-white font-bold' },
+          { label: isRtl ? 'الاستمارات' : 'Forms', value: `${insFormsCount} ${isRtl ? 'استمارة' : 'Forms'}`, color: 'text-amber-700 dark:text-amber-300 font-bold' },
         ];
       case 'ats':
         return [

@@ -104,7 +104,8 @@ export const isCloudflareEdgeRoute = (endpoint: string): boolean => {
     clean.startsWith('api/departments') ||
     clean.startsWith('api/authorized-persons') ||
     clean.startsWith('api/hr') ||
-    clean.startsWith('api/reception')
+    clean.startsWith('api/reception') ||
+    clean.startsWith('api/insurance')
   );
 };
 

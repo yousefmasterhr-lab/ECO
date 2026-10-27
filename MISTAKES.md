@@ -583,6 +583,14 @@
   2. **Never allow page refresh (`F5`) to re-seed or overwrite custom RBAC permissions:** Every toggle/save in `RBACView.tsx` and `UserManagementView.tsx` immediately persists to Cloudflare D1 (`/api/rbac` & `/api/users`), synchronously updates `localStorage`, and invokes `refreshCurrentUserPermissions()` + `eco-rbac-updated` / `storage` / `focus` listeners without ever merging role/department seeds on reload.
   3. **توحيد هوية كروت اللوحة الرئيسية (`EmptyCanvas.tsx`):** إزالة الشارات المكررة بجوار الأيقونة وتوحيد ألوان جميع عدادات الكروت (بما فيها `1 وثيقة`) ضمن بالتة الكهرمان الذهبي والرمادي الصخري (`Brand Amber / Slate`).
 
+### ❌ الخطأ 3.36: إغفال دقة إحداثيات الاستمارات التأمينية الرسمية (س1/س6) أو ترك مجلدات المصدر المؤقتة ضمن حزمة البناء
+- **وصف المشكلة:**
+  1. عند بناء نماذج الاستمارات الحكومية الرسمية (`س1` و `س6`)، يؤدي استخدام تنسيقات CSS مرنة عشوائية بدلاً من الأبعاد المرجعية الثابتة (`794px × 1123px`) ومعادلة التوسيط الذهبية (`letter-spacing` + `text-indent`) إلى خروج الأرقام التأمينية والرقم القومي عن المربعات المطبوعة عند الطباعة الفعلية.
+  2. ترك مجلد المصدر المرجعي `./Insurance` داخل مسار فحص TypeScript أو تتبع Git قد يسبب تعارضات في البناء أو رفع ملفات مكررة غير مستخدمة.
+- **القاعدة الصارمة والحل الجذري المعتمد:**
+  1. **الالتزام الصارم بمعيار الشبكة والإحداثيات (`FORMS_GRID_STANDARDS`):** تثبيت حاوية الاستمارة على `794px × 1123px`، وتطبيق معادلة التوسيط الذهبية للأرقام المقسمة، وتوفير وضع ضبط الإحداثيات البصري التفاعلي (`Visual Alignment Mode`) مع الطباعة المعزولة النظيفة.
+  2. **عزل المجلد المرجعي (`tsconfig.json` & `.gitignore`):** استثناء مجلد `Insurance/` من التجميع ومن تتبع Git بعد نقل 100% من أصوله ووظائفه إلى `public/insurance/` و `src/components/modules/insurance/` و `functions/api/insurance/`.
+
 ---
 
 ## 4. ملخص البروتوكول الإلزامي قبل كتابة أي كود جديد

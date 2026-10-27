@@ -7,7 +7,9 @@ export type ConfigurationCategory =
   | 'meeting_rooms'
   | 'couriers'
   | 'work_permits'
-  | 'reception_lists';
+  | 'reception_lists'
+  | 'insurance_request_types'
+  | 'insurance_occupations';
 
 export interface SystemConfigurationItem {
   id: string;
