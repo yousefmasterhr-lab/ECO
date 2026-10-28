@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   GitFork,
   LayoutGrid,
+  Network,
   Plus,
   Pencil,
   AlertCircle,
@@ -11,7 +12,6 @@ import {
   Building2,
   MapPin,
   X,
-  Search,
   AlertTriangle,
   Layers,
   FolderTree,
@@ -20,7 +20,9 @@ import {
   Minimize2,
   Sparkles,
   Zap,
-  Info
+  Info,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { DepartmentOrg, CompanyEntity, BranchLocation, DepartmentAuditLogEntry } from './types';
 import { useAuth } from '../../../context/AuthContext';
@@ -64,15 +66,23 @@ export const CompanyOrgStructureTab: React.FC<CompanyOrgStructureTabProps> = ({
 }) => {
   const { hasPermission, user } = useAuth();
 
-  // Segmented View Switcher: 'cards' (البطاقات الذكية) vs 'mindmap' (الشجرة الذهنية التفاعلية)
-  const [activeView, setActiveView] = useState<'cards' | 'mindmap'>('mindmap');
+  // 3-Way Segmented View Switcher: 'cards' | 'hierarchy' | 'mindmap'
+  const [activeView, setActiveView] = useState<'cards' | 'hierarchy' | 'mindmap'>('mindmap');
 
-  // Search & Filter state
-  const [searchQuery, setSearchQuery] = useState('');
+  // Draft Hierarchy State for In-Memory Preview before permanent commit
+  const [draftDepartments, setDraftDepartments] = useState<DepartmentOrg[] | null>(null);
+  const [isCommitting, setIsCommitting] = useState(false);
+
+  // Active departments set (draft overrides saved records for preview)
+  const currentDepartments = useMemo(() => {
+    return draftDepartments || departments;
+  }, [draftDepartments, departments]);
+
+  // Level & Company filters
   const [selectedLevel, setSelectedLevel] = useState<number | 'all'>('all');
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('all');
 
-  // Collapsed nodes state (default empty = all expanded)
+  // Collapsed nodes state (for hierarchy view & tree views)
   const [collapsedNodes, setCollapsedNodes] = useState<Set<string>>(new Set());
 
   // Modal State: Add/Edit Department
@@ -83,17 +93,16 @@ export const CompanyOrgStructureTab: React.FC<CompanyOrgStructureTabProps> = ({
   // Modal State: Audit Log Drawer
   const [auditModalDept, setAuditModalDept] = useState<DepartmentOrg | null>(null);
 
-  // Modal State: Delete Confirmation / Safety Check
+  // Modal State: Delete Confirmation
   const [deleteTargetDept, setDeleteTargetDept] = useState<DepartmentOrg | null>(null);
 
   // Modal State: Seed Enterprise Template Modal
   const [seedModalOpen, setSeedModalOpen] = useState(false);
-  const [isSeeding, setIsSeeding] = useState(false);
 
   // Normalized departments with computed depth levels
   const normalizedDepartments = useMemo(() => {
-    return computeHierarchyLevels(departments);
-  }, [departments]);
+    return computeHierarchyLevels(currentDepartments);
+  }, [currentDepartments]);
 
   // Max depth level across departments
   const maxDepthLevel = useMemo(() => {
@@ -118,7 +127,7 @@ export const CompanyOrgStructureTab: React.FC<CompanyOrgStructureTabProps> = ({
   const handleExpandAll = () => setCollapsedNodes(new Set());
   const handleCollapseAll = () => {
     const allParentIds = new Set(
-      departments.filter(d => departments.some(c => c.parentId === d.id)).map(d => d.id)
+      currentDepartments.filter(d => currentDepartments.some(c => c.parentId === d.id)).map(d => d.id)
     );
     setCollapsedNodes(allParentIds);
   };
@@ -147,61 +156,66 @@ export const CompanyOrgStructureTab: React.FC<CompanyOrgStructureTabProps> = ({
     setDeleteTargetDept(dept);
   };
 
-  // Filtered departments based on company, search, and depth level
+  // Filtered departments based on company and depth level (Search input removed)
   const filteredDepartments = useMemo(() => {
     return normalizedDepartments.filter(dept => {
       const matchCompany = selectedCompanyId === 'all' || dept.companyId === selectedCompanyId;
       const matchLevel = selectedLevel === 'all' || dept.level === selectedLevel;
-
-      const q = searchQuery.trim().toLowerCase();
-      const matchSearch =
-        !q ||
-        dept.nameAr.toLowerCase().includes(q) ||
-        (dept.titleEn && dept.titleEn.toLowerCase().includes(q)) ||
-        dept.code.toLowerCase().includes(q) ||
-        (dept.headAr && dept.headAr.toLowerCase().includes(q)) ||
-        (dept.costCenterCode && dept.costCenterCode.toLowerCase().includes(q)) ||
-        (dept.responsibilities && dept.responsibilities.toLowerCase().includes(q)) ||
-        (dept.companyNameAr && dept.companyNameAr.toLowerCase().includes(q)) ||
-        (dept.branchNameAr && dept.branchNameAr.toLowerCase().includes(q));
-
-      return matchCompany && matchLevel && matchSearch;
+      return matchCompany && matchLevel;
     });
-  }, [normalizedDepartments, selectedCompanyId, selectedLevel, searchQuery]);
+  }, [normalizedDepartments, selectedCompanyId, selectedLevel]);
 
-  // Handle Seeding Template
-  const handleConfirmSeed = async (companyIdToSeed: string) => {
-    setIsSeeding(true);
+  // Root departments for Hierarchical Pyramid View
+  const rootDepartments = useMemo(() => {
+    const list = selectedCompanyId === 'all'
+      ? normalizedDepartments
+      : normalizedDepartments.filter(d => d.companyId === selectedCompanyId);
+
+    const allIds = new Set(list.map(d => d.id));
+    return list.filter(d => !d.parentId || !allIds.has(d.parentId));
+  }, [normalizedDepartments, selectedCompanyId]);
+
+  // Handle Generating Draft Hierarchy (Loads 34 Standard Units in-memory)
+  const handleGenerateDraft = (companyIdToSeed: string) => {
+    const targetCompany = companies.find(c => c.id === companyIdToSeed) || companies[0];
+    const compId = targetCompany ? targetCompany.id : 'comp_default';
+    const compName = targetCompany ? targetCompany.nameAr : 'شركة المقاولات العامة';
+
+    const draft = departmentStorage.generateDraftHierarchy(compId, compName);
+    setDraftDepartments(draft);
+    setSeedModalOpen(false);
+  };
+
+  // Commit Draft Hierarchy to Cloudflare D1
+  const handleCommitDraft = async () => {
+    if (!draftDepartments || draftDepartments.length === 0) return;
+    setIsCommitting(true);
     try {
-      const targetCompany = companies.find(c => c.id === companyIdToSeed) || companies[0];
-      const compId = targetCompany ? targetCompany.id : 'comp_default';
-      const compName = targetCompany ? targetCompany.nameAr : 'شركة المقاولات العامة';
-
-      await departmentStorage.seedEnterpriseHierarchy(
+      const compId = draftDepartments[0]?.companyId || 'comp_default';
+      await departmentStorage.commitHierarchy(
+        draftDepartments,
         compId,
-        compName,
         user?.nameAr || user?.username || 'يوسف حجازي'
       );
-
+      setDraftDepartments(null);
       if (onReloadDepartments) {
         await onReloadDepartments();
       }
-      setSeedModalOpen(false);
     } catch (err: any) {
-      console.error('[CompanyOrgStructureTab] Seeding failed:', err);
-      alert(err.message || 'حدث خطأ أثناء تحميل الهيكل القياسي');
+      console.error('[CompanyOrgStructureTab] Commit failed:', err);
+      alert(err.message || 'حدث خطأ أثناء اعتماد وحفظ الهيكل القياسي');
     } finally {
-      setIsSeeding(false);
+      setIsCommitting(false);
     }
   };
 
   return (
     <div className="space-y-4">
       {/* ========================================================================= */}
-      {/* 2-TIER EXECUTIVE GLASSMORPHIIC COMMAND BAR                                */}
+      {/* 2-TIER EXECUTIVE COMMAND BAR (Search Bar Completely Removed)             */}
       {/* ========================================================================= */}
       <div className="p-4 sm:p-5 rounded-2xl bg-white/95 dark:bg-[#112017]/95 border border-slate-200/90 dark:border-[#1F3526] shadow-sm backdrop-blur-md space-y-4">
-        {/* Tier 1: Header, Live Metrics, Segmented Switcher & Primary Actions */}
+        {/* Tier 1: Title, 3-Way Segmented View Switcher & Primary Actions */}
         <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-200/80 dark:border-[#1A3327]">
           {/* Right Side: Section Title & Live Metrics */}
           <div className="flex flex-wrap items-center gap-3">
@@ -214,7 +228,7 @@ export const CompanyOrgStructureTab: React.FC<CompanyOrgStructureTabProps> = ({
                   الهيكل التنظيمي والإدارات
                 </h2>
                 <p className="text-[11px] text-slate-500 dark:text-[#8FA392]">
-                  التسلسل الهرمي للمؤسسة، بطاقات الأقسام، ومراكز التكلفة
+                  التسلسل الهرمي للمؤسسة، بطاقات الأقسام، والشجرة الذهنية
                 </p>
               </div>
             </div>
@@ -222,20 +236,21 @@ export const CompanyOrgStructureTab: React.FC<CompanyOrgStructureTabProps> = ({
             {/* Live Counter Badges */}
             <div className="flex items-center gap-2">
               <span className="px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-500/30 text-xs font-bold font-mono">
-                {departments.length} وحدة إدارية
+                {currentDepartments.length} وحدة إدارية
               </span>
               <span className="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/30 text-xs font-bold">
-                {departments.length > 0 ? `${maxDepthLevel + 1} مستويات هيكلية` : '0 مستويات'}
+                {currentDepartments.length > 0 ? `${maxDepthLevel + 1} مستويات هيكلية` : '0 مستويات'}
               </span>
             </div>
           </div>
 
-          {/* Center: Segmented View Switcher Pill (Side-by-Side) */}
+          {/* Center: 3-Way Segmented View Switcher Pill */}
           <div className="p-1.5 rounded-xl bg-slate-100/90 dark:bg-[#07130E] border border-slate-200/80 dark:border-amber-500/20 flex items-center gap-1.5 shadow-inner">
+            {/* 1. Smart Cards */}
             <button
               type="button"
               onClick={() => setActiveView('cards')}
-              className={`min-h-[38px] flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              className={`min-h-[38px] flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                 activeView === 'cards'
                   ? 'bg-gradient-to-l from-amber-600 to-amber-500 text-white shadow-md shadow-amber-500/20 font-bold'
                   : 'text-slate-600 dark:text-[#8FA392] hover:text-slate-900 dark:hover:text-[#F3EFE6]'
@@ -246,10 +261,26 @@ export const CompanyOrgStructureTab: React.FC<CompanyOrgStructureTabProps> = ({
               <span>البطاقات الذكية</span>
             </button>
 
+            {/* 2. Hierarchical Pyramid Tree */}
+            <button
+              type="button"
+              onClick={() => setActiveView('hierarchy')}
+              className={`min-h-[38px] flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                activeView === 'hierarchy'
+                  ? 'bg-gradient-to-l from-amber-600 to-amber-500 text-white shadow-md shadow-amber-500/20 font-bold'
+                  : 'text-slate-600 dark:text-[#8FA392] hover:text-slate-900 dark:hover:text-[#F3EFE6]'
+              }`}
+              title="عرض الهيكل الهرمي الرأسي التقليدي"
+            >
+              <Network className="w-4 h-4" />
+              <span>الشكل الهرمي</span>
+            </button>
+
+            {/* 3. Interactive NotebookLM Mind Map */}
             <button
               type="button"
               onClick={() => setActiveView('mindmap')}
-              className={`min-h-[38px] flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              className={`min-h-[38px] flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                 activeView === 'mindmap'
                   ? 'bg-gradient-to-l from-amber-600 to-amber-500 text-white shadow-md shadow-amber-500/20 font-bold'
                   : 'text-slate-600 dark:text-[#8FA392] hover:text-slate-900 dark:hover:text-[#F3EFE6]'
@@ -257,7 +288,7 @@ export const CompanyOrgStructureTab: React.FC<CompanyOrgStructureTabProps> = ({
               title="عرض الشجرة الذهنية التفاعلية بتصميم NotebookLM"
             >
               <GitFork className="w-4 h-4" />
-              <span>الشجرة الذهنية التفاعلية</span>
+              <span>الشجرة الذهنية</span>
             </button>
           </div>
 
@@ -270,7 +301,7 @@ export const CompanyOrgStructureTab: React.FC<CompanyOrgStructureTabProps> = ({
                 className="min-h-[40px] flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-all shadow-md shadow-amber-600/20 cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
-                <span>+ إضافة إدارة / عقدة جديدة</span>
+                <span>+ إضافة إدارة جديدة</span>
               </button>
             )}
 
@@ -279,39 +310,19 @@ export const CompanyOrgStructureTab: React.FC<CompanyOrgStructureTabProps> = ({
                 type="button"
                 onClick={() => setSeedModalOpen(true)}
                 className="min-h-[40px] flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-700 to-teal-700 hover:from-emerald-600 hover:to-teal-600 text-white text-xs font-bold transition-all shadow-sm cursor-pointer"
-                title="تحميل الهيكل التنظيمي القياسي المتكامل لشركات المقاولات (4 مستويات - 30+ إدارة ووحدة)"
+                title="تحميل مسودة الهيكل القياسي المعتمد (34 وحدة إدارية)"
               >
                 <Zap className="w-4 h-4 text-amber-300" />
-                <span>⚡ تحميل الهيكل القياسي المتكامل</span>
+                <span>⚡ تحميل الهيكل القياسي</span>
               </button>
             )}
           </div>
         </div>
 
-        {/* Tier 2: Spacious Search & Filter Strip */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
-          {/* Search Input (md:col-span-5) */}
-          <div className="md:col-span-5 relative">
-            <Search className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-stone-500" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              placeholder="ابحث باسم الإدارة، القسم الفرعي، المسمى، أو الاختصاص..."
-              className="w-full min-h-[40px] ps-9 pe-8 py-2 rounded-xl border border-slate-200 dark:border-[#243628] bg-slate-50 dark:bg-[#0E1610] text-slate-900 dark:text-[#F3EFE6] text-xs font-medium focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 transition-all placeholder:text-slate-400 dark:placeholder:text-stone-600"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute end-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-white"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-
-          {/* Level / Depth Filter Pills (md:col-span-5) */}
-          <div className="md:col-span-5 flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+        {/* Tier 2: Level Filter Chips & Tree Controls */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          {/* Level Filter Chips */}
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
             <button
               type="button"
               onClick={() => setSelectedLevel('all')}
@@ -373,14 +384,14 @@ export const CompanyOrgStructureTab: React.FC<CompanyOrgStructureTabProps> = ({
             </button>
           </div>
 
-          {/* Controls: Expand / Collapse All & Company Selector (md:col-span-2) */}
-          <div className="md:col-span-2 flex items-center justify-end gap-1.5">
+          {/* Controls: Company Selector & Expand / Collapse */}
+          <div className="flex items-center gap-2">
             {companies.length > 1 && (
               <div className="relative shrink-0">
                 <select
                   value={selectedCompanyId}
                   onChange={e => setSelectedCompanyId(e.target.value)}
-                  className="min-h-[36px] max-w-[130px] px-2 py-1 rounded-xl border border-slate-200 dark:border-[#243628] bg-slate-50 dark:bg-[#0E1610] text-slate-800 dark:text-[#F3EFE6] text-xs font-semibold focus:outline-none focus:border-amber-500 truncate"
+                  className="min-h-[36px] max-w-[140px] px-2.5 py-1 rounded-xl border border-slate-200 dark:border-[#243628] bg-slate-50 dark:bg-[#0E1610] text-slate-800 dark:text-[#F3EFE6] text-xs font-semibold focus:outline-none focus:border-amber-500 truncate"
                 >
                   <option value="all">جميع الشركات</option>
                   {companies.map(c => (
@@ -416,9 +427,62 @@ export const CompanyOrgStructureTab: React.FC<CompanyOrgStructureTabProps> = ({
       </div>
 
       {/* ========================================================================= */}
+      {/* PROMINENT DRAFT / PREVIEW CONFIRMATION BANNER                             */}
+      {/* ========================================================================= */}
+      <AnimatePresence>
+        {draftDepartments && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            className="p-4 rounded-2xl bg-amber-500/10 dark:bg-amber-950/40 border-2 border-amber-500/50 flex flex-wrap items-center justify-between gap-3 shadow-md backdrop-blur-md"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-amber-600 text-white flex items-center justify-center font-bold shadow-md shrink-0">
+                <Zap className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h4 className="text-xs sm:text-sm font-black text-amber-950 dark:text-amber-200 flex items-center gap-2">
+                  <span>تم تحميل مسودة الهيكل القياسي ({draftDepartments.length} وحدة إدارية) للمعاينة</span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-white animate-pulse">
+                    مسودة غير محفوظة
+                  </span>
+                </h4>
+                <p className="text-[11px] text-amber-800 dark:text-amber-300/90 mt-0.5">
+                  يمكنك استعراض الهيكل كاملاً عبر البطاقات، الشكل الهرمي، أو الشجرة الذهنية قبل الاعتماد النهائي في المنظومة.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleCommitDraft}
+                disabled={isCommitting}
+                className="min-h-[38px] px-4 py-2 rounded-xl bg-gradient-to-l from-amber-600 to-amber-500 hover:from-amber-700 hover:to-amber-600 text-white text-xs font-bold transition-all shadow-md shadow-amber-500/20 flex items-center gap-1.5 cursor-pointer"
+              >
+                <Check className="w-4 h-4" />
+                <span>{isCommitting ? 'جارٍ الاعتماد والحفظ...' : 'اعتماد وحفظ الهيكل في المنظومة'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setDraftDepartments(null)}
+                disabled={isCommitting}
+                className="min-h-[38px] px-3.5 py-2 rounded-xl border border-amber-400 dark:border-amber-700 text-amber-900 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/30 text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+                <span>إلغاء المسودة</span>
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ========================================================================= */}
       {/* EMPTY STATE VIEW                                                          */}
       {/* ========================================================================= */}
-      {departments.length === 0 ? (
+      {currentDepartments.length === 0 ? (
         <div className="p-12 text-center rounded-2xl border-2 border-dashed border-slate-300 dark:border-[#243628] bg-white dark:bg-[#17231A]">
           <div className="w-16 h-16 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 mx-auto flex items-center justify-center mb-4">
             <FolderTree className="w-8 h-8" />
@@ -427,7 +491,7 @@ export const CompanyOrgStructureTab: React.FC<CompanyOrgStructureTabProps> = ({
             لم يتم تأسيس الهيكل التنظيمي للشركة بعد
           </h3>
           <p className="text-xs text-slate-500 dark:text-[#8FA392] max-w-lg mx-auto mb-6 leading-relaxed">
-            يمكنك تأسيس عقدة أولى يدوياً، أو استخدام زر التحميل الفوري لتأسيس الهيكل القياسي المتكامل لشركات المقاولات المصرية المعتمد بـ 4 مستويات تنفيذية و 30+ إدارة تخصصية مرتبطة بـ Cloudflare D1.
+            يمكنك تأسيس إدارة أولى يدوياً، أو استخدام زر التحميل الفوري لمعاينة الهيكل القياسي المتكامل لشركات المقاولات (34 وحدة إدارية معتمدة).
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-3">
@@ -438,7 +502,7 @@ export const CompanyOrgStructureTab: React.FC<CompanyOrgStructureTabProps> = ({
                 className="min-h-[44px] inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-700 hover:to-amber-600 text-white text-xs font-bold transition-all shadow-lg shadow-amber-500/20 cursor-pointer"
               >
                 <Zap className="w-4 h-4 text-white" />
-                <span>⚡ تحميل الهيكل القياسي المتكامل فوراً</span>
+                <span>⚡ تحميل الهيكل القياسي للمعاينة</span>
               </button>
             )}
 
@@ -461,8 +525,7 @@ export const CompanyOrgStructureTab: React.FC<CompanyOrgStructureTabProps> = ({
           {/* ========================================================================= */}
           {activeView === 'mindmap' && (
             <OrgMindMapTree
-              departments={departments}
-              searchQuery={searchQuery}
+              departments={currentDepartments}
               selectedLevel={selectedLevel}
               selectedCompanyId={selectedCompanyId}
               collapsedNodes={collapsedNodes}
@@ -477,13 +540,43 @@ export const CompanyOrgStructureTab: React.FC<CompanyOrgStructureTabProps> = ({
           )}
 
           {/* ========================================================================= */}
-          {/* VIEW 2: SMART CARDS GRID VIEW                                            */}
+          {/* VIEW 2: VERTICAL HIERARCHICAL PYRAMID TREE                                 */}
+          {/* ========================================================================= */}
+          {activeView === 'hierarchy' && (
+            <div className="w-full overflow-x-auto p-6 sm:p-8 rounded-2xl bg-[#FAF7F0] dark:bg-[#07130E] border border-amber-500/20 dark:border-amber-500/25 shadow-xl min-h-[500px]">
+              {rootDepartments.length === 0 ? (
+                <div className="p-12 text-center text-slate-400 text-xs">
+                  لا توجد إدارات تطابق شروط الفلترة المحددة
+                </div>
+              ) : (
+                <div className="flex items-start justify-center gap-10 min-w-max">
+                  {rootDepartments.map(rootDept => (
+                    <OrgTreeNode
+                      key={rootDept.id}
+                      department={rootDept}
+                      allDepartments={currentDepartments}
+                      collapsedNodes={collapsedNodes}
+                      onToggleCollapse={handleToggleCollapse}
+                      onAddSubDept={handleOpenAdd}
+                      onEditDept={handleOpenEdit}
+                      onViewAudit={handleOpenAudit}
+                      onDeleteDept={handleOpenDelete}
+                      level={0}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ========================================================================= */}
+          {/* VIEW 3: SMART CARDS GRID VIEW                                            */}
           {/* ========================================================================= */}
           {activeView === 'cards' && (
             <div className="space-y-4">
               <div className="flex items-center justify-between text-xs text-slate-500 dark:text-[#8FA392]">
                 <span className="font-bold">
-                  إجمالي الوحدات المعروضة: {filteredDepartments.length} من أصل {departments.length}
+                  إجمالي الوحدات المعروضة: {filteredDepartments.length} من أصل {currentDepartments.length}
                 </span>
                 {selectedLevel !== 'all' && (
                   <span className="text-amber-600 dark:text-amber-400 font-semibold">
@@ -494,13 +587,13 @@ export const CompanyOrgStructureTab: React.FC<CompanyOrgStructureTabProps> = ({
 
               {filteredDepartments.length === 0 ? (
                 <div className="p-12 text-center rounded-2xl border border-slate-200 dark:border-[#243628] bg-white dark:bg-[#17231A] text-slate-400 text-xs">
-                  لا توجد نتائج مطابقة لبحثك في بطاقات الإدارات
+                  لا توجد وحدات إدارية مطابقة لخيارات الفلترة
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                   {filteredDepartments.map(dept => {
-                    const parent = departments.find(d => d.id === dept.parentId);
-                    const subDeptsCount = departments.filter(d => d.parentId === dept.id).length;
+                    const parent = currentDepartments.find(d => d.id === dept.parentId);
+                    const subDeptsCount = currentDepartments.filter(d => d.parentId === dept.id).length;
                     const level = dept.level ?? 0;
 
                     const levelBadgeColor =
@@ -524,10 +617,14 @@ export const CompanyOrgStructureTab: React.FC<CompanyOrgStructureTabProps> = ({
                     return (
                       <div
                         key={dept.id}
-                        className="p-5 rounded-2xl border-2 border-slate-200 dark:border-[#243628] bg-white dark:bg-[#17231A] shadow-xs hover:shadow-md transition-all flex flex-col justify-between text-start"
+                        className={`p-5 rounded-2xl border-2 bg-white dark:bg-[#17231A] shadow-xs hover:shadow-md transition-all flex flex-col justify-between text-start ${
+                          dept.isDraft
+                            ? 'border-dashed border-amber-500 bg-amber-50/50 dark:bg-[#1E1908]/50'
+                            : 'border-slate-200 dark:border-[#243628]'
+                        }`}
                       >
                         <div>
-                          {/* Card Top: Code, Parent & Headcount */}
+                          {/* Card Top: Code, Cost Center & Level Badge */}
                           <div className="flex items-start justify-between gap-2 mb-3">
                             <div className="flex items-center gap-1.5">
                               <span className="font-mono text-xs font-bold px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-[#1F2E23] text-slate-800 dark:text-[#EBB34D] border border-slate-200 dark:border-[#243628]">
@@ -539,6 +636,11 @@ export const CompanyOrgStructureTab: React.FC<CompanyOrgStructureTabProps> = ({
                                   title="كود مركز التكلفة المرتبط"
                                 >
                                   {dept.costCenterCode}
+                                </span>
+                              )}
+                              {dept.isDraft && (
+                                <span className="px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-amber-500 text-white animate-pulse">
+                                  مسودة
                                 </span>
                               )}
                             </div>
@@ -623,13 +725,12 @@ export const CompanyOrgStructureTab: React.FC<CompanyOrgStructureTabProps> = ({
                           </div>
                         </div>
 
-                        {/* Card Footer: Child count + Icon-Only Action Group */}
+                        {/* Card Footer: Child count + Action Group */}
                         <div className="pt-3 border-t border-slate-200 dark:border-[#243628] flex items-center justify-between">
                           <span className="text-[11px] font-bold text-slate-500 dark:text-[#8FA392]">
                             {subDeptsCount > 0 ? `${subDeptsCount} إدارات فرعية` : 'لا توجد فروع'}
                           </span>
 
-                          {/* Icon-Only Action Group */}
                           <div className="flex items-center gap-1.5">
                             {hasPermission('companies.org.create') && (
                               <button
@@ -688,10 +789,9 @@ export const CompanyOrgStructureTab: React.FC<CompanyOrgStructureTabProps> = ({
           <SeedHierarchyModal
             isOpen={seedModalOpen}
             companies={companies}
-            currentDepartmentsCount={departments.length}
-            isSeeding={isSeeding}
+            currentDepartmentsCount={currentDepartments.length}
             onClose={() => setSeedModalOpen(false)}
-            onConfirm={handleConfirmSeed}
+            onConfirm={handleGenerateDraft}
           />
         )}
       </AnimatePresence>
@@ -706,7 +806,7 @@ export const CompanyOrgStructureTab: React.FC<CompanyOrgStructureTabProps> = ({
             onClose={() => setModalOpen(false)}
             editingDept={editingDept}
             prefilledParentId={prefilledParentId}
-            departments={departments}
+            departments={currentDepartments}
             companies={companies}
             branches={branches}
             onSave={async deptData => {
@@ -740,7 +840,7 @@ export const CompanyOrgStructureTab: React.FC<CompanyOrgStructureTabProps> = ({
         {deleteTargetDept && (
           <DepartmentDeleteModal
             department={deleteTargetDept}
-            departments={departments}
+            departments={currentDepartments}
             onClose={() => setDeleteTargetDept(null)}
             onConfirmDelete={async () => {
               if (deleteTargetDept) {
@@ -756,21 +856,233 @@ export const CompanyOrgStructureTab: React.FC<CompanyOrgStructureTabProps> = ({
 };
 
 /* -------------------------------------------------------------------------- */
+/* RECURSIVE HIERARCHICAL PYRAMID TREE NODE (OrgTreeNode)                    */
+/* -------------------------------------------------------------------------- */
+interface OrgTreeNodeProps {
+  department: DepartmentOrg;
+  allDepartments: DepartmentOrg[];
+  collapsedNodes: Set<string>;
+  onToggleCollapse: (id: string) => void;
+  onAddSubDept: (parentId: string) => void;
+  onEditDept: (dept: DepartmentOrg) => void;
+  onViewAudit: (dept: DepartmentOrg) => void;
+  onDeleteDept: (dept: DepartmentOrg) => void;
+  level: number;
+}
+
+const OrgTreeNode: React.FC<OrgTreeNodeProps> = ({
+  department,
+  allDepartments,
+  collapsedNodes,
+  onToggleCollapse,
+  onAddSubDept,
+  onEditDept,
+  onViewAudit,
+  onDeleteDept,
+  level
+}) => {
+  const { hasPermission } = useAuth();
+
+  const children = useMemo(() => {
+    return allDepartments.filter(d => d.parentId === department.id);
+  }, [allDepartments, department.id]);
+
+  const hasChildren = children.length > 0;
+  const isCollapsed = collapsedNodes.has(department.id);
+
+  // Level Accent styling
+  const levelAccentBorder =
+    level === 0
+      ? 'border-t-4 border-t-amber-500'
+      : level === 1
+      ? 'border-t-4 border-t-teal-600'
+      : level === 2
+      ? 'border-t-4 border-t-emerald-600'
+      : 'border-t-4 border-t-stone-500';
+
+  return (
+    <div className="flex flex-col items-center">
+      {/* 1. Node Card Container */}
+      <motion.div
+        layout
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        transition={{ duration: 0.2 }}
+        className={`w-64 sm:w-72 p-3.5 rounded-2xl border-2 bg-white dark:bg-[#10241A] text-slate-900 dark:text-[#F3EFE6] shadow-sm hover:shadow-lg transition-all duration-200 relative text-start ${levelAccentBorder} ${
+          department.isDraft
+            ? 'border-dashed border-amber-500 bg-amber-50/60 dark:bg-[#1E1908]/60'
+            : 'border-slate-200 dark:border-[#243628]'
+        }`}
+      >
+        {/* Card Header: Code, Cost Center & Staff Count */}
+        <div className="flex items-center justify-between gap-1.5 mb-2">
+          <div className="flex items-center gap-1.5 flex-wrap truncate">
+            <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#1F2E23] text-slate-800 dark:text-[#EBB34D] border border-slate-200 dark:border-[#243628]">
+              {department.code}
+            </span>
+
+            {department.costCenterCode && (
+              <span
+                className="font-mono text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-900/50 truncate"
+                title="كود مركز التكلفة الهيكلي"
+              >
+                {department.costCenterCode}
+              </span>
+            )}
+
+            {department.isDraft && (
+              <span className="px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-amber-500 text-white animate-pulse">
+                مسودة
+              </span>
+            )}
+          </div>
+
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-[#1F2E23] text-slate-700 dark:text-[#8FA392] shrink-0">
+            {department.staffCount} موظف
+          </span>
+        </div>
+
+        {/* Department Name */}
+        <h4 className="text-xs sm:text-sm font-black text-slate-900 dark:text-[#F3EFE6] mb-1 leading-tight line-clamp-1">
+          {department.nameAr}
+        </h4>
+
+        {/* Head / Manager */}
+        <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-[#8FA392] mb-2.5">
+          <User className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+          <span className="font-bold text-slate-800 dark:text-[#E2DCCE] truncate">
+            {department.headAr || 'غير محدد'}
+          </span>
+        </div>
+
+        {/* Action micro-buttons group */}
+        <div className="pt-2 border-t border-slate-200 dark:border-[#243628] flex items-center justify-between">
+          <div className="flex items-center gap-1">
+            {hasPermission('companies.org.create') && (
+              <button
+                onClick={() => onAddSubDept(department.id)}
+                className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-colors cursor-pointer"
+                title="إضافة قسم تابع"
+              >
+                <Plus className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              </button>
+            )}
+
+            {hasPermission('companies.org.edit') && (
+              <button
+                onClick={() => onEditDept(department)}
+                className="p-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/60 transition-colors cursor-pointer"
+                title="تعديل الإدارة"
+              >
+                <Pencil className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+              </button>
+            )}
+
+            <button
+              onClick={() => onViewAudit(department)}
+              className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors cursor-pointer"
+              title="سجل التعديلات"
+            >
+              <AlertCircle className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+            </button>
+
+            {hasPermission('companies.org.delete') && (
+              <button
+                onClick={() => onDeleteDept(department)}
+                className="p-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 transition-colors cursor-pointer"
+                title="حذف الإدارة"
+              >
+                <Trash2 className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+              </button>
+            )}
+          </div>
+
+          {/* Expand/Collapse Button for Branches */}
+          {hasChildren && (
+            <button
+              onClick={() => onToggleCollapse(department.id)}
+              className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-[#1F2E23] text-slate-800 dark:text-[#F3EFE6] hover:bg-slate-200 dark:hover:bg-[#243628] text-[10px] font-bold transition-colors cursor-pointer"
+              title={isCollapsed ? 'توسيع الفروع' : 'طي الفروع'}
+            >
+              <span>{children.length}</span>
+              {isCollapsed ? (
+                <ChevronDown className="w-3 h-3 text-amber-500" />
+              ) : (
+                <ChevronUp className="w-3 h-3 text-amber-500" />
+              )}
+            </button>
+          )}
+        </div>
+      </motion.div>
+
+      {/* 2. Hierarchical Lines & Children Rendering */}
+      {hasChildren && !isCollapsed && (
+        <div className="flex flex-col items-center w-full">
+          {/* Vertical Stem down from parent */}
+          <div className="w-0.5 h-6 bg-slate-400 dark:bg-[#345540]" />
+
+          {/* Children container with connecting lines */}
+          <div className="flex items-start justify-center gap-6 relative">
+            {children.map((child, idx) => {
+              const isFirst = idx === 0;
+              const isLast = idx === children.length - 1;
+              const isSingle = children.length === 1;
+
+              return (
+                <div key={child.id} className="relative flex flex-col items-center">
+                  {/* Top horizontal connection bridge */}
+                  {!isSingle && (
+                    <div
+                      className={`absolute top-0 h-0.5 bg-slate-400 dark:bg-[#345540] ${
+                        isFirst
+                          ? 'start-1/2 end-0'
+                          : isLast
+                          ? 'start-0 end-1/2'
+                          : 'start-0 end-0'
+                      }`}
+                    />
+                  )}
+
+                  {/* Vertical drop line down into child card */}
+                  <div className="w-0.5 h-6 bg-slate-400 dark:bg-[#345540]" />
+
+                  {/* Child Recursive Node */}
+                  <OrgTreeNode
+                    department={child}
+                    allDepartments={allDepartments}
+                    collapsedNodes={collapsedNodes}
+                    onToggleCollapse={onToggleCollapse}
+                    onAddSubDept={onAddSubDept}
+                    onEditDept={onEditDept}
+                    onViewAudit={onViewAudit}
+                    onDeleteDept={onDeleteDept}
+                    level={level + 1}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+/* -------------------------------------------------------------------------- */
 /* SEED HIERARCHY MODAL                                                       */
 /* -------------------------------------------------------------------------- */
 interface SeedHierarchyModalProps {
   isOpen: boolean;
   companies: CompanyEntity[];
   currentDepartmentsCount: number;
-  isSeeding: boolean;
   onClose: () => void;
-  onConfirm: (companyId: string) => Promise<void>;
+  onConfirm: (companyId: string) => void;
 }
 
 const SeedHierarchyModal: React.FC<SeedHierarchyModalProps> = ({
   companies,
   currentDepartmentsCount,
-  isSeeding,
   onClose,
   onConfirm
 }) => {
@@ -794,13 +1106,13 @@ const SeedHierarchyModal: React.FC<SeedHierarchyModalProps> = ({
                 تحميل الهيكل التنظيمي القياسي المتكامل
               </h3>
               <p className="text-xs text-slate-500 dark:text-[#8FA392]">
-                4 مستويات تنظيمية متكاملة لشركات المقاولات والإنشاءات الكبرى
+                مسودة معتمدة تضم 34 وحدة إدارية مقسمة على 4 مستويات تنظيمية
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="min-h-[40px] min-w-[40px] flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5"
+            className="min-h-[40px] min-w-[40px] flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -810,23 +1122,28 @@ const SeedHierarchyModal: React.FC<SeedHierarchyModalProps> = ({
           <div className="p-3 rounded-xl bg-amber-50/80 dark:bg-amber-950/20 border border-amber-300 dark:border-amber-500/30 text-amber-900 dark:text-amber-200 leading-relaxed">
             <div className="flex items-center gap-2 font-bold mb-1">
               <Sparkles className="w-4 h-4 text-amber-500" />
-              <span>ماذا يتضمن الهيكل القياسي المعتمد؟</span>
+              <span>محتويات الهيكل القياسي المعتمد (34 وحدة تشغيلية):</span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-[11.5px] ps-1">
-              <li><strong>المستوى 0:</strong> المالك والرئيس التنفيذي (Owner & CEO)</li>
-              <li><strong>المستوى 1:</strong> 8 إدارات تنفيذية عليا (PMO، المراجعة الداخلية، المستشار القانوني، الجودة والسلامة QHSE، المشروعات الهندسية، الموارد البشرية، المدير المالي CFO، وسلاسل الإمداد والمشتريات).</li>
-              <li><strong>المستوى 2 و 3:</strong> 25+ قسماً تخصصياً ووحدة عمل (التسعير، الشوب دروينج، حسابات المستخلصات، العقود، والتأمينات الاجتماعية).</li>
+              <li><strong>الرئيس التنفيذي (L0):</strong> المالك ورئيس مجلس الإدارة (1)</li>
+              <li><strong>مكتب إدارة المشروعات (PMO - L1):</strong> البرامج الزمنية، الموازنات، ومراقبة الانحرافات (4)</li>
+              <li><strong>المراجعة الداخلية (L1):</strong> مراجعة المستخلصات، المشتريات، وجرد المخازن (4)</li>
+              <li><strong>الشؤون القانونية (L1):</strong> العقود الحكومية، عقود مقاولي الباطن، وقضايا التحكيم (4)</li>
+              <li><strong>السلامة والجودة (QHSE - L1):</strong> فحص استلام الأعمال WIR/MIR وتأمين المواقع (3)</li>
+              <li><strong>المشروعات والإدارة الهندسية (L1):</strong> المكتب الفني (3 أقسام) ومديرو المواقع (6)</li>
+              <li><strong>الموارد البشرية (L1):</strong> التوظيف، شؤون العاملين، الخدمات الحكومية، وتكنولوجيا المعلومات (5)</li>
+              <li><strong>الإدارة المالية (CFO - L1):</strong> حسابات العملاء، حسابات الموردين والخزينة (3)</li>
+              <li><strong>سلاسل الإمداد والمشتريات (L1):</strong> عقود الباطن، توريد الخامات، والمخازن والورش (4)</li>
             </ul>
           </div>
 
-          {currentDepartmentsCount > 0 && (
-            <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 text-blue-800 dark:text-blue-300 text-xs flex items-center gap-2">
-              <Info className="w-4 h-4 shrink-0" />
-              <span>
-                يوجد حالياً ({currentDepartmentsCount}) وحدة إدارية مسجلة. سيتم إدراج الهيكل القياسي وربطه بالشركة المحددة وحفظه مباشرة في Cloudflare D1.
-              </span>
-            </div>
-          )}
+          <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900 text-emerald-800 dark:text-emerald-300 text-xs flex items-center gap-2">
+            <Info className="w-4 h-4 shrink-0" />
+            <span>
+              {currentDepartmentsCount > 0 ? `يوجد حالياً (${currentDepartmentsCount}) وحدة مسجلة. ` : ''}
+              سيتم تحميل الهيكل أولاً كمسودة للمعاينة، ولن يتم الكتابة في قاعدة البيانات الدائمة إلا بعد الضغط على &quot;اعتماد وحفظ الهيكل&quot;.
+            </span>
+          </div>
 
           {companies.length > 0 && (
             <div>
@@ -851,25 +1168,17 @@ const SeedHierarchyModal: React.FC<SeedHierarchyModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              disabled={isSeeding}
-              className="min-h-[42px] px-4 py-2 rounded-xl border border-slate-300 dark:border-[#243628] text-slate-600 dark:text-[#8FA392] hover:bg-slate-100 dark:hover:bg-white/5 font-semibold text-xs"
+              className="min-h-[42px] px-4 py-2 rounded-xl border border-slate-300 dark:border-[#243628] text-slate-600 dark:text-[#8FA392] hover:bg-slate-100 dark:hover:bg-white/5 font-semibold text-xs cursor-pointer"
             >
               إلغاء
             </button>
             <button
               type="button"
               onClick={() => onConfirm(targetCompanyId)}
-              disabled={isSeeding}
               className="min-h-[42px] px-5 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-700 hover:to-amber-600 text-white font-bold text-xs shadow-md transition-all flex items-center gap-2 cursor-pointer"
             >
-              {isSeeding ? (
-                <span>جارٍ التأسيس والمزامنة مع Cloudflare D1...</span>
-              ) : (
-                <>
-                  <Zap className="w-4 h-4 text-white" />
-                  <span>تأكيد التحميل والتأسيس الفوري</span>
-                </>
-              )}
+              <Zap className="w-4 h-4 text-white" />
+              <span>تحميل المسودة للمعاينة فوراً</span>
             </button>
           </div>
         </div>
@@ -990,12 +1299,11 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
       return;
     }
 
-    // Cost Center Code Regex Validation (if provided)
     if (costCenterCode.trim()) {
       const codeRegex = /^[A-Za-z0-9_-]{2,20}$/;
       if (!codeRegex.test(costCenterCode.trim())) {
         setValidationError(
-          'كود مركز التكلفة يجب أن يحتوي على حروف إنجليزية، أرقام، أو شرطات (-) دون مسافات (مثال: CC-101 أو CC_PROJECT)'
+          'كود مركز التكلفة يجب أن يحتوي على حروف إنجليزية، أرقام، أو شرطات (-) دون مسافات (مثال: CC-101)'
         );
         return;
       }
@@ -1036,7 +1344,6 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
         exit={{ opacity: 0, scale: 0.95 }}
         className="w-full max-w-2xl bg-white dark:bg-[#0E1610] rounded-2xl border-2 border-slate-300 dark:border-[#243628] shadow-2xl overflow-hidden p-5 sm:p-6 text-start my-8"
       >
-        {/* Header */}
         <div className="flex items-center justify-between pb-3.5 border-b border-slate-200 dark:border-[#243628] mb-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
@@ -1053,13 +1360,12 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5"
+            className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Validation Alert */}
         {validationError && (
           <div className="mb-4 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 text-xs flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 shrink-0" />
@@ -1067,9 +1373,7 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
           </div>
         )}
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-          {/* 1. NameAr & TitleEn */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block font-bold text-slate-900 dark:text-[#F3EFE6] mb-1">
@@ -1099,7 +1403,6 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
             </div>
           </div>
 
-          {/* 2. Code & Level */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block font-bold text-slate-900 dark:text-[#F3EFE6] mb-1">
@@ -1132,7 +1435,6 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
             </div>
           </div>
 
-          {/* 3. Parent Hierarchy & Structural Cost Center Code */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block font-bold text-slate-900 dark:text-[#F3EFE6] mb-1">
@@ -1166,7 +1468,6 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
             </div>
           </div>
 
-          {/* 4. Manager & Staff Count */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block font-bold text-slate-900 dark:text-[#F3EFE6] mb-1">
@@ -1196,7 +1497,6 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
             </div>
           </div>
 
-          {/* 5. Company & Branch Linkage */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block font-bold text-slate-900 dark:text-[#F3EFE6] mb-1">
@@ -1234,7 +1534,6 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
             </div>
           </div>
 
-          {/* 6. Sub-units tags */}
           <div>
             <label className="block font-bold text-slate-900 dark:text-[#F3EFE6] mb-1">
               الأقسام والوحدات التابعة (Tags)
@@ -1256,7 +1555,7 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
               <button
                 type="button"
                 onClick={handleAddSubUnit}
-                className="min-h-[38px] px-3 py-1.5 rounded-xl bg-slate-200 dark:bg-[#1F2E23] text-slate-800 dark:text-[#F3EFE6] font-bold hover:bg-slate-300 dark:hover:bg-[#243628] text-xs transition-colors shrink-0"
+                className="min-h-[38px] px-3 py-1.5 rounded-xl bg-slate-200 dark:bg-[#1F2E23] text-slate-800 dark:text-[#F3EFE6] font-bold hover:bg-slate-300 dark:hover:bg-[#243628] text-xs transition-colors shrink-0 cursor-pointer"
               >
                 + إضافة وحدة
               </button>
@@ -1272,7 +1571,7 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
                   <button
                     type="button"
                     onClick={() => handleRemoveSubUnit(idx)}
-                    className="text-slate-400 hover:text-rose-500 transition-colors"
+                    className="text-slate-400 hover:text-rose-500 transition-colors cursor-pointer"
                   >
                     <X className="w-3 h-3" />
                   </button>
@@ -1281,7 +1580,6 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
             </div>
           </div>
 
-          {/* 7. Responsibilities */}
           <div>
             <label className="block font-bold text-slate-900 dark:text-[#F3EFE6] mb-1">
               المسؤوليات والمهام الإدارية
@@ -1295,13 +1593,12 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
             />
           </div>
 
-          {/* Modal Actions */}
           <div className="pt-3 border-t border-slate-200 dark:border-[#243628] flex items-center justify-end gap-2.5">
             <button
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="min-h-[42px] px-4 py-2 rounded-xl border border-slate-300 dark:border-[#243628] text-slate-600 dark:text-[#8FA392] hover:bg-slate-100 dark:hover:bg-white/5 font-semibold"
+              className="min-h-[42px] px-4 py-2 rounded-xl border border-slate-300 dark:border-[#243628] text-slate-600 dark:text-[#8FA392] hover:bg-slate-100 dark:hover:bg-white/5 font-semibold cursor-pointer"
             >
               إلغاء
             </button>
@@ -1348,7 +1645,6 @@ const DepartmentAuditLogModal: React.FC<DepartmentAuditLogModalProps> = ({
         exit={{ opacity: 0, scale: 0.95 }}
         className="w-full max-w-xl bg-white dark:bg-[#0E1610] rounded-2xl border-2 border-slate-300 dark:border-[#243628] shadow-2xl overflow-hidden p-5 sm:p-6 text-start max-h-[90vh] flex flex-col"
       >
-        {/* Header */}
         <div className="flex items-center justify-between pb-3.5 border-b border-slate-200 dark:border-[#243628] mb-4 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
@@ -1365,13 +1661,12 @@ const DepartmentAuditLogModal: React.FC<DepartmentAuditLogModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-white"
+            className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-white cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Audit Log Timeline */}
         <div className="flex-1 overflow-y-auto space-y-3.5 pe-1">
           {auditLogs.length === 0 ? (
             <div className="py-12 text-center text-slate-400 text-xs">
@@ -1393,7 +1688,6 @@ const DepartmentAuditLogModal: React.FC<DepartmentAuditLogModalProps> = ({
                       : 'bg-slate-50 dark:bg-[#17231A] border-slate-200 dark:border-[#243628]'
                   }`}
                 >
-                  {/* Entry Header: User, Action & Timestamp */}
                   <div className="flex items-center justify-between gap-2 border-b border-slate-200/60 dark:border-white/5 pb-2">
                     <div className="flex items-center gap-2">
                       <div className="w-6 h-6 rounded-full bg-slate-200 dark:bg-[#243628] text-slate-700 dark:text-[#F3EFE6] flex items-center justify-center font-bold text-[10px]">
@@ -1420,7 +1714,6 @@ const DepartmentAuditLogModal: React.FC<DepartmentAuditLogModalProps> = ({
                     </span>
                   </div>
 
-                  {/* Changes List */}
                   <div className="space-y-1.5 pt-1">
                     {log.changes.map((change, cIdx) => (
                       <div
@@ -1451,11 +1744,10 @@ const DepartmentAuditLogModal: React.FC<DepartmentAuditLogModalProps> = ({
           )}
         </div>
 
-        {/* Footer */}
         <div className="pt-3 border-t border-slate-200 dark:border-[#243628] flex items-center justify-end shrink-0">
           <button
             onClick={onClose}
-            className="min-h-[40px] px-5 py-2 rounded-xl bg-slate-100 dark:bg-[#1F2E23] text-slate-800 dark:text-[#F3EFE6] font-bold text-xs hover:bg-slate-200 dark:hover:bg-[#243628] transition-colors"
+            className="min-h-[40px] px-5 py-2 rounded-xl bg-slate-100 dark:bg-[#1F2E23] text-slate-800 dark:text-[#F3EFE6] font-bold text-xs hover:bg-slate-200 dark:hover:bg-[#243628] transition-colors cursor-pointer"
           >
             إغلاق
           </button>
@@ -1483,7 +1775,6 @@ const DepartmentDeleteModal: React.FC<DepartmentDeleteModalProps> = ({
 }) => {
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Check if department has active sub-departments
   const childDepartments = useMemo(() => {
     return departments.filter(d => d.parentId === department.id);
   }, [departments, department.id]);
@@ -1508,7 +1799,6 @@ const DepartmentDeleteModal: React.FC<DepartmentDeleteModalProps> = ({
         className="w-full max-w-md bg-white dark:bg-[#0E1610] rounded-2xl border-2 border-slate-300 dark:border-[#243628] shadow-2xl p-5 sm:p-6 text-start"
       >
         {hasChildren ? (
-          /* BLOCKED: Safety Warning */
           <div>
             <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center mb-4">
               <AlertTriangle className="w-6 h-6" />
@@ -1538,14 +1828,13 @@ const DepartmentDeleteModal: React.FC<DepartmentDeleteModalProps> = ({
             <div className="flex items-center justify-end">
               <button
                 onClick={onClose}
-                className="min-h-[42px] px-5 py-2 rounded-xl bg-slate-800 text-white font-bold text-xs hover:bg-slate-900 transition-colors"
+                className="min-h-[42px] px-5 py-2 rounded-xl bg-slate-800 text-white font-bold text-xs hover:bg-slate-900 transition-colors cursor-pointer"
               >
                 فهمت ذلك - إغلاق
               </button>
             </div>
           </div>
         ) : (
-          /* ALLOWED: Confirmation */
           <div>
             <div className="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center mb-4">
               <Trash2 className="w-6 h-6" />
@@ -1563,7 +1852,7 @@ const DepartmentDeleteModal: React.FC<DepartmentDeleteModalProps> = ({
               <button
                 onClick={onClose}
                 disabled={isDeleting}
-                className="min-h-[42px] px-4 py-2 rounded-xl border border-slate-300 dark:border-[#243628] text-slate-600 dark:text-[#8FA392] hover:bg-slate-100 dark:hover:bg-white/5 font-semibold text-xs"
+                className="min-h-[42px] px-4 py-2 rounded-xl border border-slate-300 dark:border-[#243628] text-slate-600 dark:text-[#8FA392] hover:bg-slate-100 dark:hover:bg-white/5 font-semibold text-xs cursor-pointer"
               >
                 إلغاء
               </button>

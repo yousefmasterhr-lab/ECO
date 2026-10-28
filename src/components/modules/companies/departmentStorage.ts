@@ -57,6 +57,57 @@ export function computeHierarchyLevels(departments: DepartmentOrg[]): Department
   }));
 }
 
+/**
+ * In-memory & database deduplication engine for departments.
+ * Keeps exactly ONE canonical record per (companyId + nameAr), preferring valid parents & cost centers.
+ */
+export function deduplicateDepartments(departments: DepartmentOrg[]): DepartmentOrg[] {
+  if (!departments || departments.length === 0) return [];
+
+  const groups = new Map<string, DepartmentOrg[]>();
+  departments.forEach(dept => {
+    const key = `${dept.companyId || 'comp_default'}::${(dept.nameAr || '').trim()}`;
+    const arr = groups.get(key) || [];
+    arr.push(dept);
+    groups.set(key, arr);
+  });
+
+  const canonical: DepartmentOrg[] = [];
+  const oldIdToCanonical = new Map<string, string>();
+
+  groups.forEach(group => {
+    // Score based on richness of information
+    group.sort((a, b) => {
+      const aScore =
+        (a.parentId ? 2 : (a.level === 0 ? 3 : 0)) +
+        (a.costCenterCode ? 1 : 0) +
+        ((a.auditLogs && a.auditLogs.length > 0) ? 2 : 0) +
+        (a.headAr ? 1 : 0);
+      const bScore =
+        (b.parentId ? 2 : (b.level === 0 ? 3 : 0)) +
+        (b.costCenterCode ? 1 : 0) +
+        ((b.auditLogs && b.auditLogs.length > 0) ? 2 : 0) +
+        (b.headAr ? 1 : 0);
+      return bScore - aScore;
+    });
+
+    const chosen = group[0];
+    canonical.push(chosen);
+
+    for (let i = 1; i < group.length; i++) {
+      oldIdToCanonical.set(group[i].id, chosen.id);
+    }
+  });
+
+  // Re-map parent IDs to canonical IDs if parent was one of the purged duplicates
+  return canonical.map(dept => {
+    if (dept.parentId && oldIdToCanonical.has(dept.parentId)) {
+      return { ...dept, parentId: oldIdToCanonical.get(dept.parentId)! };
+    }
+    return dept;
+  });
+}
+
 export interface HierarchyTemplateNode {
   key: string;
   parentKey: string | null;
@@ -70,8 +121,12 @@ export interface HierarchyTemplateNode {
   responsibilities?: string;
 }
 
+/**
+ * Calibrated Standard Contracting Hierarchy: Exactly 34 operational units
+ * 1 Root + 4 PMO + 4 Audit + 4 Legal + 3 QHSE + 6 Eng + 5 HR + 3 CFO + 4 SCM = 34 Units
+ */
 export const ENTERPRISE_HIERARCHY_TEMPLATE: HierarchyTemplateNode[] = [
-  // Level 0: Root CEO
+  // 1. Root Level 0: Owner & CEO (1)
   {
     key: 'root_ceo',
     parentKey: null,
@@ -85,7 +140,7 @@ export const ENTERPRISE_HIERARCHY_TEMPLATE: HierarchyTemplateNode[] = [
     responsibilities: 'القيادة التنفيذية، رسم الاستراتيجيات العامة للشركة، واعتماد موازنات المشروعات'
   },
 
-  // 1. Level 1: PMO & Cost Control
+  // 2. Level 1: PMO & Cost Control (4 units)
   {
     key: 'pmo_dir',
     parentKey: 'root_ceo',
@@ -135,7 +190,7 @@ export const ENTERPRISE_HIERARCHY_TEMPLATE: HierarchyTemplateNode[] = [
     responsibilities: 'تحليل القيمة المكتسبة (EVM) وإصدار تقارير الانحرافات الشهرية'
   },
 
-  // 2. Level 1: Internal Audit & Financial Control
+  // 3. Level 1: Internal Audit & Financial Control (4 units)
   {
     key: 'audit_dir',
     parentKey: 'root_ceo',
@@ -185,7 +240,7 @@ export const ENTERPRISE_HIERARCHY_TEMPLATE: HierarchyTemplateNode[] = [
     responsibilities: 'الجرد المفاجئ والدوري للمخازن المركزية ومخازن التشوين بالمواقع'
   },
 
-  // 3. Level 1: Legal Counsel
+  // 4. Level 1: Legal Counsel (4 units)
   {
     key: 'legal_dir',
     parentKey: 'root_ceo',
@@ -235,7 +290,7 @@ export const ENTERPRISE_HIERARCHY_TEMPLATE: HierarchyTemplateNode[] = [
     responsibilities: 'إدارة النزاعات القضائية، التحكيم الهندسي، والمطالبات القانونية'
   },
 
-  // 4. Level 1: QHSE Director
+  // 5. Level 1: QHSE Director (3 units)
   {
     key: 'qhse_dir',
     parentKey: 'root_ceo',
@@ -273,7 +328,7 @@ export const ENTERPRISE_HIERARCHY_TEMPLATE: HierarchyTemplateNode[] = [
     responsibilities: 'تأمين بيئة العمل بالمواقع الإنشائية وتطبيق لوائح الحماية الشخصية والدفاع المدني'
   },
 
-  // 5. Level 1: Engineering & Projects Director
+  // 6. Level 1: Engineering & Projects (6 units)
   {
     key: 'eng_dir',
     parentKey: 'root_ceo',
@@ -286,7 +341,6 @@ export const ENTERPRISE_HIERARCHY_TEMPLATE: HierarchyTemplateNode[] = [
     level: 1,
     responsibilities: 'إدارة العمليات الهندسية، المكتب الفني، والمواقع الإنشائية'
   },
-  // Level 2: المكتب الفني
   {
     key: 'eng_tech_office',
     parentKey: 'eng_dir',
@@ -299,7 +353,6 @@ export const ENTERPRISE_HIERARCHY_TEMPLATE: HierarchyTemplateNode[] = [
     level: 2,
     responsibilities: 'إدارة عمليات التسعير، الشوب دروينج، وحصر الكميات ومستخلصات المالك'
   },
-  // Level 3 units under المكتب الفني
   {
     key: 'eng_pricing',
     parentKey: 'eng_tech_office',
@@ -336,7 +389,6 @@ export const ENTERPRISE_HIERARCHY_TEMPLATE: HierarchyTemplateNode[] = [
     level: 3,
     responsibilities: 'الحصر الهندسي للمنفذ ومقارنته بالمخططات وإعداد مستخلصات الأعمال'
   },
-  // Level 2: مديرو المشاريع والمواقع
   {
     key: 'eng_site_mgrs',
     parentKey: 'eng_dir',
@@ -349,45 +401,8 @@ export const ENTERPRISE_HIERARCHY_TEMPLATE: HierarchyTemplateNode[] = [
     level: 2,
     responsibilities: 'القيادة الميدانية لتنفيذ الأعمال، تنسيق فرق العمل، وضمان الجودة والبرنامج الزمني'
   },
-  // Level 3 units under مديرو المشاريع والمواقع
-  {
-    key: 'eng_exec_engs',
-    parentKey: 'eng_site_mgrs',
-    nameAr: 'مهندسو التنفيذ (مدني / عمارة / MEP)',
-    titleEn: 'Site Execution Engineers (Civil / Arch / MEP)',
-    code: 'ENG-304',
-    headAr: 'م. مصطفى كامل',
-    costCenterCode: 'CC-1521',
-    staffCount: 8,
-    level: 3,
-    responsibilities: 'الإشراف اليومي المباشر على صب الخرسانات والتشطيبات والأعمال الكهروميكانيكية'
-  },
-  {
-    key: 'eng_site_qaqc',
-    parentKey: 'eng_site_mgrs',
-    nameAr: 'مهندسو الجودة والسلامة بالموقع',
-    titleEn: 'Site QA/QC & Safety Engineers',
-    code: 'ENG-305',
-    headAr: 'م. عمار حمدي',
-    costCenterCode: 'CC-1522',
-    staffCount: 4,
-    level: 3,
-    responsibilities: 'التأكد من مطابقة التنفيذ لمواصفات المشروع وضوابط السلامة بالمنطقة الإنشائية'
-  },
-  {
-    key: 'eng_surveyors',
-    parentKey: 'eng_site_mgrs',
-    nameAr: 'المساحون والمشرفون وإداري المواقع',
-    titleEn: 'Site Surveyors, Foremen & Site Admins',
-    code: 'ENG-306',
-    headAr: 'أ. حازم الصاوي',
-    costCenterCode: 'CC-1523',
-    staffCount: 4,
-    level: 3,
-    responsibilities: 'الأعمال المساحية، الإشراف الحرفي على العمالة، وتسجيل الحضور والانصراف بالموقع'
-  },
 
-  // 6. Level 1: HR & Admin Director
+  // 7. Level 1: HR & Administration (5 units)
   {
     key: 'hr_dir',
     parentKey: 'root_ceo',
@@ -400,11 +415,10 @@ export const ENTERPRISE_HIERARCHY_TEMPLATE: HierarchyTemplateNode[] = [
     level: 1,
     responsibilities: 'إدارة رأس المال البشري، الشؤون الإدارية، والتراخيص وتكنولوجيا المعلومات'
   },
-  // Level 2: مسؤولو التوظيف
   {
     key: 'hr_recruitment',
     parentKey: 'hr_dir',
-    nameAr: 'مسؤولو التوظيف',
+    nameAr: 'مسؤولو التوظيف واستقطاب الكفاءات',
     titleEn: 'Talent Acquisition Team',
     code: 'HRA-201',
     headAr: 'أ. تغريد عاطف',
@@ -413,44 +427,6 @@ export const ENTERPRISE_HIERARCHY_TEMPLATE: HierarchyTemplateNode[] = [
     level: 2,
     responsibilities: 'استقطاب الكفاءات الهندسية والإدارية، تنظيم المقابلات، وتحديث بطاقات الوصف الوظيفي'
   },
-  // Level 3 under مسؤولو التوظيف
-  {
-    key: 'hr_sourcing',
-    parentKey: 'hr_recruitment',
-    nameAr: 'استقطاب المواهب وتخطيط القوى العاملة',
-    titleEn: 'Talent Sourcing & Workforce Planning',
-    code: 'HRA-301',
-    headAr: 'أ. رانيا منصور',
-    costCenterCode: 'CC-1611',
-    staffCount: 2,
-    level: 3,
-    responsibilities: 'تحديد الاحتياجات الوظيفية السنوية وحملات التوظيف بالجامعات والمعارض'
-  },
-  {
-    key: 'hr_tech_recruit',
-    parentKey: 'hr_recruitment',
-    nameAr: 'استقطاب المهندسين والفنيين',
-    titleEn: 'Technical & Engineering Recruitment',
-    code: 'HRA-302',
-    headAr: 'أ. حنان البدري',
-    costCenterCode: 'CC-1612',
-    staffCount: 1,
-    level: 3,
-    responsibilities: 'استقطاب مهندسي المواقع، المشرفين، والكوادر الفنية المتخصصة'
-  },
-  {
-    key: 'hr_job_desc',
-    parentKey: 'hr_recruitment',
-    nameAr: 'تحديث الهياكل وبطاقات الوصف الوظيفي',
-    titleEn: 'Job Descriptions & Org Updates',
-    code: 'HRA-303',
-    headAr: 'أ. مروة العوضي',
-    costCenterCode: 'CC-1613',
-    staffCount: 1,
-    level: 3,
-    responsibilities: 'صياغة وتحديث مصفوفة المسؤوليات وبطاقات المهام لكل مسمى بالهيكل'
-  },
-  // Level 2: شؤون العاملين والرواتب
   {
     key: 'hr_personnel',
     parentKey: 'hr_dir',
@@ -463,48 +439,10 @@ export const ENTERPRISE_HIERARCHY_TEMPLATE: HierarchyTemplateNode[] = [
     level: 2,
     responsibilities: 'إدارة عقود العمل، مسيرات الرواتب، التأمينات الاجتماعية، وحوافز المواقع'
   },
-  // Level 3 under شؤون العاملين والرواتب
-  {
-    key: 'hr_contracts',
-    parentKey: 'hr_personnel',
-    nameAr: 'إدارة عقود العمل ومسيرات الرواتب',
-    titleEn: 'Labor Contracts & Payroll Processing',
-    code: 'HRA-304',
-    headAr: 'أ. محمد جودة',
-    costCenterCode: 'CC-1621',
-    staffCount: 2,
-    level: 3,
-    responsibilities: 'إبرام عقود العمل وإصدار مسيرات الرواتب الشهرية والبدلات'
-  },
-  {
-    key: 'hr_insurance',
-    parentKey: 'hr_personnel',
-    nameAr: 'حوافز المواقع والتأمينات الاجتماعية',
-    titleEn: 'Site Incentives & Social Insurance',
-    code: 'HRA-305',
-    headAr: 'أ. عصام يونس',
-    costCenterCode: 'CC-1622',
-    staffCount: 2,
-    level: 3,
-    responsibilities: 'تسجيل استمارات التأمينات (س1/س2/س6) واحتساب بدلات الاغتراب وحوافز الإنتاجية'
-  },
-  {
-    key: 'hr_discipline',
-    parentKey: 'hr_personnel',
-    nameAr: 'أزمات المقاولات واللوائح التأديبية',
-    titleEn: 'Disciplinary Codes & Labor Relations',
-    code: 'HRA-306',
-    headAr: 'أ. شريف قاسم',
-    costCenterCode: 'CC-1623',
-    staffCount: 1,
-    level: 3,
-    responsibilities: 'التحقيقات الإدارية وتطبيق لائحة الجزاءات ومتابعة علاقات العمل'
-  },
-  // Level 2: الخدمات الحكومية والعلاقات
   {
     key: 'hr_gov_services',
     parentKey: 'hr_dir',
-    nameAr: 'الخدمات الحكومية والعلاقات',
+    nameAr: 'الخدمات الحكومية والعلاقات العامة',
     titleEn: 'Government Relations & Admin Services',
     code: 'HRA-203',
     headAr: 'أ. رأفت عبد الغني',
@@ -513,48 +451,10 @@ export const ENTERPRISE_HIERARCHY_TEMPLATE: HierarchyTemplateNode[] = [
     level: 2,
     responsibilities: 'تخليص المعاملات الحكومية، إدارة الفروع والمقرات، والأرشفة الهندسية المركزية'
   },
-  // Level 3 under الخدمات الحكومية والعلاقات
-  {
-    key: 'hr_clearances',
-    parentKey: 'hr_gov_services',
-    nameAr: 'تخليص المعاملات والتراخيص الحكومية',
-    titleEn: 'Government Approvals & Clearances',
-    code: 'HRA-307',
-    headAr: 'أ. أحمد عزت',
-    costCenterCode: 'CC-1631',
-    staffCount: 2,
-    level: 3,
-    responsibilities: 'استخراج وتجديد التراخيص الهندسية، السجلات التجارية، وتصاريح الحفر والمواقع'
-  },
-  {
-    key: 'hr_facilities',
-    parentKey: 'hr_gov_services',
-    nameAr: 'إدارة المقر الرئيسي والفروع',
-    titleEn: 'HQ & Branch Facilities Management',
-    code: 'HRA-308',
-    headAr: 'أ. خالد بسيوني',
-    costCenterCode: 'CC-1632',
-    staffCount: 2,
-    level: 3,
-    responsibilities: 'إدارة الخدمات اللوجستية، صيانة المقرات، والضيافة والنظافة'
-  },
-  {
-    key: 'hr_archive',
-    parentKey: 'hr_gov_services',
-    nameAr: 'أرشفة المراسلات الهندسية والمستخلصات',
-    titleEn: 'Engineering Correspondence & Archive',
-    code: 'HRA-309',
-    headAr: 'أ. إيمان فريد',
-    costCenterCode: 'CC-1633',
-    staffCount: 1,
-    level: 3,
-    responsibilities: 'التوثيق الرقمي لخطابات المالك والاستشاري وحفظ المستندات التعاقدية'
-  },
-  // Level 2: أخصائي تكنولوجيا المعلومات
   {
     key: 'hr_it',
     parentKey: 'hr_dir',
-    nameAr: 'أخصائي تكنولوجيا المعلومات',
+    nameAr: 'أخصائي تكنولوجيا المعلومات والأنظمة',
     titleEn: 'IT Infrastructure & Support',
     code: 'HRA-204',
     headAr: 'م. مروان السويدي',
@@ -563,45 +463,8 @@ export const ENTERPRISE_HIERARCHY_TEMPLATE: HierarchyTemplateNode[] = [
     level: 2,
     responsibilities: 'إدارة البنية التحتية الرقمية، شبكات المواقع، برامج المؤسسة والنسخ الاحتياطي'
   },
-  // Level 3 under تكنولوجيا المعلومات
-  {
-    key: 'hr_network',
-    parentKey: 'hr_it',
-    nameAr: 'مهندس شبكات وأنظمة ودعم فني',
-    titleEn: 'Network & Systems Engineer',
-    code: 'HRA-310',
-    headAr: 'م. باسل زهران',
-    costCenterCode: 'CC-1641',
-    staffCount: 2,
-    level: 3,
-    responsibilities: 'ربط كبائن المواقع الإنشائية بالإنترنت وتأمين الشبكات والدعم الفني للموظفين'
-  },
-  {
-    key: 'hr_erp_admin',
-    parentKey: 'hr_it',
-    nameAr: 'مسؤول برامج هندسية ومحاسبية (ERP / Primavera)',
-    titleEn: 'Enterprise Software Specialist (ERP/Primavera)',
-    code: 'HRA-311',
-    headAr: 'م. سيف النصر',
-    costCenterCode: 'CC-1642',
-    staffCount: 1,
-    level: 3,
-    responsibilities: 'صيانة وتحديث خوادم البرامج الهندسية ونظام ECO ERP وإدارة الصلاحيات'
-  },
-  {
-    key: 'hr_servers',
-    parentKey: 'hr_it',
-    nameAr: 'إدارة الخوادم والنسخ الاحتياطي',
-    titleEn: 'Server & Backup Management',
-    code: 'HRA-312',
-    headAr: 'م. يحيى الشافعي',
-    costCenterCode: 'CC-1643',
-    staffCount: 1,
-    level: 3,
-    responsibilities: 'تأمين قواعد البيانات السحابية (D1) وتطبيق بروتوكولات النسخ الاحتياطي اليومي'
-  },
 
-  // 7. Level 1: CFO
+  // 8. Level 1: CFO & Finance (3 units)
   {
     key: 'fin_dir',
     parentKey: 'root_ceo',
@@ -614,7 +477,6 @@ export const ENTERPRISE_HIERARCHY_TEMPLATE: HierarchyTemplateNode[] = [
     level: 1,
     responsibilities: 'التخطيط والتحليل المالي، إدارة الحسابات، الضرائب، والسيولة النقدية'
   },
-  // Level 2: محاسبو عملاء ومستخلصات المشاريع
   {
     key: 'fin_receivables',
     parentKey: 'fin_dir',
@@ -627,32 +489,6 @@ export const ENTERPRISE_HIERARCHY_TEMPLATE: HierarchyTemplateNode[] = [
     level: 2,
     responsibilities: 'مراجعة وتحصيل مستخلصات المالك ومتابعة خطابات الضمان والتحصيلات البنكية'
   },
-  // Level 3 under محاسبو عملاء
-  {
-    key: 'fin_gov_invoices',
-    parentKey: 'fin_receivables',
-    nameAr: 'مراجعة مستخلصات الجهات الحكومية والشركات',
-    titleEn: 'Billing & Progress Invoices Audit',
-    code: 'FIN-301',
-    headAr: 'أ. وليد صبحي',
-    costCenterCode: 'CC-1711',
-    staffCount: 3,
-    level: 3,
-    responsibilities: 'مطابقة قيود استقطاعات الدفعة المقدمة وغرامات التأخير وتأمين الأعمال'
-  },
-  {
-    key: 'fin_collection',
-    parentKey: 'fin_receivables',
-    nameAr: 'متابعة التحصيل والاستحقاقات التأمينية',
-    titleEn: 'Collections & Insurance Retentions',
-    code: 'FIN-302',
-    headAr: 'أ. إيهاب سلامة',
-    costCenterCode: 'CC-1712',
-    staffCount: 3,
-    level: 3,
-    responsibilities: 'متابعة صرف الشيكات وحسابات التأمين الابتدائي والنهائي مع البنوك'
-  },
-  // Level 2: محاسبو الموردين والمقاولين والخزينة
   {
     key: 'fin_payables',
     parentKey: 'fin_dir',
@@ -665,45 +501,8 @@ export const ENTERPRISE_HIERARCHY_TEMPLATE: HierarchyTemplateNode[] = [
     level: 2,
     responsibilities: 'صرف مستخلصات مقاولي الباطن، إدارة الخزائن وعهد المواقع والضرائب'
   },
-  // Level 3 under محاسبو الموردين
-  {
-    key: 'fin_subcon_pay',
-    parentKey: 'fin_payables',
-    nameAr: 'صرف مستخلصات مقاولي الباطن',
-    titleEn: 'Subcontractor Payments Processing',
-    code: 'FIN-303',
-    headAr: 'أ. شريف الديب',
-    costCenterCode: 'CC-1721',
-    staffCount: 3,
-    level: 3,
-    responsibilities: 'تطبيق نسب الاستقطاع وخصم الدمغات وضريبة الأرباح التجارية والصناعية'
-  },
-  {
-    key: 'fin_treasury',
-    parentKey: 'fin_payables',
-    nameAr: 'إدارة الخزينة وعهد الموقع',
-    titleEn: 'Treasury & Site Cash Control',
-    code: 'FIN-304',
-    headAr: 'أ. طه المغربي',
-    costCenterCode: 'CC-1722',
-    staffCount: 2,
-    level: 3,
-    responsibilities: 'تسوية سلف وعهد مهندسي المواقع النقدية ومطابقة إيصالات الصرف'
-  },
-  {
-    key: 'fin_tax_einvoice',
-    parentKey: 'fin_payables',
-    nameAr: 'القوائم المالية، ضرائب المقاولات والفاتورة الإلكترونية',
-    titleEn: 'Financial Statements, Tax & E-Invoicing',
-    code: 'FIN-305',
-    headAr: 'أ. سامي عبد ربه',
-    costCenterCode: 'CC-1723',
-    staffCount: 3,
-    level: 3,
-    responsibilities: 'الإقرارات الضريبية الشهرية، الفاتورة الإلكترونية، وتدقيق حسابات الأرباح والخسائر'
-  },
 
-  // 8. Level 1: Procurement & Supply Chain Director
+  // 9. Level 1: Procurement & Supply Chain (4 units)
   {
     key: 'scm_dir',
     parentKey: 'root_ceo',
@@ -716,7 +515,6 @@ export const ENTERPRISE_HIERARCHY_TEMPLATE: HierarchyTemplateNode[] = [
     level: 1,
     responsibilities: 'إدارة عقود مقاولي الباطن، المشتريات الاستراتيجية، وإدارة المخازن والمعدات'
   },
-  // Level 2: مسؤولو عقود مقاولي الباطن
   {
     key: 'scm_subcon',
     parentKey: 'scm_dir',
@@ -729,32 +527,6 @@ export const ENTERPRISE_HIERARCHY_TEMPLATE: HierarchyTemplateNode[] = [
     level: 2,
     responsibilities: 'استقطاب وتقييم مقاولي الباطن للبنود التخصصية وإصدار أوامر الشغل ومتابعة التزامهم'
   },
-  // Level 3 under مسؤولو عقود مقاولي الباطن
-  {
-    key: 'scm_prequal',
-    parentKey: 'scm_subcon',
-    nameAr: 'استقطاب وتقييم مقاولي الباطن للبنود التخصصية',
-    titleEn: 'Subcontractor Prequalification',
-    code: 'SCM-301',
-    headAr: 'م. عصمت مراد',
-    costCenterCode: 'CC-1811',
-    staffCount: 3,
-    level: 3,
-    responsibilities: 'فحص سابقة الأعمال والملاءة الفنية والمالية لمقاولي الباطن التخصصيين'
-  },
-  {
-    key: 'scm_work_orders',
-    parentKey: 'scm_subcon',
-    nameAr: 'إصدار أوامر الشغل ومتابعة التزامهم التعاقدي',
-    titleEn: 'Work Orders & Compliance Monitoring',
-    code: 'SCM-302',
-    headAr: 'م. شادي وجدي',
-    costCenterCode: 'CC-1812',
-    staffCount: 2,
-    level: 3,
-    responsibilities: 'إصدار أوامر الإسناد الرسمية ومتابعة الالتزام بمعدلات الإنجاز اليومية'
-  },
-  // Level 2: مسؤولو المشتريات ومراقبة الخامات
   {
     key: 'scm_procurement',
     parentKey: 'scm_dir',
@@ -765,34 +537,8 @@ export const ENTERPRISE_HIERARCHY_TEMPLATE: HierarchyTemplateNode[] = [
     costCenterCode: 'CC-1820',
     staffCount: 6,
     level: 2,
-    responsibilities: 'شراء مواد البناء الأساسية، التفاوض مع المصانع، وتأجير المعدات الثقيلة والشدات'
+    responsibilities: 'شراء مواد البناء الأساسية، التفاوض مع المصانع، وتأجير المعدات والشدات'
   },
-  // Level 3 under مسؤولو المشتريات ومراقبة الخامات
-  {
-    key: 'scm_materials',
-    parentKey: 'scm_procurement',
-    nameAr: 'توريد مواد البناء',
-    titleEn: 'Building Materials Procurement',
-    code: 'SCM-303',
-    headAr: 'أ. طلال بركات',
-    costCenterCode: 'CC-1821',
-    staffCount: 3,
-    level: 3,
-    responsibilities: 'التعاقد على توريد حديد التسليح، الإسمنت، الخرسانة الجاهزة ومستلزمات التشطيب'
-  },
-  {
-    key: 'scm_rentals',
-    parentKey: 'scm_procurement',
-    nameAr: 'تأجير المعدات الثقيلة والشدات للمواقع عند الحاجة',
-    titleEn: 'Heavy Equipment & Formwork Rentals',
-    code: 'SCM-304',
-    headAr: 'م. ماجد درويش',
-    costCenterCode: 'CC-1822',
-    staffCount: 3,
-    level: 3,
-    responsibilities: 'إبرام عقود تأجير الأوناش، الحفارات، اللوادر، والشدات المعدنية وفق جدول الاحتياجات'
-  },
-  // Level 2: أمناء المخازن وحركة المعدات
   {
     key: 'scm_inventory',
     parentKey: 'scm_dir',
@@ -804,33 +550,9 @@ export const ENTERPRISE_HIERARCHY_TEMPLATE: HierarchyTemplateNode[] = [
     staffCount: 5,
     level: 2,
     responsibilities: 'مراقبة المخزن المركزي ومخازن المواقع، صيانة أسطول المعدات وإدارة الورش'
-  },
-  // Level 3 under أمناء المخازن وحركة المعدات
-  {
-    key: 'scm_site_stores',
-    parentKey: 'scm_inventory',
-    nameAr: 'مراقبة المخزن المركزي ومخازن المواقع',
-    titleEn: 'Central & Site Inventory Control',
-    code: 'SCM-305',
-    headAr: 'أ. خميس عبد ربه',
-    costCenterCode: 'CC-1831',
-    staffCount: 3,
-    level: 3,
-    responsibilities: 'إصدار أذون الإضافة والصرف وتوثيق حركة الخامات عبر باركود التخزين'
-  },
-  {
-    key: 'scm_fleet_workshop',
-    parentKey: 'scm_inventory',
-    nameAr: 'إدارة وتأجير المعدات وورش أسطول معدات ثقيلة',
-    titleEn: 'Equipment Fleet Maintenance & Workshops',
-    code: 'SCM-306',
-    headAr: 'م. صبحي توفيق',
-    costCenterCode: 'CC-1832',
-    staffCount: 2,
-    level: 3,
-    responsibilities: 'الصيانة الوقائية لأسطول النقل والمعدات وتوفير قطع الغيار والوقود بالمواقع'
   }
 ];
+
 export function computeDepartmentDiff(
   oldDept: DepartmentOrg,
   newDept: DepartmentOrg
@@ -870,14 +592,20 @@ export function computeDepartmentDiff(
  */
 export const departmentStorage = {
   /**
-   * Synchronously load departments from localStorage cache
+   * Synchronously load departments from localStorage cache with automatic deduplication
    */
   getDepartmentsSync(): DepartmentOrg[] {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return [];
       const parsed = JSON.parse(raw);
-      return Array.isArray(parsed) ? parsed : [];
+      if (!Array.isArray(parsed)) return [];
+
+      const deduped = deduplicateDepartments(parsed);
+      if (deduped.length !== parsed.length) {
+        departmentStorage.saveDepartmentsSync(deduped);
+      }
+      return deduped;
     } catch {
       return [];
     }
@@ -888,14 +616,15 @@ export const departmentStorage = {
    */
   saveDepartmentsSync(departments: DepartmentOrg[]): void {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(departments));
+      const deduped = deduplicateDepartments(departments);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(deduped));
     } catch (err) {
       console.warn('[departmentStorage] Failed to cache departments locally:', err);
     }
   },
 
   /**
-   * Deterministic Remote Fetching from Cloudflare D1 Database
+   * Deterministic Remote Fetching from Cloudflare D1 Database with automatic deduplication
    */
   async getDepartments(): Promise<DepartmentOrg[]> {
     try {
@@ -905,8 +634,9 @@ export const departmentStorage = {
       if (res.ok) {
         const data = await res.json();
         const list: DepartmentOrg[] = Array.isArray(data) ? data : (data.departments || []);
-        departmentStorage.saveDepartmentsSync(list);
-        return list;
+        const deduped = deduplicateDepartments(list);
+        departmentStorage.saveDepartmentsSync(deduped);
+        return deduped;
       }
     } catch (err) {
       console.warn('[departmentStorage] Remote fetch error from Cloudflare D1, falling back to cache:', err);
@@ -1087,7 +817,9 @@ export const departmentStorage = {
    */
   async saveDepartmentsBatch(
     newDepts: DepartmentOrg[],
-    userName = 'يوسف حجازي'
+    userName = 'يوسف حجازي',
+    resetHierarchy = false,
+    companyId?: string
   ): Promise<DepartmentOrg[]> {
     try {
       const res = await fetch('/api/departments', {
@@ -1096,15 +828,23 @@ export const departmentStorage = {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
-        body: JSON.stringify({ bulk: newDepts, userName })
+        body: JSON.stringify({
+          bulk: newDepts,
+          userName,
+          resetHierarchy,
+          companyId
+        })
       });
 
       if (res.ok) {
         const data = await res.json();
-        const list: DepartmentOrg[] = Array.isArray(data.departments) ? data.departments : [];
+        const list: DepartmentOrg[] = Array.isArray(data)
+          ? data
+          : (Array.isArray(data.departments) ? data.departments : []);
         if (list.length > 0) {
-          departmentStorage.saveDepartmentsSync(list);
-          return list;
+          const deduped = deduplicateDepartments(list);
+          departmentStorage.saveDepartmentsSync(deduped);
+          return deduped;
         }
       }
     } catch (err) {
@@ -1112,46 +852,35 @@ export const departmentStorage = {
     }
 
     // Merge into local cache
-    const current = departmentStorage.getDepartmentsSync();
+    const current = resetHierarchy
+      ? (companyId ? departmentStorage.getDepartmentsSync().filter(d => d.companyId !== companyId) : [])
+      : departmentStorage.getDepartmentsSync();
     const map = new Map<string, DepartmentOrg>(current.map(d => [d.id, d]));
     newDepts.forEach(d => map.set(d.id, d));
-    const merged = Array.from(map.values());
+    const merged = deduplicateDepartments(Array.from(map.values()));
     departmentStorage.saveDepartmentsSync(merged);
     return merged;
   },
 
   /**
-   * Seed the complete 4-level enterprise & contracting hierarchy into Cloudflare D1
+   * Generate in-memory Draft of the 34-unit Standard Hierarchy (isDraft: true).
+   * Does NOT write to localStorage or Cloudflare D1 until committed.
    */
-  async seedEnterpriseHierarchy(
+  generateDraftHierarchy(
     companyId: string,
-    companyNameAr: string,
-    userName = 'يوسف حجازي'
-  ): Promise<DepartmentOrg[]> {
+    companyNameAr: string
+  ): DepartmentOrg[] {
     const timestamp = getFormattedAuditTimestamp();
     const idMap = new Map<string, string>();
 
-    // Generate unique IDs for all template nodes
+    // Deterministic IDs for the 34 nodes
     ENTERPRISE_HIERARCHY_TEMPLATE.forEach(node => {
-      idMap.set(node.key, `dept_seed_${Date.now()}_${node.key}`);
+      idMap.set(node.key, `draft_dept_${companyId || 'comp'}_${node.key}`);
     });
 
-    const newDepartments: DepartmentOrg[] = ENTERPRISE_HIERARCHY_TEMPLATE.map(node => {
+    return ENTERPRISE_HIERARCHY_TEMPLATE.map(node => {
       const id = idMap.get(node.key)!;
       const parentId = node.parentKey ? idMap.get(node.parentKey) || null : null;
-
-      const auditEntry: DepartmentAuditLogEntry = {
-        id: `audit_dept_${Date.now()}_seed_${node.key}`,
-        departmentId: id,
-        timestamp,
-        userName,
-        action: 'create',
-        actionLabelAr: 'تأسيس الهيكل القياسي المتكامل',
-        changes: [
-          { field: 'nameAr', fieldLabel: 'اسم الوحدة الإدارية', oldValue: '—', newValue: node.nameAr },
-          { field: 'level', fieldLabel: 'المستوى الهيكلي', oldValue: '—', newValue: String(node.level) }
-        ]
-      };
 
       return {
         id,
@@ -1168,12 +897,61 @@ export const departmentStorage = {
         companyNameAr,
         costCenterCode: node.costCenterCode || '',
         level: node.level,
-        auditLogs: [auditEntry],
+        isDraft: true,
+        auditLogs: [],
         createdAt: timestamp,
         updatedAt: timestamp
       };
     });
+  },
 
-    return await departmentStorage.saveDepartmentsBatch(newDepartments, userName);
+  /**
+   * Commit the draft hierarchy permanently to Cloudflare D1 with resetHierarchy flag.
+   */
+  async commitHierarchy(
+    departments: DepartmentOrg[],
+    companyId: string,
+    userName = 'يوسف حجازي'
+  ): Promise<DepartmentOrg[]> {
+    const timestamp = getFormattedAuditTimestamp();
+    const cleanDepartments = departments.map(d => {
+      const { isDraft, ...rest } = d;
+      const auditEntry: DepartmentAuditLogEntry = {
+        id: `audit_dept_${Date.now()}_commit_${d.code}`,
+        departmentId: d.id,
+        timestamp,
+        userName,
+        action: 'create',
+        actionLabelAr: 'اعتماد وتثبيت الهيكل التنظيمي القياسي المعتمد',
+        changes: [
+          { field: 'nameAr', fieldLabel: 'اسم الإدارة', oldValue: '—', newValue: d.nameAr },
+          { field: 'code', fieldLabel: 'كود الإدارة', oldValue: '—', newValue: d.code }
+        ]
+      };
+      return {
+        ...rest,
+        isDraft: false,
+        auditLogs: [auditEntry]
+      };
+    });
+
+    return await departmentStorage.saveDepartmentsBatch(
+      cleanDepartments,
+      userName,
+      true, // resetHierarchy = true to purge duplicates
+      companyId
+    );
+  },
+
+  /**
+   * Legacy seed method kept for compatibility (now delegates to commitHierarchy)
+   */
+  async seedEnterpriseHierarchy(
+    companyId: string,
+    companyNameAr: string,
+    userName = 'يوسف حجازي'
+  ): Promise<DepartmentOrg[]> {
+    const draft = departmentStorage.generateDraftHierarchy(companyId, companyNameAr);
+    return await departmentStorage.commitHierarchy(draft, companyId, userName);
   }
 };

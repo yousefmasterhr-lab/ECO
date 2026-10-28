@@ -52,10 +52,54 @@ export const onRequestGet: PagesFunction = async (context) => {
     }
 
     const result = await env.DB.prepare('SELECT * FROM departments ORDER BY created_at ASC').all();
-    const departments = (result.results || []).map(mapRowToDepartment);
+    const allDepartments = (result.results || []).map(mapRowToDepartment);
 
-    return jsonResponse(departments, 200, {
-      'x-total-count': String(departments.length),
+    // Automatic Server-Side Deduplication: Group by (companyId + nameAr)
+    const groups = new Map<string, any[]>();
+    allDepartments.forEach((dept: any) => {
+      const key = `${dept.companyId || 'comp_default'}::${(dept.nameAr || '').trim()}`;
+      const arr = groups.get(key) || [];
+      arr.push(dept);
+      groups.set(key, arr);
+    });
+
+    const canonical: any[] = [];
+    const duplicateIdsToDelete: string[] = [];
+    const oldIdToCanonical = new Map<string, string>();
+
+    groups.forEach(group => {
+      group.sort((a, b) => {
+        const aScore = (a.parentId ? 2 : (a.level === 0 ? 3 : 0)) + (a.costCenterCode ? 1 : 0);
+        const bScore = (b.parentId ? 2 : (b.level === 0 ? 3 : 0)) + (b.costCenterCode ? 1 : 0);
+        return bScore - aScore;
+      });
+
+      const chosen = group[0];
+      canonical.push(chosen);
+
+      for (let i = 1; i < group.length; i++) {
+        duplicateIdsToDelete.push(group[i].id);
+        oldIdToCanonical.set(group[i].id, chosen.id);
+      }
+    });
+
+    canonical.forEach(dept => {
+      if (dept.parentId && oldIdToCanonical.has(dept.parentId)) {
+        dept.parentId = oldIdToCanonical.get(dept.parentId);
+      }
+    });
+
+    if (duplicateIdsToDelete.length > 0) {
+      const deleteStmts = duplicateIdsToDelete.map(delId =>
+        env.DB.prepare('DELETE FROM departments WHERE id = ?').bind(delId)
+      );
+      for (let i = 0; i < deleteStmts.length; i += 50) {
+        await env.DB.batch(deleteStmts.slice(i, i + 50));
+      }
+    }
+
+    return jsonResponse(canonical, 200, {
+      'x-total-count': String(canonical.length),
     });
   } catch (err: any) {
     return errorResponse(`خطأ في استعلام الإدارات والهيكل التنظيمي: ${err.message || String(err)}`, 500);
@@ -133,6 +177,15 @@ export const onRequestPost: PagesFunction = async (context) => {
           companyId,
           costCenterCode: costCenter
         });
+      }
+
+      if (body.resetHierarchy) {
+        const targetCompId = body.companyId || bulkList[0]?.companyId || null;
+        if (targetCompId) {
+          await env.DB.prepare('DELETE FROM departments WHERE company_id = ? OR company_id IS NULL').bind(targetCompId).run();
+        } else {
+          await env.DB.prepare('DELETE FROM departments').run();
+        }
       }
 
       if (statements.length > 0) {

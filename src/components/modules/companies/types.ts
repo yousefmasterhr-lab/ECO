@@ -170,6 +170,7 @@ export interface DepartmentOrg {
   branchNameAr?: string;
   costCenterCode?: string; // Structural Cost Center Mapping
   level?: number; // 0 = Root, 1 = Executive Department, 2 = Sub-Department/Section, 3 = Specialized Unit/Task
+  isDraft?: boolean; // In-memory preview state before final approval & commit
   auditLogs?: DepartmentAuditLogEntry[];
   createdAt?: string;
   updatedAt?: string;
