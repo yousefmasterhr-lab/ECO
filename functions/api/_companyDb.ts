@@ -232,6 +232,8 @@ export function mapRowToDepartment(row: any): any {
   return {
     id: row.id,
     nameAr: row.name || meta.nameAr || '',
+    nameEn: meta.nameEn || meta.titleEn || '',
+    titleEn: meta.titleEn || meta.nameEn || '',
     code: meta.code || row.cost_center_code || 'DEP-01',
     headAr: row.manager_name || meta.headAr || '',
     staffCount: Number(meta.staffCount ?? 0),
@@ -243,6 +245,7 @@ export function mapRowToDepartment(row: any): any {
     branchId: row.branch_id || meta.branchId,
     branchNameAr: meta.branchNameAr,
     costCenterCode: row.cost_center_code || meta.costCenterCode || '',
+    level: meta.level !== undefined ? Number(meta.level) : undefined,
     auditLogs: Array.isArray(meta.auditLogs) ? meta.auditLogs : [],
     createdAt: row.created_at || meta.createdAt,
     updatedAt: meta.updatedAt || row.created_at

@@ -1,29 +1,31 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Network,
+  GitFork,
   LayoutGrid,
   Plus,
   Pencil,
   AlertCircle,
   Trash2,
-  ChevronDown,
-  ChevronUp,
   User,
   Building2,
   MapPin,
   X,
   Search,
-  Filter,
   AlertTriangle,
   Layers,
   FolderTree,
   Check,
   Maximize2,
-  Minimize2
+  Minimize2,
+  Sparkles,
+  Zap,
+  Info
 } from 'lucide-react';
 import { DepartmentOrg, CompanyEntity, BranchLocation, DepartmentAuditLogEntry } from './types';
 import { useAuth } from '../../../context/AuthContext';
+import { OrgMindMapTree } from './OrgMindMapTree';
+import { departmentStorage, computeHierarchyLevels } from './departmentStorage';
 
 interface CompanyOrgStructureTabProps {
   departments: DepartmentOrg[];
@@ -32,6 +34,7 @@ interface CompanyOrgStructureTabProps {
   onAddDepartment: (dept: Partial<DepartmentOrg> & { nameAr: string; code: string }) => Promise<void> | void;
   onUpdateDepartment: (dept: Partial<DepartmentOrg> & { nameAr: string; code: string }) => Promise<void> | void;
   onDeleteDepartment: (id: string) => Promise<{ success: boolean; error?: string } | void> | void;
+  onReloadDepartments?: () => Promise<void> | void;
 }
 
 /**
@@ -56,18 +59,20 @@ export const CompanyOrgStructureTab: React.FC<CompanyOrgStructureTabProps> = ({
   branches,
   onAddDepartment,
   onUpdateDepartment,
-  onDeleteDepartment
+  onDeleteDepartment,
+  onReloadDepartments
 }) => {
-  const { hasPermission } = useAuth();
+  const { hasPermission, user } = useAuth();
 
-  // Dual View Mode: 'tree' (الهيكل الشجري) vs 'cards' (البطاقات الذكية)
-  const [activeView, setActiveView] = useState<'tree' | 'cards'>('tree');
+  // Segmented View Switcher: 'cards' (البطاقات الذكية) vs 'mindmap' (الشجرة الذهنية التفاعلية)
+  const [activeView, setActiveView] = useState<'cards' | 'mindmap'>('mindmap');
 
   // Search & Filter state
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedLevel, setSelectedLevel] = useState<number | 'all'>('all');
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('all');
 
-  // Collapsed nodes state for Tree View (default empty = all expanded)
+  // Collapsed nodes state (default empty = all expanded)
   const [collapsedNodes, setCollapsedNodes] = useState<Set<string>>(new Set());
 
   // Modal State: Add/Edit Department
@@ -80,6 +85,22 @@ export const CompanyOrgStructureTab: React.FC<CompanyOrgStructureTabProps> = ({
 
   // Modal State: Delete Confirmation / Safety Check
   const [deleteTargetDept, setDeleteTargetDept] = useState<DepartmentOrg | null>(null);
+
+  // Modal State: Seed Enterprise Template Modal
+  const [seedModalOpen, setSeedModalOpen] = useState(false);
+  const [isSeeding, setIsSeeding] = useState(false);
+
+  // Normalized departments with computed depth levels
+  const normalizedDepartments = useMemo(() => {
+    return computeHierarchyLevels(departments);
+  }, [departments]);
+
+  // Max depth level across departments
+  const maxDepthLevel = useMemo(() => {
+    if (normalizedDepartments.length === 0) return 0;
+    const lvls = normalizedDepartments.map(d => d.level ?? 0);
+    return Math.max(...lvls);
+  }, [normalizedDepartments]);
 
   // Toggle Collapse on a Node
   const handleToggleCollapse = (nodeId: string) => {
@@ -96,11 +117,13 @@ export const CompanyOrgStructureTab: React.FC<CompanyOrgStructureTabProps> = ({
 
   const handleExpandAll = () => setCollapsedNodes(new Set());
   const handleCollapseAll = () => {
-    const allParentIds = new Set(departments.filter(d => departments.some(c => c.parentId === d.id)).map(d => d.id));
+    const allParentIds = new Set(
+      departments.filter(d => departments.some(c => c.parentId === d.id)).map(d => d.id)
+    );
     setCollapsedNodes(allParentIds);
   };
 
-  // Open Add Modal (Root or prefilled parent)
+  // Open Add Modal
   const handleOpenAdd = (parentId: string | null = null) => {
     setEditingDept(null);
     setPrefilledParentId(parentId);
@@ -124,79 +147,158 @@ export const CompanyOrgStructureTab: React.FC<CompanyOrgStructureTabProps> = ({
     setDeleteTargetDept(dept);
   };
 
-  // Filtered departments based on company & search
+  // Filtered departments based on company, search, and depth level
   const filteredDepartments = useMemo(() => {
-    return departments.filter(dept => {
+    return normalizedDepartments.filter(dept => {
       const matchCompany = selectedCompanyId === 'all' || dept.companyId === selectedCompanyId;
+      const matchLevel = selectedLevel === 'all' || dept.level === selectedLevel;
+
       const q = searchQuery.trim().toLowerCase();
       const matchSearch =
         !q ||
         dept.nameAr.toLowerCase().includes(q) ||
+        (dept.titleEn && dept.titleEn.toLowerCase().includes(q)) ||
         dept.code.toLowerCase().includes(q) ||
         (dept.headAr && dept.headAr.toLowerCase().includes(q)) ||
         (dept.costCenterCode && dept.costCenterCode.toLowerCase().includes(q)) ||
+        (dept.responsibilities && dept.responsibilities.toLowerCase().includes(q)) ||
         (dept.companyNameAr && dept.companyNameAr.toLowerCase().includes(q)) ||
         (dept.branchNameAr && dept.branchNameAr.toLowerCase().includes(q));
 
-      return matchCompany && matchSearch;
+      return matchCompany && matchLevel && matchSearch;
     });
-  }, [departments, selectedCompanyId, searchQuery]);
+  }, [normalizedDepartments, selectedCompanyId, selectedLevel, searchQuery]);
 
-  // Root departments for Tree View
-  const rootDepartments = useMemo(() => {
-    if (selectedCompanyId !== 'all') {
-      // Find roots within the selected company or nodes without parent in this company
-      const companyDepts = departments.filter(d => d.companyId === selectedCompanyId);
-      return companyDepts.filter(d => !d.parentId || !companyDepts.some(p => p.id === d.parentId));
+  // Handle Seeding Template
+  const handleConfirmSeed = async (companyIdToSeed: string) => {
+    setIsSeeding(true);
+    try {
+      const targetCompany = companies.find(c => c.id === companyIdToSeed) || companies[0];
+      const compId = targetCompany ? targetCompany.id : 'comp_default';
+      const compName = targetCompany ? targetCompany.nameAr : 'شركة المقاولات العامة';
+
+      await departmentStorage.seedEnterpriseHierarchy(
+        compId,
+        compName,
+        user?.nameAr || user?.username || 'يوسف حجازي'
+      );
+
+      if (onReloadDepartments) {
+        await onReloadDepartments();
+      }
+      setSeedModalOpen(false);
+    } catch (err: any) {
+      console.error('[CompanyOrgStructureTab] Seeding failed:', err);
+      alert(err.message || 'حدث خطأ أثناء تحميل الهيكل القياسي');
+    } finally {
+      setIsSeeding(false);
     }
-    // All roots: no parentId or parentId not in existing departments
-    return departments.filter(d => !d.parentId || !departments.some(p => p.id === d.parentId));
-  }, [departments, selectedCompanyId]);
+  };
 
   return (
     <div className="space-y-4">
-      {/* 1. Header Toolbar: Dual View Switcher, Search, Filter & Add Button */}
-      <div className="p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-[#17231A] border border-slate-200 dark:border-[#243628] shadow-xs flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
-        {/* Dual View Switcher */}
-        <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-100 dark:bg-[#1F2E23] border border-slate-200 dark:border-[#243628] shrink-0">
-          <button
-            onClick={() => setActiveView('tree')}
-            className={`min-h-[40px] flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
-              activeView === 'tree'
-                ? 'bg-amber-600 text-white shadow-xs'
-                : 'text-slate-600 dark:text-[#8FA392] hover:text-slate-900 dark:hover:text-[#F3EFE6]'
-            }`}
-            title="عرض الشجرة الهرمية التفاعلية"
-          >
-            <Network className="w-4 h-4" />
-            <span>عرض الشجرة الهرمية</span>
-          </button>
+      {/* ========================================================================= */}
+      {/* 2-TIER EXECUTIVE GLASSMORPHIIC COMMAND BAR                                */}
+      {/* ========================================================================= */}
+      <div className="p-4 sm:p-5 rounded-2xl bg-white/95 dark:bg-[#112017]/95 border border-slate-200/90 dark:border-[#1F3526] shadow-sm backdrop-blur-md space-y-4">
+        {/* Tier 1: Header, Live Metrics, Segmented Switcher & Primary Actions */}
+        <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-200/80 dark:border-[#1A3327]">
+          {/* Right Side: Section Title & Live Metrics */}
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/10 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center border border-amber-500/30">
+                <FolderTree className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-base font-black text-slate-900 dark:text-[#F3EFE6] tracking-tight">
+                  الهيكل التنظيمي والإدارات
+                </h2>
+                <p className="text-[11px] text-slate-500 dark:text-[#8FA392]">
+                  التسلسل الهرمي للمؤسسة، بطاقات الأقسام، ومراكز التكلفة
+                </p>
+              </div>
+            </div>
 
-          <button
-            onClick={() => setActiveView('cards')}
-            className={`min-h-[40px] flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
-              activeView === 'cards'
-                ? 'bg-amber-600 text-white shadow-xs'
-                : 'text-slate-600 dark:text-[#8FA392] hover:text-slate-900 dark:hover:text-[#F3EFE6]'
-            }`}
-            title="عرض البطاقات الذكية"
-          >
-            <LayoutGrid className="w-4 h-4" />
-            <span>عرض البطاقات الذكية</span>
-          </button>
+            {/* Live Counter Badges */}
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-500/30 text-xs font-bold font-mono">
+                {departments.length} وحدة إدارية
+              </span>
+              <span className="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/30 text-xs font-bold">
+                {departments.length > 0 ? `${maxDepthLevel + 1} مستويات هيكلية` : '0 مستويات'}
+              </span>
+            </div>
+          </div>
+
+          {/* Center: Segmented View Switcher Pill (Side-by-Side) */}
+          <div className="p-1.5 rounded-xl bg-slate-100/90 dark:bg-[#07130E] border border-slate-200/80 dark:border-amber-500/20 flex items-center gap-1.5 shadow-inner">
+            <button
+              type="button"
+              onClick={() => setActiveView('cards')}
+              className={`min-h-[38px] flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                activeView === 'cards'
+                  ? 'bg-gradient-to-l from-amber-600 to-amber-500 text-white shadow-md shadow-amber-500/20 font-bold'
+                  : 'text-slate-600 dark:text-[#8FA392] hover:text-slate-900 dark:hover:text-[#F3EFE6]'
+              }`}
+              title="عرض البطاقات الذكية التفصيلية"
+            >
+              <LayoutGrid className="w-4 h-4" />
+              <span>البطاقات الذكية</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveView('mindmap')}
+              className={`min-h-[38px] flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                activeView === 'mindmap'
+                  ? 'bg-gradient-to-l from-amber-600 to-amber-500 text-white shadow-md shadow-amber-500/20 font-bold'
+                  : 'text-slate-600 dark:text-[#8FA392] hover:text-slate-900 dark:hover:text-[#F3EFE6]'
+              }`}
+              title="عرض الشجرة الذهنية التفاعلية بتصميم NotebookLM"
+            >
+              <GitFork className="w-4 h-4" />
+              <span>الشجرة الذهنية التفاعلية</span>
+            </button>
+          </div>
+
+          {/* Left Side: Primary Action Buttons */}
+          <div className="flex items-center gap-2.5">
+            {hasPermission('companies.org.create') && (
+              <button
+                type="button"
+                onClick={() => handleOpenAdd(null)}
+                className="min-h-[40px] flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-all shadow-md shadow-amber-600/20 cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>+ إضافة إدارة / عقدة جديدة</span>
+              </button>
+            )}
+
+            {hasPermission('companies.org.create') && (
+              <button
+                type="button"
+                onClick={() => setSeedModalOpen(true)}
+                className="min-h-[40px] flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-700 to-teal-700 hover:from-emerald-600 hover:to-teal-600 text-white text-xs font-bold transition-all shadow-sm cursor-pointer"
+                title="تحميل الهيكل التنظيمي القياسي المتكامل لشركات المقاولات (4 مستويات - 30+ إدارة ووحدة)"
+              >
+                <Zap className="w-4 h-4 text-amber-300" />
+                <span>⚡ تحميل الهيكل القياسي المتكامل</span>
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* Search & Company Filter */}
-        <div className="flex flex-1 flex-wrap items-center gap-2.5">
-          {/* Search Input */}
-          <div className="relative flex-1 min-w-[200px]">
-            <Search className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-[#5C665E]" />
+        {/* Tier 2: Spacious Search & Filter Strip */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+          {/* Search Input (md:col-span-5) */}
+          <div className="md:col-span-5 relative">
+            <Search className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-stone-500" />
             <input
               type="text"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              placeholder="بحث بالاسم، الكود، المدير، أو كود مركز التكلفة..."
-              className="w-full min-h-[40px] ps-9 pe-3 py-1.5 rounded-xl border border-slate-200 dark:border-[#243628] bg-slate-50 dark:bg-[#0E1610] text-slate-900 dark:text-[#F3EFE6] text-xs focus:outline-none focus:border-amber-500 font-medium"
+              placeholder="ابحث باسم الإدارة، القسم الفرعي، المسمى، أو الاختصاص..."
+              className="w-full min-h-[40px] ps-9 pe-8 py-2 rounded-xl border border-slate-200 dark:border-[#243628] bg-slate-50 dark:bg-[#0E1610] text-slate-900 dark:text-[#F3EFE6] text-xs font-medium focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 transition-all placeholder:text-slate-400 dark:placeholder:text-stone-600"
             />
             {searchQuery && (
               <button
@@ -208,133 +310,186 @@ export const CompanyOrgStructureTab: React.FC<CompanyOrgStructureTabProps> = ({
             )}
           </div>
 
-          {/* Company Filter Dropdown */}
-          <div className="flex items-center gap-1.5 shrink-0">
-            <Filter className="w-3.5 h-3.5 text-slate-400 dark:text-[#5C665E]" />
-            <select
-              value={selectedCompanyId}
-              onChange={e => setSelectedCompanyId(e.target.value)}
-              className="min-h-[40px] px-3 py-1.5 rounded-xl border border-slate-200 dark:border-[#243628] bg-slate-50 dark:bg-[#0E1610] text-slate-800 dark:text-[#F3EFE6] text-xs font-semibold focus:outline-none focus:border-amber-500"
-            >
-              <option value="all">جميع الشركات والمؤسسات</option>
-              {companies.map(c => (
-                <option key={c.id} value={c.id}>
-                  {c.nameAr}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Tree Expand/Collapse Controls & Add Department Button */}
-        <div className="flex items-center gap-2 shrink-0">
-          {activeView === 'tree' && departments.length > 0 && (
-            <div className="flex items-center gap-1">
-              <button
-                onClick={handleExpandAll}
-                className="min-h-[40px] px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-[#243628] bg-slate-50 dark:bg-[#1F2E23] text-slate-600 dark:text-[#8FA392] hover:text-slate-900 dark:hover:text-white text-xs font-semibold flex items-center gap-1"
-                title="توسيع كافة الفروع"
-              >
-                <Maximize2 className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">توسيع الكل</span>
-              </button>
-              <button
-                onClick={handleCollapseAll}
-                className="min-h-[40px] px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-[#243628] bg-slate-50 dark:bg-[#1F2E23] text-slate-600 dark:text-[#8FA392] hover:text-slate-900 dark:hover:text-white text-xs font-semibold flex items-center gap-1"
-                title="طي كافة الفروع"
-              >
-                <Minimize2 className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">طي الكل</span>
-              </button>
-            </div>
-          )}
-
-          {hasPermission('companies.org.create') && (
+          {/* Level / Depth Filter Pills (md:col-span-5) */}
+          <div className="md:col-span-5 flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
             <button
-              onClick={() => handleOpenAdd(null)}
-              className="min-h-[40px] flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-colors shadow-xs"
+              type="button"
+              onClick={() => setSelectedLevel('all')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                selectedLevel === 'all'
+                  ? 'bg-amber-600 text-white shadow-xs'
+                  : 'bg-slate-100 dark:bg-[#1A2C21] text-slate-600 dark:text-[#8FA392] hover:bg-slate-200 dark:hover:bg-[#233B2C]'
+              }`}
             >
-              <Plus className="w-4 h-4" />
-              <span>+ إضافة إدارة جديدة</span>
+              كل المستويات
             </button>
-          )}
+
+            <button
+              type="button"
+              onClick={() => setSelectedLevel(0)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                selectedLevel === 0
+                  ? 'bg-amber-600 text-white shadow-xs'
+                  : 'bg-slate-100 dark:bg-[#1A2C21] text-slate-600 dark:text-[#8FA392] hover:bg-slate-200 dark:hover:bg-[#233B2C]'
+              }`}
+            >
+              الإدارة العليا (المستوى 1)
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setSelectedLevel(1)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                selectedLevel === 1
+                  ? 'bg-teal-600 text-white shadow-xs'
+                  : 'bg-slate-100 dark:bg-[#1A2C21] text-slate-600 dark:text-[#8FA392] hover:bg-slate-200 dark:hover:bg-[#233B2C]'
+              }`}
+            >
+              الإدارات التنفيذية (المستوى 2)
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setSelectedLevel(2)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                selectedLevel === 2
+                  ? 'bg-emerald-600 text-white shadow-xs'
+                  : 'bg-slate-100 dark:bg-[#1A2C21] text-slate-600 dark:text-[#8FA392] hover:bg-slate-200 dark:hover:bg-[#233B2C]'
+              }`}
+            >
+              الأقسام الفرعية (المستوى 3)
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setSelectedLevel(3)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                selectedLevel === 3
+                  ? 'bg-stone-600 text-white shadow-xs'
+                  : 'bg-slate-100 dark:bg-[#1A2C21] text-slate-600 dark:text-[#8FA392] hover:bg-slate-200 dark:hover:bg-[#233B2C]'
+              }`}
+            >
+              المهام والاختصاصات (المستوى 4)
+            </button>
+          </div>
+
+          {/* Controls: Expand / Collapse All & Company Selector (md:col-span-2) */}
+          <div className="md:col-span-2 flex items-center justify-end gap-1.5">
+            {companies.length > 1 && (
+              <div className="relative shrink-0">
+                <select
+                  value={selectedCompanyId}
+                  onChange={e => setSelectedCompanyId(e.target.value)}
+                  className="min-h-[36px] max-w-[130px] px-2 py-1 rounded-xl border border-slate-200 dark:border-[#243628] bg-slate-50 dark:bg-[#0E1610] text-slate-800 dark:text-[#F3EFE6] text-xs font-semibold focus:outline-none focus:border-amber-500 truncate"
+                >
+                  <option value="all">جميع الشركات</option>
+                  {companies.map(c => (
+                    <option key={c.id} value={c.id}>
+                      {c.nameAr}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={handleExpandAll}
+              className="min-h-[36px] px-2.5 py-1 rounded-xl border border-slate-200 dark:border-[#243628] bg-slate-50 dark:bg-[#1F2E23] text-slate-600 dark:text-[#8FA392] hover:text-slate-900 dark:hover:text-white text-xs font-bold flex items-center gap-1 cursor-pointer"
+              title="فتح كافة الفروع الشجرية"
+            >
+              <Maximize2 className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">فتح الكل</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleCollapseAll}
+              className="min-h-[36px] px-2.5 py-1 rounded-xl border border-slate-200 dark:border-[#243628] bg-slate-50 dark:bg-[#1F2E23] text-slate-600 dark:text-[#8FA392] hover:text-slate-900 dark:hover:text-white text-xs font-bold flex items-center gap-1 cursor-pointer"
+              title="طي كافة الفروع الشجرية"
+            >
+              <Minimize2 className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">طي الكل</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* 2. Empty State View */}
+      {/* ========================================================================= */}
+      {/* EMPTY STATE VIEW                                                          */}
+      {/* ========================================================================= */}
       {departments.length === 0 ? (
         <div className="p-12 text-center rounded-2xl border-2 border-dashed border-slate-300 dark:border-[#243628] bg-white dark:bg-[#17231A]">
           <div className="w-16 h-16 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 mx-auto flex items-center justify-center mb-4">
             <FolderTree className="w-8 h-8" />
           </div>
           <h3 className="text-base font-black text-slate-900 dark:text-[#F3EFE6] mb-2">
-            لم يتم إنشاء الهيكل التنظيمي بعد
+            لم يتم تأسيس الهيكل التنظيمي للشركة بعد
           </h3>
-          <p className="text-xs text-slate-500 dark:text-[#8FA392] max-w-md mx-auto mb-5 leading-relaxed">
-            ابدأ بتأسيس الإدارة العليا أو الإدارة الأولى لربط الفروع، الكوادر الإدارية، ومراكز التكلفة الهيكلية بسهولة.
+          <p className="text-xs text-slate-500 dark:text-[#8FA392] max-w-lg mx-auto mb-6 leading-relaxed">
+            يمكنك تأسيس عقدة أولى يدوياً، أو استخدام زر التحميل الفوري لتأسيس الهيكل القياسي المتكامل لشركات المقاولات المصرية المعتمد بـ 4 مستويات تنفيذية و 30+ إدارة تخصصية مرتبطة بـ Cloudflare D1.
           </p>
-          {hasPermission('companies.org.create') && (
-            <button
-              onClick={() => handleOpenAdd(null)}
-              className="min-h-[44px] inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-all shadow-md"
-            >
-              <Plus className="w-4 h-4" />
-              <span>تأسيس الإدارة الأولى بالهيكل التنظيمي</span>
-            </button>
-          )}
+
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            {hasPermission('companies.org.create') && (
+              <button
+                type="button"
+                onClick={() => setSeedModalOpen(true)}
+                className="min-h-[44px] inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-700 hover:to-amber-600 text-white text-xs font-bold transition-all shadow-lg shadow-amber-500/20 cursor-pointer"
+              >
+                <Zap className="w-4 h-4 text-white" />
+                <span>⚡ تحميل الهيكل القياسي المتكامل فوراً</span>
+              </button>
+            )}
+
+            {hasPermission('companies.org.create') && (
+              <button
+                type="button"
+                onClick={() => handleOpenAdd(null)}
+                className="min-h-[44px] inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-slate-300 dark:border-[#243628] bg-white dark:bg-[#1F2E23] text-slate-800 dark:text-stone-200 text-xs font-bold hover:bg-slate-50 transition-all cursor-pointer"
+              >
+                <Plus className="w-4 h-4 text-amber-500" />
+                <span>+ تأسيس إدارة أولى يدوياً</span>
+              </button>
+            )}
+          </div>
         </div>
       ) : (
         <>
-          {/* 3. Tree View Display */}
-          {activeView === 'tree' && (
-            <div className="p-4 sm:p-6 rounded-2xl bg-slate-50/80 dark:bg-[#0E1610] border border-slate-200 dark:border-[#243628] overflow-x-auto min-h-[550px] shadow-inner">
-              <div className="mb-4 flex items-center justify-between text-xs text-slate-500 dark:text-[#8FA392]">
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="font-semibold">
-                    شجرة الهيكل التنظيمي التفاعلية ({departments.length} إدارة وقسم مسجل)
-                  </span>
-                </div>
-                <span className="text-[11px] text-slate-400 dark:text-[#5C665E]">
-                  يمكنك التمرير أفقياً واستخدام أزرار التوسيع والطي (+) لاستكشاف الفروع
-                </span>
-              </div>
-
-              {/* Render Root Nodes with Org Connectors */}
-              <div className="flex flex-col items-center gap-10 min-w-max pb-12 pt-2">
-                {rootDepartments.length === 0 ? (
-                  <div className="py-12 text-center text-slate-400 text-xs">
-                    لا توجد إدارات تطابق شروط الفلترة أو البحث المحددة
-                  </div>
-                ) : (
-                  <div className="flex items-start justify-center gap-12">
-                    {rootDepartments.map(rootDept => (
-                      <OrgTreeNode
-                        key={rootDept.id}
-                        department={rootDept}
-                        allDepartments={departments}
-                        collapsedNodes={collapsedNodes}
-                        onToggleCollapse={handleToggleCollapse}
-                        onAddSubDept={handleOpenAdd}
-                        onEditDept={handleOpenEdit}
-                        onViewAudit={handleOpenAudit}
-                        onDeleteDept={handleOpenDelete}
-                        level={0}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
+          {/* ========================================================================= */}
+          {/* VIEW 1: NOTEBOOKLM-STYLE INTERACTIVE HORIZONTAL MIND-MAP TREE              */}
+          {/* ========================================================================= */}
+          {activeView === 'mindmap' && (
+            <OrgMindMapTree
+              departments={departments}
+              searchQuery={searchQuery}
+              selectedLevel={selectedLevel}
+              selectedCompanyId={selectedCompanyId}
+              collapsedNodes={collapsedNodes}
+              onToggleCollapse={handleToggleCollapse}
+              onAddSubDept={handleOpenAdd}
+              onEditDept={handleOpenEdit}
+              onViewAudit={handleOpenAudit}
+              onDeleteDept={handleOpenDelete}
+              onExpandAll={handleExpandAll}
+              onCollapseAll={handleCollapseAll}
+            />
           )}
 
-          {/* 4. Grid Cards View Display */}
+          {/* ========================================================================= */}
+          {/* VIEW 2: SMART CARDS GRID VIEW                                            */}
+          {/* ========================================================================= */}
           {activeView === 'cards' && (
             <div className="space-y-4">
               <div className="flex items-center justify-between text-xs text-slate-500 dark:text-[#8FA392]">
                 <span className="font-bold">
-                  إجمالي الإدارات المعروضة: {filteredDepartments.length} من أصل {departments.length}
+                  إجمالي الوحدات المعروضة: {filteredDepartments.length} من أصل {departments.length}
                 </span>
+                {selectedLevel !== 'all' && (
+                  <span className="text-amber-600 dark:text-amber-400 font-semibold">
+                    مفلتر حسب المستوى: {selectedLevel === 0 ? 'الإدارة العليا' : `المستوى ${selectedLevel + 1}`}
+                  </span>
+                )}
               </div>
 
               {filteredDepartments.length === 0 ? (
@@ -346,6 +501,25 @@ export const CompanyOrgStructureTab: React.FC<CompanyOrgStructureTabProps> = ({
                   {filteredDepartments.map(dept => {
                     const parent = departments.find(d => d.id === dept.parentId);
                     const subDeptsCount = departments.filter(d => d.parentId === dept.id).length;
+                    const level = dept.level ?? 0;
+
+                    const levelBadgeColor =
+                      level === 0
+                        ? 'bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-300 border-amber-300 dark:border-amber-800'
+                        : level === 1
+                        ? 'bg-teal-100 text-teal-900 dark:bg-teal-950/60 dark:text-teal-300 border-teal-300 dark:border-teal-800'
+                        : level === 2
+                        ? 'bg-emerald-100 text-emerald-900 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800'
+                        : 'bg-stone-100 text-stone-900 dark:bg-stone-800 dark:text-stone-300 border-stone-300 dark:border-stone-700';
+
+                    const levelBadgeText =
+                      level === 0
+                        ? 'القيادة التنفيذية (L0)'
+                        : level === 1
+                        ? 'إدارة تنفيذية (L1)'
+                        : level === 2
+                        ? 'قسم فرعي (L2)'
+                        : 'مهام واختصاصات (L3)';
 
                     return (
                       <div
@@ -355,13 +529,13 @@ export const CompanyOrgStructureTab: React.FC<CompanyOrgStructureTabProps> = ({
                         <div>
                           {/* Card Top: Code, Parent & Headcount */}
                           <div className="flex items-start justify-between gap-2 mb-3">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1.5">
                               <span className="font-mono text-xs font-bold px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-[#1F2E23] text-slate-800 dark:text-[#EBB34D] border border-slate-200 dark:border-[#243628]">
                                 {dept.code}
                               </span>
                               {dept.costCenterCode && (
                                 <span
-                                  className="font-mono text-[10.5px] font-bold px-2 py-0.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-900/50"
+                                  className="font-mono text-[10px] font-bold px-2 py-0.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-900/50"
                                   title="كود مركز التكلفة المرتبط"
                                 >
                                   {dept.costCenterCode}
@@ -369,20 +543,27 @@ export const CompanyOrgStructureTab: React.FC<CompanyOrgStructureTabProps> = ({
                               )}
                             </div>
 
-                            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 dark:bg-[#1F2E23] text-slate-700 dark:text-[#8FA392]">
-                              {dept.staffCount} موظف
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${levelBadgeColor}`}
+                            >
+                              {levelBadgeText}
                             </span>
                           </div>
 
                           {/* Department Name */}
-                          <h4 className="text-base font-black text-slate-900 dark:text-[#F3EFE6] mb-1.5 leading-snug">
+                          <h4 className="text-base font-black text-slate-900 dark:text-[#F3EFE6] mb-1 leading-snug">
                             {dept.nameAr}
                           </h4>
+                          {(dept.titleEn || dept.nameEn) && (
+                            <p className="text-[11px] font-mono text-amber-600 dark:text-amber-300/80 mb-2">
+                              {dept.titleEn || dept.nameEn}
+                            </p>
+                          )}
 
                           {/* Parent Hierarchy Badge */}
                           <div className="mb-3 text-[11px] text-slate-500 dark:text-[#8FA392] flex items-center gap-1.5">
-                            <Layers className="w-3.5 h-3.5 text-amber-500" />
-                            <span>
+                            <Layers className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                            <span className="truncate">
                               {parent ? (
                                 <>
                                   تابعة لـ:{' '}
@@ -392,7 +573,7 @@ export const CompanyOrgStructureTab: React.FC<CompanyOrgStructureTabProps> = ({
                                 </>
                               ) : (
                                 <span className="font-bold text-amber-600 dark:text-amber-400">
-                                  إدارة عليا مستقلة (جذر الهيكل)
+                                  إدارة عليا مستقلة (جذر الهيكل التنظيمي)
                                 </span>
                               )}
                             </span>
@@ -440,30 +621,6 @@ export const CompanyOrgStructureTab: React.FC<CompanyOrgStructureTabProps> = ({
                               </p>
                             )}
                           </div>
-
-                          {/* Sub-units tags preview */}
-                          {dept.subUnits && dept.subUnits.length > 0 && (
-                            <div className="mb-3">
-                              <span className="text-[10.5px] font-bold text-slate-500 dark:text-[#8FA392] block mb-1">
-                                الأقسام والوحدات التابعة ({dept.subUnits.length}):
-                              </span>
-                              <div className="flex flex-wrap gap-1">
-                                {dept.subUnits.slice(0, 3).map((sub, idx) => (
-                                  <span
-                                    key={idx}
-                                    className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#1F2E23] text-[10.5px] font-medium text-slate-800 dark:text-[#F3EFE6] border border-slate-200 dark:border-[#243628]"
-                                  >
-                                    {sub}
-                                  </span>
-                                ))}
-                                {dept.subUnits.length > 3 && (
-                                  <span className="px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-[#1F2E23] text-[10.5px] font-bold text-amber-600 dark:text-amber-400">
-                                    +{dept.subUnits.length - 3} أخرى
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          )}
                         </div>
 
                         {/* Card Footer: Child count + Icon-Only Action Group */}
@@ -477,8 +634,8 @@ export const CompanyOrgStructureTab: React.FC<CompanyOrgStructureTabProps> = ({
                             {hasPermission('companies.org.create') && (
                               <button
                                 onClick={() => handleOpenAdd(dept.id)}
-                                className="min-h-[36px] min-w-[36px] p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-colors flex items-center justify-center"
-                                title="إضافة قسم تابع"
+                                className="min-h-[36px] min-w-[36px] p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-colors flex items-center justify-center cursor-pointer"
+                                title="إضافة قسم أو إدارة تابعة"
                               >
                                 <Plus className="w-4 h-4 text-emerald-600 dark:text-emerald-400 hover:text-emerald-500" />
                               </button>
@@ -487,27 +644,25 @@ export const CompanyOrgStructureTab: React.FC<CompanyOrgStructureTabProps> = ({
                             {hasPermission('companies.org.edit') && (
                               <button
                                 onClick={() => handleOpenEdit(dept)}
-                                className="min-h-[36px] min-w-[36px] p-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/60 dark:border-amber-800/40 hover:bg-amber-100 dark:hover:bg-amber-900/60 transition-colors flex items-center justify-center"
+                                className="min-h-[36px] min-w-[36px] p-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/60 dark:border-amber-800/40 hover:bg-amber-100 dark:hover:bg-amber-900/60 transition-colors flex items-center justify-center cursor-pointer"
                                 title="تعديل بيانات الإدارة"
                               >
                                 <Pencil className="w-4 h-4 text-amber-600 dark:text-amber-400 hover:text-amber-500" />
                               </button>
                             )}
 
-                            {hasPermission('companies.org.view_audit') && (
-                              <button
-                                onClick={() => handleOpenAudit(dept)}
-                                className="min-h-[36px] min-w-[36px] p-2 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-800/40 hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors flex items-center justify-center"
-                                title="سجل تعديلات الإدارة"
-                              >
-                                <AlertCircle className="w-4 h-4 text-blue-600 dark:text-blue-400 hover:text-blue-500" />
-                              </button>
-                            )}
+                            <button
+                              onClick={() => handleOpenAudit(dept)}
+                              className="min-h-[36px] min-w-[36px] p-2 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-800/40 hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors flex items-center justify-center cursor-pointer"
+                              title="سجل تعديلات الإدارة"
+                            >
+                              <AlertCircle className="w-4 h-4 text-blue-600 dark:text-blue-400 hover:text-blue-500" />
+                            </button>
 
                             {hasPermission('companies.org.delete') && (
                               <button
                                 onClick={() => handleOpenDelete(dept)}
-                                className="min-h-[36px] min-w-[36px] p-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200/60 dark:border-rose-800/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 transition-colors flex items-center justify-center"
+                                className="min-h-[36px] min-w-[36px] p-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200/60 dark:border-rose-800/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 transition-colors flex items-center justify-center cursor-pointer"
                                 title="حذف الإدارة"
                               >
                                 <Trash2 className="w-4 h-4 text-rose-600 dark:text-rose-400 hover:text-rose-500" />
@@ -525,7 +680,25 @@ export const CompanyOrgStructureTab: React.FC<CompanyOrgStructureTabProps> = ({
         </>
       )}
 
-      {/* 5. Add / Edit Department Modal */}
+      {/* ========================================================================= */}
+      {/* SEED ENTERPRISE TEMPLATE CONFIRMATION MODAL                                */}
+      {/* ========================================================================= */}
+      <AnimatePresence>
+        {seedModalOpen && (
+          <SeedHierarchyModal
+            isOpen={seedModalOpen}
+            companies={companies}
+            currentDepartmentsCount={departments.length}
+            isSeeding={isSeeding}
+            onClose={() => setSeedModalOpen(false)}
+            onConfirm={handleConfirmSeed}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* ========================================================================= */}
+      {/* ADD / EDIT DEPARTMENT MODAL                                               */}
+      {/* ========================================================================= */}
       <AnimatePresence>
         {modalOpen && (
           <DepartmentModal
@@ -548,7 +721,9 @@ export const CompanyOrgStructureTab: React.FC<CompanyOrgStructureTabProps> = ({
         )}
       </AnimatePresence>
 
-      {/* 6. Change Audit Log Drawer / Modal */}
+      {/* ========================================================================= */}
+      {/* CHANGE AUDIT LOG DRAWER / MODAL                                           */}
+      {/* ========================================================================= */}
       <AnimatePresence>
         {auditModalDept && (
           <DepartmentAuditLogModal
@@ -558,7 +733,9 @@ export const CompanyOrgStructureTab: React.FC<CompanyOrgStructureTabProps> = ({
         )}
       </AnimatePresence>
 
-      {/* 7. Delete Safety Check / Confirmation Modal */}
+      {/* ========================================================================= */}
+      {/* DELETE SAFETY CHECK / CONFIRMATION MODAL                                  */}
+      {/* ========================================================================= */}
       <AnimatePresence>
         {deleteTargetDept && (
           <DepartmentDeleteModal
@@ -579,243 +756,124 @@ export const CompanyOrgStructureTab: React.FC<CompanyOrgStructureTabProps> = ({
 };
 
 /* -------------------------------------------------------------------------- */
-/* RECURSIVE ORG TREE NODE COMPONENT WITH EXACT CONNECTOR LINES               */
+/* SEED HIERARCHY MODAL                                                       */
 /* -------------------------------------------------------------------------- */
-interface OrgTreeNodeProps {
-  department: DepartmentOrg;
-  allDepartments: DepartmentOrg[];
-  collapsedNodes: Set<string>;
-  onToggleCollapse: (id: string) => void;
-  onAddSubDept: (parentId: string) => void;
-  onEditDept: (dept: DepartmentOrg) => void;
-  onViewAudit: (dept: DepartmentOrg) => void;
-  onDeleteDept: (dept: DepartmentOrg) => void;
-  level: number;
+interface SeedHierarchyModalProps {
+  isOpen: boolean;
+  companies: CompanyEntity[];
+  currentDepartmentsCount: number;
+  isSeeding: boolean;
+  onClose: () => void;
+  onConfirm: (companyId: string) => Promise<void>;
 }
 
-const OrgTreeNode: React.FC<OrgTreeNodeProps> = ({
-  department,
-  allDepartments,
-  collapsedNodes,
-  onToggleCollapse,
-  onAddSubDept,
-  onEditDept,
-  onViewAudit,
-  onDeleteDept,
-  level
+const SeedHierarchyModal: React.FC<SeedHierarchyModalProps> = ({
+  companies,
+  currentDepartmentsCount,
+  isSeeding,
+  onClose,
+  onConfirm
 }) => {
-  const { hasPermission } = useAuth();
-
-  const children = useMemo(() => {
-    return allDepartments.filter(d => d.parentId === department.id);
-  }, [allDepartments, department.id]);
-
-  const hasChildren = children.length > 0;
-  const isCollapsed = collapsedNodes.has(department.id);
-
-  // Level Accent styling
-  const levelAccentBorder =
-    level === 0
-      ? 'border-t-4 border-t-amber-500'
-      : level === 1
-      ? 'border-t-4 border-t-emerald-600'
-      : 'border-t-4 border-t-blue-500';
+  const [targetCompanyId, setTargetCompanyId] = useState<string>(companies[0]?.id || '');
 
   return (
-    <div className="flex flex-col items-center">
-      {/* 1. Node Card Container */}
+    <div className="fixed inset-0 !m-0 !top-0 !left-0 !right-0 !bottom-0 w-screen h-screen z-[999] flex items-center justify-center p-3 sm:p-5 bg-black/70 backdrop-blur-md overflow-y-auto">
       <motion.div
-        layout
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        transition={{ duration: 0.2 }}
-        className={`w-72 sm:w-80 p-4 rounded-2xl border-2 border-slate-200 dark:border-[#243628] bg-white dark:bg-[#17231A] text-slate-900 dark:text-[#F3EFE6] shadow-sm hover:shadow-lg transition-all duration-200 relative text-start ${levelAccentBorder}`}
+        className="w-full max-w-xl bg-white dark:bg-[#0E1610] rounded-2xl border-2 border-amber-500/40 shadow-2xl overflow-hidden p-5 sm:p-6 text-start my-8"
       >
-        {/* Card Header: Code, Cost Center & Staff Count */}
-        <div className="flex items-center justify-between gap-2 mb-2">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#1F2E23] text-slate-800 dark:text-[#EBB34D] border border-slate-200 dark:border-[#243628]">
-              {department.code}
-            </span>
-
-            {department.costCenterCode && (
-              <span
-                className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-900/50"
-                title="كود مركز التكلفة الهيكلي"
-              >
-                {department.costCenterCode}
-              </span>
-            )}
+        <div className="flex items-center justify-between pb-3.5 border-b border-slate-200 dark:border-[#243628] mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 text-white flex items-center justify-center shrink-0 shadow-md">
+              <Zap className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h3 className="text-base font-black text-slate-900 dark:text-[#F3EFE6]">
+                تحميل الهيكل التنظيمي القياسي المتكامل
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-[#8FA392]">
+                4 مستويات تنظيمية متكاملة لشركات المقاولات والإنشاءات الكبرى
+              </p>
+            </div>
           </div>
-
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-[#1F2E23] text-slate-700 dark:text-[#8FA392]">
-            {department.staffCount} موظف
-          </span>
+          <button
+            onClick={onClose}
+            className="min-h-[40px] min-w-[40px] flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
-        {/* Department Name */}
-        <h4 className="text-sm font-black text-slate-900 dark:text-[#F3EFE6] mb-1 leading-tight line-clamp-1">
-          {department.nameAr}
-        </h4>
-
-        {/* Head / Manager */}
-        <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-[#8FA392] mb-2.5">
-          <User className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-          <span className="font-bold text-slate-800 dark:text-[#E2DCCE] truncate">
-            {department.headAr || 'غير محدد'}
-          </span>
-        </div>
-
-        {/* Company & Branch Badges */}
-        {(department.companyNameAr || department.branchNameAr) && (
-          <div className="mb-2.5 p-2 rounded-xl bg-slate-50 dark:bg-[#0E1610] border border-slate-200/70 dark:border-[#243628] space-y-1 text-[11px]">
-            {department.companyNameAr && (
-              <div className="flex items-center gap-1.5 text-slate-600 dark:text-[#8FA392] truncate">
-                <Building2 className="w-3 h-3 text-slate-400 shrink-0" />
-                <span className="truncate">{department.companyNameAr}</span>
-              </div>
-            )}
-            {department.branchNameAr && (
-              <div className="flex items-center gap-1.5 text-slate-600 dark:text-[#8FA392] truncate">
-                <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
-                <span className="truncate">{department.branchNameAr}</span>
-              </div>
-            )}
+        <div className="space-y-4 text-xs">
+          <div className="p-3 rounded-xl bg-amber-50/80 dark:bg-amber-950/20 border border-amber-300 dark:border-amber-500/30 text-amber-900 dark:text-amber-200 leading-relaxed">
+            <div className="flex items-center gap-2 font-bold mb-1">
+              <Sparkles className="w-4 h-4 text-amber-500" />
+              <span>ماذا يتضمن الهيكل القياسي المعتمد؟</span>
+            </div>
+            <ul className="list-disc list-inside space-y-1 text-[11.5px] ps-1">
+              <li><strong>المستوى 0:</strong> المالك والرئيس التنفيذي (Owner & CEO)</li>
+              <li><strong>المستوى 1:</strong> 8 إدارات تنفيذية عليا (PMO، المراجعة الداخلية، المستشار القانوني، الجودة والسلامة QHSE، المشروعات الهندسية، الموارد البشرية، المدير المالي CFO، وسلاسل الإمداد والمشتريات).</li>
+              <li><strong>المستوى 2 و 3:</strong> 25+ قسماً تخصصياً ووحدة عمل (التسعير، الشوب دروينج، حسابات المستخلصات، العقود، والتأمينات الاجتماعية).</li>
+            </ul>
           </div>
-        )}
 
-        {/* Sub-units tags preview (up to 2 tags) */}
-        {department.subUnits && department.subUnits.length > 0 && (
-          <div className="flex flex-wrap gap-1 mb-2.5">
-            {department.subUnits.slice(0, 2).map((sub, idx) => (
-              <span
-                key={idx}
-                className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#1F2E23] text-[10px] font-semibold text-slate-700 dark:text-[#8FA392] border border-slate-200 dark:border-[#243628]"
-              >
-                {sub}
+          {currentDepartmentsCount > 0 && (
+            <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 text-blue-800 dark:text-blue-300 text-xs flex items-center gap-2">
+              <Info className="w-4 h-4 shrink-0" />
+              <span>
+                يوجد حالياً ({currentDepartmentsCount}) وحدة إدارية مسجلة. سيتم إدراج الهيكل القياسي وربطه بالشركة المحددة وحفظه مباشرة في Cloudflare D1.
               </span>
-            ))}
-            {department.subUnits.length > 2 && (
-              <span className="px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-[#1F2E23] text-[10px] font-bold text-amber-600 dark:text-amber-400">
-                +{department.subUnits.length - 2}
-              </span>
-            )}
-          </div>
-        )}
+            </div>
+          )}
 
-        {/* Action micro-buttons group */}
-        <div className="pt-2 border-t border-slate-200 dark:border-[#243628] flex items-center justify-between">
-          {/* Quick Action Micro-buttons */}
-          <div className="flex items-center gap-1">
-            {hasPermission('companies.org.create') && (
-              <button
-                onClick={() => onAddSubDept(department.id)}
-                className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-colors"
-                title="إضافة قسم تابع"
+          {companies.length > 0 && (
+            <div>
+              <label className="block font-bold text-slate-900 dark:text-[#F3EFE6] mb-1">
+                اختر الشركة المستهدفة لإسناد الهيكل إليها:
+              </label>
+              <select
+                value={targetCompanyId}
+                onChange={e => setTargetCompanyId(e.target.value)}
+                className="w-full min-h-[42px] px-3.5 py-2 rounded-xl border border-slate-300 dark:border-[#243628] bg-slate-50 dark:bg-[#17231A] text-slate-900 dark:text-[#F3EFE6] font-bold focus:outline-none focus:border-amber-500"
               >
-                <Plus className="w-4 h-4 text-emerald-600 dark:text-emerald-400 hover:text-emerald-500" />
-              </button>
-            )}
+                {companies.map(c => (
+                  <option key={c.id} value={c.id}>
+                    {c.nameAr}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
-            {hasPermission('companies.org.edit') && (
-              <button
-                onClick={() => onEditDept(department)}
-                className="p-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/60 transition-colors"
-                title="تعديل الإدارة"
-              >
-                <Pencil className="w-4 h-4 text-amber-600 dark:text-amber-400 hover:text-amber-500" />
-              </button>
-            )}
-
-            {hasPermission('companies.org.view_audit') && (
-              <button
-                onClick={() => onViewAudit(department)}
-                className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors"
-                title="سجل التعديلات"
-              >
-                <AlertCircle className="w-4 h-4 text-blue-600 dark:text-blue-400 hover:text-blue-500" />
-              </button>
-            )}
-
-            {hasPermission('companies.org.delete') && (
-              <button
-                onClick={() => onDeleteDept(department)}
-                className="p-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 transition-colors"
-                title="حذف الإدارة"
-              >
-                <Trash2 className="w-4 h-4 text-rose-600 dark:text-rose-400 hover:text-rose-500" />
-              </button>
-            )}
-          </div>
-
-          {/* Expand/Collapse Button for Branches */}
-          {hasChildren && (
+          <div className="pt-3 border-t border-slate-200 dark:border-[#243628] flex items-center justify-end gap-2.5">
             <button
-              onClick={() => onToggleCollapse(department.id)}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-[#1F2E23] text-slate-800 dark:text-[#F3EFE6] hover:bg-slate-200 dark:hover:bg-[#243628] text-[11px] font-bold transition-colors"
-              title={isCollapsed ? 'توسيع الفروع' : 'طي الفروع'}
+              type="button"
+              onClick={onClose}
+              disabled={isSeeding}
+              className="min-h-[42px] px-4 py-2 rounded-xl border border-slate-300 dark:border-[#243628] text-slate-600 dark:text-[#8FA392] hover:bg-slate-100 dark:hover:bg-white/5 font-semibold text-xs"
             >
-              <span>{children.length}</span>
-              {isCollapsed ? (
-                <ChevronDown className="w-3.5 h-3.5 text-amber-500" />
+              إلغاء
+            </button>
+            <button
+              type="button"
+              onClick={() => onConfirm(targetCompanyId)}
+              disabled={isSeeding}
+              className="min-h-[42px] px-5 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-700 hover:to-amber-600 text-white font-bold text-xs shadow-md transition-all flex items-center gap-2 cursor-pointer"
+            >
+              {isSeeding ? (
+                <span>جارٍ التأسيس والمزامنة مع Cloudflare D1...</span>
               ) : (
-                <ChevronUp className="w-3.5 h-3.5 text-amber-500" />
+                <>
+                  <Zap className="w-4 h-4 text-white" />
+                  <span>تأكيد التحميل والتأسيس الفوري</span>
+                </>
               )}
             </button>
-          )}
-        </div>
-      </motion.div>
-
-      {/* 2. Hierarchical SVG Connectors & Children Rendering */}
-      {hasChildren && !isCollapsed && (
-        <div className="flex flex-col items-center w-full">
-          {/* Vertical Stem down from parent */}
-          <div className="w-0.5 h-6 bg-slate-400 dark:bg-[#345540]" />
-
-          {/* Children container with connecting lines */}
-          <div className="flex items-start justify-center gap-6 relative">
-            {children.map((child, idx) => {
-              const isFirst = idx === 0;
-              const isLast = idx === children.length - 1;
-              const isSingle = children.length === 1;
-
-              return (
-                <div key={child.id} className="relative flex flex-col items-center">
-                  {/* Top horizontal connection bridge */}
-                  {!isSingle && (
-                    <div
-                      className={`absolute top-0 h-0.5 bg-slate-400 dark:bg-[#345540] ${
-                        isFirst
-                          ? 'start-1/2 end-0'
-                          : isLast
-                          ? 'start-0 end-1/2'
-                          : 'start-0 end-0'
-                      }`}
-                    />
-                  )}
-
-                  {/* Vertical drop line down into child card */}
-                  <div className="w-0.5 h-6 bg-slate-400 dark:bg-[#345540]" />
-
-                  {/* Child Recursive Node */}
-                  <OrgTreeNode
-                    department={child}
-                    allDepartments={allDepartments}
-                    collapsedNodes={collapsedNodes}
-                    onToggleCollapse={onToggleCollapse}
-                    onAddSubDept={onAddSubDept}
-                    onEditDept={onEditDept}
-                    onViewAudit={onViewAudit}
-                    onDeleteDept={onDeleteDept}
-                    level={level + 1}
-                  />
-                </div>
-              );
-            })}
           </div>
         </div>
-      )}
+      </motion.div>
     </div>
   );
 };
@@ -833,6 +891,9 @@ interface DepartmentModalProps {
   branches: BranchLocation[];
   onSave: (deptData: {
     nameAr: string;
+    titleEn?: string;
+    nameEn?: string;
+    level?: number;
     code: string;
     headAr: string;
     staffCount: number;
@@ -858,8 +919,12 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
 }) => {
   // Form State
   const [nameAr, setNameAr] = useState(editingDept?.nameAr || '');
+  const [titleEn, setTitleEn] = useState(editingDept?.titleEn || editingDept?.nameEn || '');
   const [code, setCode] = useState(
-    editingDept?.code || `DEPT-${Date.now().toString().slice(-4)}`
+    editingDept?.code || `DEP-${Date.now().toString().slice(-4)}`
+  );
+  const [level, setLevel] = useState<number>(
+    editingDept?.level !== undefined ? editingDept.level : 1
   );
   const [headAr, setHeadAr] = useState(editingDept?.headAr || '');
   const [staffCount, setStaffCount] = useState<string | number>(
@@ -894,7 +959,7 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
     return departments.filter(d => d.id !== editingDept.id && !descendantIds.has(d.id));
   }, [departments, editingDept]);
 
-  // Filter branches by selected company (if any match)
+  // Filter branches by selected company
   const availableBranches = useMemo(() => {
     if (!companyId) return branches;
     const companyBranches = branches.filter(b => b.companyId === companyId);
@@ -943,6 +1008,9 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
     try {
       await onSave({
         nameAr: nameAr.trim(),
+        titleEn: titleEn.trim(),
+        nameEn: titleEn.trim(),
+        level: Number(level),
         code: code.trim().toUpperCase(),
         headAr: headAr.trim(),
         staffCount: Number(staffCount) || 0,
@@ -976,7 +1044,7 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
             </div>
             <div>
               <h3 className="text-base font-black text-slate-900 dark:text-[#F3EFE6]">
-                {editingDept ? 'تعديل بيانات الإدارة بالهيكل التنظيمي' : 'تأسيس إدارة / قسم جديد'}
+                {editingDept ? 'تعديل بيانات الإدارة بالهيكل التنظيمي' : 'تأسيس إدارة / عقدة جديدة'}
               </h3>
               <p className="text-xs text-slate-500 dark:text-[#8FA392]">
                 تحديد التبعية الهرمية، ربط مركز التكلفة، وإسناد المسؤوليات المعتمدة
@@ -1001,9 +1069,9 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-          {/* 1. Name & Code */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div className="sm:col-span-2">
+          {/* 1. NameAr & TitleEn */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
               <label className="block font-bold text-slate-900 dark:text-[#F3EFE6] mb-1">
                 اسم الإدارة / القسم باللغة العربية *
               </label>
@@ -1019,6 +1087,22 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
 
             <div>
               <label className="block font-bold text-slate-900 dark:text-[#F3EFE6] mb-1">
+                المسمى بالإنجليزية (Title / English)
+              </label>
+              <input
+                type="text"
+                value={titleEn}
+                onChange={e => setTitleEn(e.target.value)}
+                placeholder="e.g. Engineering & Projects Directorate"
+                className="w-full min-h-[42px] px-3.5 py-2 rounded-xl border border-slate-300 dark:border-[#243628] bg-slate-50 dark:bg-[#17231A] text-slate-900 dark:text-[#F3EFE6] font-mono focus:outline-none focus:border-amber-500"
+              />
+            </div>
+          </div>
+
+          {/* 2. Code & Level */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block font-bold text-slate-900 dark:text-[#F3EFE6] mb-1">
                 الكود التنظيمي *
               </label>
               <input
@@ -1030,9 +1114,25 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
                 className="w-full min-h-[42px] px-3.5 py-2 rounded-xl border border-slate-300 dark:border-[#243628] bg-slate-50 dark:bg-[#17231A] text-slate-900 dark:text-[#F3EFE6] font-mono font-bold focus:outline-none focus:border-amber-500"
               />
             </div>
+
+            <div>
+              <label className="block font-bold text-slate-900 dark:text-[#F3EFE6] mb-1">
+                المستوى الهيكلي
+              </label>
+              <select
+                value={level}
+                onChange={e => setLevel(Number(e.target.value))}
+                className="w-full min-h-[42px] px-3.5 py-2 rounded-xl border border-slate-300 dark:border-[#243628] bg-slate-50 dark:bg-[#17231A] text-slate-900 dark:text-[#F3EFE6] font-semibold focus:outline-none focus:border-amber-500"
+              >
+                <option value={0}>المستوى 0: الإدارة العليا والقيادة التنفيذية (Root)</option>
+                <option value={1}>المستوى 1: إدارات تنفيذية رئيسية</option>
+                <option value={2}>المستوى 2: أقسام فرعية</option>
+                <option value={3}>المستوى 3: مهام ووحدات تخصصية</option>
+              </select>
+            </div>
           </div>
 
-          {/* 2. Parent Hierarchy & Structural Cost Center Code */}
+          {/* 3. Parent Hierarchy & Structural Cost Center Code */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block font-bold text-slate-900 dark:text-[#F3EFE6] mb-1">
@@ -1050,43 +1150,66 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
                   </option>
                 ))}
               </select>
-              <span className="text-[10px] text-slate-500 dark:text-[#8FA392] mt-0.5 block">
-                تحديد التبعية يحدد مكان الإدارة داخل الشجرة الهرمية
-              </span>
             </div>
 
             <div>
               <label className="block font-bold text-slate-900 dark:text-[#F3EFE6] mb-1">
-                كود مركز التكلفة المرتبط (Cost Center Code)
+                كود مركز التكلفة المرتبط (Cost Center)
               </label>
               <input
                 type="text"
                 value={costCenterCode}
                 onChange={e => setCostCenterCode(e.target.value)}
-                placeholder="CC-101"
-                className="w-full min-h-[42px] px-3.5 py-2 rounded-xl border border-slate-300 dark:border-[#243628] bg-slate-50 dark:bg-[#17231A] text-slate-900 dark:text-[#F3EFE6] font-mono font-bold focus:outline-none focus:border-amber-500"
+                placeholder="CC-101 أو CC-OPS"
+                className="w-full min-h-[42px] px-3.5 py-2 rounded-xl border border-slate-300 dark:border-[#243628] bg-slate-50 dark:bg-[#17231A] text-slate-900 dark:text-[#F3EFE6] font-mono font-medium focus:outline-none focus:border-amber-500"
               />
-              <span className="text-[10px] text-slate-500 dark:text-[#8FA392] mt-0.5 block">
-                ربط هيكلي ذكي مع المشاريع والفروع دون تداخل مالي
-              </span>
             </div>
           </div>
 
-          {/* 3. Company & Site Linking */}
+          {/* 4. Manager & Staff Count */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block font-bold text-slate-900 dark:text-[#F3EFE6] mb-1">
-                الشركة التابعة *
+                المدير المسؤول
+              </label>
+              <input
+                type="text"
+                value={headAr}
+                onChange={e => setHeadAr(e.target.value)}
+                placeholder="اسم مدير الإدارة أو القسم"
+                className="w-full min-h-[42px] px-3.5 py-2 rounded-xl border border-slate-300 dark:border-[#243628] bg-slate-50 dark:bg-[#17231A] text-slate-900 dark:text-[#F3EFE6] font-medium focus:outline-none focus:border-amber-500"
+              />
+            </div>
+
+            <div>
+              <label className="block font-bold text-slate-900 dark:text-[#F3EFE6] mb-1">
+                عدد الموظفين الحاليين
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={staffCount}
+                onChange={e => setStaffCount(e.target.value)}
+                placeholder="0"
+                className="w-full min-h-[42px] px-3.5 py-2 rounded-xl border border-slate-300 dark:border-[#243628] bg-slate-50 dark:bg-[#17231A] text-slate-900 dark:text-[#F3EFE6] font-mono focus:outline-none focus:border-amber-500"
+              />
+            </div>
+          </div>
+
+          {/* 5. Company & Branch Linkage */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block font-bold text-slate-900 dark:text-[#F3EFE6] mb-1">
+                الشركة التابعة لها
               </label>
               <select
-                required
                 value={companyId}
                 onChange={e => setCompanyId(e.target.value)}
                 className="w-full min-h-[42px] px-3.5 py-2 rounded-xl border border-slate-300 dark:border-[#243628] bg-slate-50 dark:bg-[#17231A] text-slate-900 dark:text-[#F3EFE6] font-medium focus:outline-none focus:border-amber-500"
               >
-                {companies.map(comp => (
-                  <option key={comp.id} value={comp.id}>
-                    {comp.nameAr}
+                {companies.map(c => (
+                  <option key={c.id} value={c.id}>
+                    {c.nameAr}
                   </option>
                 ))}
               </select>
@@ -1094,58 +1217,29 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
 
             <div>
               <label className="block font-bold text-slate-900 dark:text-[#F3EFE6] mb-1">
-                المقر / الموقع التابع *
+                المقر / الفرع / الموقع المرتبط
               </label>
               <select
                 value={branchId}
                 onChange={e => setBranchId(e.target.value)}
                 className="w-full min-h-[42px] px-3.5 py-2 rounded-xl border border-slate-300 dark:border-[#243628] bg-slate-50 dark:bg-[#17231A] text-slate-900 dark:text-[#F3EFE6] font-medium focus:outline-none focus:border-amber-500"
               >
-                {availableBranches.map(branch => (
-                  <option key={branch.id} value={branch.id}>
-                    {branch.nameAr} ({branch.cityAr})
+                <option value="">المقر الرئيسي</option>
+                {availableBranches.map(b => (
+                  <option key={b.id} value={b.id}>
+                    {b.nameAr} ({b.cityAr})
                   </option>
                 ))}
               </select>
             </div>
           </div>
 
-          {/* 4. Manager & Staff Count */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div className="sm:col-span-2">
-              <label className="block font-bold text-slate-900 dark:text-[#F3EFE6] mb-1">
-                المدير المسؤول / رئيس الإدارة
-              </label>
-              <input
-                type="text"
-                value={headAr}
-                onChange={e => setHeadAr(e.target.value)}
-                placeholder="مثال: م. أحمد مصطفى الجوهري أو اتركه فارغاً"
-                className="w-full min-h-[42px] px-3.5 py-2 rounded-xl border border-slate-300 dark:border-[#243628] bg-slate-50 dark:bg-[#17231A] text-slate-900 dark:text-[#F3EFE6] font-medium focus:outline-none focus:border-amber-500 cursor-text caret-slate-900 dark:caret-amber-400"
-              />
-            </div>
-
-            <div>
-              <label className="block font-bold text-slate-900 dark:text-[#F3EFE6] mb-1">
-                الكادر الوظيفي (موظف)
-              </label>
-              <input
-                type="number"
-                min="0"
-                value={staffCount}
-                onChange={e => setStaffCount(e.target.value === '' ? '' : Number(e.target.value))}
-                placeholder="مثال: 15 موظف أو اتركه فارغاً"
-                className="w-full min-h-[42px] px-3.5 py-2 rounded-xl border border-slate-300 dark:border-[#243628] bg-slate-50 dark:bg-[#17231A] text-slate-900 dark:text-[#F3EFE6] font-mono font-bold focus:outline-none focus:border-amber-500 cursor-text caret-slate-900 dark:caret-amber-400"
-              />
-            </div>
-          </div>
-
-          {/* 5. Sub-Units Chips */}
+          {/* 6. Sub-units tags */}
           <div>
             <label className="block font-bold text-slate-900 dark:text-[#F3EFE6] mb-1">
-              الأقسام والوحدات التابعة
+              الأقسام والوحدات التابعة (Tags)
             </label>
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex gap-2 mb-2">
               <input
                 type="text"
                 value={subUnitInput}
@@ -1187,7 +1281,7 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
             </div>
           </div>
 
-          {/* 6. Responsibilities */}
+          {/* 7. Responsibilities */}
           <div>
             <label className="block font-bold text-slate-900 dark:text-[#F3EFE6] mb-1">
               المسؤوليات والمهام الإدارية
@@ -1214,7 +1308,7 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="min-h-[42px] px-6 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold transition-colors shadow-xs flex items-center gap-2"
+              className="min-h-[42px] px-6 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold transition-colors shadow-xs flex items-center gap-2 cursor-pointer"
             >
               {isSubmitting ? (
                 <span>جارٍ الحفظ...</span>
@@ -1476,7 +1570,7 @@ const DepartmentDeleteModal: React.FC<DepartmentDeleteModalProps> = ({
               <button
                 onClick={handleDelete}
                 disabled={isDeleting}
-                className="min-h-[42px] px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs transition-colors flex items-center gap-1.5"
+                className="min-h-[42px] px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs transition-colors flex items-center gap-1.5 cursor-pointer"
               >
                 {isDeleting ? 'جارٍ الحذف...' : 'تأكيد الحذف نهائياً'}
               </button>

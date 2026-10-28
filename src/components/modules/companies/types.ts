@@ -156,6 +156,8 @@ export interface DepartmentAuditLogEntry {
 export interface DepartmentOrg {
   id: string;
   nameAr: string;
+  nameEn?: string;
+  titleEn?: string;
   code: string;
   headAr: string;
   staffCount: number;
@@ -167,6 +169,7 @@ export interface DepartmentOrg {
   branchId?: string;
   branchNameAr?: string;
   costCenterCode?: string; // Structural Cost Center Mapping
+  level?: number; // 0 = Root, 1 = Executive Department, 2 = Sub-Department/Section, 3 = Specialized Unit/Task
   auditLogs?: DepartmentAuditLogEntry[];
   createdAt?: string;
   updatedAt?: string;

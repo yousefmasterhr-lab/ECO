@@ -276,6 +276,15 @@ export const CompaniesModule: React.FC<CompaniesModuleProps> = ({ activeSubItemI
     }
   };
 
+  const handleReloadDepartments = async () => {
+    try {
+      const refreshed = await departmentStorage.getDepartments();
+      setDepartments(refreshed);
+    } catch (err) {
+      console.warn('[CompaniesModule] Error reloading departments:', err);
+    }
+  };
+
   // --- Signatories CRUD with Real Persistence & Audit Log ---
   const handleAddSignatory = async (newSig: AuthorizedSignatory) => {
     try {
@@ -433,6 +442,7 @@ export const CompaniesModule: React.FC<CompaniesModuleProps> = ({ activeSubItemI
               onAddDepartment={handleAddDepartment}
               onUpdateDepartment={handleUpdateDepartment}
               onDeleteDepartment={handleDeleteDepartment}
+              onReloadDepartments={handleReloadDepartments}
             />
           )}
 

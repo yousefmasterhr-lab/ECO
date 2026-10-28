@@ -72,7 +72,84 @@ export const onRequestPost: PagesFunction = async (context) => {
     await ensureCompanySchema(env.DB);
 
     const body = await request.json().catch(() => null);
-    if (!body || !body.nameAr) {
+    if (!body) {
+      return errorResponse('بيانات الإدارة غير مكتملة', 400);
+    }
+
+    // Support Bulk Seeding / Batch Creation
+    const bulkList = Array.isArray(body) ? body : (Array.isArray(body.bulk) ? body.bulk : (Array.isArray(body.departments) ? body.departments : null));
+    if (bulkList && bulkList.length > 0) {
+      const userName = body.userName || 'يوسف حجازي';
+      const statements: any[] = [];
+      const insertedDepts: any[] = [];
+
+      for (const item of bulkList) {
+        if (!item.nameAr) continue;
+        const id = item.id || `dept_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+        const companyId = item.companyId || null;
+        const branchId = item.branchId || null;
+        const parentId = item.parentId !== undefined ? item.parentId : null;
+        const name = item.nameAr.trim();
+        const manager = item.headAr || '';
+        const costCenter = item.costCenterCode || '';
+        const metadataJson = JSON.stringify({
+          code: item.code || costCenter || 'DEP-01',
+          titleEn: item.titleEn || item.nameEn || '',
+          nameEn: item.nameEn || item.titleEn || '',
+          level: item.level !== undefined ? Number(item.level) : 0,
+          staffCount: Number(item.staffCount ?? 0),
+          subUnits: Array.isArray(item.subUnits) ? item.subUnits : [],
+          responsibilities: item.responsibilities || '',
+          companyNameAr: item.companyNameAr || '',
+          branchNameAr: item.branchNameAr || '',
+          auditLogs: Array.isArray(item.auditLogs) ? item.auditLogs : [],
+        });
+
+        statements.push(
+          env.DB.prepare(`
+            INSERT INTO departments (
+              id, company_id, branch_id, parent_id, name, manager_name, cost_center_code, metadata_json, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(id) DO UPDATE SET
+              company_id = excluded.company_id,
+              branch_id = excluded.branch_id,
+              parent_id = excluded.parent_id,
+              name = excluded.name,
+              manager_name = excluded.manager_name,
+              cost_center_code = excluded.cost_center_code,
+              metadata_json = excluded.metadata_json
+          `).bind(id, companyId, branchId, parentId, name, manager, costCenter, metadataJson)
+        );
+
+        insertedDepts.push({
+          id,
+          nameAr: name,
+          titleEn: item.titleEn || item.nameEn || '',
+          nameEn: item.nameEn || item.titleEn || '',
+          level: item.level !== undefined ? Number(item.level) : 0,
+          headAr: manager,
+          code: item.code || costCenter || 'DEP-01',
+          parentId,
+          companyId,
+          costCenterCode: costCenter
+        });
+      }
+
+      if (statements.length > 0) {
+        await env.DB.batch(statements);
+      }
+
+      await logCompanyAudit(env.DB, 'department', 'bulk_hierarchy', userName, 'create', [
+        { field: 'hierarchy', fieldLabel: 'الهيكل القياسي الموحد', oldValue: '—', newValue: `تم استيراد ${statements.length} وحدة إدارية بنجاح` }
+      ]);
+
+      const result = await env.DB.prepare('SELECT * FROM departments ORDER BY created_at ASC').all();
+      const departments = (result.results || []).map(mapRowToDepartment);
+
+      return jsonResponse({ success: true, count: statements.length, departments }, 201);
+    }
+
+    if (!body.nameAr) {
       return errorResponse('بيانات الإدارة غير مكتملة (اسم الإدارة مطلوب)', 400);
     }
 
@@ -87,6 +164,9 @@ export const onRequestPost: PagesFunction = async (context) => {
 
     const metadataJson = JSON.stringify({
       code: body.code || costCenter || 'DEP-01',
+      titleEn: body.titleEn || body.nameEn || '',
+      nameEn: body.nameEn || body.titleEn || '',
+      level: body.level !== undefined ? Number(body.level) : 0,
       staffCount: Number(body.staffCount ?? 0),
       subUnits: Array.isArray(body.subUnits) ? body.subUnits : [],
       responsibilities: body.responsibilities || '',
@@ -153,6 +233,9 @@ export const onRequestPut: PagesFunction = async (context) => {
 
     const metadataJson = JSON.stringify({
       code: body.code || existingMeta.code || costCenter,
+      titleEn: body.titleEn !== undefined ? body.titleEn : (body.nameEn !== undefined ? body.nameEn : existingMeta.titleEn || existingMeta.nameEn || ''),
+      nameEn: body.nameEn !== undefined ? body.nameEn : (body.titleEn !== undefined ? body.titleEn : existingMeta.nameEn || existingMeta.titleEn || ''),
+      level: body.level !== undefined ? Number(body.level) : (existingMeta.level !== undefined ? Number(existingMeta.level) : 0),
       staffCount: Number(body.staffCount ?? existingMeta.staffCount ?? 0),
       subUnits: body.subUnits || existingMeta.subUnits || [],
       responsibilities: body.responsibilities !== undefined ? body.responsibilities : existingMeta.responsibilities,
