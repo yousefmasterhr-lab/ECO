@@ -15,7 +15,9 @@ import {
   Users,
   Maximize2,
   Minimize2,
-  GitFork
+  GitFork,
+  UnfoldHorizontal,
+  FoldHorizontal
 } from 'lucide-react';
 import { DepartmentOrg } from './types';
 import { computeHierarchyLevels } from './departmentStorage';
@@ -60,7 +62,9 @@ export const OrgMindMapTree: React.FC<OrgMindMapTreeProps> = ({
   onAddSubDept,
   onEditDept,
   onViewAudit,
-  onDeleteDept
+  onDeleteDept,
+  onExpandAll,
+  onCollapseAll
 }) => {
   const { hasPermission } = useAuth();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -73,6 +77,46 @@ export const OrgMindMapTree: React.FC<OrgMindMapTreeProps> = ({
   const [zoom, setZoom] = useState<number>(0.85);
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const dragStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  // Pan Animation State for Smooth Auto-Centering on Node Expand
+  const panRef = useRef(pan);
+  panRef.current = pan;
+  const animPanRef = useRef<number | null>(null);
+
+  const animatePanTo = useCallback((targetX: number, targetY: number, duration = 400) => {
+    if (animPanRef.current) {
+      cancelAnimationFrame(animPanRef.current);
+    }
+    const startX = panRef.current.x;
+    const startY = panRef.current.y;
+    const startTime = performance.now();
+
+    const step = (now: number) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      // Smooth ease-out cubic
+      const ease = 1 - Math.pow(1 - progress, 3);
+      setPan({
+        x: startX + (targetX - startX) * ease,
+        y: startY + (targetY - startY) * ease
+      });
+      if (progress < 1) {
+        animPanRef.current = requestAnimationFrame(step);
+      } else {
+        animPanRef.current = null;
+      }
+    };
+
+    animPanRef.current = requestAnimationFrame(step);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (animPanRef.current) {
+        cancelAnimationFrame(animPanRef.current);
+      }
+    };
+  }, []);
 
   // Hovered / Active Node for Action Bar
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
@@ -217,6 +261,42 @@ export const OrgMindMapTree: React.FC<OrgMindMapTreeProps> = ({
 
     setPan({ x: centerX, y: centerY });
   }, [boundingBox, direction]);
+
+  // Smart Toggle with Auto-Pan Centering on Node Expand
+  const handleToggleNode = useCallback(
+    (nodeId: string) => {
+      const isCurrentlyCollapsed = collapsedNodes.has(nodeId);
+      const parentCoord = layoutMap.get(nodeId);
+
+      onToggleCollapse(nodeId);
+
+      // When expanding, auto-center viewport towards the newly opened cluster
+      if (isCurrentlyCollapsed && parentCoord && containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+
+        // Calculate cluster center
+        const clusterMidX =
+          direction === 'ltr'
+            ? parentCoord.x + (NODE_W + COL_GAP / 2)
+            : parentCoord.x - (NODE_W + COL_GAP / 2);
+        const clusterMidY = parentCoord.y + NODE_H / 2;
+
+        const viewportMidX = rect.width / 2;
+        const viewportMidY = rect.height / 2;
+
+        // Directional bias: offset slightly forward towards the expansion
+        const biasX = direction === 'ltr' ? -70 : 70;
+
+        const targetPanX = viewportMidX - clusterMidX * zoom + biasX;
+        const targetPanY = viewportMidY - clusterMidY * zoom;
+
+        requestAnimationFrame(() => {
+          animatePanTo(targetPanX, targetPanY, 450);
+        });
+      }
+    },
+    [collapsedNodes, layoutMap, direction, zoom, onToggleCollapse, animatePanTo]
+  );
 
   // Auto-center on initial mount
   useEffect(() => {
@@ -395,7 +475,7 @@ export const OrgMindMapTree: React.FC<OrgMindMapTreeProps> = ({
               strokeWidth={p.strokeWidth}
               strokeLinecap="round"
               filter="url(#lineGlow)"
-              className={`transition-all duration-300 opacity-80 hover:opacity-100 ${p.strokeClass}`}
+              className={`transition-all duration-500 ease-out opacity-80 hover:opacity-100 ${p.strokeClass}`}
             />
           ))}
         </svg>
@@ -428,7 +508,7 @@ export const OrgMindMapTree: React.FC<OrgMindMapTreeProps> = ({
           return (
             <div
               key={dept.id}
-              className="absolute pointer-events-auto interactive-tree-node"
+              className="absolute pointer-events-auto interactive-tree-node transition-all duration-500 ease-out"
               style={{
                 left: `${x}px`,
                 top: `${y}px`,
@@ -520,7 +600,7 @@ export const OrgMindMapTree: React.FC<OrgMindMapTreeProps> = ({
                   <button
                     onClick={e => {
                       e.stopPropagation();
-                      onToggleCollapse(dept.id);
+                      handleToggleNode(dept.id);
                     }}
                     title={isCollapsed ? 'توسيع الفروع التابعة' : 'طي الفروع التابعة'}
                     className={`absolute z-10 w-7 h-7 rounded-full bg-white dark:bg-[#1A3327] border border-amber-500/60 text-amber-600 dark:text-amber-400 hover:bg-amber-500 hover:text-white dark:hover:text-slate-950 flex items-center justify-center text-xs font-black shadow-md transition-all transform hover:scale-110 cursor-pointer top-1/2 -translate-y-1/2 ${
@@ -611,12 +691,12 @@ export const OrgMindMapTree: React.FC<OrgMindMapTreeProps> = ({
         })}
       </div>
 
-      {/* 3. Floating Bottom-Left Canvas Controls */}
-      <div className="absolute bottom-4 start-4 z-20 flex flex-wrap items-center gap-1.5 p-1.5 rounded-2xl bg-white/90 dark:bg-[#07130E]/90 backdrop-blur-xl border border-slate-200 dark:border-amber-500/30 shadow-xl mindmap-controls">
+      {/* 3. Floating Bottom-Left Canvas Controls (Luxury Rounded-Full Dock) */}
+      <div className="absolute bottom-4 start-4 z-20 flex flex-wrap items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/95 dark:bg-[#07130E]/95 backdrop-blur-xl border border-slate-200/90 dark:border-amber-500/30 shadow-2xl mindmap-controls">
         {/* Zoom In */}
         <button
           onClick={() => setZoom(prev => Math.min(prev + 0.15, 2.2))}
-          className="p-2 rounded-xl text-slate-700 dark:text-stone-200 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors cursor-pointer"
+          className="w-8 h-8 rounded-full flex items-center justify-center text-slate-700 dark:text-stone-200 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-500/10 transition-colors cursor-pointer"
           title="تكبير (+)"
         >
           <ZoomIn className="w-4 h-4" />
@@ -625,7 +705,7 @@ export const OrgMindMapTree: React.FC<OrgMindMapTreeProps> = ({
         {/* Zoom Out */}
         <button
           onClick={() => setZoom(prev => Math.max(prev - 0.15, 0.4))}
-          className="p-2 rounded-xl text-slate-700 dark:text-stone-200 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors cursor-pointer"
+          className="w-8 h-8 rounded-full flex items-center justify-center text-slate-700 dark:text-stone-200 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-500/10 transition-colors cursor-pointer"
           title="تصغير (-)"
         >
           <ZoomOut className="w-4 h-4" />
@@ -634,7 +714,7 @@ export const OrgMindMapTree: React.FC<OrgMindMapTreeProps> = ({
         {/* Zoom Percentage Reset */}
         <button
           onClick={() => setZoom(1.0)}
-          className="px-2 py-1 rounded-xl text-slate-700 dark:text-stone-200 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-slate-100 dark:hover:bg-white/5 font-mono text-xs font-bold transition-colors cursor-pointer"
+          className="px-2 h-7 rounded-full flex items-center justify-center text-slate-700 dark:text-stone-200 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-500/10 font-mono text-xs font-bold transition-colors cursor-pointer"
           title="إعادة التكبير إلى 100%"
         >
           {Math.round(zoom * 100)}%
@@ -645,7 +725,7 @@ export const OrgMindMapTree: React.FC<OrgMindMapTreeProps> = ({
         {/* Center Tree */}
         <button
           onClick={handleCenterTree}
-          className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500 text-amber-700 dark:text-amber-300 hover:text-white dark:hover:text-slate-950 text-xs font-bold transition-all shadow-xs cursor-pointer"
+          className="flex items-center gap-1 px-3 h-7 rounded-full bg-amber-500/15 hover:bg-amber-500 text-amber-700 dark:text-amber-300 hover:text-white dark:hover:text-slate-950 text-xs font-bold transition-all shadow-xs cursor-pointer"
           title="توسيع وتوسيط الشجرة بالكامل في الشاشة"
         >
           <Compass className="w-3.5 h-3.5" />
@@ -655,7 +735,7 @@ export const OrgMindMapTree: React.FC<OrgMindMapTreeProps> = ({
         {/* Direction Toggle LTR / RTL */}
         <button
           onClick={() => setDirection(prev => (prev === 'ltr' ? 'rtl' : 'ltr'))}
-          className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-stone-800/80 hover:bg-slate-200 dark:hover:bg-stone-700 text-slate-700 dark:text-stone-200 text-xs font-bold transition-all cursor-pointer"
+          className="flex items-center gap-1 px-2.5 h-7 rounded-full bg-slate-100 dark:bg-stone-800/80 hover:bg-slate-200 dark:hover:bg-stone-700 text-slate-700 dark:text-stone-200 text-xs font-bold transition-all cursor-pointer"
           title={`تبديل اتجاه الشجرة: الحالي (${direction === 'ltr' ? 'يسار ➔ يمين' : 'يمين ➔ يسار'})`}
         >
           <ArrowLeftRight className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
@@ -664,10 +744,30 @@ export const OrgMindMapTree: React.FC<OrgMindMapTreeProps> = ({
 
         <div className="w-px h-5 bg-slate-300 dark:bg-white/10 mx-0.5" />
 
+        {/* Expand All Branches (Icon-only) */}
+        <button
+          onClick={onExpandAll}
+          className="w-8 h-8 rounded-full flex items-center justify-center text-slate-700 dark:text-stone-200 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-500/10 transition-colors cursor-pointer"
+          title="فتح وتوسيع كافة الفروع"
+        >
+          <UnfoldHorizontal className="w-4 h-4" />
+        </button>
+
+        {/* Collapse All Branches (Icon-only) */}
+        <button
+          onClick={onCollapseAll}
+          className="w-8 h-8 rounded-full flex items-center justify-center text-slate-700 dark:text-stone-200 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-500/10 transition-colors cursor-pointer"
+          title="طي كافة الفروع"
+        >
+          <FoldHorizontal className="w-4 h-4" />
+        </button>
+
+        <div className="w-px h-5 bg-slate-300 dark:bg-white/10 mx-0.5" />
+
         {/* Fullscreen Toggle */}
         <button
           onClick={toggleFullscreen}
-          className="p-2 rounded-xl text-slate-700 dark:text-stone-200 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors cursor-pointer"
+          className="w-8 h-8 rounded-full flex items-center justify-center text-slate-700 dark:text-stone-200 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-500/10 transition-colors cursor-pointer"
           title={isFullscreen ? 'تصغير الشاشة' : 'ملء الشاشة'}
         >
           {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}

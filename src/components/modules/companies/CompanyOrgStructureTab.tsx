@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   GitFork,
@@ -16,8 +16,6 @@ import {
   Layers,
   FolderTree,
   Check,
-  Maximize2,
-  Minimize2,
   Sparkles,
   Zap,
   Info,
@@ -54,6 +52,145 @@ function getDescendantIds(deptId: string, departments: DepartmentOrg[]): Set<str
   collect(deptId);
   return descendants;
 }
+
+interface LevelFilterDropdownProps {
+  selectedLevel: number | 'all';
+  onSelectLevel: (level: number | 'all') => void;
+}
+
+const LEVEL_OPTIONS: {
+  value: number | 'all';
+  label: string;
+  subtitle: string;
+  icon: string;
+  dotClass: string;
+}[] = [
+  {
+    value: 'all',
+    label: 'كل المستويات الهيكلية',
+    subtitle: 'عرض الشجرة بالكامل دون فلترة',
+    icon: '🌐',
+    dotClass: 'bg-amber-500'
+  },
+  {
+    value: 0,
+    label: 'المستوى 1: القيادة والإدارة العليا',
+    subtitle: 'مجلس الإدارة والرئيس التنفيذي',
+    icon: '👑',
+    dotClass: 'bg-amber-500'
+  },
+  {
+    value: 1,
+    label: 'المستوى 2: الإدارات العامة والتنفيذية',
+    subtitle: 'مديرو المشروعات والمكاتب الفنية والمالية',
+    icon: '🏢',
+    dotClass: 'bg-teal-500'
+  },
+  {
+    value: 2,
+    label: 'المستوى 3: الأقسام الفرعية والفرق',
+    subtitle: 'رؤساء الأقسام وفرق العمل المتخصصة',
+    icon: '📂',
+    dotClass: 'bg-emerald-500'
+  },
+  {
+    value: 3,
+    label: 'المستوى 4: المهام التخصصية والوحدات',
+    subtitle: 'مهندسو التنفيذ، المحاسبون، والفنيون',
+    icon: '⚡',
+    dotClass: 'bg-stone-500'
+  }
+];
+
+const LevelFilterDropdown: React.FC<LevelFilterDropdownProps> = ({
+  selectedLevel,
+  onSelectLevel
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const activeOption = useMemo(() => {
+    return LEVEL_OPTIONS.find(opt => opt.value === selectedLevel) || LEVEL_OPTIONS[0];
+  }, [selectedLevel]);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <div ref={dropdownRef} className="relative inline-block text-start">
+      <button
+        type="button"
+        onClick={() => setIsOpen(prev => !prev)}
+        className="h-9 min-h-[36px] flex items-center justify-between gap-2.5 px-3.5 rounded-xl border border-amber-500/30 bg-white/90 dark:bg-[#0D1F17]/90 text-xs font-bold text-slate-800 dark:text-stone-200 hover:border-amber-400 transition-all shadow-xs cursor-pointer"
+        title="تصفية حسب المستوى الهيكلي"
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-sm shrink-0">{activeOption.icon}</span>
+          <span className={`w-2 h-2 rounded-full ${activeOption.dotClass}`} />
+          <span className="truncate max-w-[170px] sm:max-w-[210px]">{activeOption.label}</span>
+        </div>
+        <ChevronDown
+          className={`w-3.5 h-3.5 text-amber-500 transition-transform duration-200 shrink-0 ${
+            isOpen ? 'rotate-180' : ''
+          }`}
+        />
+      </button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -6, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -6, scale: 0.96 }}
+            transition={{ duration: 0.15 }}
+            className="absolute z-50 mt-1.5 start-0 w-72 rounded-2xl bg-white/95 dark:bg-[#0D1F17]/95 backdrop-blur-xl border border-amber-500/30 shadow-2xl p-1.5 space-y-0.5 text-xs font-sans"
+          >
+            {LEVEL_OPTIONS.map(option => {
+              const isActive = selectedLevel === option.value;
+              return (
+                <button
+                  key={String(option.value)}
+                  type="button"
+                  onClick={() => {
+                    onSelectLevel(option.value);
+                    setIsOpen(false);
+                  }}
+                  className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl transition-all text-start cursor-pointer ${
+                    isActive
+                      ? 'bg-amber-500/15 text-amber-900 dark:text-amber-200 font-bold border border-amber-500/30'
+                      : 'text-slate-700 dark:text-stone-300 hover:bg-slate-100 dark:hover:bg-white/5'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5 truncate">
+                    <span className="text-sm shrink-0">{option.icon}</span>
+                    <div className="truncate">
+                      <div className="font-bold truncate text-[11.5px]">{option.label}</div>
+                      <div className="text-[10px] text-slate-500 dark:text-stone-400 truncate">
+                        {option.subtitle}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span className={`w-2 h-2 rounded-full ${option.dotClass}`} />
+                    {isActive && <Check className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />}
+                  </div>
+                </button>
+              );
+            })}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
 
 export const CompanyOrgStructureTab: React.FC<CompanyOrgStructureTabProps> = ({
   departments,
@@ -319,110 +456,39 @@ export const CompanyOrgStructureTab: React.FC<CompanyOrgStructureTabProps> = ({
           </div>
         </div>
 
-        {/* Tier 2: Level Filter Chips & Tree Controls */}
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          {/* Level Filter Chips */}
-          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
-            <button
-              type="button"
-              onClick={() => setSelectedLevel('all')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
-                selectedLevel === 'all'
-                  ? 'bg-amber-600 text-white shadow-xs'
-                  : 'bg-slate-100 dark:bg-[#1A2C21] text-slate-600 dark:text-[#8FA392] hover:bg-slate-200 dark:hover:bg-[#233B2C]'
-              }`}
-            >
-              كل المستويات
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setSelectedLevel(0)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
-                selectedLevel === 0
-                  ? 'bg-amber-600 text-white shadow-xs'
-                  : 'bg-slate-100 dark:bg-[#1A2C21] text-slate-600 dark:text-[#8FA392] hover:bg-slate-200 dark:hover:bg-[#233B2C]'
-              }`}
-            >
-              الإدارة العليا (المستوى 1)
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setSelectedLevel(1)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
-                selectedLevel === 1
-                  ? 'bg-teal-600 text-white shadow-xs'
-                  : 'bg-slate-100 dark:bg-[#1A2C21] text-slate-600 dark:text-[#8FA392] hover:bg-slate-200 dark:hover:bg-[#233B2C]'
-              }`}
-            >
-              الإدارات التنفيذية (المستوى 2)
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setSelectedLevel(2)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
-                selectedLevel === 2
-                  ? 'bg-emerald-600 text-white shadow-xs'
-                  : 'bg-slate-100 dark:bg-[#1A2C21] text-slate-600 dark:text-[#8FA392] hover:bg-slate-200 dark:hover:bg-[#233B2C]'
-              }`}
-            >
-              الأقسام الفرعية (المستوى 3)
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setSelectedLevel(3)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
-                selectedLevel === 3
-                  ? 'bg-stone-600 text-white shadow-xs'
-                  : 'bg-slate-100 dark:bg-[#1A2C21] text-slate-600 dark:text-[#8FA392] hover:bg-slate-200 dark:hover:bg-[#233B2C]'
-              }`}
-            >
-              المهام والاختصاصات (المستوى 4)
-            </button>
-          </div>
-
-          {/* Controls: Company Selector & Expand / Collapse */}
+        {/* Tier 2: Level Filter Animated Dropdown & Company Selector */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+          {/* Level Filter Animated Dropdown */}
           <div className="flex items-center gap-2">
-            {companies.length > 1 && (
-              <div className="relative shrink-0">
-                <select
-                  value={selectedCompanyId}
-                  onChange={e => setSelectedCompanyId(e.target.value)}
-                  className="min-h-[36px] max-w-[140px] px-2.5 py-1 rounded-xl border border-slate-200 dark:border-[#243628] bg-slate-50 dark:bg-[#0E1610] text-slate-800 dark:text-[#F3EFE6] text-xs font-semibold focus:outline-none focus:border-amber-500 truncate"
-                >
-                  <option value="all">جميع الشركات</option>
-                  {companies.map(c => (
-                    <option key={c.id} value={c.id}>
-                      {c.nameAr}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            <button
-              type="button"
-              onClick={handleExpandAll}
-              className="min-h-[36px] px-2.5 py-1 rounded-xl border border-slate-200 dark:border-[#243628] bg-slate-50 dark:bg-[#1F2E23] text-slate-600 dark:text-[#8FA392] hover:text-slate-900 dark:hover:text-white text-xs font-bold flex items-center gap-1 cursor-pointer"
-              title="فتح كافة الفروع الشجرية"
-            >
-              <Maximize2 className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">فتح الكل</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={handleCollapseAll}
-              className="min-h-[36px] px-2.5 py-1 rounded-xl border border-slate-200 dark:border-[#243628] bg-slate-50 dark:bg-[#1F2E23] text-slate-600 dark:text-[#8FA392] hover:text-slate-900 dark:hover:text-white text-xs font-bold flex items-center gap-1 cursor-pointer"
-              title="طي كافة الفروع الشجرية"
-            >
-              <Minimize2 className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">طي الكل</span>
-            </button>
+            <span className="text-xs font-bold text-slate-500 dark:text-[#8FA392]">
+              تصفية المستوى:
+            </span>
+            <LevelFilterDropdown
+              selectedLevel={selectedLevel}
+              onSelectLevel={setSelectedLevel}
+            />
           </div>
+
+          {/* Company Selector (if multiple) */}
+          {companies.length > 1 && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-slate-500 dark:text-[#8FA392]">
+                الشركة:
+              </span>
+              <select
+                value={selectedCompanyId}
+                onChange={e => setSelectedCompanyId(e.target.value)}
+                className="min-h-[36px] max-w-[170px] px-3 py-1 rounded-xl border border-amber-500/30 bg-white/90 dark:bg-[#0D1F17]/90 text-slate-800 dark:text-[#F3EFE6] text-xs font-bold focus:outline-none focus:border-amber-500 truncate shadow-xs"
+              >
+                <option value="all">جميع الشركات</option>
+                {companies.map(c => (
+                  <option key={c.id} value={c.id}>
+                    {c.nameAr}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
       </div>
 
