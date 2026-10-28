@@ -46,10 +46,10 @@ interface NodeLayoutCoord {
 }
 
 // Calibrated Mind Map Dimensions for Optimal Density & Spacing
-const NODE_W = 260;
-const NODE_H = 82;
+const NODE_W = 280;
+const NODE_H = 130;
 const COL_GAP = 120;
-const UNIT_H = 108; // Provides 26px vertical gap between siblings
+const UNIT_H = 160; // Provides 30px vertical gap between siblings (160 - 130 = 30px)
 
 export const OrgMindMapTree: React.FC<OrgMindMapTreeProps> = ({
   departments,
@@ -433,14 +433,14 @@ export const OrgMindMapTree: React.FC<OrgMindMapTreeProps> = ({
                 left: `${x}px`,
                 top: `${y}px`,
                 width: `${NODE_W}px`,
-                height: `${NODE_H}px`
+                minHeight: `${NODE_H}px`
               }}
               onMouseEnter={() => setHoveredNodeId(dept.id)}
               onMouseLeave={() => setHoveredNodeId(null)}
             >
               {/* Node Card Pill */}
               <div
-                className={`relative w-full h-full rounded-2xl p-2.5 flex flex-col justify-between transition-all duration-200 shadow-md backdrop-blur-md ${
+                className={`relative w-full min-w-[270px] max-w-[290px] min-h-[125px] p-3.5 rounded-2xl flex flex-col justify-between transition-all duration-300 shadow-md backdrop-blur-md ${
                   dept.isDraft
                     ? 'border-2 border-dashed border-amber-500 bg-amber-50/95 dark:bg-[#1E1908]/95'
                     : isMatchingLvl
@@ -448,14 +448,14 @@ export const OrgMindMapTree: React.FC<OrgMindMapTreeProps> = ({
                     : 'bg-white/70 dark:bg-[#0A1610]/75 border border-slate-200 dark:border-stone-800 opacity-60'
                 }`}
               >
-                {/* Top Row: Code, Cost Center & Level Pill */}
-                <div className="flex items-center justify-between gap-1.5">
+                {/* Row 1: Code, Cost Center & Level Pill */}
+                <div className="flex items-center justify-between gap-1.5 mb-2">
                   <div className="flex items-center gap-1.5 truncate">
-                    <span className="px-2 py-0.5 rounded-md font-mono text-[10px] font-bold bg-amber-500/10 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/25">
+                    <span className="px-2 py-0.5 rounded-md font-mono text-[10px] sm:text-[11px] font-bold bg-amber-500/10 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/25">
                       {dept.code}
                     </span>
                     {dept.costCenterCode && (
-                      <span className="px-1.5 py-0.5 rounded-md font-mono text-[9px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/30 truncate">
+                      <span className="px-1.5 py-0.5 rounded-md font-mono text-[9px] sm:text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/30 truncate">
                         {dept.costCenterCode}
                       </span>
                     )}
@@ -467,23 +467,23 @@ export const OrgMindMapTree: React.FC<OrgMindMapTreeProps> = ({
                   </div>
 
                   <span
-                    className={`px-2 py-0.5 rounded-full text-[9px] font-bold border shrink-0 ${levelBadgeColor}`}
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold border shrink-0 ${levelBadgeColor}`}
                   >
                     {levelBadgeLabel}
                   </span>
                 </div>
 
-                {/* Middle Row: Arabic Title & English Subtitle */}
-                <div className="my-0.5">
+                {/* Row 2: Arabic Title & English Subtitle */}
+                <div className="flex-1 flex flex-col justify-center my-1 text-right">
                   <h4
-                    className="text-xs font-black text-slate-900 dark:text-stone-100 truncate leading-snug"
+                    className="text-sm font-bold leading-snug text-slate-900 dark:text-stone-100 truncate"
                     title={dept.nameAr}
                   >
                     {dept.nameAr}
                   </h4>
                   {(dept.titleEn || dept.nameEn) && (
                     <p
-                      className="text-[10px] font-mono text-amber-700 dark:text-amber-300/80 truncate"
+                      className="text-[11px] font-medium text-amber-700/80 dark:text-amber-400/80 truncate mt-0.5 font-mono"
                       title={dept.titleEn || dept.nameEn}
                     >
                       {dept.titleEn || dept.nameEn}
@@ -491,24 +491,24 @@ export const OrgMindMapTree: React.FC<OrgMindMapTreeProps> = ({
                   )}
                 </div>
 
-                {/* Bottom Row: Manager Name & Staff Count */}
-                <div className="flex items-center justify-between text-[11px] text-slate-600 dark:text-stone-300 pt-1 border-t border-slate-100 dark:border-white/5">
+                {/* Row 3: Manager Name & Staff/Branch Count - strictly enclosed inside card */}
+                <div className="mt-2.5 pt-2 border-t border-slate-200/60 dark:border-stone-800/60 flex items-center justify-between gap-2 text-xs">
                   <div className="flex items-center gap-1.5 truncate max-w-[155px]">
-                    <User className="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0" />
-                    <span className="truncate font-semibold text-slate-800 dark:text-stone-200">
+                    <User className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+                    <span className="truncate font-semibold text-slate-800 dark:text-stone-200 text-xs">
                       {dept.headAr || 'غير محدد'}
                     </span>
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0">
                     {isCollapsed && hasChildren && (
-                      <span className="px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-amber-500/20 text-amber-700 dark:text-amber-200 border border-amber-400/40 animate-pulse">
+                      <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-700 dark:text-amber-200 border border-amber-400/40 animate-pulse">
                         +{children.length} فروع
                       </span>
                     )}
                     <div className="flex items-center gap-1 text-slate-500 dark:text-stone-400">
-                      <Users className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                      <span className="font-mono text-[10px] font-bold text-slate-800 dark:text-stone-200">
+                      <Users className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                      <span className="font-mono text-xs font-bold text-slate-800 dark:text-stone-200">
                         {dept.staffCount || 0}
                       </span>
                     </div>
@@ -523,22 +523,22 @@ export const OrgMindMapTree: React.FC<OrgMindMapTreeProps> = ({
                       onToggleCollapse(dept.id);
                     }}
                     title={isCollapsed ? 'توسيع الفروع التابعة' : 'طي الفروع التابعة'}
-                    className={`absolute z-10 w-5 h-5 rounded-full bg-white dark:bg-[#1A3327] border border-amber-500/60 text-amber-600 dark:text-amber-400 hover:bg-amber-500 hover:text-white dark:hover:text-slate-950 flex items-center justify-center text-xs font-black shadow-md transition-all transform hover:scale-110 cursor-pointer ${
+                    className={`absolute z-10 w-7 h-7 rounded-full bg-white dark:bg-[#1A3327] border border-amber-500/60 text-amber-600 dark:text-amber-400 hover:bg-amber-500 hover:text-white dark:hover:text-slate-950 flex items-center justify-center text-xs font-black shadow-md transition-all transform hover:scale-110 cursor-pointer top-1/2 -translate-y-1/2 ${
                       direction === 'ltr'
-                        ? 'end-[-10px] top-[calc(50%-10px)]'
-                        : 'start-[-10px] top-[calc(50%-10px)]'
+                        ? '-right-3.5'
+                        : '-left-3.5'
                     }`}
                   >
                     {direction === 'ltr' ? (
                       isCollapsed ? (
-                        <ChevronRight className="w-3 h-3" />
+                        <ChevronRight className="w-3.5 h-3.5" />
                       ) : (
-                        <ChevronLeft className="w-3 h-3" />
+                        <ChevronLeft className="w-3.5 h-3.5" />
                       )
                     ) : isCollapsed ? (
-                      <ChevronLeft className="w-3 h-3" />
+                      <ChevronLeft className="w-3.5 h-3.5" />
                     ) : (
-                      <ChevronRight className="w-3 h-3" />
+                      <ChevronRight className="w-3.5 h-3.5" />
                     )}
                   </button>
                 )}
