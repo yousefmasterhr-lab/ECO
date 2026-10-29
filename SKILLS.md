@@ -741,6 +741,21 @@
    - نموذج بناء القواعد: المحفز (Trigger) -> الشروط (Conditions) -> الإجراءات (Actions).
    - محاكي تشغيل واختبار فوري وسجل تدقيق رقابي لحظي في Cloudflare D1.
 
+4. **بوابة التوظيف العامة ومولد روابط التتبع الذكية (`PublicCareersPortal.tsx` & `ATSPortalTab.tsx`):**
+   - **مسار عام بدون جدار تسجيل الدخول (`/careers` أو `?portal=careers`):**
+     - في `AppContent`، كشف فوري لمسار بوابة التوظيف وتقديم واجهة التقديم العامة المتكاملة بدون أي تحويل لـ `/login`.
+     - دعم كامل لتبديل اللغة (عربي / English) والنمطين (نهاري / ليلي).
+     - معالجة طلبات المتقدمين مع رقم مرجعي رسمي `APP-YYYY-XXXXXX` واحتفال الـ Confetti.
+     - مزامنة فورية إلى `atsStorage.saveCandidate` وبث الحدث `eco-ats-updated`.
+   - **التبويب السادس في المنظومة (`ATSPortalTab.tsx`):**
+     - مولد روابط ذكية (UTM Link Generator) بدعم 8 قنوات: LinkedIn, Indeed, Bayt.com, X/Twitter, Meta, WhatsApp, Referrals, Direct.
+     - معاينة تفاعلية حية بإطارين (سطح المكتب والهاتف الذكي).
+     - إحصائيات فورية لمعدلات تدفق المتقدمين حسب القناة التسويقية.
+   - **نظام زجاج العاج الفاخر في الترويسة العلوية (`Header.tsx`):**
+     - خلفية: `bg-[#FFFDF9]/90 dark:bg-[#07130E]/90 backdrop-blur-xl`.
+     - حدود كهرمانية ذهبية: `border-amber-200/50 dark:border-amber-500/20`.
+     - نصوص وأيقونات عالية الوضوح: `text-slate-900` في النهاري و `text-stone-100` في الليلي.
+
 
 
 

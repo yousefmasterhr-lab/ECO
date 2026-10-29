@@ -479,6 +479,24 @@ CREATE TABLE IF NOT EXISTS system_configurations (
   - جداول `ats_jobs`, `ats_candidates`, `ats_interviews`, `ats_offers`, `automation_rules`, `automation_logs`.
   - نقاط نهاية موحدة `/api/ats/[[path]]` و `/api/automation/[[path]]`.
 
+### 4.29 بوابة التوظيف العامة ومولد روابط التتبع الذكية وتناغم ترويسة النظام (Public Careers Portal, UTM Link Generator & Light Header Perfection)
+- **بوابة التوظيف العامة غير المشروطة بتسجيل الدخول (`src/components/modules/ats/PublicCareersPortal.tsx`):**
+  - مسار عام مستقل متاح عبر `/careers` أو `?portal=careers` يتيح للكوادر والمواهب الاطلاع على الشواغر المعتمدة والتقديم الفوري دون الحاجة لحساب أو تسجيل دخول في المنظومة.
+  - دعم ثنائي كامل للغتين (عربي / English) والنمطين الفاتح والداكن وزر انتقال لصفحة تسجيل دخول المنظومة.
+  - محرك فحص المؤهلات والمهارات وحساب نسبة المطابقة التقديرية مع متطلبات الوظيفة.
+  - توليد رقم مرجعي رسمي للمتابعة (`APP-YYYY-XXXXXX`) واحتفال الـ Confetti الفاخر.
+  - حفظ فوري للسجل في Cloudflare D1 عبر `atsStorage.saveCandidate` وبث الحدث `eco-ats-updated` لتظهر السيرة الذاتية لحظياً في لوحة الكانبان لإدارة التوظيف.
+- **التبويب السادس في منظومة استقطاب الكفاءات (`src/components/modules/ats/ATSPortalTab.tsx`):**
+  - إضافة تبويب سادس: `بوابة التوظيف وروابط UTM` (`ats_portal`) في الشريط الجانبي والقائمة العلوية ومصفوفة الصلاحيات (`ats.openings.view`).
+  - مولد روابط تتبع تسويقية ذكية (Smart UTM Generator) يدعم قنوات النشر المتعددة: LinkedIn, Indeed, Bayt.com, X/Twitter, Meta, WhatsApp, Referrals, Direct.
+  - نسخ الرابط بنقرة واحدة مع إشعار تأكيد فوري وزر معاينة البوابة في نافذة مستقلة.
+  - لوحة معاينة تفاعلية حية بإطارين (سطح المكتب والهاتف الذكي) تعرض الشاغر كما يراه المرشح تماماً.
+  - بطاقات إحصائيات فورية لتدفق المتقدمين حسب القناة التسويقية.
+- **تناغم ألوان الترويسة العلوية بالنمط الفاتح (`src/components/layout/Header.tsx`):**
+  - اعتماد نظام زجاج العاج والشمبانيا: `bg-[#FFFDF9]/90 dark:bg-[#07130E]/90 backdrop-blur-xl`.
+  - حدود ذهبية كهرمانية ناعمة: `border-amber-200/50 dark:border-amber-500/20`.
+  - نصوص وأيقونات عالية التباين والوضوح: `text-slate-900` في النهاري و `text-stone-100` في الليلي.
+
 ---
 
 ## 5. نظام الحوكمة والذاكرة الذكية الأربعة (4-File Governance System)

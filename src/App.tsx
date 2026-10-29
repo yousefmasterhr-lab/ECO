@@ -16,6 +16,7 @@ import { ShellLayout } from './components/layout/ShellLayout';
 import { LuxuryLoginPage } from './components/auth/LuxuryLoginPage';
 import { CinematicWelcomeSplash } from './components/auth/CinematicWelcomeSplash';
 import { CinematicUpdateOverlay } from './components/common/CinematicUpdateOverlay';
+import { PublicCareersPortal } from './components/modules/ats/PublicCareersPortal';
 
 const AuthenticatedApp: React.FC = () => {
   return (
@@ -78,6 +79,18 @@ const AppContent: React.FC = () => {
         />
       </AnimatePresence>
     );
+  }
+
+  // Public Unauthenticated Careers Portal Gate (/careers or ?portal=careers)
+  const isCareersRoute =
+    typeof window !== 'undefined' &&
+    (window.location.pathname.startsWith('/careers') ||
+      window.location.search.includes('portal=careers') ||
+      currentPath === '/careers' ||
+      currentPath.startsWith('/careers'));
+
+  if (isCareersRoute) {
+    return <PublicCareersPortal />;
   }
 
   // If user is not authenticated or explicitly navigates to /login

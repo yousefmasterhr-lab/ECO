@@ -219,7 +219,7 @@ export const Header: React.FC = () => {
   }, []);
 
   return (
-    <header className="h-16 flex-shrink-0 z-40 w-full border-b border-[#E0D9CB] dark:border-[#243628] bg-[#FBF9F5] dark:bg-[#0E1610] transition-colors duration-200 pt-safe">
+    <header className="h-16 flex-shrink-0 z-40 w-full border-b border-amber-200/50 dark:border-amber-500/20 bg-[#FFFDF9]/90 dark:bg-[#07130E]/90 backdrop-blur-xl shadow-sm shadow-amber-900/5 dark:shadow-none transition-colors duration-200 pt-safe">
       <div className="h-full px-3 sm:px-6 flex items-center justify-between gap-2 sm:gap-3">
         {/* Start / Left Section: Mobile Menu + Official Favicon Logo & Multi-Select Company */}
         <div className="flex items-center gap-2 sm:gap-3 lg:gap-4 min-w-0">
@@ -227,7 +227,7 @@ export const Header: React.FC = () => {
           <button
             onClick={toggleMobileDrawer}
             aria-label={t('فتح القائمة الجانبية', 'Open navigation menu')}
-            className="lg:hidden flex items-center justify-center w-10 h-10 rounded-xl text-[#5C665E] dark:text-[#8FA392] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23] active:scale-95 transition-transform touch-target shrink-0"
+            className="lg:hidden flex items-center justify-center w-10 h-10 rounded-xl text-slate-900 dark:text-stone-100 hover:bg-amber-100/50 dark:hover:bg-[#1F2E23] active:scale-95 transition-transform touch-target shrink-0"
           >
             <Menu className="w-5 h-5" />
           </button>
@@ -266,24 +266,24 @@ export const Header: React.FC = () => {
             </div>
           </div>
 
-          <div className="hidden sm:block h-6 w-px bg-[#E0D9CB] dark:bg-[#243628]" />
+          <div className="hidden sm:block h-6 w-px bg-amber-200/60 dark:bg-emerald-800/40" />
 
           {/* Multi-Select Company Selector Dropdown (Fixed Width to Avoid Single Letter Clipping) */}
           <div className="relative shrink-0 min-w-[180px] max-w-[260px]" ref={dropdownRef}>
             <button
               onClick={() => setCompanyDropdownOpen(prev => !prev)}
-              className="w-full flex items-center justify-between gap-2.5 px-3.5 py-2 rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-[#F3EFE6] dark:bg-[#17231A] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23] text-start transition-colors min-w-[180px] max-w-[260px] shrink-0"
+              className="w-full flex items-center justify-between gap-2.5 px-3.5 py-2 rounded-xl border border-amber-200/60 dark:border-[#243628] bg-[#FFFDF9] dark:bg-[#17231A] hover:bg-amber-100/40 dark:hover:bg-[#1F2E23] text-start transition-colors min-w-[180px] max-w-[260px] shrink-0"
             >
-              <div className="w-6 h-6 rounded-lg bg-[#D99B26]/15 dark:bg-[#EBB34D]/15 text-[#D99B26] dark:text-[#EBB34D] flex items-center justify-center shrink-0">
+              <div className="w-6 h-6 rounded-lg bg-amber-500/15 dark:bg-[#EBB34D]/15 text-amber-600 dark:text-[#EBB34D] flex items-center justify-center shrink-0">
                 <Building2 className="w-3.5 h-3.5" />
               </div>
               <div className="min-w-0 flex-1 truncate">
-                <div className="text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6] truncate flex items-center gap-1.5">
+                <div className="text-xs font-bold text-slate-900 dark:text-[#F3EFE6] truncate flex items-center gap-1.5">
                   <span className="truncate">{displayCompanySummary}</span>
                 </div>
               </div>
               <ChevronDown
-                className={`w-3.5 h-3.5 text-[#5C665E] dark:text-[#8FA392] shrink-0 transition-transform duration-200 ${
+                className={`w-3.5 h-3.5 text-slate-600 dark:text-[#8FA392] shrink-0 transition-transform duration-200 ${
                   companyDropdownOpen ? 'rotate-180' : ''
                 }`}
               />
@@ -292,30 +292,30 @@ export const Header: React.FC = () => {
             {/* Desktop Dropdown Menu (>= 768px) */}
             {companyDropdownOpen && (
               <div
-                className={`hidden md:block absolute top-full mt-2 w-72 sm:w-80 rounded-2xl border border-[#E0D9CB] dark:border-[#243628] bg-[#F3EFE6] dark:bg-[#17231A] shadow-xl p-2 z-50 animate-in fade-in-50 zoom-in-95 duration-150 ${
+                className={`hidden md:block absolute top-full mt-2 w-72 sm:w-80 rounded-2xl border border-amber-200/60 dark:border-[#243628] bg-[#FFFDF9] dark:bg-[#17231A] shadow-xl p-2 z-50 animate-in fade-in-50 zoom-in-95 duration-150 ${
                   isRtl ? 'right-0 origin-top-right' : 'left-0 origin-top-left'
                 }`}
               >
                 {/* Header with Select All */}
-                <div className="p-2 border-b border-[#E0D9CB]/60 dark:border-[#243628]">
+                <div className="p-2 border-b border-amber-200/40 dark:border-[#243628]">
                   <button
                     type="button"
                     onClick={toggleSelectAll}
-                    className="w-full flex items-center justify-between px-2 py-1.5 rounded-lg text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23] transition-colors touch-target"
+                    className="w-full flex items-center justify-between px-2 py-1.5 rounded-lg text-xs font-bold text-slate-900 dark:text-[#F3EFE6] hover:bg-amber-100/40 dark:hover:bg-[#1F2E23] transition-colors touch-target"
                   >
                     <span className="flex items-center gap-2">
                       <span
                         className={`w-4 h-4 rounded-md border flex items-center justify-center transition-colors ${
                           isAllSelected
-                            ? 'bg-[#D99B26] dark:bg-[#EBB34D] border-[#D99B26] dark:border-[#EBB34D] text-[#1C291E] dark:text-[#0E1610]'
-                            : 'border-[#E0D9CB] dark:border-[#243628] bg-transparent'
+                            ? 'bg-amber-500 dark:bg-[#EBB34D] border-amber-500 dark:border-[#EBB34D] text-[#1C291E] dark:text-[#0E1610]'
+                            : 'border-amber-200/70 dark:border-[#243628] bg-transparent'
                         }`}
                       >
                         {isAllSelected && <Check className="w-3 h-3 stroke-[3]" />}
                       </span>
                       <span>{t('تحديد كافة الشركات والمنشآت', 'Select All Companies')}</span>
                     </span>
-                    <span className="text-[10px] text-[#5C665E] dark:text-[#8FA392]">
+                    <span className="text-[10px] text-slate-500 dark:text-[#8FA392]">
                       ({companies.length})
                     </span>
                   </button>
@@ -332,16 +332,16 @@ export const Header: React.FC = () => {
                         onClick={() => toggleCompany(comp.id)}
                         className={`w-full flex items-center justify-between gap-2.5 px-2.5 py-2 rounded-xl text-start text-xs transition-colors touch-target ${
                           isChecked
-                            ? 'bg-[#D99B26]/10 text-[#1A241C] dark:text-[#F3EFE6]'
-                            : 'text-[#5C665E] dark:text-[#8FA392] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23]'
+                            ? 'bg-amber-500/10 text-slate-900 dark:text-[#F3EFE6]'
+                            : 'text-slate-600 dark:text-[#8FA392] hover:bg-amber-100/40 dark:hover:bg-[#1F2E23]'
                         }`}
                       >
                         <div className="flex items-center gap-2.5 min-w-0">
                           <span
                             className={`w-4 h-4 rounded-md border flex items-center justify-center shrink-0 transition-colors ${
                               isChecked
-                                ? 'bg-[#D99B26] dark:bg-[#EBB34D] border-[#D99B26] dark:border-[#EBB34D] text-[#1C291E] dark:text-[#0E1610]'
-                                : 'border-[#E0D9CB] dark:border-[#243628] bg-transparent'
+                                ? 'bg-amber-500 dark:bg-[#EBB34D] border-amber-500 dark:border-[#EBB34D] text-[#1C291E] dark:text-[#0E1610]'
+                                : 'border-amber-200/70 dark:border-[#243628] bg-transparent'
                             }`}
                           >
                             {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
@@ -358,7 +358,7 @@ export const Header: React.FC = () => {
                             <p className="truncate font-semibold leading-tight">
                               {isRtl ? comp.nameAr : comp.nameEn}
                             </p>
-                            <span className="text-[10px] text-[#5C665E] dark:text-[#8FA392]">
+                            <span className="text-[10px] text-slate-500 dark:text-[#8FA392]">
                               {comp.code} • {isRtl ? comp.badgeAr : comp.badgeEn}
                             </span>
                           </div>
@@ -389,22 +389,22 @@ export const Header: React.FC = () => {
                     animate={{ y: 0 }}
                     exit={{ y: '100%' }}
                     transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-                    className="relative z-10 w-full max-h-[85vh] bg-[#F3EFE6] dark:bg-[#17231A] border-t border-[#E0D9CB] dark:border-[#243628] rounded-t-3xl shadow-2xl flex flex-col pb-safe"
+                    className="relative z-10 w-full max-h-[85vh] bg-[#FFFDF9] dark:bg-[#17231A] border-t border-amber-200/60 dark:border-[#243628] rounded-t-3xl shadow-2xl flex flex-col pb-safe"
                   >
                     {/* Drag Handle & Header */}
-                    <div className="pt-3 pb-2.5 px-4 flex flex-col items-center border-b border-[#E0D9CB]/60 dark:border-[#243628]">
-                      <div className="w-12 h-1.5 rounded-full bg-[#5C665E]/30 dark:bg-[#8FA392]/30 mb-3" />
+                    <div className="pt-3 pb-2.5 px-4 flex flex-col items-center border-b border-amber-200/40 dark:border-[#243628]">
+                      <div className="w-12 h-1.5 rounded-full bg-stone-300 dark:bg-[#8FA392]/30 mb-3" />
                       <div className="w-full flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <Building2 className="w-4 h-4 text-[#D99B26] dark:text-[#EBB34D]" />
-                          <h3 className="font-extrabold text-sm text-[#1A241C] dark:text-[#F3EFE6]">
+                          <Building2 className="w-4 h-4 text-amber-600 dark:text-[#EBB34D]" />
+                          <h3 className="font-extrabold text-sm text-slate-900 dark:text-[#F3EFE6]">
                             {t('اختيار الشركات والمنشآت', 'Select Companies')}
                           </h3>
                         </div>
                         <button
                           onClick={() => setCompanyDropdownOpen(false)}
                           aria-label={t('إغلاق', 'Close')}
-                          className="p-1.5 rounded-xl text-[#5C665E] dark:text-[#8FA392] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23] touch-target"
+                          className="p-1.5 rounded-xl text-slate-600 dark:text-[#8FA392] hover:bg-amber-100/40 dark:hover:bg-[#1F2E23] touch-target"
                         >
                           <X className="w-5 h-5" />
                         </button>
@@ -412,25 +412,25 @@ export const Header: React.FC = () => {
                     </div>
 
                     {/* Header with Select All */}
-                    <div className="p-3 border-b border-[#E0D9CB]/60 dark:border-[#243628]">
+                    <div className="p-3 border-b border-amber-200/40 dark:border-[#243628]">
                       <button
                         type="button"
                         onClick={toggleSelectAll}
-                        className="w-full flex items-center justify-between p-2 rounded-xl text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6] bg-[#EAE4D7]/60 dark:bg-[#1F2E23]/60 hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23] transition-colors touch-target"
+                        className="w-full flex items-center justify-between p-2 rounded-xl text-xs font-bold text-slate-900 dark:text-[#F3EFE6] bg-amber-100/30 dark:bg-[#1F2E23]/60 hover:bg-amber-100/60 dark:hover:bg-[#1F2E23] transition-colors touch-target"
                       >
                         <span className="flex items-center gap-2.5">
                           <span
                             className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${
                               isAllSelected
-                                ? 'bg-[#D99B26] dark:bg-[#EBB34D] border-[#D99B26] dark:border-[#EBB34D] text-[#1C291E] dark:text-[#0E1610]'
-                                : 'border-[#E0D9CB] dark:border-[#243628] bg-transparent'
+                                ? 'bg-amber-500 dark:bg-[#EBB34D] border-amber-500 dark:border-[#EBB34D] text-[#1C291E] dark:text-[#0E1610]'
+                                : 'border-amber-200/70 dark:border-[#243628] bg-transparent'
                             }`}
                           >
                             {isAllSelected && <Check className="w-3.5 h-3.5 stroke-[3]" />}
                           </span>
                           <span>{t('تحديد كافة الشركات والمنشآت', 'Select All Companies')}</span>
                         </span>
-                        <span className="text-xs text-[#5C665E] dark:text-[#8FA392] font-mono">
+                        <span className="text-xs text-slate-500 dark:text-[#8FA392] font-mono">
                           ({selectedCompanyIds.length}/{companies.length})
                         </span>
                       </button>
@@ -447,16 +447,16 @@ export const Header: React.FC = () => {
                             onClick={() => toggleCompany(comp.id)}
                             className={`w-full flex items-center justify-between gap-3 p-3 rounded-xl text-start text-xs transition-colors touch-target ${
                               isChecked
-                                ? 'bg-[#D99B26]/12 border border-[#D99B26]/30 text-[#1A241C] dark:text-[#F3EFE6]'
-                                : 'border border-transparent text-[#5C665E] dark:text-[#8FA392] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23]'
+                                ? 'bg-amber-500/12 border border-amber-500/30 text-slate-900 dark:text-[#F3EFE6]'
+                                : 'border border-transparent text-slate-600 dark:text-[#8FA392] hover:bg-amber-100/40 dark:hover:bg-[#1F2E23]'
                             }`}
                           >
                             <div className="flex items-center gap-3 min-w-0">
                               <span
                                 className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-colors ${
                                   isChecked
-                                    ? 'bg-[#D99B26] dark:bg-[#EBB34D] border-[#D99B26] dark:border-[#EBB34D] text-[#1C291E] dark:text-[#0E1610]'
-                                    : 'border-[#E0D9CB] dark:border-[#243628] bg-transparent'
+                                    ? 'bg-amber-500 dark:bg-[#EBB34D] border-amber-500 dark:border-[#EBB34D] text-[#1C291E] dark:text-[#0E1610]'
+                                    : 'border-amber-200/70 dark:border-[#243628] bg-transparent'
                                 }`}
                               >
                                 {isChecked && <Check className="w-3.5 h-3.5 stroke-[3]" />}
@@ -470,10 +470,10 @@ export const Header: React.FC = () => {
                               </div>
 
                               <div className="min-w-0">
-                                <p className="truncate font-bold text-xs text-[#1A241C] dark:text-[#F3EFE6] leading-tight">
+                                <p className="truncate font-bold text-xs text-slate-900 dark:text-[#F3EFE6] leading-tight">
                                   {isRtl ? comp.nameAr : comp.nameEn}
                                 </p>
-                                <span className="text-[10.5px] text-[#5C665E] dark:text-[#8FA392]">
+                                <span className="text-[10.5px] text-slate-500 dark:text-[#8FA392]">
                                   {comp.code} • {isRtl ? comp.badgeAr : comp.badgeEn}
                                 </span>
                               </div>
@@ -484,7 +484,7 @@ export const Header: React.FC = () => {
                     </div>
 
                     {/* Apply / Close Bottom Action */}
-                    <div className="p-3 border-t border-[#E0D9CB]/60 dark:border-[#243628]">
+                    <div className="p-3 border-t border-amber-200/40 dark:border-[#243628]">
                       <button
                         type="button"
                         onClick={() => setCompanyDropdownOpen(false)}
@@ -507,16 +507,16 @@ export const Header: React.FC = () => {
             className={`w-full rounded-2xl p-[1px] transition-all duration-300 ${
               isSearchFocused
                 ? 'bg-gradient-to-r from-amber-500 via-amber-300 to-amber-600 shadow-[0_0_25px_rgba(245,158,11,0.35)]'
-                : 'bg-gradient-to-r from-[#E0D9CB] via-[#D99B26]/30 to-[#E0D9CB] dark:from-[#243628] dark:via-[#D99B26]/40 dark:to-[#243628] hover:from-amber-500/50 hover:to-amber-500/50 hover:shadow-[0_0_15px_rgba(217,155,38,0.2)]'
+                : 'bg-gradient-to-r from-amber-200/70 via-amber-400/40 to-amber-200/70 dark:from-[#243628] dark:via-[#D99B26]/40 dark:to-[#243628] hover:from-amber-400/60 hover:to-amber-400/60 hover:shadow-[0_0_15px_rgba(217,155,38,0.2)]'
             }`}
           >
-            <div className="w-full flex items-center justify-between px-3.5 py-1.5 rounded-[15px] bg-[#FBF9F5] dark:bg-[#121B14] text-xs transition-colors">
+            <div className="w-full flex items-center justify-between px-3.5 py-1.5 rounded-[15px] bg-[#FFFDF9] dark:bg-[#121B14] text-xs transition-colors">
               <div className="flex items-center gap-2.5 flex-1 min-w-0">
                 <Search
                   className={`w-4 h-4 shrink-0 transition-transform duration-300 ${
                     isSearchFocused
                       ? 'text-amber-500 scale-110 rotate-12'
-                      : 'text-[#5C665E] dark:text-[#8FA392]'
+                      : 'text-slate-500 dark:text-[#8FA392]'
                   }`}
                 />
                 <input
@@ -526,7 +526,7 @@ export const Header: React.FC = () => {
                   onChange={e => setSearchQuery(e.target.value)}
                   onFocus={() => setIsSearchFocused(true)}
                   placeholder={SEARCH_PROMPTS[currentPromptIdx] || t('البحث السريع في الأقسام والمستندات...', 'Quick search modules & records...')}
-                  className="w-full bg-transparent border-none outline-hidden text-[#1A241C] dark:text-[#F3EFE6] placeholder:text-[#5C665E]/70 dark:placeholder:text-[#8FA392]/70 text-xs font-medium cursor-text caret-amber-500"
+                  className="w-full bg-transparent border-none outline-hidden text-slate-900 dark:text-[#F3EFE6] placeholder:text-slate-400 dark:placeholder:text-[#8FA392]/70 text-xs font-medium cursor-text caret-amber-500"
                 />
                 {searchQuery && (
                   <button
@@ -561,12 +561,12 @@ export const Header: React.FC = () => {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 6, scale: 0.98 }}
                 transition={{ duration: 0.18, ease: 'easeOut' }}
-                className="absolute top-full mt-2 inset-x-0 rounded-2xl bg-[#FBF9F5]/95 dark:bg-[#0E1610]/95 backdrop-blur-2xl border border-[#D99B26]/35 dark:border-amber-500/40 shadow-[0_20px_50px_rgba(0,0,0,0.3),0_0_25px_rgba(217,155,38,0.15)] p-3 z-50 max-h-[420px] overflow-y-auto sidebar-scrollbar"
+                className="absolute top-full mt-2 inset-x-0 rounded-2xl bg-[#FFFDF9]/98 dark:bg-[#0E1610]/95 backdrop-blur-2xl border border-amber-200/80 dark:border-amber-500/40 shadow-[0_20px_50px_rgba(0,0,0,0.15),0_0_25px_rgba(217,155,38,0.15)] p-3 z-50 max-h-[420px] overflow-y-auto sidebar-scrollbar"
               >
                 {/* Modules Results */}
                 {searchResults.modules.length > 0 && (
                   <div className="mb-3">
-                    <div className="flex items-center justify-between px-2 py-1 mb-1 text-[11px] font-bold text-[#5C665E] dark:text-[#8FA392]">
+                    <div className="flex items-center justify-between px-2 py-1 mb-1 text-[11px] font-bold text-slate-500 dark:text-[#8FA392]">
                       <span className="flex items-center gap-1.5">
                         <Sparkles className="w-3.5 h-3.5 text-amber-500" />
                         <span>{searchResults.isQueryEmpty ? t('المنظومات والأقسام الرئيسية', 'Core ERP Modules') : t('النتائج المطابقة في الأقسام', 'Matching Modules & Services')}</span>
@@ -599,11 +599,11 @@ export const Header: React.FC = () => {
                               <span className="text-xs font-bold">#</span>
                             </div>
                             <div className="min-w-0">
-                              <p className="text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6] group-hover:text-amber-600 dark:group-hover:text-amber-400 truncate">
+                              <p className="text-xs font-bold text-slate-900 dark:text-[#F3EFE6] group-hover:text-amber-600 dark:group-hover:text-amber-400 truncate">
                                 {item.subItem ? `${item.title} › ${item.subItem.title}` : item.title}
                               </p>
                               {item.badge && (
-                                <span className="text-[10px] text-[#5C665E] dark:text-[#8FA392]">
+                                <span className="text-[10px] text-slate-500 dark:text-[#8FA392]">
                                   {item.badge}
                                 </span>
                               )}
@@ -619,7 +619,7 @@ export const Header: React.FC = () => {
                 {/* Companies Results */}
                 {searchResults.companies.length > 0 && (
                   <div>
-                    <div className="flex items-center justify-between px-2 py-1 mb-1 text-[11px] font-bold text-[#5C665E] dark:text-[#8FA392]">
+                    <div className="flex items-center justify-between px-2 py-1 mb-1 text-[11px] font-bold text-slate-500 dark:text-[#8FA392]">
                       <span className="flex items-center gap-1.5">
                         <Building2 className="w-3.5 h-3.5 text-amber-500" />
                         <span>{t('الشركات والكيانات المسجلة', 'Registered Entities')}</span>
@@ -647,10 +647,10 @@ export const Header: React.FC = () => {
                               <Building2 className="w-4 h-4" />
                             </div>
                             <div className="min-w-0">
-                              <p className="text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6] group-hover:text-emerald-600 dark:group-hover:text-emerald-400 truncate">
+                              <p className="text-xs font-bold text-slate-900 dark:text-[#F3EFE6] group-hover:text-emerald-600 dark:group-hover:text-emerald-400 truncate">
                                 {comp.name}
                               </p>
-                              <span className="text-[10px] text-[#5C665E] dark:text-[#8FA392]">
+                              <span className="text-[10px] text-slate-500 dark:text-[#8FA392]">
                                 {comp.code} • {t('تفعيل النطاق', 'Activate Scope')}
                               </span>
                             </div>
@@ -665,7 +665,7 @@ export const Header: React.FC = () => {
                 )}
 
                 {searchResults.modules.length === 0 && searchResults.companies.length === 0 && (
-                  <div className="p-6 text-center text-xs text-[#5C665E] dark:text-[#8FA392]">
+                  <div className="p-6 text-center text-xs text-slate-500 dark:text-[#8FA392]">
                     <Search className="w-8 h-8 mx-auto mb-2 opacity-40 text-amber-500" />
                     <p className="font-bold">{t('لا توجد نتائج مطابقة لبحثك', 'No matching results found')}</p>
                     <p className="text-[10px] mt-1">{t('جرّب البحث باسم القسم مثل "الشركات" أو "المالية"', 'Try searching by module name like "Companies" or "Finance"')}</p>
@@ -681,7 +681,7 @@ export const Header: React.FC = () => {
           {/* Mobile Search Button */}
           <button
             onClick={() => setSearchModalOpen(true)}
-            className="md:hidden flex items-center justify-center w-9 h-9 rounded-xl text-[#5C665E] dark:text-[#8FA392] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23] touch-target"
+            className="md:hidden flex items-center justify-center w-9 h-9 rounded-xl text-slate-700 dark:text-[#8FA392] hover:bg-amber-100/50 dark:hover:bg-[#1F2E23] touch-target"
             aria-label={t('بحث', 'Search')}
           >
             <Search className="w-4 h-4" />
@@ -699,12 +699,12 @@ export const Header: React.FC = () => {
               isDark ? 'التحويل إلى الوضع النهاري' : 'التحويل إلى الوضع الليلي',
               isDark ? 'Switch to light mode' : 'Switch to dark mode'
             )}
-            className="flex items-center justify-center w-9 h-9 rounded-xl text-[#1A241C] dark:text-[#F3EFE6] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23] border border-transparent hover:border-[#E0D9CB] dark:border-[#243628] transition-colors touch-target cursor-pointer print:hidden"
+            className="flex items-center justify-center w-9 h-9 rounded-xl text-slate-900 dark:text-[#F3EFE6] hover:bg-amber-100/50 dark:hover:bg-[#1F2E23] border border-transparent hover:border-amber-200/60 dark:border-[#243628] transition-colors touch-target cursor-pointer print:hidden"
           >
             {isDark ? (
               <Sun className="w-4 h-4 text-[#EBB34D] transition-transform duration-200 hover:rotate-45" />
             ) : (
-              <Moon className="w-4 h-4 text-[#1C291E] transition-transform duration-200 hover:-rotate-12" />
+              <Moon className="w-4 h-4 text-slate-900 transition-transform duration-200 hover:-rotate-12" />
             )}
           </button>
 
@@ -715,9 +715,9 @@ export const Header: React.FC = () => {
               onClick={promptInstall}
               aria-label={t('تثبيت تطبيق ECO', 'Install ECO App')}
               title={t('تثبيت تطبيق ECO', 'Install ECO App')}
-              className="flex items-center justify-center w-9 h-9 rounded-xl text-[#1A241C] dark:text-[#F3EFE6] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23] border border-transparent hover:border-[#E0D9CB] dark:border-[#243628] transition-colors touch-target cursor-pointer print:hidden relative group"
+              className="flex items-center justify-center w-9 h-9 rounded-xl text-slate-900 dark:text-[#F3EFE6] hover:bg-amber-100/50 dark:hover:bg-[#1F2E23] border border-transparent hover:border-amber-200/60 dark:border-[#243628] transition-colors touch-target cursor-pointer print:hidden relative group"
             >
-              <Download className="w-4 h-4 text-[#D99B26] dark:text-[#EBB34D] transition-transform duration-200 group-hover:scale-110" />
+              <Download className="w-4 h-4 text-amber-600 dark:text-[#EBB34D] transition-transform duration-200 group-hover:scale-110" />
               {canInstall && (
                 <span className="absolute top-2 end-2 w-2 h-2 rounded-full bg-amber-500 animate-ping" />
               )}
@@ -726,30 +726,30 @@ export const Header: React.FC = () => {
 
           {/* Notification Bell */}
           <button
-            className="relative flex items-center justify-center w-9 h-9 rounded-xl text-[#1A241C] dark:text-[#F3EFE6] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23] border border-transparent hover:border-[#E0D9CB] dark:border-[#243628] transition-colors"
+            className="relative flex items-center justify-center w-9 h-9 rounded-xl text-slate-900 dark:text-[#F3EFE6] hover:bg-amber-100/50 dark:hover:bg-[#1F2E23] border border-transparent hover:border-amber-200/60 dark:border-[#243628] transition-colors"
             aria-label={t('الإشعارات والتنبيهات', 'Notifications')}
           >
             <Bell className="w-4 h-4" />
-            <span className="absolute top-2.5 end-2.5 w-2 h-2 rounded-full bg-[#D99B26] dark:bg-[#EBB34D] ring-2 ring-[#FBF9F5] dark:ring-[#0E1610] animate-pulse" />
+            <span className="absolute top-2.5 end-2.5 w-2 h-2 rounded-full bg-amber-500 dark:bg-[#EBB34D] ring-2 ring-[#FFFDF9] dark:ring-[#0E1610] animate-pulse" />
           </button>
 
-          <div className="h-6 w-px bg-[#E0D9CB] dark:bg-[#243628] mx-0.5" />
+          <div className="h-6 w-px bg-amber-200/60 dark:bg-emerald-800/40 mx-0.5" />
 
           {/* Interactive User Profile Pill & Dropdown */}
           <div className="relative" ref={userDropdownRef}>
             <button
               onClick={() => setUserDropdownOpen(prev => !prev)}
-              className="flex items-center gap-2 ps-1 pe-2.5 py-1 rounded-xl bg-[#F3EFE6] dark:bg-[#17231A] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23] border border-[#E0D9CB] dark:border-[#243628] transition-all cursor-pointer shadow-xs touch-target"
+              className="flex items-center gap-2 ps-1 pe-2.5 py-1 rounded-xl bg-[#FFFDF9] dark:bg-[#17231A] hover:bg-amber-100/40 dark:hover:bg-[#1F2E23] border border-amber-200/60 dark:border-[#243628] transition-all cursor-pointer shadow-xs touch-target"
               title={t('ملف المستخدم وإعدادات الحساب', 'User Profile & Account Settings')}
             >
-              <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-[#1C291E] to-[#D99B26] flex items-center justify-center text-[#FBF9F5] text-xs font-black shadow-xs shrink-0">
+              <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-[#1C291E] to-amber-500 flex items-center justify-center text-white text-xs font-black shadow-xs shrink-0">
                 {(user?.nameAr || currentUser.nameAr).charAt(0)}
               </div>
               <div className="hidden sm:block text-start leading-tight">
-                <div className="text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6] truncate max-w-[200px]">
+                <div className="text-xs font-bold text-slate-900 dark:text-[#F3EFE6] truncate max-w-[200px]">
                   {isRtl ? (user?.nameAr || 'مستخدم المنظومة') : (user?.nameEn || 'System User')}
                 </div>
-                <div className="flex items-center gap-1 text-[10px] font-semibold text-[#D99B26] dark:text-[#EBB34D]">
+                <div className="flex items-center gap-1 text-[10px] font-semibold text-amber-600 dark:text-[#EBB34D]">
                   <span className="truncate max-w-[240px]">
                     {cleanArabicTitle(
                       user?.jobTitleAr?.includes('/')
@@ -760,7 +760,7 @@ export const Header: React.FC = () => {
                 </div>
               </div>
               <ChevronDown
-                className={`w-3.5 h-3.5 text-[#5C665E] dark:text-[#8FA392] shrink-0 transition-transform duration-200 ${
+                className={`w-3.5 h-3.5 text-slate-600 dark:text-[#8FA392] shrink-0 transition-transform duration-200 ${
                   userDropdownOpen ? 'rotate-180' : ''
                 }`}
               />
@@ -769,16 +769,16 @@ export const Header: React.FC = () => {
             {/* User Profile Popover Dropdown */}
             {userDropdownOpen && (
               <div
-                className="absolute top-full mt-2.5 w-80 sm:w-88 max-w-[calc(100vw-16px)] left-2 sm:left-4 origin-top-left rounded-2xl bg-[#F3EFE6] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] shadow-2xl p-3 z-50 animate-in fade-in-50 zoom-in-95 duration-150 text-start"
+                className="absolute top-full mt-2.5 w-80 sm:w-88 max-w-[calc(100vw-16px)] left-2 sm:left-4 origin-top-left rounded-2xl bg-[#FFFDF9] dark:bg-[#17231A] border border-amber-200/60 dark:border-[#243628] shadow-2xl p-3 z-50 animate-in fade-in-50 zoom-in-95 duration-150 text-start"
               >
                 {/* 1. Executive User Header Card */}
-                <div className="p-3 rounded-xl bg-[#EAE4D7] dark:bg-[#121B14] border border-[#E0D9CB] dark:border-[#243628] flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-[#1C291E] to-[#D99B26] text-white flex items-center justify-center font-black text-base shadow-sm shrink-0">
+                <div className="p-3 rounded-xl bg-amber-50/70 dark:bg-[#121B14] border border-amber-200/60 dark:border-[#243628] flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-[#1C291E] to-amber-500 text-white flex items-center justify-center font-black text-base shadow-sm shrink-0">
                     {(user?.nameAr || currentUser.nameAr).charAt(0)}
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-1">
-                      <h4 className="text-xs font-black text-[#1A241C] dark:text-[#F3EFE6] truncate">
+                      <h4 className="text-xs font-black text-slate-900 dark:text-[#F3EFE6] truncate">
                         {isRtl ? (user?.nameAr || currentUser.nameAr) : (user?.nameEn || currentUser.nameEn)}
                       </h4>
                       <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 shrink-0">
@@ -786,10 +786,10 @@ export const Header: React.FC = () => {
                         <span>{t('متصل', 'Online')}</span>
                       </div>
                     </div>
-                    <p className="text-[11px] font-medium text-[#D99B26] dark:text-[#EBB34D] truncate mt-0.5">
+                    <p className="text-[11px] font-medium text-amber-700 dark:text-[#EBB34D] truncate mt-0.5">
                       {user?.jobTitleAr || user?.roleLabelAr || (user?.role === 'SUPER_ADMIN' ? 'مدير النظام العام / رئيس مجلس الإدارة' : 'إدارة الموارد البشرية')}
                     </p>
-                    <p className="text-[10px] text-[#5C665E] dark:text-[#8FA392] truncate mt-0.5 font-mono">
+                    <p className="text-[10px] text-slate-500 dark:text-[#8FA392] truncate mt-0.5 font-mono">
                       {user?.email || 'user@hrsup.com'}
                     </p>
                   </div>
@@ -803,9 +803,9 @@ export const Header: React.FC = () => {
                       setUserDropdownOpen(false);
                       setProfileModalOpen(true);
                     }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23] transition-colors"
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-900 dark:text-[#F3EFE6] hover:bg-amber-100/50 dark:hover:bg-[#1F2E23] transition-colors"
                   >
-                    <User className="w-4 h-4 text-[#D99B26] dark:text-[#EBB34D]" />
+                    <User className="w-4 h-4 text-amber-600 dark:text-[#EBB34D]" />
                     <span className="flex-1 text-start">{t('الملف الشخصي وإعدادات الحساب', 'My Profile & Account')}</span>
                   </button>
 
@@ -815,9 +815,9 @@ export const Header: React.FC = () => {
                       setUserDropdownOpen(false);
                       setPasswordModalOpen(true);
                     }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23] transition-colors"
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-900 dark:text-[#F3EFE6] hover:bg-amber-100/50 dark:hover:bg-[#1F2E23] transition-colors"
                   >
-                    <Lock className="w-4 h-4 text-[#D99B26] dark:text-[#EBB34D]" />
+                    <Lock className="w-4 h-4 text-amber-600 dark:text-[#EBB34D]" />
                     <span className="flex-1 text-start">{t('الأمان وتغيير كلمة المرور', 'Security & Password')}</span>
                   </button>
 
@@ -827,9 +827,9 @@ export const Header: React.FC = () => {
                       setUserDropdownOpen(false);
                       setActivityDrawerOpen(true);
                     }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23] transition-colors"
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-900 dark:text-[#F3EFE6] hover:bg-amber-100/50 dark:hover:bg-[#1F2E23] transition-colors"
                   >
-                    <History className="w-4 h-4 text-[#D99B26] dark:text-[#EBB34D]" />
+                    <History className="w-4 h-4 text-amber-600 dark:text-[#EBB34D]" />
                     <span className="flex-1 text-start">{t('سجل نشاطي وحركاتي', 'My Activity Log')}</span>
                   </button>
 
@@ -840,9 +840,9 @@ export const Header: React.FC = () => {
                         setUserDropdownOpen(false);
                         setPermissionsModalOpen(true);
                       }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23] transition-colors"
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-900 dark:text-[#F3EFE6] hover:bg-amber-100/50 dark:hover:bg-[#1F2E23] transition-colors"
                     >
-                      <SlidersHorizontal className="w-4 h-4 text-[#D99B26] dark:text-[#EBB34D]" />
+                      <SlidersHorizontal className="w-4 h-4 text-amber-600 dark:text-[#EBB34D]" />
                       <span className="flex-1 text-start">{t('إدارة المستخدمين ومصفوفة الصلاحيات', 'Users & Permissions Matrix')}</span>
                       <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 font-bold">
                         {t('إدارة', 'Admin')}
@@ -852,7 +852,7 @@ export const Header: React.FC = () => {
                 </div>
 
                 {/* 3. Sign Out Trigger */}
-                <div className="mt-2.5 pt-2 border-t border-[#E0D9CB] dark:border-[#243628]">
+                <div className="mt-2.5 pt-2 border-t border-amber-200/40 dark:border-[#243628]">
                   <button
                     onClick={() => {
                       setUserDropdownOpen(false);

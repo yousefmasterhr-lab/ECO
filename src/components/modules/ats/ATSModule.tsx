@@ -7,7 +7,8 @@ import {
   FileSignature, 
   Sparkles, 
   Building2, 
-  UserCheck
+  UserCheck,
+  Globe2
 } from 'lucide-react';
 import { useLanguage } from '../../../context/LanguageContext';
 import { useTenant } from '../../../context/TenantContext';
@@ -16,12 +17,13 @@ import { ATSJobsTab } from './ATSJobsTab';
 import { ATSPipelineTab } from './ATSPipelineTab';
 import { ATSCandidatesTab } from './ATSCandidatesTab';
 import { ATSOffersTab } from './ATSOffersTab';
+import { ATSPortalTab } from './ATSPortalTab';
 
 interface ATSModuleProps {
   activeSubItemId?: string | null;
 }
 
-export type ATSSubTab = 'ats_analytics' | 'ats_jobs' | 'ats_pipeline' | 'ats_candidates' | 'ats_offers';
+export type ATSSubTab = 'ats_analytics' | 'ats_jobs' | 'ats_pipeline' | 'ats_candidates' | 'ats_offers' | 'ats_portal';
 
 export const ATSModule: React.FC<ATSModuleProps> = ({ activeSubItemId }) => {
   const { t } = useLanguage();
@@ -35,7 +37,8 @@ export const ATSModule: React.FC<ATSModuleProps> = ({ activeSubItemId }) => {
       'ats_pipeline', 
       'ats_candidates', 
       'ats_interviews', 
-      'ats_offers'
+      'ats_offers',
+      'ats_portal'
     ].includes(activeSubItemId)) {
       if (activeSubItemId === 'ats_openings') return 'ats_jobs';
       if (activeSubItemId === 'ats_interviews') return 'ats_pipeline';
@@ -50,7 +53,7 @@ export const ATSModule: React.FC<ATSModuleProps> = ({ activeSubItemId }) => {
         setActiveTab('ats_jobs');
       } else if (activeSubItemId === 'ats_interviews') {
         setActiveTab('ats_pipeline');
-      } else if (['ats_analytics', 'ats_jobs', 'ats_pipeline', 'ats_candidates', 'ats_offers'].includes(activeSubItemId)) {
+      } else if (['ats_analytics', 'ats_jobs', 'ats_pipeline', 'ats_candidates', 'ats_offers', 'ats_portal'].includes(activeSubItemId)) {
         setActiveTab(activeSubItemId as ATSSubTab);
       }
     }
@@ -62,6 +65,7 @@ export const ATSModule: React.FC<ATSModuleProps> = ({ activeSubItemId }) => {
     { id: 'ats_pipeline' as const, labelAr: 'مسار التوظيف والكانبان التفاعلي', labelEn: 'Candidate Pipeline', icon: Kanban },
     { id: 'ats_candidates' as const, labelAr: 'قاعدة بيانات المرشحين والمواهب', labelEn: 'Talent Pool', icon: Users },
     { id: 'ats_offers' as const, labelAr: 'عروض العمل وتعيين الموظف', labelEn: 'Offers & HR Sync', icon: FileSignature },
+    { id: 'ats_portal' as const, labelAr: 'بوابة التوظيف وروابط UTM', labelEn: 'Careers Portal & UTM', icon: Globe2 },
   ];
 
   return (
@@ -145,6 +149,7 @@ export const ATSModule: React.FC<ATSModuleProps> = ({ activeSubItemId }) => {
         {activeTab === 'ats_pipeline' && <ATSPipelineTab companyId={activeCompany?.id} />}
         {activeTab === 'ats_candidates' && <ATSCandidatesTab companyId={activeCompany?.id} />}
         {activeTab === 'ats_offers' && <ATSOffersTab companyId={activeCompany?.id} />}
+        {activeTab === 'ats_portal' && <ATSPortalTab companyId={activeCompany?.id} />}
       </div>
     </div>
   );

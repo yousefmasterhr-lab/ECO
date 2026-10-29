@@ -187,6 +187,7 @@ export const DEPARTMENT_CATEGORIES: DepartmentNavCategory[] = [
       { id: 'ats_pipeline', titleAr: 'مسار التوظيف والكانبان', titleEn: 'Candidate Pipeline (Kanban)' },
       { id: 'ats_candidates', titleAr: 'قاعدة بيانات المرشحين والمواهب', titleEn: 'Talent Pool & Candidates' },
       { id: 'ats_offers', titleAr: 'عروض العمل وتعيين الموظف', titleEn: 'Offers & HR Sync' },
+      { id: 'ats_portal', titleAr: 'بوابة التوظيف وروابط UTM', titleEn: 'Careers Portal & UTM' },
     ],
   },
   {

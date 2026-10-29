@@ -971,6 +971,21 @@ export const ERP_MODULES_MATRIX_CONFIG: Record<DepartmentKey, ERPModuleMatrixCon
           delete: { key: 'ats.offers.delete', labelAr: 'إلغاء عرض العمل' },
         },
       },
+      {
+        id: 'ats_portal',
+        titleAr: 'بوابة التوظيف وروابط UTM',
+        titleEn: 'Careers Portal & UTM Links',
+        descriptionAr: 'توليد روابط التتبع التسويقية، نشر الوظائف خارجياً، والمعاينة الحية لبوابة التوظيف الرسمية',
+        actions: {
+          view: { key: 'ats.openings.view', labelAr: 'عرض بوابة التوظيف وروابط UTM' },
+          create: { key: 'ats.openings.create', labelAr: 'توليد رابط تتبع UTM جديد' },
+          edit: { key: 'ats.openings.edit', labelAr: 'تخصيص إعدادات بوابة التوظيف' },
+          docs: { key: 'ats.openings.docs', labelAr: 'نسخ وتصدير روابط النشر' },
+          status: { key: 'ats.openings.status', labelAr: 'تفعيل/تعطيل رابط التتبع' },
+          audit: { key: 'ats.openings.audit', labelAr: 'سجل زيارات ونقرات الحملات' },
+          delete: { key: 'ats.openings.delete', labelAr: 'حذف رابط الحملة' },
+        },
+      },
     ],
     allPermissionKeys: [],
   },
@@ -1343,6 +1358,7 @@ export const SUBMODULE_VIEW_PERMISSION_MAP: Record<string, string> = {
   ats_candidates: 'ats.pipeline.view',
   ats_interviews: 'ats.interviews.view',
   ats_offers: 'ats.offers.view',
+  ats_portal: 'ats.openings.view',
 
   // 10. Administrative Decrees & Circulars
   dec_decrees: 'dec.decrees.view',

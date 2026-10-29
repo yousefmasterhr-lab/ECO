@@ -21,6 +21,7 @@ SUBMODULE_VIEW_PERMISSION_MAP['ins_analytics'] = 'ins.sites.view';
 SUBMODULE_VIEW_PERMISSION_MAP['ats_analytics'] = 'ats.openings.view';
 SUBMODULE_VIEW_PERMISSION_MAP['ats_jobs'] = 'ats.openings.view';
 SUBMODULE_VIEW_PERMISSION_MAP['ats_candidates'] = 'ats.pipeline.view';
+SUBMODULE_VIEW_PERMISSION_MAP['ats_portal'] = 'ats.openings.view';
 SUBMODULE_VIEW_PERMISSION_MAP['set_automation'] = 'set.configurations.view';
 SUBMODULE_VIEW_PERMISSION_MAP['settings_automation'] = 'set.configurations.view';
 
@@ -38,6 +39,7 @@ const ATS_ORDERED_SUBITEMS = [
   { id: 'ats_pipeline', titleAr: 'مسار التوظيف والكانبان', titleEn: 'Candidate Pipeline (Kanban)' },
   { id: 'ats_candidates', titleAr: 'قاعدة بيانات المرشحين والمواهب', titleEn: 'Talent Pool & Candidates' },
   { id: 'ats_offers', titleAr: 'عروض العمل وتعيين الموظف', titleEn: 'Offers & HR Sync' },
+  { id: 'ats_portal', titleAr: 'بوابة التوظيف وروابط UTM', titleEn: 'Careers Portal & UTM' },
 ];
 
 export const Sidebar: React.FC = () => {
