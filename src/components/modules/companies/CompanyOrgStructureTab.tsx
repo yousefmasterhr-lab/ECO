@@ -20,12 +20,23 @@ import {
   Zap,
   Info,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Download,
+  Image,
+  FileText,
+  FileSpreadsheet,
+  CheckCircle2,
+  Loader2
 } from 'lucide-react';
 import { DepartmentOrg, CompanyEntity, BranchLocation, DepartmentAuditLogEntry } from './types';
 import { useAuth } from '../../../context/AuthContext';
 import { OrgMindMapTree } from './OrgMindMapTree';
 import { departmentStorage, computeHierarchyLevels } from './departmentStorage';
+import {
+  exportOrgStructureAs4KPNG,
+  exportOrgStructureAsPPTX,
+  exportOrgStructureAsPDF
+} from '../../../utils/exportHelpers';
 
 interface CompanyOrgStructureTabProps {
   departments: DepartmentOrg[];
@@ -124,7 +135,7 @@ const LevelFilterDropdown: React.FC<LevelFilterDropdownProps> = ({
   }, []);
 
   return (
-    <div ref={dropdownRef} className="relative inline-block text-start">
+    <div ref={dropdownRef} className="relative z-40 inline-block text-start">
       <button
         type="button"
         onClick={() => setIsOpen(prev => !prev)}
@@ -150,7 +161,7 @@ const LevelFilterDropdown: React.FC<LevelFilterDropdownProps> = ({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -6, scale: 0.96 }}
             transition={{ duration: 0.15 }}
-            className="absolute z-50 mt-1.5 start-0 w-72 rounded-2xl bg-white/95 dark:bg-[#0D1F17]/95 backdrop-blur-xl border border-amber-500/30 shadow-2xl p-1.5 space-y-0.5 text-xs font-sans"
+            className="absolute right-0 top-full mt-2 w-72 rounded-2xl p-2 z-[9999] shadow-2xl bg-white/95 dark:bg-[#0D1F17]/95 backdrop-blur-xl border border-amber-500/30 ring-1 ring-black/5 dark:ring-white/10 animate-in fade-in slide-in-from-top-2 duration-200"
           >
             {LEVEL_OPTIONS.map(option => {
               const isActive = selectedLevel === option.value;
@@ -346,12 +357,146 @@ export const CompanyOrgStructureTab: React.FC<CompanyOrgStructureTabProps> = ({
     }
   };
 
+  // Export Suite State & Handlers
+  const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
+  const exportDropdownRef = useRef<HTMLDivElement>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportStatus, setExportStatus] = useState('');
+  const [toast, setToast] = useState<{ msg: string; isError?: boolean } | null>(null);
+
+  const showToast = (msg: string, isError = false) => {
+    setToast({ msg, isError });
+    setTimeout(() => setToast(null), 4000);
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (exportDropdownRef.current && !exportDropdownRef.current.contains(e.target as Node)) {
+        setExportDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const activeCompanyName = useMemo(() => {
+    if (selectedCompanyId !== 'all') {
+      const found = companies.find(c => c.id === selectedCompanyId);
+      if (found) return found.nameAr;
+    }
+    return companies[0]?.nameAr || 'المؤسسة';
+  }, [companies, selectedCompanyId]);
+
+  const handleExportPNG = async () => {
+    try {
+      setIsExporting(true);
+      setExportStatus('جاري معالجة وتجهيز الصورة فائقة الدقة (4K)...');
+      await exportOrgStructureAs4KPNG({
+        departments: currentDepartments,
+        companyName: activeCompanyName,
+        isDark: document.documentElement.classList.contains('dark'),
+        onProgress: setExportStatus
+      });
+      showToast('تم تصدير الهيكل التنظيمي (4K PNG) بنجاح!');
+    } catch (err: any) {
+      console.error('PNG Export failed:', err);
+      showToast(err.message || 'حدث خطأ أثناء تصدير الصورة 4K', true);
+    } finally {
+      setIsExporting(false);
+      setExportStatus('');
+    }
+  };
+
+  const handleExportPPTX = async () => {
+    try {
+      setIsExporting(true);
+      setExportStatus('جاري إنشاء العرض التقديمي التنفيذي (PowerPoint)...');
+      await exportOrgStructureAsPPTX({
+        departments: currentDepartments,
+        companyName: activeCompanyName,
+        onProgress: setExportStatus
+      });
+      showToast('تم تصدير العرض التقديمي (PowerPoint .pptx) بنجاح!');
+    } catch (err: any) {
+      console.error('PPTX Export failed:', err);
+      showToast(err.message || 'حدث خطأ أثناء تصدير العرض التقديمي (.pptx)', true);
+    } finally {
+      setIsExporting(false);
+      setExportStatus('');
+    }
+  };
+
+  const handleExportPDF = async () => {
+    try {
+      setIsExporting(true);
+      setExportStatus('جاري إعداد وثيقة المخطط الهندسي المعتمد (PDF A3)...');
+      await exportOrgStructureAsPDF({
+        departments: currentDepartments,
+        companyName: activeCompanyName,
+        isDark: document.documentElement.classList.contains('dark'),
+        onProgress: setExportStatus
+      });
+      showToast('تم تصدير المخطط المعماري المعتمد (PDF A3) بنجاح!');
+    } catch (err: any) {
+      console.error('PDF Export failed:', err);
+      showToast(err.message || 'حدث خطأ أثناء تصدير المخطط المعماري (PDF)', true);
+    } finally {
+      setIsExporting(false);
+      setExportStatus('');
+    }
+  };
+
   return (
     <div className="space-y-4">
+      {/* Floating Brand Amber Loading Progress Indicator */}
+      <AnimatePresence>
+        {isExporting && (
+          <motion.div
+            initial={{ opacity: 0, y: -24, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -24, scale: 0.95 }}
+            transition={{ duration: 0.2 }}
+            className="fixed top-6 start-1/2 -translate-x-1/2 z-[10000] flex items-center gap-3 px-5 py-3 rounded-2xl bg-white/95 dark:bg-[#07130E]/95 backdrop-blur-xl border border-amber-500/50 shadow-2xl ring-1 ring-amber-500/20"
+          >
+            <div className="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-500 flex items-center justify-center shrink-0 border border-amber-500/30">
+              <Loader2 className="w-4 h-4 animate-spin text-amber-500" />
+            </div>
+            <div>
+              <div className="text-xs font-black text-slate-900 dark:text-stone-100">{exportStatus}</div>
+              <div className="text-[10px] text-amber-700 dark:text-amber-400 font-medium">منظومة تصدير الوثائق والمخططات الهيكلية</div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Floating Success / Error Toast Notification */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: -24, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -24, scale: 0.95 }}
+            transition={{ duration: 0.2 }}
+            className={`fixed top-6 start-1/2 -translate-x-1/2 z-[10000] flex items-center gap-3 px-5 py-3 rounded-2xl backdrop-blur-xl shadow-2xl border ${
+              toast.isError
+                ? 'bg-rose-50/95 dark:bg-rose-950/95 border-rose-500/50 text-rose-800 dark:text-rose-200'
+                : 'bg-emerald-50/95 dark:bg-[#071A11]/95 border-emerald-500/50 text-emerald-900 dark:text-emerald-200'
+            }`}
+          >
+            {toast.isError ? (
+              <AlertTriangle className="w-5 h-5 text-rose-500 shrink-0" />
+            ) : (
+              <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
+            )}
+            <span className="text-xs font-black">{toast.msg}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* ========================================================================= */}
       {/* 2-TIER EXECUTIVE COMMAND BAR (Search Bar Completely Removed)             */}
       {/* ========================================================================= */}
-      <div className="p-4 sm:p-5 rounded-2xl bg-white/95 dark:bg-[#112017]/95 border border-slate-200/90 dark:border-[#1F3526] shadow-sm backdrop-blur-md space-y-4">
+      <div className="relative z-30 p-4 sm:p-5 rounded-2xl bg-white/95 dark:bg-[#112017]/95 border border-slate-200/90 dark:border-[#1F3526] shadow-sm backdrop-blur-md space-y-4">
         {/* Tier 1: Title, 3-Way Segmented View Switcher & Primary Actions */}
         <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-200/80 dark:border-[#1A3327]">
           {/* Right Side: Section Title & Live Metrics */}
@@ -431,6 +576,110 @@ export const CompanyOrgStructureTab: React.FC<CompanyOrgStructureTabProps> = ({
 
           {/* Left Side: Primary Action Buttons */}
           <div className="flex items-center gap-2.5">
+            {/* Export Structure Luxury Dropdown Button */}
+            <div ref={exportDropdownRef} className="relative z-40 inline-block text-start">
+              <button
+                type="button"
+                onClick={() => setExportDropdownOpen(prev => !prev)}
+                disabled={isExporting}
+                className="min-h-[40px] flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[#1A3327] dark:hover:bg-[#234534] border border-slate-300 dark:border-amber-500/30 text-slate-800 dark:text-stone-200 text-xs font-bold transition-all shadow-xs cursor-pointer disabled:opacity-50"
+                title="تصدير الهيكل التنظيمي بملفات احترافية (4K PNG, PowerPoint, PDF)"
+              >
+                {isExporting ? (
+                  <Loader2 className="w-4 h-4 text-amber-500 animate-spin" />
+                ) : (
+                  <Download className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                )}
+                <span>تصدير الهيكل</span>
+                <ChevronDown
+                  className={`w-3.5 h-3.5 text-amber-500 transition-transform duration-200 ${
+                    exportDropdownOpen ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
+
+              <AnimatePresence>
+                {exportDropdownOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -6, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -6, scale: 0.96 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute left-0 top-full mt-2 w-72 rounded-2xl p-2 z-[9999] shadow-2xl bg-white/95 dark:bg-[#0D1F17]/95 backdrop-blur-xl border border-amber-500/30 ring-1 ring-black/5 dark:ring-white/10 animate-in fade-in slide-in-from-top-2 duration-200 space-y-1"
+                  >
+                    {/* Option 1: 4K Ultra-HD PNG Poster */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setExportDropdownOpen(false);
+                        handleExportPNG();
+                      }}
+                      disabled={isExporting}
+                      className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-amber-500/10 transition-colors text-start cursor-pointer group"
+                    >
+                      <div className="w-9 h-9 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/25 group-hover:scale-105 transition-transform">
+                        <Image className="w-4 h-4" />
+                      </div>
+                      <div className="truncate">
+                        <div className="font-bold text-xs text-slate-800 dark:text-stone-100 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+                          ملصق عالي الدقة (4K Poster PNG)
+                        </div>
+                        <div className="text-[10px] text-slate-500 dark:text-stone-400 truncate">
+                          رسم شعاعي 3840px+ لكامل الشجرة والفروع
+                        </div>
+                      </div>
+                    </button>
+
+                    {/* Option 2: Executive PowerPoint (.pptx) */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setExportDropdownOpen(false);
+                        handleExportPPTX();
+                      }}
+                      disabled={isExporting}
+                      className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-amber-500/10 transition-colors text-start cursor-pointer group"
+                    >
+                      <div className="w-9 h-9 rounded-xl bg-teal-500/15 text-teal-600 dark:text-teal-400 flex items-center justify-center shrink-0 border border-teal-500/25 group-hover:scale-105 transition-transform">
+                        <FileSpreadsheet className="w-4 h-4" />
+                      </div>
+                      <div className="truncate">
+                        <div className="font-bold text-xs text-slate-800 dark:text-stone-100 group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">
+                          عرض تقديمي تنفيذي (PowerPoint .pptx)
+                        </div>
+                        <div className="text-[10px] text-slate-500 dark:text-stone-400 truncate">
+                          10 شرائح تفصيلية للقيادة والقطاعات
+                        </div>
+                      </div>
+                    </button>
+
+                    {/* Option 3: Certified Vector PDF A3 Blueprint */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setExportDropdownOpen(false);
+                        handleExportPDF();
+                      }}
+                      disabled={isExporting}
+                      className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-amber-500/10 transition-colors text-start cursor-pointer group"
+                    >
+                      <div className="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/25 group-hover:scale-105 transition-transform">
+                        <FileText className="w-4 h-4" />
+                      </div>
+                      <div className="truncate">
+                        <div className="font-bold text-xs text-slate-800 dark:text-stone-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                          مخطط معماري معتمد (Vector PDF A3)
+                        </div>
+                        <div className="text-[10px] text-slate-500 dark:text-stone-400 truncate">
+                          نسخة عريضة معتمدة بأختام وتواقيع الحوكمة
+                        </div>
+                      </div>
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
             {hasPermission('companies.org.create') && (
               <button
                 type="button"
@@ -457,7 +706,7 @@ export const CompanyOrgStructureTab: React.FC<CompanyOrgStructureTabProps> = ({
         </div>
 
         {/* Tier 2: Level Filter Animated Dropdown & Company Selector */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 relative z-30">
           {/* Level Filter Animated Dropdown */}
           <div className="flex items-center gap-2">
             <span className="text-xs font-bold text-slate-500 dark:text-[#8FA392]">
