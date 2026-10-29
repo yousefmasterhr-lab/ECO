@@ -1336,8 +1336,11 @@ export const SUBMODULE_VIEW_PERMISSION_MAP: Record<string, string> = {
   ins_compliance: 'ins.sites.view',
 
   // 9. Talent Acquisition (ATS)
+  ats_analytics: 'ats.openings.view',
+  ats_jobs: 'ats.openings.view',
   ats_openings: 'ats.openings.view',
   ats_pipeline: 'ats.pipeline.view',
+  ats_candidates: 'ats.pipeline.view',
   ats_interviews: 'ats.interviews.view',
   ats_offers: 'ats.offers.view',
 
@@ -1359,6 +1362,8 @@ export const SUBMODULE_VIEW_PERMISSION_MAP: Record<string, string> = {
   set_users: 'set.users.view',
   set_configurations: 'set.configurations.view',
   set_audit: 'set.audit.view',
+  set_automation: 'set.configurations.view',
+  settings_automation: 'set.configurations.view',
   set_integrations: 'set.integrations.view',
   set_upgrades: 'set.integrations.view',
 };

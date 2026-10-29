@@ -16,8 +16,13 @@ import {
 import { EcoOfficialLogo } from '../common/EcoOfficialLogo';
 import { canViewModule, canViewSubModule, SUBMODULE_VIEW_PERMISSION_MAP } from '../../types/rbac';
 
-// Ensure ins_analytics route maps seamlessly to the Insurance Analytics & Compliance RBAC key
+// Ensure dynamic route maps seamlessly to the appropriate RBAC view keys
 SUBMODULE_VIEW_PERMISSION_MAP['ins_analytics'] = 'ins.sites.view';
+SUBMODULE_VIEW_PERMISSION_MAP['ats_analytics'] = 'ats.openings.view';
+SUBMODULE_VIEW_PERMISSION_MAP['ats_jobs'] = 'ats.openings.view';
+SUBMODULE_VIEW_PERMISSION_MAP['ats_candidates'] = 'ats.pipeline.view';
+SUBMODULE_VIEW_PERMISSION_MAP['set_automation'] = 'set.configurations.view';
+SUBMODULE_VIEW_PERMISSION_MAP['settings_automation'] = 'set.configurations.view';
 
 const INSURANCE_ORDERED_SUBITEMS = [
   { id: 'ins_analytics', titleAr: 'لوحة التحليلات والامتثال', titleEn: 'Analytics & Compliance' },
@@ -25,6 +30,14 @@ const INSURANCE_ORDERED_SUBITEMS = [
   { id: 'ins_operations', titleAr: 'مركز العمليات التأمينية', titleEn: 'Operations Center' },
   { id: 'ins_register', titleAr: 'جداول الموظفين (السجل التأميني)', titleEn: 'Insured Employees Registry' },
   { id: 'ins_wages', titleAr: 'وعاء الأجور والاشتراكات', titleEn: 'Wages & Contributions' },
+];
+
+const ATS_ORDERED_SUBITEMS = [
+  { id: 'ats_analytics', titleAr: 'لوحة مؤشرات التوظيف', titleEn: 'Recruitment Analytics' },
+  { id: 'ats_jobs', titleAr: 'إدارة الشواغر والوظائف', titleEn: 'Job Openings & Requisitions' },
+  { id: 'ats_pipeline', titleAr: 'مسار التوظيف والكانبان', titleEn: 'Candidate Pipeline (Kanban)' },
+  { id: 'ats_candidates', titleAr: 'قاعدة بيانات المرشحين والمواهب', titleEn: 'Talent Pool & Candidates' },
+  { id: 'ats_offers', titleAr: 'عروض العمل وتعيين الموظف', titleEn: 'Offers & HR Sync' },
 ];
 
 export const Sidebar: React.FC = () => {
@@ -48,7 +61,11 @@ export const Sidebar: React.FC = () => {
           return { ...category, subItems: [] };
         }
         const sourceSubItems =
-          category.id === 'insurance' ? INSURANCE_ORDERED_SUBITEMS : category.subItems || [];
+          category.id === 'insurance'
+            ? INSURANCE_ORDERED_SUBITEMS
+            : category.id === 'ats'
+            ? ATS_ORDERED_SUBITEMS
+            : category.subItems || [];
         const allowedSubItems = sourceSubItems.filter(sub =>
           canViewSubModule(user, sub.id)
         );

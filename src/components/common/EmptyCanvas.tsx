@@ -10,6 +10,7 @@ import { ReceptionModule } from '../modules/reception/ReceptionModule';
 import { InsuranceModule } from '../modules/insurance/InsuranceModule';
 import { FinancialAffairsModule } from '../modules/finance/FinancialAffairsModule';
 import { HRModule } from '../modules/hr/HRModule';
+import { ATSModule } from '../modules/ats/ATSModule';
 import { SettingsModule } from '../modules/settings/SettingsModule';
 import { UnauthorizedView } from './UnauthorizedView';
 import { useFinancial } from '../../context/FinancialContext';
@@ -466,6 +467,8 @@ export const EmptyCanvas: React.FC = () => {
           <LegalModule activeSubItemId={activeSubItemId} />
         ) : activeCategory.id === 'insurance' ? (
           <InsuranceModule activeSubItemId={activeSubItemId} />
+        ) : activeCategory.id === 'ats' ? (
+          <ATSModule activeSubItemId={activeSubItemId} />
         ) : activeCategory.id === 'reception' ? (
           <ReceptionModule activeSubItemId={activeSubItemId} />
         ) : activeCategory.id === 'settings' ? (

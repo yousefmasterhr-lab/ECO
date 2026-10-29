@@ -459,6 +459,26 @@ CREATE TABLE IF NOT EXISTS system_configurations (
 
 
 
+### 4.28 منظومة استقطاب الكفاءات والتحويل اللحظي ومحرك الأتمتة (Talent Acquisition ATS, 1-Click HR/Insurance Conversion & Global Automation Engine)
+- **منظومة استقطاب الكفاءات الخماسية الموحدة (`src/components/modules/ats/`):**
+  - 📊 **لوحة مؤشرات التوظيف (`ATSAnalyticsTab.tsx`):** رصد لحظي لمتوسط زمن التعيين، تكلفة التعيين، نسبة قبول العروض، قمع التحويل التوظيفي، أداء مسؤولي التوظيف، وتصدير إكسيل احترافي عبر `exceljs`.
+  - 💼 **إدارة الشواغر والوظائف (`ATSJobsTab.tsx`):** إدارة دورة حياة الشواغر (مسودة، منشور، مكتمل، مؤرشف) وربطها بالشركات والموازنات المالية والمهارات المطلوبة.
+  - 🗂️ **مسار التوظيف والكانبان التفاعلي (`ATSPipelineTab.tsx`):** لوحة كانبان تفاعلية بـ 8 مراحل عبر HTML5 Native Drag & Drop مع كروت ذكية بنسب المطابقة وسنوات الخبرة ودرج فحص السيرة الذاتية وإضافة الملاحظات.
+  - 👥 **قاعدة بيانات المرشحين والمواهب (`ATSCandidatesTab.tsx`):** سجل مركزي للمتقدمين مع أدوات البحث والفرز المتعدد.
+  - 📝 **عروض العمل وتعيين الموظف (`ATSOffersTab.tsx`):** صياغة عروض العمل المصرية الرسمية، محاكاة التوقيع الرقمي للمرشح، ومسوغات التعيين (Preboarding).
+- **الزر الذهبي للتحويل اللحظي بنقرة واحدة (1-Click Core HR & Insurance Conversion):**
+  - زر `⚡ اعتماد ونقل الموظف إلى منظومة الموارد البشرية والتأمينات` في `ATSOffersTab.tsx` ينفذ:
+    - إنشاء سجل معتمد في الموارد البشرية (`hrStorage.saveEmployee`) وتوليد الرقم الوظيفي `ECO-YYYY-XXX`.
+    - إنشاء سجل تأميني مطابق في التأمينات الاجتماعية (`insuranceStorage.saveEmployee`) لمركز العمليات واستمارة س1 دون أي إدخال يدوي مكرر.
+    - تحديث حالة العرض إلى `synced_to_core_hr` والمرشح إلى `hired`.
+    - بث الأحداث اللحظية `eco-hr-updated` و `eco-insurance-updated` و `eco-ats-updated` (Zero-Refresh).
+- **محرك الأتمتة وسير العمل الذكي في الإعدادات (`AutomationEngineView.tsx`):**
+  - بناء قواعد الأتمتة: محفز (Trigger) -> شروط (Conditions) -> إجراءات (Actions).
+  - محاكي تشغيل واختبار فوري للتحقق من استجابة القواعد مع سجل تدقيق رقابي لحظي في Cloudflare D1.
+- **قاعدة بيانات Cloudflare D1 و Pages Functions:**
+  - جداول `ats_jobs`, `ats_candidates`, `ats_interviews`, `ats_offers`, `automation_rules`, `automation_logs`.
+  - نقاط نهاية موحدة `/api/ats/[[path]]` و `/api/automation/[[path]]`.
+
 ---
 
 ## 5. نظام الحوكمة والذاكرة الذكية الأربعة (4-File Governance System)

@@ -5,6 +5,7 @@ import { ConfigurationView } from './ConfigurationView';
 import { AuditLogsView } from './AuditLogsView';
 import { DatabaseFederationHub } from './DatabaseFederationHub';
 import { CloudUpgradesView } from './CloudUpgradesView';
+import { AutomationEngineView } from './AutomationEngineView';
 
 interface SettingsModuleProps {
   activeSubItemId: string | null;
@@ -32,6 +33,7 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({ activeSubItemId 
     if (activeSubItemId === 'set_users') return 'users';
     if (activeSubItemId === 'set_configurations') return 'configurations';
     if (activeSubItemId === 'set_audit') return 'audit';
+    if (activeSubItemId === 'set_automation' || activeSubItemId === 'settings_automation') return 'automation';
     if (activeSubItemId === 'set_integrations' || activeSubItemId === 'set_databases') return 'system';
     if (activeSubItemId === 'set_upgrades') return 'upgrades';
     return 'rbac';
@@ -44,6 +46,7 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({ activeSubItemId 
       {activeTab === 'users' && <UserManagementView />}
       {activeTab === 'configurations' && <ConfigurationView />}
       {activeTab === 'audit' && <AuditLogsView />}
+      {activeTab === 'automation' && <AutomationEngineView />}
       {activeTab === 'system' && <DatabaseFederationHub />}
       {activeTab === 'upgrades' && <CloudUpgradesView />}
     </div>

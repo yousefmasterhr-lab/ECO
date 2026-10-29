@@ -182,10 +182,11 @@ export const DEPARTMENT_CATEGORIES: DepartmentNavCategory[] = [
     badgeAr: 'توظيف',
     badgeEn: 'Hiring',
     subItems: [
-      { id: 'ats_openings', titleAr: 'الوظائف الشاغرة', titleEn: 'Job Openings' },
-      { id: 'ats_pipeline', titleAr: 'مسار المرشحين (Kanban)', titleEn: 'Candidate Pipeline' },
-      { id: 'ats_interviews', titleAr: 'مواعيد المقابلات', titleEn: 'Interviews' },
-      { id: 'ats_offers', titleAr: 'مسوغات التعيين والعروض', titleEn: 'Offers & Onboarding' },
+      { id: 'ats_analytics', titleAr: 'لوحة مؤشرات التوظيف', titleEn: 'Recruitment Analytics' },
+      { id: 'ats_jobs', titleAr: 'إدارة الشواغر والوظائف', titleEn: 'Job Openings & Requisitions' },
+      { id: 'ats_pipeline', titleAr: 'مسار التوظيف والكانبان', titleEn: 'Candidate Pipeline (Kanban)' },
+      { id: 'ats_candidates', titleAr: 'قاعدة بيانات المرشحين والمواهب', titleEn: 'Talent Pool & Candidates' },
+      { id: 'ats_offers', titleAr: 'عروض العمل وتعيين الموظف', titleEn: 'Offers & HR Sync' },
     ],
   },
   {
@@ -232,6 +233,7 @@ export const DEPARTMENT_CATEGORIES: DepartmentNavCategory[] = [
       { id: 'set_users', titleAr: 'إدارة المستخدمين', titleEn: 'User Management' },
       { id: 'set_configurations', titleAr: 'التعريفات والقوائم المرنة', titleEn: 'Dynamic Configurations' },
       { id: 'set_audit', titleAr: 'سجل العمليات', titleEn: 'Audit Log' },
+      { id: 'set_automation', titleAr: 'محرك الأتمتة وسير العمل', titleEn: 'Automation & Workflow Engine' },
       { id: 'set_integrations', titleAr: 'ربط وتكامل قواعد البيانات (SQL Hub)', titleEn: 'Database Federation Hub (SQL)' },
       { id: 'set_upgrades', titleAr: 'الترقيات والصيانة السحابية', titleEn: 'Cloud Upgrades & Maintenance' },
     ],
