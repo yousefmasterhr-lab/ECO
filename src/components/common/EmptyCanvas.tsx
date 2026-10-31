@@ -11,6 +11,7 @@ import { InsuranceModule } from '../modules/insurance/InsuranceModule';
 import { FinancialAffairsModule } from '../modules/finance/FinancialAffairsModule';
 import { HRModule } from '../modules/hr/HRModule';
 import { ATSModule } from '../modules/ats/ATSModule';
+import { CTSModule } from '../modules/cts/CTSModule';
 import { SettingsModule } from '../modules/settings/SettingsModule';
 import { UnauthorizedView } from './UnauthorizedView';
 import { useFinancial } from '../../context/FinancialContext';
@@ -469,6 +470,8 @@ export const EmptyCanvas: React.FC = () => {
           <InsuranceModule activeSubItemId={activeSubItemId} />
         ) : activeCategory.id === 'ats' ? (
           <ATSModule activeSubItemId={activeSubItemId} />
+        ) : activeCategory.id === 'cts' ? (
+          <CTSModule activeSubItemId={activeSubItemId || undefined} />
         ) : activeCategory.id === 'reception' ? (
           <ReceptionModule activeSubItemId={activeSubItemId} />
         ) : activeCategory.id === 'settings' ? (

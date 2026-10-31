@@ -22,6 +22,12 @@ SUBMODULE_VIEW_PERMISSION_MAP['ats_analytics'] = 'ats.openings.view';
 SUBMODULE_VIEW_PERMISSION_MAP['ats_jobs'] = 'ats.openings.view';
 SUBMODULE_VIEW_PERMISSION_MAP['ats_candidates'] = 'ats.pipeline.view';
 SUBMODULE_VIEW_PERMISSION_MAP['ats_portal'] = 'ats.openings.view';
+SUBMODULE_VIEW_PERMISSION_MAP['cts_overview'] = 'cts.incoming.view';
+SUBMODULE_VIEW_PERMISSION_MAP['cts_projects'] = 'cts.incoming.view';
+SUBMODULE_VIEW_PERMISSION_MAP['cts_correspondences'] = 'cts.incoming.view';
+SUBMODULE_VIEW_PERMISSION_MAP['cts_inbound'] = 'cts.incoming.view';
+SUBMODULE_VIEW_PERMISSION_MAP['cts_outbound'] = 'cts.outgoing.view';
+SUBMODULE_VIEW_PERMISSION_MAP['cts_audit'] = 'cts.archive.view';
 SUBMODULE_VIEW_PERMISSION_MAP['set_automation'] = 'set.configurations.view';
 SUBMODULE_VIEW_PERMISSION_MAP['settings_automation'] = 'set.configurations.view';
 
@@ -40,6 +46,15 @@ const ATS_ORDERED_SUBITEMS = [
   { id: 'ats_candidates', titleAr: 'قاعدة بيانات المرشحين والمواهب', titleEn: 'Talent Pool & Candidates' },
   { id: 'ats_offers', titleAr: 'عروض العمل وتعيين الموظف', titleEn: 'Offers & HR Sync' },
   { id: 'ats_portal', titleAr: 'بوابة التوظيف وروابط UTM', titleEn: 'Careers Portal & UTM' },
+];
+
+const CTS_ORDERED_SUBITEMS = [
+  { id: 'cts_overview', titleAr: 'لوحة المؤشرات والتحليلات', titleEn: 'Dashboard & Telemetry' },
+  { id: 'cts_projects', titleAr: 'دليل المشاريع والجهات', titleEn: 'Projects & Stakeholders' },
+  { id: 'cts_correspondences', titleAr: 'سجل المراسلات العام', titleEn: 'General Registry' },
+  { id: 'cts_inbound', titleAr: 'قيد واستلام الوارد', titleEn: 'Inbound Intake' },
+  { id: 'cts_outbound', titleAr: 'إعداد واعتماد الصادر', titleEn: 'Outbound & Approvals' },
+  { id: 'cts_audit', titleAr: 'سجل التدقيق والامتثال', titleEn: 'Audit Trail & Compliance' },
 ];
 
 export const Sidebar: React.FC = () => {
@@ -67,6 +82,8 @@ export const Sidebar: React.FC = () => {
             ? INSURANCE_ORDERED_SUBITEMS
             : category.id === 'ats'
             ? ATS_ORDERED_SUBITEMS
+            : category.id === 'cts'
+            ? CTS_ORDERED_SUBITEMS
             : category.subItems || [];
         const allowedSubItems = sourceSubItems.filter(sub =>
           canViewSubModule(user, sub.id)

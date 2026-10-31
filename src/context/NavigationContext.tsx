@@ -121,16 +121,18 @@ export const DEPARTMENT_CATEGORIES: DepartmentNavCategory[] = [
   {
     id: 'cts',
     iconName: 'Mail',
-    titleAr: 'الصادر والوارد',
-    titleEn: 'Correspondence',
-    colorVar: '#0D9488', // Mineral Teal
+    titleAr: 'الصادر والوارد (CTS)',
+    titleEn: 'Correspondence (CTS)',
+    colorVar: '#D97706', // Brand Amber
     badgeAr: 'مراسلات',
     badgeEn: 'CTS',
     subItems: [
-      { id: 'cts_overview', titleAr: 'لوحة المتابعة والمؤشرات', titleEn: 'Monitoring Dashboard' },
-      { id: 'cts_log', titleAr: 'سجل المراسلات العام', titleEn: 'Correspondence Log' },
-      { id: 'cts_incoming_new', titleAr: 'تسجيل وارد جديد', titleEn: 'New Incoming' },
-      { id: 'cts_outgoing_draft', titleAr: 'مسودات واعتماد الصادر', titleEn: 'Outgoing Approvals' },
+      { id: 'cts_overview', titleAr: 'لوحة المؤشرات والتحليلات', titleEn: 'Dashboard & Telemetry' },
+      { id: 'cts_projects', titleAr: 'دليل المشاريع والجهات', titleEn: 'Projects & Stakeholders' },
+      { id: 'cts_correspondences', titleAr: 'سجل المراسلات العام', titleEn: 'General Registry' },
+      { id: 'cts_inbound', titleAr: 'قيد واستلام الوارد', titleEn: 'Inbound Intake' },
+      { id: 'cts_outbound', titleAr: 'إعداد واعتماد الصادر', titleEn: 'Outbound & Approvals' },
+      { id: 'cts_audit', titleAr: 'سجل التدقيق والامتثال', titleEn: 'Audit Trail & Compliance' },
     ],
   },
   {

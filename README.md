@@ -497,6 +497,29 @@ CREATE TABLE IF NOT EXISTS system_configurations (
   - حدود ذهبية كهرمانية ناعمة: `border-amber-200/50 dark:border-amber-500/20`.
   - نصوص وأيقونات عالية التباين والوضوح: `text-slate-900` في النهاري و `text-stone-100` في الليلي.
 
+### 4.30 منظومة إدارة المراسلات والمشاريع الهندسية (PCMS / CTS v2.6 Enterprise System)
+- **الهيكل المعماري والترقيم التسلسلي الذري المقفل:**
+  - صيغة الترقيم القياسي المعتمد: `[Project_Code]-[Originator]-[Recipient]-[Doc_Type]-[Year]-[Serial]` (مثل: `1233-CON-CTR-LTR-26-0045`).
+  - معالج حجز الأرقام الذري في Cloudflare D1 عبر `/api/cts/counters/reserve` داخل معاملة مقفلة ضد التزامن (`BEGIN IMMEDIATE`).
+  - دعم مسودات العمل المؤقتة (`DRAFT-XXXX`) مع مراسم اعتماد رسمي منبثقة تحمل الختم الكهرماني الثلاثي الأبعاد.
+- **درع منع التكرار الاستباقي للوارد (`Inbound Anti-Duplicate Shield`):**
+  - فحص ثلاثي فوري متزامن أثناء إدخال المكاتبات الواردة: تطابق `(project_ref + external_ref_no + sender_entity)`.
+  - كارت تحذيري مشع باللون الأحمر يحتوي على رقم القيد السابق وتاريخ استلامه وقفل زر الحفظ لحماية سجلات المكتب الفني.
+- **الشجرة التفاعلية لدورة المراسلات وتوثيق الباركود (Cycle Threading & QR Protocol):**
+  - تتبع مرئي لعلاقات `parent_doc_id` لبناء شجرة زمنية لمراحل المكاتبات والردود عبر `CorrespondenceCycleVisualizer.tsx`.
+  - توثيق ذكي بالباركود الرقمي QR عبر `DocumentQRCode.tsx` مع نافذة معاينة مكبرة للطباعة.
+  - تصدير سجل المراسلات الشامل بصيغة Excel ملونة ومنسقة عبر `excelExport.ts`.
+- **التبويبات التشغيلية الستة في `CTSModule.tsx`:**
+  - 📊 `cts_overview`: لوحة المؤشرات وحساب سرعة الرد ومتوسط زمن الإغلاق.
+  - 🏢 `cts_projects`: دليل المشاريع الهندسية وسجل الشركاء والجهات المعنية.
+  - 📜 `cts_correspondences`: سجل المراسلات العام الموحد مع محرك الفلترة المتعددة.
+  - 📥 `cts_inbound`: منصة قيد واستلام المكاتبات الواردة.
+  - 📤 `cts_outbound`: إعداد واعتماد الخطابات الصادرة ومراسم الاعتماد التسلسلي الذري.
+  - 🛡️ `cts_audit`: سجل التدقيق والامتثال الأمني غير القابل للتعديل.
+- **قاعدة بيانات Cloudflare D1 و Pages Functions:**
+  - جداول `cts_projects`, `cts_entities`, `cts_correspondences`, `cts_audit_logs`, `cts_system_counters`.
+  - نقاط نهاية موحدة `/api/cts/[[path]]`.
+
 ---
 
 ## 5. نظام الحوكمة والذاكرة الذكية الأربعة (4-File Governance System)

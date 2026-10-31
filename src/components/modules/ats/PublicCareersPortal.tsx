@@ -24,7 +24,7 @@ import {
 import { useLanguage } from '../../../context/LanguageContext';
 import { useTheme } from '../../../context/ThemeContext';
 import { atsStorage } from '../../../services/atsStorage';
-import { JobRequisition, Candidate, KnockoutRule } from './types';
+import { JobRequisition, Candidate } from './types';
 import { EcoOfficialLogo } from '../../common/EcoOfficialLogo';
 import { fireConfetti } from '../../../utils/confetti';
 
@@ -55,7 +55,7 @@ export const PublicCareersPortal: React.FC = () => {
   const [candName, setCandName] = useState('');
   const [candEmail, setCandEmail] = useState('');
   const [candPhone, setCandPhone] = useState('');
-  const [candLocation, setCandLocation] = useState('القاهرة، مصر');
+  const [candLocation, _setCandLocation] = useState('القاهرة، مصر');
   const [candCurrentTitle, setCandCurrentTitle] = useState('');
   const [candCompany, setCandCompany] = useState('');
   const [candExpYears, setCandExpYears] = useState<number>(4);
@@ -190,14 +190,13 @@ export const PublicCareersPortal: React.FC = () => {
         rating: 4.5,
         tags: [
           utmSource,
-          utmMedium,
           'تقديم عبر البوابة الخارجية',
           referralName ? `إحالة: ${referralName}` : 'إعلان توظيف خارجي'
         ],
         parsedResume: {
           summary:
             candSummary ||
-            `مرشح تقدم مباشرة عبر بوابة التوظيف الرسمية (${utmSource} / ${utmMedium}) لشغل وظيفة ${selectedJob.title}. يمتلك خبرة ${candExpYears} سنوات.`,
+            `مرشح تقدم مباشرة عبر بوابة التوظيف الرسمية (${utmSource}) لشغل وظيفة ${selectedJob.title}. يمتلك خبرة ${candExpYears} سنوات.`,
           extractedSkills: skillsArray.length > 0 ? skillsArray : jobSkills,
           matchedSkills: matched.length > 0 ? matched : jobSkills.slice(0, 3),
           missingSkills: jobSkills.filter(s => !matched.includes(s)),
@@ -207,7 +206,7 @@ export const PublicCareersPortal: React.FC = () => {
           languages: ['العربية (اللغة الأم)', 'الإنجليزية (متقدم)'],
           certifications: ['شهادات مهنية معتمدة'],
         },
-        knockoutResults: (selectedJob.knockoutRules || []).map((q: KnockoutRule) => ({
+        knockoutResults: ((selectedJob as any).knockoutRules || (selectedJob as any).knockoutQuestions || []).map((q: any) => ({
           questionId: q.id,
           question: q.question,
           answer: knockoutAnswers[q.id] || 'نعم، مطابق للشروط',
@@ -218,7 +217,7 @@ export const PublicCareersPortal: React.FC = () => {
             id: `note_${Date.now()}`,
             authorId: 'system_portal',
             authorName: 'بوابة التوظيف الرقمية',
-            content: `تم استلام الطلب برقم مرجعي: ${refNumber}. القناة المصدر: ${utmSource} / ${utmCampaign}${referralName ? ` (إحالة الموظف: ${referralName})` : ''}`,
+            content: `تم استلام الطلب برقم مرجعي: ${refNumber}. القناة المصدر: ${utmSource} / ${utmMedium} / ${utmCampaign}${referralName ? ` (إحالة الموظف: ${referralName})` : ''}`,
             createdAt: new Date().toISOString(),
             isPrivate: false,
           }
@@ -258,17 +257,15 @@ export const PublicCareersPortal: React.FC = () => {
   return (
     <div
       dir={isRtl ? 'rtl' : 'ltr'}
-      className={`min-h-screen w-full font-sans transition-colors duration-300 ${
-        isDark ? 'bg-[#060D08] text-stone-100' : 'bg-[#FFFDF9] text-slate-900'
-      }`}
+      className={`min-h-screen w-full font-sans transition-colors duration-300 ${isDark ? 'bg-[#060D08] text-stone-100' : 'bg-[#FFFDF9] text-slate-900'
+        }`}
     >
       {/* 1. Public Header Bar */}
       <header
-        className={`sticky top-0 z-50 w-full backdrop-blur-xl border-b transition-colors ${
-          isDark
-            ? 'bg-[#060D08]/90 border-amber-500/20 shadow-lg shadow-black/40'
-            : 'bg-[#FFFDF9]/90 border-amber-200/50 shadow-sm shadow-amber-900/5'
-        }`}
+        className={`sticky top-0 z-50 w-full backdrop-blur-xl border-b transition-colors ${isDark
+          ? 'bg-[#060D08]/90 border-amber-500/20 shadow-lg shadow-black/40'
+          : 'bg-[#FFFDF9]/90 border-amber-200/50 shadow-sm shadow-amber-900/5'
+          }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-18 flex items-center justify-between gap-4">
           {/* Logo & Platform Name */}
@@ -294,11 +291,10 @@ export const PublicCareersPortal: React.FC = () => {
             {/* Language Switch */}
             <button
               onClick={() => setLanguage(language === 'ar' ? 'en' : 'ar')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors ${
-                isDark
-                  ? 'border-stone-800 hover:bg-stone-800 text-stone-200'
-                  : 'border-amber-200 hover:bg-amber-100/50 text-slate-800'
-              }`}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors ${isDark
+                ? 'border-stone-800 hover:bg-stone-800 text-stone-200'
+                : 'border-amber-200 hover:bg-amber-100/50 text-slate-800'
+                }`}
             >
               {language === 'ar' ? 'English' : 'عربي'}
             </button>
@@ -306,11 +302,10 @@ export const PublicCareersPortal: React.FC = () => {
             {/* Dark / Light Theme Toggle */}
             <button
               onClick={toggleTheme}
-              className={`p-2 rounded-xl border transition-colors ${
-                isDark
-                  ? 'border-stone-800 hover:bg-stone-800 text-amber-400'
-                  : 'border-amber-200 hover:bg-amber-100/50 text-slate-800'
-              }`}
+              className={`p-2 rounded-xl border transition-colors ${isDark
+                ? 'border-stone-800 hover:bg-stone-800 text-amber-400'
+                : 'border-amber-200 hover:bg-amber-100/50 text-slate-800'
+                }`}
               title={t('تبديل وضع العرض', 'Toggle Theme')}
             >
               {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
@@ -350,11 +345,10 @@ export const PublicCareersPortal: React.FC = () => {
             {submittedRef ? (
               /* Success Confirmation Card */
               <div
-                className={`p-8 sm:p-12 rounded-3xl border text-center space-y-6 shadow-2xl ${
-                  isDark
-                    ? 'bg-gradient-to-b from-[#0F2618] to-[#0A180F] border-emerald-500/40 text-stone-100'
-                    : 'bg-gradient-to-b from-amber-50/70 to-emerald-50/40 border-emerald-300/60 text-slate-900'
-                }`}
+                className={`p-8 sm:p-12 rounded-3xl border text-center space-y-6 shadow-2xl ${isDark
+                  ? 'bg-gradient-to-b from-[#0F2618] to-[#0A180F] border-emerald-500/40 text-stone-100'
+                  : 'bg-gradient-to-b from-amber-50/70 to-emerald-50/40 border-emerald-300/60 text-slate-900'
+                  }`}
               >
                 <div className="w-20 h-20 mx-auto rounded-3xl bg-emerald-500 text-white flex items-center justify-center shadow-xl shadow-emerald-500/30 animate-bounce">
                   <CheckCircle2 className="w-10 h-10" />
@@ -400,11 +394,10 @@ export const PublicCareersPortal: React.FC = () => {
                 {/* Left Column: Job Description & Highlights (5 cols) */}
                 <div className="lg:col-span-5 space-y-6">
                   <div
-                    className={`p-6 sm:p-7 rounded-3xl border shadow-lg ${
-                      isDark
-                        ? 'bg-[#0E1A11] border-amber-500/20'
-                        : 'bg-[#FFFDF9] border-amber-200/60 shadow-amber-900/5'
-                    }`}
+                    className={`p-6 sm:p-7 rounded-3xl border shadow-lg ${isDark
+                      ? 'bg-[#0E1A11] border-amber-500/20'
+                      : 'bg-[#FFFDF9] border-amber-200/60 shadow-amber-900/5'
+                      }`}
                   >
                     {/* Header */}
                     <div className="space-y-3 pb-6 border-b border-amber-200/40 dark:border-stone-800">
@@ -450,8 +443,8 @@ export const PublicCareersPortal: React.FC = () => {
                           {selectedJob.employmentType === 'remote'
                             ? t('عن بُعد', 'Remote')
                             : selectedJob.employmentType === 'hybrid'
-                            ? t('هجين (مكتبي وعن بعد)', 'Hybrid')
-                            : t('دوام كامل', 'Full Time')}
+                              ? t('هجين (مكتبي وعن بعد)', 'Hybrid')
+                              : t('دوام كامل', 'Full Time')}
                         </p>
                       </div>
 
@@ -503,11 +496,10 @@ export const PublicCareersPortal: React.FC = () => {
                 {/* Right Column: Application Form (7 cols) */}
                 <div className="lg:col-span-7">
                   <div
-                    className={`p-6 sm:p-8 rounded-3xl border shadow-xl ${
-                      isDark
-                        ? 'bg-[#0E1A11] border-amber-500/20'
-                        : 'bg-[#FFFDF9] border-amber-200/60 shadow-amber-900/5'
-                    }`}
+                    className={`p-6 sm:p-8 rounded-3xl border shadow-xl ${isDark
+                      ? 'bg-[#0E1A11] border-amber-500/20'
+                      : 'bg-[#FFFDF9] border-amber-200/60 shadow-amber-900/5'
+                      }`}
                   >
                     <div className="flex items-center justify-between pb-6 mb-6 border-b border-amber-200/40 dark:border-stone-800">
                       <div>
@@ -542,8 +534,8 @@ export const PublicCareersPortal: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* Contact: Email, Phone & Location */}
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      {/* Contact: Email & Phone */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                           <label className="block text-xs font-bold text-slate-700 dark:text-stone-300 mb-1.5">
                             {t('البريد الإلكتروني *', 'Email Address *')}
@@ -573,22 +565,6 @@ export const PublicCareersPortal: React.FC = () => {
                               value={candPhone}
                               onChange={e => setCandPhone(e.target.value)}
                               placeholder="+20 100 123 4567"
-                              className="w-full ps-10 pe-3.5 py-2.5 rounded-xl border border-amber-200/70 dark:border-stone-800 bg-white dark:bg-[#121F16] text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
-                            />
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-xs font-bold text-slate-700 dark:text-stone-300 mb-1.5">
-                            {t('المدينة / محل الإقامة', 'City / Location')}
-                          </label>
-                          <div className="relative">
-                            <MapPin className="w-4 h-4 text-slate-400 absolute start-3 top-3.5 pointer-events-none" />
-                            <input
-                              type="text"
-                              value={candLocation}
-                              onChange={e => setCandLocation(e.target.value)}
-                              placeholder={t('مثال: القاهرة، مصر', 'e.g. Cairo, Egypt')}
                               className="w-full ps-10 pe-3.5 py-2.5 rounded-xl border border-amber-200/70 dark:border-stone-800 bg-white dark:bg-[#121F16] text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
                             />
                           </div>
@@ -716,13 +692,13 @@ export const PublicCareersPortal: React.FC = () => {
                       </div>
 
                       {/* Knockout Questions if any */}
-                      {selectedJob.knockoutRules && selectedJob.knockoutRules.length > 0 && (
+                      {Boolean((selectedJob as any).knockoutRules?.length || (selectedJob as any).knockoutQuestions?.length) && (
                         <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 space-y-3">
                           <h4 className="text-xs font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
                             <ShieldCheck className="w-4 h-4 text-amber-500" />
                             <span>{t('أسئلة التأهيل المبدئي للشواغر', 'Initial Screening Questions')}</span>
                           </h4>
-                          {selectedJob.knockoutRules.map((q: KnockoutRule) => (
+                          {(((selectedJob as any).knockoutRules || (selectedJob as any).knockoutQuestions || []) as any[]).map((q: any) => (
                             <div key={q.id} className="space-y-1">
                               <p className="text-xs font-medium text-slate-800 dark:text-stone-200">
                                 {q.question}
@@ -771,11 +747,10 @@ export const PublicCareersPortal: React.FC = () => {
           <div className="space-y-8 animate-in fade-in duration-300">
             {/* Hero Banner */}
             <div
-              className={`relative overflow-hidden rounded-3xl p-8 sm:p-12 border text-center shadow-xl ${
-                isDark
-                  ? 'bg-gradient-to-br from-[#0F2618] via-[#142A1D] to-[#0A180F] border-[#1D3324] text-white'
-                  : 'bg-gradient-to-br from-[#FFFDF9] via-amber-50/70 to-amber-100/40 border-amber-200/60 text-slate-900'
-              }`}
+              className={`relative overflow-hidden rounded-3xl p-8 sm:p-12 border text-center shadow-xl ${isDark
+                ? 'bg-gradient-to-br from-[#0F2618] via-[#142A1D] to-[#0A180F] border-[#1D3324] text-white'
+                : 'bg-gradient-to-br from-[#FFFDF9] via-amber-50/70 to-amber-100/40 border-amber-200/60 text-slate-900'
+                }`}
             >
               <div className="absolute top-0 right-1/4 w-80 h-80 bg-amber-500/15 rounded-full blur-3xl pointer-events-none" />
 
@@ -805,22 +780,20 @@ export const PublicCareersPortal: React.FC = () => {
                       value={searchTerm}
                       onChange={e => setSearchTerm(e.target.value)}
                       placeholder={t('ابحث باسم الوظيفة، الإدارة، أو المهارة المطلوبة...', 'Search job title, dept, or skill...')}
-                      className={`w-full ps-10 pe-4 py-2.5 rounded-2xl border text-xs font-medium focus:outline-none focus:ring-2 focus:ring-amber-500 ${
-                        isDark
-                          ? 'bg-[#121F16] border-stone-800 text-white placeholder-stone-400'
-                          : 'bg-white border-amber-200/80 text-slate-900 placeholder-slate-400 shadow-sm'
-                      }`}
+                      className={`w-full ps-10 pe-4 py-2.5 rounded-2xl border text-xs font-medium focus:outline-none focus:ring-2 focus:ring-amber-500 ${isDark
+                        ? 'bg-[#121F16] border-stone-800 text-white placeholder-stone-400'
+                        : 'bg-white border-amber-200/80 text-slate-900 placeholder-slate-400 shadow-sm'
+                        }`}
                     />
                   </div>
 
                   <select
                     value={selectedDept}
                     onChange={e => setSelectedDept(e.target.value)}
-                    className={`px-4 py-2.5 rounded-2xl border text-xs font-bold focus:outline-none focus:ring-2 focus:ring-amber-500 shrink-0 ${
-                      isDark
-                        ? 'bg-[#121F16] border-stone-800 text-white'
-                        : 'bg-white border-amber-200/80 text-slate-900 shadow-sm'
-                    }`}
+                    className={`px-4 py-2.5 rounded-2xl border text-xs font-bold focus:outline-none focus:ring-2 focus:ring-amber-500 shrink-0 ${isDark
+                      ? 'bg-[#121F16] border-stone-800 text-white'
+                      : 'bg-white border-amber-200/80 text-slate-900 shadow-sm'
+                      }`}
                   >
                     <option value="all">{t('كافة الإدارات والقطاعات', 'All Departments')}</option>
                     {departments.map(dept => (
@@ -852,9 +825,8 @@ export const PublicCareersPortal: React.FC = () => {
                 </div>
               ) : filteredJobs.length === 0 ? (
                 <div
-                  className={`p-12 rounded-3xl border text-center space-y-3 ${
-                    isDark ? 'bg-[#0E1A11] border-stone-800' : 'bg-white border-amber-200/60'
-                  }`}
+                  className={`p-12 rounded-3xl border text-center space-y-3 ${isDark ? 'bg-[#0E1A11] border-stone-800' : 'bg-white border-amber-200/60'
+                    }`}
                 >
                   <Briefcase className="w-10 h-10 mx-auto text-amber-500 opacity-40" />
                   <p className="text-sm font-bold text-slate-700 dark:text-stone-300">
@@ -869,11 +841,10 @@ export const PublicCareersPortal: React.FC = () => {
                   {filteredJobs.map(job => (
                     <div
                       key={job.id}
-                      className={`p-6 rounded-3xl border transition-all duration-200 flex flex-col justify-between group hover:shadow-xl hover:scale-101 cursor-pointer ${
-                        isDark
-                          ? 'bg-[#0E1A11] border-amber-500/20 hover:border-amber-500/50'
-                          : 'bg-white border-amber-200/60 hover:border-amber-400 shadow-sm shadow-amber-900/5'
-                      }`}
+                      className={`p-6 rounded-3xl border transition-all duration-200 flex flex-col justify-between group hover:shadow-xl hover:scale-101 cursor-pointer ${isDark
+                        ? 'bg-[#0E1A11] border-amber-500/20 hover:border-amber-500/50'
+                        : 'bg-white border-amber-200/60 hover:border-amber-400 shadow-sm shadow-amber-900/5'
+                        }`}
                       onClick={() => handleSelectJob(job)}
                     >
                       <div className="space-y-4">
@@ -954,4 +925,3 @@ export const PublicCareersPortal: React.FC = () => {
     </div>
   );
 };
-

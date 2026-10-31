@@ -23,5 +23,5 @@
     }
   },
   "include": ["src"],
-  "exclude": ["Insurance", "ATS", "node_modules", "dist"]
+  "exclude": ["Insurance", "ATS", "CTS", "node_modules", "dist"]
 }
