@@ -185,7 +185,7 @@ export const DEPARTMENT_CATEGORIES: DepartmentNavCategory[] = [
     subItems: [
       { id: 'ats_analytics', titleAr: 'لوحة مؤشرات التوظيف', titleEn: 'Recruitment Analytics' },
       { id: 'ats_jobs', titleAr: 'إدارة الشواغر والوظائف', titleEn: 'Job Openings & Requisitions' },
-      { id: 'ats_pipeline', titleAr: 'مسار التوظيف والكانبان', titleEn: 'Candidate Pipeline (Kanban)' },
+      { id: 'ats_pipeline', titleAr: 'مسار التوظيف والفرز', titleEn: 'Candidate Pipeline' },
       { id: 'ats_candidates', titleAr: 'قاعدة بيانات المرشحين والمواهب', titleEn: 'Talent Pool & Candidates' },
       { id: 'ats_offers', titleAr: 'عروض العمل وتعيين الموظف', titleEn: 'Offers & HR Sync' },
       { id: 'ats_portal', titleAr: 'بوابة التوظيف وروابط UTM', titleEn: 'Careers Portal & UTM' },

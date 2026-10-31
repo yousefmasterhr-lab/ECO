@@ -301,6 +301,38 @@ class ATSStorageService {
     }
   }
 
+  // ==================== STATS & TELEMETRY ====================
+  public async getStats(companyId?: string): Promise<{
+    totalJobs: number;
+    totalCandidates: number;
+    scheduledInterviews: number;
+    totalOffers: number;
+    hiredCount: number;
+  }> {
+    try {
+      const query = companyId && companyId !== 'all' ? `?companyId=${encodeURIComponent(companyId)}` : '';
+      const res = await fetch(`/api/ats/stats${query}`);
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch {
+      // offline fallback
+    }
+
+    const jobs = await this.getJobs(companyId);
+    const cands = await this.getCandidates(companyId);
+    const offers = await this.getOffers(companyId);
+    const interviews = await this.getInterviews();
+
+    return {
+      totalJobs: jobs.length,
+      totalCandidates: cands.length,
+      scheduledInterviews: interviews.filter(i => i.status === 'scheduled').length,
+      totalOffers: offers.length,
+      hiredCount: cands.filter(c => c.stage === 'hired').length,
+    };
+  }
+
   // ==================== 1-CLICK CORE HR & INSURANCE CONVERSION ====================
   public async syncCandidateToCoreHR(
     offerId: string,

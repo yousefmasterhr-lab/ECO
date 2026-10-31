@@ -119,19 +119,19 @@ export const ATSPortalTab: React.FC<ATSPortalTabProps> = ({ companyId }) => {
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
       {/* 1. Header Banner */}
-      <div className="p-6 sm:p-7 rounded-3xl bg-gradient-to-br from-[#0F2618] via-[#142A1D] to-[#0A180F] border border-[#1D3324] text-white shadow-xl relative overflow-hidden">
+      <div className="p-6 sm:p-7 rounded-3xl bg-gradient-to-l from-amber-100/80 via-amber-50/60 to-white dark:from-[#0D1F17] dark:via-[#07130E] dark:to-[#07130E] text-slate-900 dark:text-stone-100 border border-amber-200/60 dark:border-amber-500/30 shadow-sm dark:shadow-xl relative overflow-hidden">
         <div className="absolute top-0 right-1/4 w-72 h-72 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5">
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/25 text-amber-400 text-xs font-bold">
-              <Globe2 className="w-3.5 h-3.5" />
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-900 dark:text-amber-300 text-xs font-bold">
+              <Globe2 className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
               <span>{t('قنوات النشر وروابط UTM الذكية', 'Multi-channel Sourcing & Smart UTMs')}</span>
             </div>
-            <h2 className="text-xl sm:text-2xl font-black text-white">
+            <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
               {t('بوابة التوظيف وروابط التتبع الذكية لقنوات النشر', 'Careers Portal & Campaign Tracking')}
             </h2>
-            <p className="text-xs sm:text-sm text-[#97A69B] max-w-2xl leading-relaxed">
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-[#97A69B] max-w-2xl leading-relaxed">
               {t(
                 'توليد روابط تتبع ذكية (UTM Tracking Links) لكل شاغر وظيفي لمشاركتها عبر منصات التوظيف ومواقع التواصل الاجتماعي، مع معاينة حية لبوابة التوظيف.',
                 'Generate specialized tracking links for each job vacancy across hiring platforms, monitor inbound sourcing channels, and preview the public portal live.'
@@ -144,7 +144,7 @@ export const ATSPortalTab: React.FC<ATSPortalTabProps> = ({ companyId }) => {
               href="/careers"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-lg shadow-amber-500/20 active:scale-98 transition-all shrink-0"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs shadow-md shadow-amber-500/25 active:scale-98 transition-all shrink-0 cursor-pointer"
             >
               <span>{t('فتح البوابة العامة مباشرة', 'Open Public Portal')}</span>
               <ExternalLink className="w-3.5 h-3.5" />
@@ -278,15 +278,15 @@ export const ATSPortalTab: React.FC<ATSPortalTabProps> = ({ companyId }) => {
                       key={item.id}
                       type="button"
                       onClick={() => setSource(item.id)}
-                      className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all text-start flex items-center gap-2 ${
+                      className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all text-start flex items-center gap-2 cursor-pointer ${
                         isSelected
-                          ? 'bg-amber-500 text-white border-amber-500 shadow-md shadow-amber-500/20 ring-1 ring-amber-400'
+                          ? 'bg-amber-500 text-slate-950 font-bold border-amber-500 shadow-md shadow-amber-500/20 ring-1 ring-amber-400'
                           : 'bg-white dark:bg-[#121F16] border-amber-200/50 dark:border-stone-800 text-slate-700 dark:text-stone-300 hover:border-amber-400'
                       }`}
                     >
                       <span
                         className="w-2.5 h-2.5 rounded-full shrink-0"
-                        style={{ backgroundColor: isSelected ? '#FFFFFF' : item.color }}
+                        style={{ backgroundColor: isSelected ? '#020617' : item.color }}
                       />
                       <span className="truncate">{t(item.labelAr, item.labelEn)}</span>
                     </button>
@@ -354,7 +354,7 @@ export const ATSPortalTab: React.FC<ATSPortalTabProps> = ({ companyId }) => {
                 <button
                   type="button"
                   onClick={handleCopy}
-                  className="flex-1 py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-md shadow-amber-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  className="flex-1 py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs shadow-md shadow-amber-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
                   {copied ? (
                     <>
@@ -520,7 +520,7 @@ export const ATSPortalTab: React.FC<ATSPortalTabProps> = ({ companyId }) => {
                       href={generatedUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="w-full py-2.5 rounded-xl bg-amber-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-amber-500/20 hover:bg-amber-600 transition-colors"
+                      className="w-full py-2.5 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-amber-500/25 hover:bg-amber-600 transition-colors"
                     >
                       <Send className="w-3.5 h-3.5" />
                       <span>{t('التقديم الآن على الوظيفة', 'Apply Now')}</span>

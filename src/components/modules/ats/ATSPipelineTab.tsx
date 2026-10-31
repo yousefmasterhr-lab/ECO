@@ -141,13 +141,13 @@ export const ATSPipelineTab: React.FC<ATSPipelineTabProps> = ({ companyId }) => 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       {/* Top Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-2xl bg-white/70 dark:bg-[#0D1C13]/70 backdrop-blur-md border border-[#E0D9CB] dark:border-[#1D3324] shadow-sm">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 sm:p-7 rounded-3xl bg-gradient-to-l from-amber-100/80 via-amber-50/60 to-white dark:from-[#0D1F17] dark:via-[#07130E] dark:to-[#07130E] text-slate-900 dark:text-stone-100 border border-amber-200/60 dark:border-amber-500/30 shadow-sm dark:shadow-xl relative overflow-hidden">
         <div>
-          <h2 className="text-xl font-bold text-[#142319] dark:text-[#E8F3EB] flex items-center gap-2.5">
-            <Kanban className="w-6 h-6 text-amber-500" />
-            {t('مسار التوظيف والفرز التفاعلي (Pipeline Kanban)', 'Interactive Candidate Pipeline Kanban')}
+          <h2 className="text-xl font-bold text-slate-900 dark:text-[#E8F3EB] flex items-center gap-2.5">
+            <Kanban className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+            {t('مسار التوظيف والفرز التفاعلي', 'Interactive Candidate Pipeline')}
           </h2>
-          <p className="text-xs text-[#5C665E] dark:text-[#97A69B] mt-1">
+          <p className="text-xs text-slate-600 dark:text-[#97A69B] mt-1">
             {t('سحب وإفلات المرشحين عبر مراحل التعيين مع تحديث لحظي ومطابقة الذكاء الاصطناعي', 'Drag and drop candidates across pipeline stages with instant sync and AI match scores')}
           </p>
         </div>
@@ -191,7 +191,7 @@ export const ATSPipelineTab: React.FC<ATSPipelineTabProps> = ({ companyId }) => 
       {/* Kanban Board Container */}
       {loading ? (
         <div className="py-12 text-center text-xs text-[#5C665E] dark:text-[#97A69B]">
-          {t('جاري تحميل لوحة الكانبان...', 'Loading Kanban board...')}
+          {t('جاري تحميل مسار التوظيف والفرز...', 'Loading candidate pipeline...')}
         </div>
       ) : (
         <div className="overflow-x-auto pb-6">
@@ -417,7 +417,7 @@ export const ATSPipelineTab: React.FC<ATSPipelineTabProps> = ({ companyId }) => 
                   />
                   <button
                     onClick={() => handleAddNote(selectedCandidate.id)}
-                    className="px-4 py-1.5 rounded-xl text-xs font-bold text-white bg-amber-500 hover:bg-amber-600"
+                    className="px-4 py-1.5 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold transition-all cursor-pointer"
                   >
                     {t('إضافة', 'Add')}
                   </button>

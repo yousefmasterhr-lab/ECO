@@ -188,20 +188,20 @@ export const ATSOffersTab: React.FC<ATSOffersTabProps> = ({ companyId }) => {
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       {/* Top Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-2xl bg-white/70 dark:bg-[#0D1C13]/70 backdrop-blur-md border border-[#E0D9CB] dark:border-[#1D3324] shadow-sm">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 sm:p-7 rounded-3xl bg-gradient-to-l from-amber-100/80 via-amber-50/60 to-white dark:from-[#0D1F17] dark:via-[#07130E] dark:to-[#07130E] text-slate-900 dark:text-stone-100 border border-amber-200/60 dark:border-amber-500/30 shadow-sm dark:shadow-xl relative overflow-hidden">
         <div>
-          <h2 className="text-xl font-bold text-[#142319] dark:text-[#E8F3EB] flex items-center gap-2.5">
-            <FileSignature className="w-6 h-6 text-amber-500" />
-            {t('عروض العمل وتعيين الموظف (Job Offers & Conversion)', 'Job Offers & Core HR Conversion')}
+          <h2 className="text-xl font-bold text-slate-900 dark:text-[#E8F3EB] flex items-center gap-2.5">
+            <FileSignature className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+            {t('عروض العمل وتعيين الموظف', 'Job Offers & Core HR Conversion')}
           </h2>
-          <p className="text-xs text-[#5C665E] dark:text-[#97A69B] mt-1">
+          <p className="text-xs text-slate-600 dark:text-[#97A69B] mt-1">
             {t('صياغة العروض الوظيفية الرسمية، التوقيع الرقمي، والتحويل الآلي الفوري لمنظومة الموارد البشرية والتأمينات بنقرة واحدة', 'Generate official offers, digital e-signatures, and 1-click seamless conversion to Core HR & Social Insurance')}
           </p>
         </div>
 
         <button
           onClick={() => setIsCreateModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-amber-500 hover:bg-amber-600 transition-all shadow-sm hover:shadow-md active:scale-95"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold transition-all shadow-md shadow-amber-500/25 active:scale-95 cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           {t('إصدار عرض وظيفي جديد', 'Issue New Job Offer')}
@@ -410,7 +410,7 @@ export const ATSOffersTab: React.FC<ATSOffersTabProps> = ({ companyId }) => {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl text-xs font-bold text-white bg-amber-500 hover:bg-amber-600 shadow-sm"
+                  className="px-5 py-2 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold shadow-md shadow-amber-500/25 transition-all cursor-pointer"
                 >
                   {t('إرسال العرض الوظيفي', 'Send Offer')}
                 </button>
@@ -548,7 +548,7 @@ export const ATSOffersTab: React.FC<ATSOffersTabProps> = ({ companyId }) => {
               </button>
               <button
                 onClick={saveSignature}
-                className="px-5 py-2 rounded-xl text-xs font-bold text-white bg-amber-500 hover:bg-amber-600 shadow-sm"
+                className="px-5 py-2 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold shadow-md shadow-amber-500/25 transition-all cursor-pointer"
               >
                 {t('اعتماد التوقيع وقبول العرض', 'Save Signature & Accept')}
               </button>

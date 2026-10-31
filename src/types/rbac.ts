@@ -901,11 +901,11 @@ export const ERP_MODULES_MATRIX_CONFIG: Record<DepartmentKey, ERPModuleMatrixCon
     allPermissionKeys: [],
   },
 
-  // 9. استقطاب الكفاءات (ATS - Talent Acquisition)
+  // 9. استقطاب الكفاءات (Talent Acquisition)
   ats: {
     id: 'ats',
-    titleAr: 'استقطاب الكفاءات (ATS)',
-    titleEn: 'Talent Acquisition (ATS)',
+    titleAr: 'استقطاب الكفاءات',
+    titleEn: 'Talent Acquisition',
     icon: UserCheck,
     colorVar: '#6366F1',
     badge: 'توظيف',
@@ -928,7 +928,7 @@ export const ERP_MODULES_MATRIX_CONFIG: Record<DepartmentKey, ERPModuleMatrixCon
       },
       {
         id: 'ats_pipeline',
-        titleAr: 'مسار المرشحين وفرز السير (Kanban)',
+        titleAr: 'مسار المرشحين وفرز السير',
         titleEn: 'Candidate Pipeline & CVs',
         descriptionAr: 'تقييم ملفات المتقدمين، تصفية السير الذاتية، وتحريكهم في مسار التوظيف',
         actions: {

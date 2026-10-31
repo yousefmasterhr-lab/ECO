@@ -62,19 +62,19 @@ export const ATSCandidatesTab: React.FC<ATSCandidatesTabProps> = ({ companyId })
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       {/* Top Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-2xl bg-white/70 dark:bg-[#0D1C13]/70 backdrop-blur-md border border-[#E0D9CB] dark:border-[#1D3324] shadow-sm">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 sm:p-7 rounded-3xl bg-gradient-to-l from-amber-100/80 via-amber-50/60 to-white dark:from-[#0D1F17] dark:via-[#07130E] dark:to-[#07130E] text-slate-900 dark:text-stone-100 border border-amber-200/60 dark:border-amber-500/30 shadow-sm dark:shadow-xl relative overflow-hidden">
         <div>
-          <h2 className="text-xl font-bold text-[#142319] dark:text-[#E8F3EB] flex items-center gap-2.5">
-            <Users className="w-6 h-6 text-amber-500" />
-            {t('قاعدة بيانات المرشحين والمواهب (Talent Pool)', 'Talent Pool & Candidates Database')}
+          <h2 className="text-xl font-bold text-slate-900 dark:text-[#E8F3EB] flex items-center gap-2.5">
+            <Users className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+            {t('قاعدة بيانات المرشحين والمواهب', 'Talent Pool & Candidates Database')}
           </h2>
-          <p className="text-xs text-[#5C665E] dark:text-[#97A69B] mt-1">
+          <p className="text-xs text-slate-600 dark:text-[#97A69B] mt-1">
             {t('سجل شامل لجميع الكوادر والمتقدمين مع التقييمات، السير الذاتية، ومطابقة الكفاءات', 'Master repository of all applicants, resume evaluations, and competency scoring')}
           </p>
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-xs font-bold px-3 py-1.5 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/20">
+          <span className="text-xs font-bold px-3 py-1.5 rounded-xl bg-amber-500/15 text-amber-900 dark:text-amber-300 border border-amber-500/30">
             {filteredCandidates.length} {t('مرشح مسجل', 'Registered Candidates')}
           </span>
         </div>
@@ -267,7 +267,7 @@ export const ATSCandidatesTab: React.FC<ATSCandidatesTabProps> = ({ companyId })
             <div className="mt-5 pt-3 border-t border-[#E0D9CB] dark:border-[#1D3324] flex justify-end">
               <button
                 onClick={() => setSelectedCandidate(null)}
-                className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-amber-500 hover:bg-amber-600"
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold transition-all cursor-pointer"
               >
                 {t('إغلاق', 'Close')}
               </button>

@@ -314,7 +314,7 @@ export const PublicCareersPortal: React.FC = () => {
             {/* Sign In to ERP Link */}
             <a
               href="/"
-              className="hidden sm:inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white shadow-sm shadow-amber-500/20 transition-all hover:scale-102"
+              className="hidden sm:inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold shadow-sm shadow-amber-500/20 transition-all hover:scale-102"
             >
               <span>{t('تسجيل الدخول للنظام', 'ERP Login')}</span>
               <ExternalLink className="w-3.5 h-3.5" />
@@ -382,7 +382,7 @@ export const PublicCareersPortal: React.FC = () => {
                       setSelectedJob(null);
                       setSubmittedRef(null);
                     }}
-                    className="px-6 py-3 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-lg shadow-amber-500/25 transition-all"
+                    className="px-6 py-3 rounded-2xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/25 transition-all cursor-pointer"
                   >
                     {t('استعراض وظائف أخرى', 'Explore More Opportunities')}
                   </button>
@@ -720,7 +720,7 @@ export const PublicCareersPortal: React.FC = () => {
                       <button
                         type="submit"
                         disabled={isSubmitting}
-                        className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-black text-sm shadow-xl shadow-amber-500/25 active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                        className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-sm shadow-xl shadow-amber-500/25 active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                       >
                         {isSubmitting ? (
                           <>
@@ -748,8 +748,8 @@ export const PublicCareersPortal: React.FC = () => {
             {/* Hero Banner */}
             <div
               className={`relative overflow-hidden rounded-3xl p-8 sm:p-12 border text-center shadow-xl ${isDark
-                ? 'bg-gradient-to-br from-[#0F2618] via-[#142A1D] to-[#0A180F] border-[#1D3324] text-white'
-                : 'bg-gradient-to-br from-[#FFFDF9] via-amber-50/70 to-amber-100/40 border-amber-200/60 text-slate-900'
+                ? 'bg-gradient-to-l from-[#0D1F17] via-[#07130E] to-[#07130E] border-amber-500/30 text-stone-100'
+                : 'bg-gradient-to-l from-amber-100/80 via-amber-50/60 to-white border-amber-200/60 text-slate-900 shadow-sm'
                 }`}
             >
               <div className="absolute top-0 right-1/4 w-80 h-80 bg-amber-500/15 rounded-full blur-3xl pointer-events-none" />
