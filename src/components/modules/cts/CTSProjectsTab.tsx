@@ -190,7 +190,7 @@ export const CTSProjectsTab: React.FC<CTSProjectsTabProps> = ({ onOpenDocDossier
               setSelectedProjectForEdit(null);
               setIsProjectModalOpen(true);
             }}
-            className="flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-2xl bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white shadow-md shadow-amber-500/25 transition"
+            className="flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-2xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold shadow-md shadow-amber-500/25 transition"
           >
             <Plus className="w-4 h-4" />
             <span>إضافة مشروع هندسي</span>
@@ -201,7 +201,7 @@ export const CTSProjectsTab: React.FC<CTSProjectsTabProps> = ({ onOpenDocDossier
               setSelectedEntityForEdit(null);
               setIsEntityModalOpen(true);
             }}
-            className="flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-2xl bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white shadow-md shadow-amber-500/25 transition"
+            className="flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-2xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold shadow-md shadow-amber-500/25 transition"
           >
             <Plus className="w-4 h-4" />
             <span>تسجيل جهة جديدة</span>

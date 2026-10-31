@@ -272,7 +272,7 @@ export const DocumentDossierModal: React.FC<DocumentDossierModalProps> = ({
                   onClose();
                   onReply(activeDoc);
                 }}
-                className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-md shadow-amber-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs shadow-md shadow-amber-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
               >
                 <Reply className="w-3.5 h-3.5" />
                 <span>الرد على المعاملة</span>

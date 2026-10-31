@@ -135,7 +135,7 @@ export const CTSCorrespondencesTab: React.FC<CTSCorrespondencesTabProps> = ({
 
             <button
               onClick={onOpenInboundModal}
-              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-xl bg-sky-50 dark:bg-sky-950/40 border border-sky-300 dark:border-sky-800 text-sky-700 dark:text-sky-300 hover:bg-sky-100 transition shadow-sm"
+              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-xl bg-sky-50 dark:bg-sky-950/40 border border-sky-300 dark:border-sky-800 text-sky-900 dark:text-sky-200 hover:bg-sky-100 transition shadow-sm"
             >
               <Inbox className="w-4 h-4 text-sky-600" />
               <span>وارد جديد</span>
@@ -143,7 +143,7 @@ export const CTSCorrespondencesTab: React.FC<CTSCorrespondencesTabProps> = ({
 
             <button
               onClick={onOpenOutboundModal}
-              className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white shadow-md shadow-amber-500/25 transition"
+              className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold shadow-md shadow-amber-500/25 transition"
             >
               <Send className="w-4 h-4" />
               <span>صادر جديد</span>

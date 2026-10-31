@@ -87,7 +87,7 @@ export const CTSModule: React.FC<CTSModuleProps> = ({
     total_approved: 0,
     total_replied: 0,
     total_overdue: 0,
-    average_reply_time_days: 2.8,
+    average_reply_time_days: 0,
   });
 
   const loadStats = async () => {
@@ -203,34 +203,33 @@ export const CTSModule: React.FC<CTSModuleProps> = ({
       />
 
       {/* 3D Cinematic Hero Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#1C291E] via-[#0E1A11] to-[#0A120D] text-white p-6 sm:p-8 shadow-2xl border border-amber-500/20">
-        {/* Amber glow effects */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-l from-amber-100/80 via-amber-50/60 to-white dark:from-[#0D1F17] dark:via-[#07130E] dark:to-[#07130E] text-slate-900 dark:text-stone-100 p-6 sm:p-8 shadow-sm dark:shadow-2xl border border-amber-200/60 dark:border-amber-500/30">
+        {/* Glow effects */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/5 dark:bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-80 h-80 bg-emerald-500/5 dark:bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-3 max-w-2xl">
             <div className="flex flex-wrap items-center gap-2.5">
-              <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                <span>PCMS / CTS v2.6 Enterprise</span>
+              <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/15 text-amber-900 dark:text-amber-300 border border-amber-500/30 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                <span>المراسلات الهندسية الذكية</span>
               </span>
-              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white/10 text-stone-200 border border-white/10 flex items-center gap-1.5">
-                <Building2 className="w-3.5 h-3.5 text-amber-400" />
-                <span>مشروع [1233] إنشاء وتجهيز مبنى الحراص</span>
+              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-stone-100 dark:bg-white/10 text-slate-700 dark:text-stone-200 border border-stone-200/70 dark:border-white/10 flex items-center gap-1.5">
+                <Building2 className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                <span>{stats.activeProjectsCount > 0 ? `${stats.activeProjectsCount} مشاريع هندسية نشطة` : 'سجل المشاريع الهندسية'}</span>
               </span>
-              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5" />
+              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-900 dark:text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                 <span>مزامن مع Cloudflare D1</span>
               </span>
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-3">
-              <span>منظومة إدارة المراسلات والمشاريع الهندسية</span>
-              <span className="text-amber-400 text-lg sm:text-xl font-bold font-mono">(CTS / PCMS)</span>
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white">
+              منظومة المراسلات والمشاريع الهندسية
             </h1>
 
-            <p className="text-xs sm:text-sm text-stone-300 leading-relaxed max-w-xl">
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-stone-300 leading-relaxed max-w-xl">
               إدارة احترافية لدورة حياة المكاتبات، الترقيم التسلسلي الذري المحمي، شجرة تتبع الردود (Threading)، ومكافحة تكرار المعاملات مع التوثيق بالباركود QR.
             </p>
           </div>
@@ -242,10 +241,10 @@ export const CTSModule: React.FC<CTSModuleProps> = ({
                 setInboundToEdit(null);
                 setIsInboundModalOpen(true);
               }}
-              className="flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/30 text-sky-200 font-bold text-xs backdrop-blur-md transition shadow-lg"
+              className="flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-sky-50 dark:bg-sky-950/40 hover:bg-sky-100 dark:hover:bg-sky-900/40 border border-sky-300 dark:border-sky-500/30 text-sky-900 dark:text-sky-200 font-bold text-xs transition shadow-sm cursor-pointer"
             >
-              <Inbox className="w-4 h-4 text-sky-400" />
-              <span>قيد وارد جديد (Intake)</span>
+              <Inbox className="w-4 h-4 text-sky-600 dark:text-sky-400" />
+              <span>قيد وارد جديد</span>
             </button>
 
             <button
@@ -254,7 +253,7 @@ export const CTSModule: React.FC<CTSModuleProps> = ({
                 setReplyParentInboundId(null);
                 setIsOutboundModalOpen(true);
               }}
-              className="flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white font-bold text-xs shadow-xl shadow-amber-500/25 transition"
+              className="flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs shadow-md shadow-amber-500/25 transition cursor-pointer"
             >
               <Send className="w-4 h-4" />
               <span>تحرير صادر جديد</span>
@@ -263,22 +262,22 @@ export const CTSModule: React.FC<CTSModuleProps> = ({
         </div>
 
         {/* Hero Telemetry Strip */}
-        <div className="mt-6 pt-5 border-t border-white/10 grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="mt-6 pt-5 border-t border-amber-200/60 dark:border-white/10 grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div>
-            <span className="text-[11px] text-stone-400 block">إجمالي المعاملات</span>
-            <span className="text-lg sm:text-xl font-bold text-white font-mono">{stats.total_correspondences}</span>
+            <span className="text-[11px] text-slate-500 dark:text-stone-400 block">إجمالي المعاملات</span>
+            <span className="text-lg sm:text-xl font-black text-slate-900 dark:text-white font-mono">{stats.total_correspondences}</span>
           </div>
           <div>
-            <span className="text-[11px] text-stone-400 block">الوارد المعتمد</span>
-            <span className="text-lg sm:text-xl font-bold text-sky-300 font-mono">{stats.total_inbound}</span>
+            <span className="text-[11px] text-slate-500 dark:text-stone-400 block">الوارد المعتمد</span>
+            <span className="text-lg sm:text-xl font-black text-sky-700 dark:text-sky-300 font-mono">{stats.total_inbound}</span>
           </div>
           <div>
-            <span className="text-[11px] text-stone-400 block">الصادر الموثق</span>
-            <span className="text-lg sm:text-xl font-bold text-amber-300 font-mono">{stats.total_outbound}</span>
+            <span className="text-[11px] text-slate-500 dark:text-stone-400 block">الصادر الموثق</span>
+            <span className="text-lg sm:text-xl font-black text-amber-700 dark:text-amber-300 font-mono">{stats.total_outbound}</span>
           </div>
           <div>
-            <span className="text-[11px] text-stone-400 block">مسودات تحت الاعتماد</span>
-            <span className="text-lg sm:text-xl font-bold text-emerald-300 font-mono">{stats.total_drafts}</span>
+            <span className="text-[11px] text-slate-500 dark:text-stone-400 block">مسودات تحت الاعتماد</span>
+            <span className="text-lg sm:text-xl font-black text-emerald-700 dark:text-emerald-300 font-mono">{stats.total_drafts}</span>
           </div>
         </div>
       </div>

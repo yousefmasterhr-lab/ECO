@@ -634,11 +634,11 @@ export const ERP_MODULES_MATRIX_CONFIG: Record<DepartmentKey, ERPModuleMatrixCon
     allPermissionKeys: [],
   },
 
-  // 6. الصادر والوارد (CTS - Correspondence)
+  // 6. الصادر والوارد (Correspondence)
   cts: {
     id: 'cts',
-    titleAr: 'الصادر والوارد (CTS)',
-    titleEn: 'Correspondence (CTS)',
+    titleAr: 'الصادر والوارد',
+    titleEn: 'Correspondence Control',
     icon: Mail,
     colorVar: '#0D9488',
     badge: 'مراسلات',

@@ -141,7 +141,7 @@ export const CTSAuditTab: React.FC = () => {
             </div>
             <div>
               <h3 className="text-base font-bold text-stone-900 dark:text-stone-100">
-                سجل التدقيق والامتثال الأمني غير القابل للتعديل (Immutable Audit Trail)
+                سجل التدقيق والامتثال الأمني المعتمد
               </h3>
               <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
                 تتبع كامل لكافة الحركات، التعديلات، توليد الأرقام الرسمية، وملاحظات المراجعة

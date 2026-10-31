@@ -503,7 +503,7 @@ export const InboundEntryModal: React.FC<InboundEntryModalProps> = ({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold text-xs shadow-md shadow-amber-500/20 active:scale-98 transition-all flex items-center gap-2 disabled:opacity-50"
+              className="px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs shadow-md shadow-amber-500/20 active:scale-98 transition-all flex items-center gap-2 disabled:opacity-50"
             >
               <Send className="w-4 h-4" />
               <span>{isSubmitting ? 'جاري الحفظ...' : (existingDoc ? 'حفظ التعديلات' : 'تسجيل وقيد الوارد')}</span>

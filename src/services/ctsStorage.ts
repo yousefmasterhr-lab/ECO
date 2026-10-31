@@ -544,12 +544,30 @@ class CTSStorageService {
     const approvedCount = correspondences.filter(c => c.status === 'Approved').length;
     const overdueCount = correspondences.filter(c => c.status === 'Pending' && c.due_date && new Date(c.due_date) < new Date()).length;
 
+    let avgReplyDays = 0;
+    if (repliedCount > 0) {
+      let totalDays = 0;
+      let countWithDates = 0;
+      for (const inb of replied) {
+        if (inb.received_date) {
+          const repliedDoc = outbounds.find(o => o.parent_doc_id === inb.doc_id);
+          if (repliedDoc && repliedDoc.issue_date) {
+            const diffMs = new Date(repliedDoc.issue_date).getTime() - new Date(inb.received_date).getTime();
+            const days = Math.max(0, Math.round(diffMs / (1000 * 60 * 60 * 24)));
+            totalDays += days;
+            countWithDates++;
+          }
+        }
+      }
+      avgReplyDays = countWithDates > 0 ? parseFloat((totalDays / countWithDates).toFixed(1)) : 0;
+    }
+
     return {
       totalLetters: totalCorr,
       inboundCount: inboundsCount,
       outboundCount: outboundsCount,
       draftsCount: draftsCount,
-      replyRate: inboundsCount > 0 ? Math.round((repliedCount / inboundsCount) * 100) : 100,
+      replyRate: inboundsCount > 0 ? Math.round((repliedCount / inboundsCount) * 100) : 0,
       activeProjectsCount: projects.filter(p => p.project_status === 'Active').length,
       total_correspondences: totalCorr,
       total_inbound: inboundsCount,
@@ -559,7 +577,7 @@ class CTSStorageService {
       total_approved: approvedCount,
       total_replied: repliedCount,
       total_overdue: overdueCount,
-      average_reply_time_days: 2.8,
+      average_reply_time_days: avgReplyDays,
     };
   }
 }

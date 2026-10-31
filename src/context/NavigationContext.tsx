@@ -121,11 +121,11 @@ export const DEPARTMENT_CATEGORIES: DepartmentNavCategory[] = [
   {
     id: 'cts',
     iconName: 'Mail',
-    titleAr: 'الصادر والوارد (CTS)',
-    titleEn: 'Correspondence (CTS)',
+    titleAr: 'الصادر والوارد',
+    titleEn: 'Correspondence Control',
     colorVar: '#D97706', // Brand Amber
     badgeAr: 'مراسلات',
-    badgeEn: 'CTS',
+    badgeEn: 'Letters',
     subItems: [
       { id: 'cts_overview', titleAr: 'لوحة المؤشرات والتحليلات', titleEn: 'Dashboard & Telemetry' },
       { id: 'cts_correspondences', titleAr: 'سجل المراسلات العام', titleEn: 'General Registry' },

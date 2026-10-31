@@ -129,7 +129,7 @@ export const CTSOutboundTab: React.FC<CTSOutboundTabProps> = ({
             </div>
             <div>
               <h3 className="text-base font-bold text-stone-900 dark:text-stone-100">
-                منظومة إعداد واعتماد الخطابات الصادرة (Outbound Drafting & Approval)
+                منظومة إعداد واعتماد الخطابات الصادرة
               </h3>
               <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
                 توليد المسودات المؤقتة، المراجعة والتدقيق، ومراسم الاعتماد التسلسلي الذري
@@ -139,7 +139,7 @@ export const CTSOutboundTab: React.FC<CTSOutboundTabProps> = ({
 
           <button
             onClick={onOpenDraftModal}
-            className="flex items-center gap-2 px-5 py-2.5 text-xs font-bold rounded-2xl bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white shadow-md shadow-amber-500/25 transition"
+            className="flex items-center gap-2 px-5 py-2.5 text-xs font-bold rounded-2xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold shadow-md shadow-amber-500/25 transition"
           >
             <Plus className="w-4 h-4" />
             <span>تحرير مسودة صادرة جديدة</span>

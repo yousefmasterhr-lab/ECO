@@ -127,7 +127,7 @@ export const CTSInboundTab: React.FC<CTSInboundTabProps> = ({
             </div>
             <div>
               <h3 className="text-base font-bold text-stone-900 dark:text-stone-100">
-                منصة قيد واستلام المكاتبات الواردة (Inbound Intake)
+                منصة قيد واستلام المكاتبات الواردة
               </h3>
               <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
                 فحص تطابق أرقام المراجع الخارجية، منع التكرار، وربط الوارد بالردود المعتمدة
@@ -137,10 +137,10 @@ export const CTSInboundTab: React.FC<CTSInboundTabProps> = ({
 
           <button
             onClick={onOpenIntakeModal}
-            className="flex items-center gap-2 px-5 py-2.5 text-xs font-bold rounded-2xl bg-gradient-to-r from-sky-600 to-sky-500 hover:from-sky-500 hover:to-sky-400 text-white shadow-md shadow-sky-600/25 transition"
+            className="flex items-center gap-2 px-5 py-2.5 text-xs font-bold rounded-2xl bg-sky-600 hover:bg-sky-700 text-white shadow-md shadow-sky-600/25 transition"
           >
             <Plus className="w-4 h-4" />
-            <span>تسجيل وارد جديد (Intake)</span>
+            <span>تسجيل وارد جديد</span>
           </button>
         </div>
 

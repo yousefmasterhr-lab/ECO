@@ -361,7 +361,7 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex items-center gap-2 px-5 py-2 text-xs font-bold rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white shadow-lg shadow-amber-500/25 transition disabled:opacity-50"
+              className="flex items-center gap-2 px-5 py-2 text-xs font-bold rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold shadow-lg shadow-amber-500/25 transition disabled:opacity-50"
             >
               <Building2 className="w-4 h-4" />
               <span>{isSubmitting ? 'جارٍ الحفظ...' : (existingProject ? 'تحديث بيانات المشروع' : 'حفظ المشروع')}</span>

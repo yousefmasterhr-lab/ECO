@@ -51,7 +51,7 @@ export const CTSDashboardTab: React.FC<CTSDashboardTabProps> = ({
     total_approved: 0,
     total_replied: 0,
     total_overdue: 0,
-    average_reply_time_days: 2.8,
+    average_reply_time_days: 0,
   });
 
   const loadData = async () => {
@@ -138,14 +138,14 @@ export const CTSDashboardTab: React.FC<CTSDashboardTabProps> = ({
         <div className="flex items-center gap-2">
           <button
             onClick={onOpenInbound}
-            className="flex items-center gap-2 px-3.5 py-2 text-xs font-bold rounded-xl bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800 text-sky-700 dark:text-sky-300 hover:bg-sky-100 transition shadow-sm"
+            className="flex items-center gap-2 px-3.5 py-2 text-xs font-bold rounded-xl bg-sky-50 dark:bg-sky-950/40 border border-sky-300 dark:border-sky-800 text-sky-900 dark:text-sky-200 hover:bg-sky-100 dark:hover:bg-sky-900/50 transition shadow-sm"
           >
             <Inbox className="w-3.5 h-3.5" />
             <span>تسجيل وارد جديد</span>
           </button>
           <button
             onClick={onOpenOutbound}
-            className="flex items-center gap-2 px-3.5 py-2 text-xs font-bold rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white shadow-md shadow-amber-500/25 transition"
+            className="flex items-center gap-2 px-3.5 py-2 text-xs font-bold rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold shadow-md shadow-amber-500/25 transition"
           >
             <Send className="w-3.5 h-3.5" />
             <span>تحرير صادر جديد</span>
@@ -171,8 +171,14 @@ export const CTSDashboardTab: React.FC<CTSDashboardTabProps> = ({
           </div>
           <div className="mt-3 flex items-center justify-between text-[11px] pt-2 border-t border-amber-200/40 dark:border-stone-800 text-stone-500">
             <span>معدل النشاط الشهري</span>
-            <span className="text-emerald-500 font-bold flex items-center gap-1 font-mono">
-              <TrendingUp className="w-3 h-3" /> +18.4%
+            <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1 font-mono">
+              {stats.total_correspondences > 0 ? (
+                <>
+                  <TrendingUp className="w-3 h-3" /> {stats.total_correspondences} معاملة نشطة
+                </>
+              ) : (
+                '0 معاملات مسجلة'
+              )}
             </span>
           </div>
         </div>
@@ -194,7 +200,11 @@ export const CTSDashboardTab: React.FC<CTSDashboardTabProps> = ({
           <div className="mt-3 flex items-center justify-between text-[11px] pt-2 border-t border-amber-200/40 dark:border-stone-800 text-stone-500">
             <span>تم الرد عليها</span>
             <span className="text-sky-600 dark:text-sky-400 font-bold font-mono">
-              {stats.total_replied} ({stats.total_inbound ? Math.round((stats.total_replied / stats.total_inbound) * 100) : 100}%)
+              {stats.total_inbound > 0 ? (
+                `${stats.total_replied} (${Math.round((stats.total_replied / stats.total_inbound) * 100)}%)`
+              ) : (
+                '0 وارد مسجل'
+              )}
             </span>
           </div>
         </div>
@@ -216,7 +226,7 @@ export const CTSDashboardTab: React.FC<CTSDashboardTabProps> = ({
           <div className="mt-3 flex items-center justify-between text-[11px] pt-2 border-t border-amber-200/40 dark:border-stone-800 text-stone-500">
             <span>مسودات قيد الاعتماد</span>
             <span className="text-amber-600 dark:text-amber-400 font-bold font-mono">
-              {stats.total_drafts} مسودة
+              {stats.total_drafts > 0 ? `${stats.total_drafts} مسودة` : '0 مسودات معلقة'}
             </span>
           </div>
         </div>
@@ -231,14 +241,14 @@ export const CTSDashboardTab: React.FC<CTSDashboardTabProps> = ({
           </div>
           <div className="flex items-baseline gap-2">
             <span className="text-3xl font-black text-emerald-600 dark:text-emerald-400 font-mono">
-              {stats.average_reply_time_days || 2.8}
+              {stats.average_reply_time_days || 0}
             </span>
             <span className="text-xs text-stone-400">أيام كمتوسط للرد</span>
           </div>
           <div className="mt-3 flex items-center justify-between text-[11px] pt-2 border-t border-amber-200/40 dark:border-stone-800 text-stone-500">
             <span>متأخرة عن المدة المحددة</span>
             <span className={`font-bold font-mono ${stats.total_overdue > 0 ? 'text-rose-500' : 'text-emerald-500'}`}>
-              {stats.total_overdue} معاملات
+              {stats.total_overdue > 0 ? `${stats.total_overdue} معاملات` : 'لا توجد مكاتبات متأخرة بعد'}
             </span>
           </div>
         </div>

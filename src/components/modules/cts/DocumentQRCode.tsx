@@ -22,7 +22,7 @@ export const DocumentQRCode: React.FC<DocumentQRCodeProps> = ({
   const [dataUrl, setDataUrl] = useState<string>('');
   const [isZoomed, setIsZoomed] = useState<boolean>(false);
 
-  const verificationUrl = `https://hrsup.com/pcms/verify?doc=${encodeURIComponent(documentSerial)}&dt=${encodeURIComponent(date)}`;
+  const verificationUrl = `https://hrsup.com/verify?doc=${encodeURIComponent(documentSerial)}&dt=${encodeURIComponent(date)}`;
 
   useEffect(() => {
     QRCode.toDataURL(verificationUrl, {
