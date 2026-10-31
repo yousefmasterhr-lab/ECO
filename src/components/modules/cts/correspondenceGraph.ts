@@ -155,3 +155,4 @@ export function buildCorrespondenceThread(
     has_branches: hasBranches
   };
 }
+

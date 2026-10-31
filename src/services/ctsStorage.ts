@@ -11,12 +11,6 @@ import {
   CTSSummaryStats,
   DocType
 } from '../components/modules/cts/types';
-import {
-  INITIAL_PROJECTS,
-  INITIAL_ENTITIES,
-  INITIAL_CORRESPONDENCES,
-  INITIAL_AUDIT_LOGS
-} from './ctsSeedData';
 
 const STORAGE_KEYS = {
   PROJECTS: 'eco_cts_projects',
@@ -35,6 +29,24 @@ export interface GenerateSerialParams {
 }
 
 class CTSStorageService {
+  constructor() {
+    // One-time purge of legacy mock seed records to enforce absolute zero-mock purity
+    if (typeof window !== 'undefined') {
+      try {
+        const PURGE_FLAG = 'eco_cts_zero_mock_v1';
+        if (!localStorage.getItem(PURGE_FLAG)) {
+          localStorage.removeItem(STORAGE_KEYS.PROJECTS);
+          localStorage.removeItem(STORAGE_KEYS.ENTITIES);
+          localStorage.removeItem(STORAGE_KEYS.CORRESPONDENCES);
+          localStorage.removeItem(STORAGE_KEYS.AUDIT);
+          localStorage.setItem(PURGE_FLAG, 'true');
+        }
+      } catch {
+        // Ignore storage exceptions
+      }
+    }
+  }
+
   private readLocal<T>(key: string, fallback: T): T {
     try {
       const data = localStorage.getItem(key);
@@ -55,16 +67,11 @@ class CTSStorageService {
 
   // ==================== PROJECTS ====================
   public async getProjects(): Promise<Project[]> {
-    const local = this.readLocal<Project[]>(STORAGE_KEYS.PROJECTS, []);
-    if (local.length === 0) {
-      this.writeLocal(STORAGE_KEYS.PROJECTS, INITIAL_PROJECTS);
-    }
-
     try {
       const res = await fetch('/api/cts/projects');
       if (res.ok) {
         const remote = await res.json();
-        if (Array.isArray(remote) && remote.length > 0) {
+        if (Array.isArray(remote)) {
           this.writeLocal(STORAGE_KEYS.PROJECTS, remote);
           return remote;
         }
@@ -74,7 +81,7 @@ class CTSStorageService {
     }
 
     const current = this.readLocal<Project[]>(STORAGE_KEYS.PROJECTS, []);
-    return current.length > 0 ? current : INITIAL_PROJECTS;
+    return current;
   }
 
   public async saveProject(project: Project): Promise<Project> {
@@ -120,16 +127,11 @@ class CTSStorageService {
 
   // ==================== ENTITIES ====================
   public async getEntities(): Promise<Entity[]> {
-    const local = this.readLocal<Entity[]>(STORAGE_KEYS.ENTITIES, []);
-    if (local.length === 0) {
-      this.writeLocal(STORAGE_KEYS.ENTITIES, INITIAL_ENTITIES);
-    }
-
     try {
       const res = await fetch('/api/cts/entities');
       if (res.ok) {
         const remote = await res.json();
-        if (Array.isArray(remote) && remote.length > 0) {
+        if (Array.isArray(remote)) {
           this.writeLocal(STORAGE_KEYS.ENTITIES, remote);
           return remote;
         }
@@ -139,7 +141,7 @@ class CTSStorageService {
     }
 
     const current = this.readLocal<Entity[]>(STORAGE_KEYS.ENTITIES, []);
-    return current.length > 0 ? current : INITIAL_ENTITIES;
+    return current;
   }
 
   public async saveEntity(entity: Entity): Promise<Entity> {
@@ -190,11 +192,6 @@ class CTSStorageService {
     classification?: string;
     status?: string;
   }): Promise<Correspondence[]> {
-    const local = this.readLocal<Correspondence[]>(STORAGE_KEYS.CORRESPONDENCES, []);
-    if (local.length === 0) {
-      this.writeLocal(STORAGE_KEYS.CORRESPONDENCES, INITIAL_CORRESPONDENCES);
-    }
-
     try {
       const params = new URLSearchParams();
       if (filters?.projectRef && filters.projectRef !== 'ALL') params.append('projectRef', filters.projectRef);
@@ -206,7 +203,7 @@ class CTSStorageService {
       const res = await fetch(`/api/cts/correspondences${query}`);
       if (res.ok) {
         const remote = await res.json();
-        if (Array.isArray(remote) && remote.length > 0) {
+        if (Array.isArray(remote)) {
           this.writeLocal(STORAGE_KEYS.CORRESPONDENCES, remote);
           return remote;
         }
@@ -216,7 +213,6 @@ class CTSStorageService {
     }
 
     let list = this.readLocal<Correspondence[]>(STORAGE_KEYS.CORRESPONDENCES, []);
-    if (list.length === 0) list = INITIAL_CORRESPONDENCES;
 
     if (filters?.projectRef && filters.projectRef !== 'ALL') {
       list = list.filter(c => c.project_ref === filters.projectRef);
@@ -424,16 +420,11 @@ class CTSStorageService {
 
   // ==================== AUDIT TRAIL ====================
   public async getAuditLogs(): Promise<AuditLogItem[]> {
-    const local = this.readLocal<AuditLogItem[]>(STORAGE_KEYS.AUDIT, []);
-    if (local.length === 0) {
-      this.writeLocal(STORAGE_KEYS.AUDIT, INITIAL_AUDIT_LOGS);
-    }
-
     try {
       const res = await fetch('/api/cts/audit-logs');
       if (res.ok) {
         const remote = await res.json();
-        if (Array.isArray(remote) && remote.length > 0) {
+        if (Array.isArray(remote)) {
           this.writeLocal(STORAGE_KEYS.AUDIT, remote);
           return remote;
         }
@@ -443,7 +434,7 @@ class CTSStorageService {
     }
 
     const current = this.readLocal<AuditLogItem[]>(STORAGE_KEYS.AUDIT, []);
-    return current.length > 0 ? current : INITIAL_AUDIT_LOGS;
+    return current;
   }
 
   public async logAudit(log: AuditLogItem): Promise<void> {

@@ -120,3 +120,4 @@ export const DocumentQRCode: React.FC<DocumentQRCodeProps> = ({
     </>
   );
 };
+

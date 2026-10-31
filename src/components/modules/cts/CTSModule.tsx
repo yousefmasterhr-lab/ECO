@@ -26,7 +26,6 @@ import { ReturnForRevisionModal } from './ReturnForRevisionModal';
 
 // Tabs
 import { CTSDashboardTab } from './CTSDashboardTab';
-import { CTSProjectsTab } from './CTSProjectsTab';
 import { CTSCorrespondencesTab } from './CTSCorrespondencesTab';
 import { CTSInboundTab } from './CTSInboundTab';
 import { CTSOutboundTab } from './CTSOutboundTab';
@@ -34,7 +33,6 @@ import { CTSAuditTab } from './CTSAuditTab';
 
 export type CTSTabKey = 
   | 'cts_overview'
-  | 'cts_projects'
   | 'cts_correspondences'
   | 'cts_inbound'
   | 'cts_outbound'
@@ -57,7 +55,6 @@ export const CTSModule: React.FC<CTSModuleProps> = ({
   useEffect(() => {
     if (activeSubItemId && [
       'cts_overview',
-      'cts_projects',
       'cts_correspondences',
       'cts_inbound',
       'cts_outbound',
@@ -136,7 +133,6 @@ export const CTSModule: React.FC<CTSModuleProps> = ({
 
   const navTabs = [
     { id: 'cts_overview', label: 'لوحة المؤشرات والتحليلات', icon: <Layers className="w-4 h-4" /> },
-    { id: 'cts_projects', label: 'دليل المشاريع والجهات', icon: <Building2 className="w-4 h-4" /> },
     { id: 'cts_correspondences', label: 'سجل المراسلات العام', icon: <FileText className="w-4 h-4" /> },
     { id: 'cts_inbound', label: 'قيد واستلام الوارد', icon: <Inbox className="w-4 h-4" />, badge: stats.total_inbound },
     { id: 'cts_outbound', label: 'إعداد واعتماد الصادر', icon: <Send className="w-4 h-4" />, badge: stats.total_drafts > 0 ? `${stats.total_drafts} مسودة` : undefined },
@@ -336,14 +332,6 @@ export const CTSModule: React.FC<CTSModuleProps> = ({
           />
         )}
 
-        {currentTab === 'cts_projects' && (
-          <CTSProjectsTab
-            onOpenDocDossier={(doc) => {
-              setDossierDoc(doc);
-              setIsDossierOpen(true);
-            }}
-          />
-        )}
 
         {currentTab === 'cts_correspondences' && (
           <CTSCorrespondencesTab

@@ -85,7 +85,7 @@ export const CTSInboundTab: React.FC<CTSInboundTabProps> = ({
     <div className="space-y-6" dir="rtl">
       {/* Top Banner & Telemetry Counters */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <div className="p-4 rounded-3xl bg-white dark:bg-[#0E1A11] border border-stone-200 dark:border-amber-500/20 shadow-sm">
+        <div className="p-4 rounded-3xl bg-[#FFFDF9] dark:bg-[#0D1F17] border border-amber-200/60 dark:border-amber-500/30 shadow-sm">
           <div className="flex items-center justify-between text-sky-600 dark:text-sky-400 text-xs mb-1">
             <span className="font-bold">إجمالي الوارد</span>
             <Inbox className="w-4 h-4" />
@@ -93,7 +93,7 @@ export const CTSInboundTab: React.FC<CTSInboundTabProps> = ({
           <p className="text-2xl font-black text-stone-900 dark:text-stone-100 font-mono">{inbounds.length}</p>
         </div>
 
-        <div className="p-4 rounded-3xl bg-white dark:bg-[#0E1A11] border border-stone-200 dark:border-amber-500/20 shadow-sm">
+        <div className="p-4 rounded-3xl bg-[#FFFDF9] dark:bg-[#0D1F17] border border-amber-200/60 dark:border-amber-500/30 shadow-sm">
           <div className="flex items-center justify-between text-amber-600 dark:text-amber-400 text-xs mb-1">
             <span className="font-bold">بانتظار الرد (قيد المتابعة)</span>
             <Clock className="w-4 h-4" />
@@ -101,7 +101,7 @@ export const CTSInboundTab: React.FC<CTSInboundTabProps> = ({
           <p className="text-2xl font-black text-amber-600 dark:text-amber-400 font-mono">{pendingCount}</p>
         </div>
 
-        <div className="p-4 rounded-3xl bg-white dark:bg-[#0E1A11] border border-stone-200 dark:border-amber-500/20 shadow-sm">
+        <div className="p-4 rounded-3xl bg-[#FFFDF9] dark:bg-[#0D1F17] border border-amber-200/60 dark:border-amber-500/30 shadow-sm">
           <div className="flex items-center justify-between text-emerald-600 dark:text-emerald-400 text-xs mb-1">
             <span className="font-bold">تم الرد وإغلاق الدورة</span>
             <CheckCircle2 className="w-4 h-4" />
@@ -109,7 +109,7 @@ export const CTSInboundTab: React.FC<CTSInboundTabProps> = ({
           <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono">{repliedCount}</p>
         </div>
 
-        <div className="p-4 rounded-3xl bg-white dark:bg-[#0E1A11] border border-stone-200 dark:border-amber-500/20 shadow-sm">
+        <div className="p-4 rounded-3xl bg-[#FFFDF9] dark:bg-[#0D1F17] border border-amber-200/60 dark:border-amber-500/30 shadow-sm">
           <div className="flex items-center justify-between text-rose-600 dark:text-rose-400 text-xs mb-1">
             <span className="font-bold">عاجل / حرج جداً</span>
             <AlertTriangle className="w-4 h-4" />
@@ -119,7 +119,7 @@ export const CTSInboundTab: React.FC<CTSInboundTabProps> = ({
       </div>
 
       {/* Action & Filter Toolbar */}
-      <div className="p-5 rounded-3xl bg-white dark:bg-[#0E1A11] border border-stone-200 dark:border-amber-500/20 shadow-sm space-y-4">
+      <div className="p-5 rounded-3xl bg-[#FFFDF9] dark:bg-[#0D1F17] border border-amber-200/60 dark:border-amber-500/30 shadow-sm space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-2xl bg-sky-500/10 text-sky-600 dark:text-sky-400">
@@ -203,7 +203,7 @@ export const CTSInboundTab: React.FC<CTSInboundTabProps> = ({
       </div>
 
       {/* Inbounds Table */}
-      <div className="p-5 rounded-3xl bg-white dark:bg-[#0E1A11] border border-stone-200 dark:border-amber-500/20 shadow-sm overflow-hidden">
+      <div className="p-5 rounded-3xl bg-[#FFFDF9] dark:bg-[#0D1F17] border border-amber-200/60 dark:border-amber-500/30 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-right text-xs">
             <thead>

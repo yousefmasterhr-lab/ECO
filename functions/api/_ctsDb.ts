@@ -137,3 +137,4 @@ export async function ensureCTSSchema(db: D1Database): Promise<void> {
     console.warn('[Cloudflare D1 CTS Schema Warning]', err);
   }
 }
+

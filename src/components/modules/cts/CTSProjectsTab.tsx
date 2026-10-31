@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 
 interface CTSProjectsTabProps {
-  onOpenDocDossier: (doc: Correspondence) => void;
+  onOpenDocDossier?: (doc: Correspondence) => void;
 }
 
 export const CTSProjectsTab: React.FC<CTSProjectsTabProps> = ({ onOpenDocDossier }) => {
@@ -146,11 +146,11 @@ export const CTSProjectsTab: React.FC<CTSProjectsTabProps> = ({ onOpenDocDossier
           setSelectedProjectForTimeline(null);
         }}
         project={selectedProjectForTimeline}
-        onOpenDocDossier={onOpenDocDossier}
+        onOpenDocDossier={onOpenDocDossier || (() => {})}
       />
 
       {/* Header & Sub-Tab Switcher */}
-      <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-3xl bg-white dark:bg-[#0E1A11] border border-stone-200 dark:border-amber-500/20 shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-3xl bg-[#FFFDF9] dark:bg-[#0D1F17] border border-amber-200/60 dark:border-amber-500/30 shadow-sm">
         <div className="flex items-center gap-2">
           <button
             onClick={() => {
@@ -160,7 +160,7 @@ export const CTSProjectsTab: React.FC<CTSProjectsTabProps> = ({ onOpenDocDossier
             className={`flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-bold transition ${
               activeSubTab === 'projects'
                 ? 'bg-amber-500 text-stone-900 shadow-md shadow-amber-500/20'
-                : 'bg-stone-100 dark:bg-stone-900 text-stone-600 dark:text-stone-400 hover:text-stone-900'
+                : 'bg-amber-100/40 dark:bg-stone-900 text-stone-700 dark:text-stone-300 hover:text-stone-900 dark:hover:text-stone-100'
             }`}
           >
             <Building2 className="w-4 h-4" />
@@ -175,7 +175,7 @@ export const CTSProjectsTab: React.FC<CTSProjectsTabProps> = ({ onOpenDocDossier
             className={`flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-bold transition ${
               activeSubTab === 'entities'
                 ? 'bg-amber-500 text-stone-900 shadow-md shadow-amber-500/20'
-                : 'bg-stone-100 dark:bg-stone-900 text-stone-600 dark:text-stone-400 hover:text-stone-900'
+                : 'bg-amber-100/40 dark:bg-stone-900 text-stone-700 dark:text-stone-300 hover:text-stone-900 dark:hover:text-stone-100'
             }`}
           >
             <ShieldCheck className="w-4 h-4" />
@@ -210,7 +210,7 @@ export const CTSProjectsTab: React.FC<CTSProjectsTabProps> = ({ onOpenDocDossier
       </div>
 
       {/* Filter / Search Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-3xl bg-white dark:bg-[#0E1A11] border border-stone-200 dark:border-amber-500/20 shadow-sm text-xs">
+      <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-3xl bg-[#FFFDF9] dark:bg-[#0D1F17] border border-amber-200/60 dark:border-amber-500/30 shadow-sm text-xs">
         <div className="relative flex-1 min-w-[240px]">
           <Search className="w-4 h-4 absolute right-3.5 top-2.5 text-stone-400" />
           <input
@@ -252,7 +252,7 @@ export const CTSProjectsTab: React.FC<CTSProjectsTabProps> = ({ onOpenDocDossier
           {filteredProjects.map((p) => (
             <div
               key={p.project_id}
-              className="p-5 rounded-3xl bg-white dark:bg-[#0E1A11] border border-stone-200 dark:border-amber-500/20 shadow-sm hover:border-amber-500/50 transition flex flex-col justify-between space-y-4"
+              className="p-5 rounded-3xl bg-[#FFFDF9] dark:bg-[#0D1F17] border border-amber-200/60 dark:border-amber-500/30 shadow-sm hover:border-amber-500/50 transition flex flex-col justify-between space-y-4"
             >
               <div>
                 <div className="flex items-center justify-between mb-2">
@@ -342,7 +342,7 @@ export const CTSProjectsTab: React.FC<CTSProjectsTabProps> = ({ onOpenDocDossier
 
       {/* Content Section: Entities Directory Table */}
       {activeSubTab === 'entities' && (
-        <div className="p-5 rounded-3xl bg-white dark:bg-[#0E1A11] border border-stone-200 dark:border-amber-500/20 shadow-sm overflow-hidden">
+        <div className="p-5 rounded-3xl bg-[#FFFDF9] dark:bg-[#0D1F17] border border-amber-200/60 dark:border-amber-500/30 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-right text-xs">
               <thead>

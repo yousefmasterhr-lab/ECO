@@ -191,3 +191,4 @@ export interface CTSSummaryStats {
   total_overdue: number;
   average_reply_time_days: number;
 }
+

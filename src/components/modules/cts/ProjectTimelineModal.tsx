@@ -65,7 +65,7 @@ export const ProjectTimelineModal: React.FC<ProjectTimelineModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-sm overflow-y-auto animate-in fade-in duration-200">
       <div 
-        className="relative w-full max-w-4xl my-auto rounded-3xl bg-white dark:bg-[#0E1A11] border border-stone-200 dark:border-amber-500/20 shadow-2xl p-6 text-stone-900 dark:text-stone-100 overflow-hidden"
+        className="relative w-full max-w-4xl my-auto rounded-3xl bg-[#FFFDF9] dark:bg-[#0D1F17] border border-amber-200/60 dark:border-amber-500/30 shadow-2xl p-6 text-slate-900 dark:text-stone-100 overflow-hidden"
         dir="rtl"
       >
         {/* Header */}

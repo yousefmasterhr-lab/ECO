@@ -105,7 +105,7 @@ export const CTSAuditTab: React.FC = () => {
     <div className="space-y-6" dir="rtl">
       {/* Top Banner & Security Summary */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="p-4 rounded-3xl bg-white dark:bg-[#0E1A11] border border-stone-200 dark:border-amber-500/20 shadow-sm">
+        <div className="p-4 rounded-3xl bg-[#FFFDF9] dark:bg-[#0D1F17] border border-amber-200/60 dark:border-amber-500/30 shadow-sm">
           <div className="flex items-center justify-between text-amber-600 dark:text-amber-400 text-xs mb-1">
             <span className="font-bold">إجمالي سجلات التدقيق</span>
             <FileText className="w-4 h-4" />
@@ -113,7 +113,7 @@ export const CTSAuditTab: React.FC = () => {
           <p className="text-2xl font-black text-stone-900 dark:text-stone-100 font-mono">{logs.length}</p>
         </div>
 
-        <div className="p-4 rounded-3xl bg-white dark:bg-[#0E1A11] border border-stone-200 dark:border-amber-500/20 shadow-sm">
+        <div className="p-4 rounded-3xl bg-[#FFFDF9] dark:bg-[#0D1F17] border border-amber-200/60 dark:border-amber-500/30 shadow-sm">
           <div className="flex items-center justify-between text-emerald-600 dark:text-emerald-400 text-xs mb-1">
             <span className="font-bold">عمليات الاعتماد الذري</span>
             <Stamp className="w-4 h-4" />
@@ -123,7 +123,7 @@ export const CTSAuditTab: React.FC = () => {
           </p>
         </div>
 
-        <div className="p-4 rounded-3xl bg-white dark:bg-[#0E1A11] border border-stone-200 dark:border-amber-500/20 shadow-sm">
+        <div className="p-4 rounded-3xl bg-[#FFFDF9] dark:bg-[#0D1F17] border border-amber-200/60 dark:border-amber-500/30 shadow-sm">
           <div className="flex items-center justify-between text-sky-600 dark:text-sky-400 text-xs mb-1">
             <span className="font-bold">سلامة السجلات والامتثال</span>
             <ShieldCheck className="w-4 h-4" />
@@ -133,7 +133,7 @@ export const CTSAuditTab: React.FC = () => {
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="p-5 rounded-3xl bg-white dark:bg-[#0E1A11] border border-stone-200 dark:border-amber-500/20 shadow-sm space-y-4">
+      <div className="p-5 rounded-3xl bg-[#FFFDF9] dark:bg-[#0D1F17] border border-amber-200/60 dark:border-amber-500/30 shadow-sm space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
@@ -181,7 +181,7 @@ export const CTSAuditTab: React.FC = () => {
       </div>
 
       {/* Audit Logs Table */}
-      <div className="p-5 rounded-3xl bg-white dark:bg-[#0E1A11] border border-stone-200 dark:border-amber-500/20 shadow-sm overflow-hidden">
+      <div className="p-5 rounded-3xl bg-[#FFFDF9] dark:bg-[#0D1F17] border border-amber-200/60 dark:border-amber-500/30 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-right text-xs">
             <thead>

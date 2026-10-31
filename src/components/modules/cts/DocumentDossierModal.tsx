@@ -111,7 +111,7 @@ export const DocumentDossierModal: React.FC<DocumentDossierModalProps> = ({
         {/* Modal Scrollable Body */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {/* Top Metadata & QR Card */}
-          <div className="p-6 rounded-3xl bg-white dark:bg-[#0E1A11] border border-amber-200/60 dark:border-stone-800 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="p-6 rounded-3xl bg-[#FFFDF9] dark:bg-[#0D1F17] border border-amber-200/60 dark:border-amber-500/30 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="space-y-4 flex-1">
               <div className="flex flex-wrap items-center gap-2.5">
                 <span className="text-xs font-bold px-2.5 py-1 rounded-xl bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20">
@@ -186,7 +186,7 @@ export const DocumentDossierModal: React.FC<DocumentDossierModalProps> = ({
 
           {/* Body Text / Letter Content */}
           {activeDoc.body_text && (
-            <div className="p-6 rounded-3xl bg-white dark:bg-[#0E1A11] border border-amber-200/60 dark:border-stone-800 shadow-sm space-y-2">
+            <div className="p-6 rounded-3xl bg-[#FFFDF9] dark:bg-[#0D1F17] border border-amber-200/60 dark:border-amber-500/30 shadow-sm space-y-2">
               <h4 className="text-xs font-bold text-slate-700 dark:text-stone-300">
                 نص الخطاب / ملخص المعاملة:
               </h4>
@@ -197,7 +197,7 @@ export const DocumentDossierModal: React.FC<DocumentDossierModalProps> = ({
           )}
 
           {/* Attachments Section */}
-          <div className="p-6 rounded-3xl bg-white dark:bg-[#0E1A11] border border-amber-200/60 dark:border-stone-800 shadow-sm space-y-3">
+          <div className="p-6 rounded-3xl bg-[#FFFDF9] dark:bg-[#0D1F17] border border-amber-200/60 dark:border-amber-500/30 shadow-sm space-y-3">
             <h4 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
               <Paperclip className="w-4 h-4 text-amber-500" />
               <span>المرفقات والمستندات الممسوحة ضوئياً ({activeDoc.attachments?.length || 0})</span>

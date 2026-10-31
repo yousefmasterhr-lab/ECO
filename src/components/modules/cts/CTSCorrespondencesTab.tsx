@@ -107,7 +107,7 @@ export const CTSCorrespondencesTab: React.FC<CTSCorrespondencesTabProps> = ({
   return (
     <div className="space-y-6" dir="rtl">
       {/* Top Filter Bar & Command Actions */}
-      <div className="p-5 rounded-3xl bg-white dark:bg-[#0E1A11] border border-stone-200 dark:border-amber-500/20 shadow-sm space-y-4">
+      <div className="p-5 rounded-3xl bg-[#FFFDF9] dark:bg-[#0D1F17] border border-amber-200/60 dark:border-amber-500/30 shadow-sm space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <div className="p-2 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
@@ -231,7 +231,7 @@ export const CTSCorrespondencesTab: React.FC<CTSCorrespondencesTabProps> = ({
       </div>
 
       {/* Main Table */}
-      <div className="p-5 rounded-3xl bg-white dark:bg-[#0E1A11] border border-stone-200 dark:border-amber-500/20 shadow-sm overflow-hidden">
+      <div className="p-5 rounded-3xl bg-[#FFFDF9] dark:bg-[#0D1F17] border border-amber-200/60 dark:border-amber-500/30 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-right text-xs">
             <thead>

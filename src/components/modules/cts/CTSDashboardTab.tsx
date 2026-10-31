@@ -79,9 +79,9 @@ export const CTSDashboardTab: React.FC<CTSDashboardTabProps> = ({
 
   const activeProject = useMemo(() => {
     if (selectedProjectId === 'ALL') {
-      return projects.find(p => p.project_code === '1233') || projects[0];
+      return projects[0] || null;
     }
-    return projects.find(p => p.project_id === selectedProjectId || p.project_code === selectedProjectId);
+    return projects.find(p => p.project_id === selectedProjectId || p.project_code === selectedProjectId) || null;
   }, [projects, selectedProjectId]);
 
   // Compute breakdown for classifications
@@ -111,7 +111,7 @@ export const CTSDashboardTab: React.FC<CTSDashboardTabProps> = ({
   return (
     <div className="space-y-6" dir="rtl">
       {/* Top Filter Bar with Project Context */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-3xl bg-white dark:bg-[#0E1A11] border border-stone-200 dark:border-amber-500/20 shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-3xl bg-[#FFFDF9] dark:bg-[#0D1F17] border border-amber-200/60 dark:border-amber-500/30 shadow-sm">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
             <Building2 className="w-5 h-5" />
@@ -156,7 +156,7 @@ export const CTSDashboardTab: React.FC<CTSDashboardTabProps> = ({
       {/* KPI 4-Card Luxury Telemetry */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Card 1: Total Letters */}
-        <div className="relative p-5 rounded-3xl bg-white dark:bg-[#0E1A11] border border-stone-200 dark:border-amber-500/20 shadow-sm overflow-hidden group hover:border-amber-500/50 transition">
+        <div className="relative p-5 rounded-3xl bg-[#FFFDF9] dark:bg-[#0D1F17] border border-amber-200/60 dark:border-amber-500/30 shadow-sm overflow-hidden group hover:border-amber-500/50 transition">
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-bold text-stone-500 dark:text-stone-400">إجمالي المكاتبات</span>
             <div className="p-2 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
@@ -169,7 +169,7 @@ export const CTSDashboardTab: React.FC<CTSDashboardTabProps> = ({
             </span>
             <span className="text-xs text-stone-400">مكاتبة موثقة</span>
           </div>
-          <div className="mt-3 flex items-center justify-between text-[11px] pt-2 border-t border-stone-100 dark:border-stone-800 text-stone-500">
+          <div className="mt-3 flex items-center justify-between text-[11px] pt-2 border-t border-amber-200/40 dark:border-stone-800 text-stone-500">
             <span>معدل النشاط الشهري</span>
             <span className="text-emerald-500 font-bold flex items-center gap-1 font-mono">
               <TrendingUp className="w-3 h-3" /> +18.4%
@@ -178,7 +178,7 @@ export const CTSDashboardTab: React.FC<CTSDashboardTabProps> = ({
         </div>
 
         {/* Card 2: Inbounds Intake */}
-        <div className="relative p-5 rounded-3xl bg-white dark:bg-[#0E1A11] border border-stone-200 dark:border-amber-500/20 shadow-sm overflow-hidden group hover:border-sky-500/50 transition">
+        <div className="relative p-5 rounded-3xl bg-[#FFFDF9] dark:bg-[#0D1F17] border border-amber-200/60 dark:border-amber-500/30 shadow-sm overflow-hidden group hover:border-sky-500/50 transition">
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-bold text-sky-600 dark:text-sky-400">المكاتبات الواردة</span>
             <div className="p-2 rounded-2xl bg-sky-500/10 text-sky-600 dark:text-sky-400">
@@ -191,7 +191,7 @@ export const CTSDashboardTab: React.FC<CTSDashboardTabProps> = ({
             </span>
             <span className="text-xs text-stone-400">وارد معتمد</span>
           </div>
-          <div className="mt-3 flex items-center justify-between text-[11px] pt-2 border-t border-stone-100 dark:border-stone-800 text-stone-500">
+          <div className="mt-3 flex items-center justify-between text-[11px] pt-2 border-t border-amber-200/40 dark:border-stone-800 text-stone-500">
             <span>تم الرد عليها</span>
             <span className="text-sky-600 dark:text-sky-400 font-bold font-mono">
               {stats.total_replied} ({stats.total_inbound ? Math.round((stats.total_replied / stats.total_inbound) * 100) : 100}%)
@@ -200,7 +200,7 @@ export const CTSDashboardTab: React.FC<CTSDashboardTabProps> = ({
         </div>
 
         {/* Card 3: Outbounds Issued */}
-        <div className="relative p-5 rounded-3xl bg-white dark:bg-[#0E1A11] border border-stone-200 dark:border-amber-500/20 shadow-sm overflow-hidden group hover:border-amber-500/50 transition">
+        <div className="relative p-5 rounded-3xl bg-[#FFFDF9] dark:bg-[#0D1F17] border border-amber-200/60 dark:border-amber-500/30 shadow-sm overflow-hidden group hover:border-amber-500/50 transition">
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-bold text-amber-600 dark:text-amber-400">الخطابات الصادرة</span>
             <div className="p-2 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
@@ -213,7 +213,7 @@ export const CTSDashboardTab: React.FC<CTSDashboardTabProps> = ({
             </span>
             <span className="text-xs text-stone-400">صادر موثق</span>
           </div>
-          <div className="mt-3 flex items-center justify-between text-[11px] pt-2 border-t border-stone-100 dark:border-stone-800 text-stone-500">
+          <div className="mt-3 flex items-center justify-between text-[11px] pt-2 border-t border-amber-200/40 dark:border-stone-800 text-stone-500">
             <span>مسودات قيد الاعتماد</span>
             <span className="text-amber-600 dark:text-amber-400 font-bold font-mono">
               {stats.total_drafts} مسودة
@@ -222,7 +222,7 @@ export const CTSDashboardTab: React.FC<CTSDashboardTabProps> = ({
         </div>
 
         {/* Card 4: Quality & SLA */}
-        <div className="relative p-5 rounded-3xl bg-white dark:bg-[#0E1A11] border border-stone-200 dark:border-amber-500/20 shadow-sm overflow-hidden group hover:border-emerald-500/50 transition">
+        <div className="relative p-5 rounded-3xl bg-[#FFFDF9] dark:bg-[#0D1F17] border border-amber-200/60 dark:border-amber-500/30 shadow-sm overflow-hidden group hover:border-emerald-500/50 transition">
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">سرعة الرد ودقة الإغلاق</span>
             <div className="p-2 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
@@ -235,7 +235,7 @@ export const CTSDashboardTab: React.FC<CTSDashboardTabProps> = ({
             </span>
             <span className="text-xs text-stone-400">أيام كمتوسط للرد</span>
           </div>
-          <div className="mt-3 flex items-center justify-between text-[11px] pt-2 border-t border-stone-100 dark:border-stone-800 text-stone-500">
+          <div className="mt-3 flex items-center justify-between text-[11px] pt-2 border-t border-amber-200/40 dark:border-stone-800 text-stone-500">
             <span>متأخرة عن المدة المحددة</span>
             <span className={`font-bold font-mono ${stats.total_overdue > 0 ? 'text-rose-500' : 'text-emerald-500'}`}>
               {stats.total_overdue} معاملات
@@ -248,7 +248,7 @@ export const CTSDashboardTab: React.FC<CTSDashboardTabProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Project Card */}
         {activeProject && (
-          <div className="lg:col-span-1 p-6 rounded-3xl bg-white dark:bg-[#0E1A11] border border-stone-200 dark:border-amber-500/20 shadow-sm space-y-4">
+          <div className="lg:col-span-1 p-6 rounded-3xl bg-[#FFFDF9] dark:bg-[#0D1F17] border border-amber-200/60 dark:border-amber-500/30 shadow-sm space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Building2 className="w-4 h-4 text-amber-500" />
@@ -302,7 +302,7 @@ export const CTSDashboardTab: React.FC<CTSDashboardTabProps> = ({
         )}
 
         {/* Classification Breakdown */}
-        <div className="lg:col-span-2 p-6 rounded-3xl bg-white dark:bg-[#0E1A11] border border-stone-200 dark:border-amber-500/20 shadow-sm space-y-4">
+        <div className="lg:col-span-2 p-6 rounded-3xl bg-[#FFFDF9] dark:bg-[#0D1F17] border border-amber-200/60 dark:border-amber-500/30 shadow-sm space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <BarChart3 className="w-5 h-5 text-amber-500" />
@@ -350,7 +350,7 @@ export const CTSDashboardTab: React.FC<CTSDashboardTabProps> = ({
       </div>
 
       {/* Bottom Row: Recent Correspondences Table */}
-      <div className="p-6 rounded-3xl bg-white dark:bg-[#0E1A11] border border-stone-200 dark:border-amber-500/20 shadow-sm space-y-4">
+      <div className="p-6 rounded-3xl bg-[#FFFDF9] dark:bg-[#0D1F17] border border-amber-200/60 dark:border-amber-500/30 shadow-sm space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Activity className="w-5 h-5 text-amber-500" />

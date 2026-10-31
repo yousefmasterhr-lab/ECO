@@ -488,3 +488,4 @@ export const onRequestDelete: PagesFunction = async (context) => {
     return errorResponse(`خطأ في معالجة طلب CTS DELETE: ${err.message}`, 500);
   }
 };
+

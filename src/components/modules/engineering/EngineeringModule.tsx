@@ -9,7 +9,6 @@ import {
 } from '../../../context/ContractorContext';
 import { formatCurrency, formatNumber } from '../../../utils/formatters';
 import {
-  HardHat,
   Search,
   Plus,
   FileCheck2,
@@ -34,6 +33,9 @@ import {
   LayoutGrid,
   Table as TableIcon,
 } from 'lucide-react';
+import { CTSProjectsTab } from '../cts/CTSProjectsTab';
+import { DocumentDossierModal } from '../cts/DocumentDossierModal';
+import { Correspondence } from '../cts/types';
 
 interface EngineeringModuleProps {
   activeSubItemId: string | null;
@@ -91,6 +93,10 @@ export const EngineeringModule: React.FC<EngineeringModuleProps> = ({ activeSubI
   const [newIpcRetentionPct, setNewIpcRetentionPct] = useState(10);
   const [newIpcAdvanceDeduction, setNewIpcAdvanceDeduction] = useState(100000);
   const [newIpcPenaltyDeduction, setNewIpcPenaltyDeduction] = useState(0);
+
+  // CTS Projects Dossier State
+  const [selectedDossierDoc, setSelectedDossierDoc] = useState<Correspondence | null>(null);
+  const [isDossierOpen, setIsDossierOpen] = useState(false);
 
   // Filter contractors
   const filteredContractors = contractors.filter(c => {
@@ -269,106 +275,16 @@ export const EngineeringModule: React.FC<EngineeringModuleProps> = ({ activeSubI
     }
   };
 
-  // --- Sub-View: سجل المشاريع (Project Registry) ---
+  // --- Sub-View: دليل المشاريع والجهات والشركاء (Projects & Stakeholders Registry Hub) ---
   const renderProjectsView = () => {
-    const projects = [
-      {
-        id: 'prj_01',
-        code: 'PRJ-2026-A1',
-        nameAr: 'برج النخبة الإداري والمالي',
-        locationAr: 'الرياض - حي الملقا',
-        contractorsCount: 4,
-        completion: 72,
-        budget: 185000000,
-        statusAr: 'جاري التنفيذ',
-      },
-      {
-        id: 'prj_02',
-        code: 'PRJ-2026-B3',
-        nameAr: 'مجمع الواحة السكني المتكامل',
-        locationAr: 'جدة - أبحر الشمالية',
-        contractorsCount: 3,
-        completion: 45,
-        budget: 120000000,
-        statusAr: 'جاري التنفيذ',
-      },
-      {
-        id: 'prj_03',
-        code: 'PRJ-2025-C8',
-        nameAr: 'المقر الرئيسي للشركة والمستودعات المركزية',
-        locationAr: 'الدمام - المدينة الصناعية الثانية',
-        contractorsCount: 2,
-        completion: 91,
-        budget: 64000000,
-        statusAr: 'مرحلة التسليم المبدئي',
-      },
-    ];
-
     return (
       <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#F3EFE6] dark:bg-[#17231A] p-4 rounded-2xl border border-[#E0D9CB] dark:border-[#243628]">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#3B7A57]/20 text-[#3B7A57] dark:text-[#4ADE80] flex items-center justify-center font-bold">
-              <HardHat className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-sm font-bold text-[#1A241C] dark:text-[#F3EFE6]">
-                {t('سجل المشاريع الإنشائية المباشرة', 'Active Construction Projects Registry')}
-              </h3>
-              <p className="text-xs text-[#5C665E] dark:text-[#8FA392]">
-                {t('متابعة نسب الإنجاز والمقاولين الميدانيين والميزانيات المرصودة', 'Track completion, site contractors, and budgets')}
-              </p>
-            </div>
-          </div>
-          <span className="text-xs font-bold px-3 py-1.5 rounded-xl bg-[#EAE4D7] dark:bg-[#1F2E23] text-[#5C665E] dark:text-[#8FA392]">
-            {projects.length} {isRtl ? 'مشاريع نشطة' : 'Active Projects'}
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {projects.map(prj => (
-            <div
-              key={prj.id}
-              className="p-4 rounded-2xl border border-[#E0D9CB] dark:border-[#243628] bg-[#F3EFE6] dark:bg-[#17231A] hover:border-[#D99B26]/40 transition-all space-y-3.5 shadow-2xs"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-[#EAE4D7] dark:bg-[#1F2E23] text-[#5C665E] dark:text-[#8FA392]">
-                  {prj.code}
-                </span>
-                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-[#3B7A57]/15 text-[#3B7A57] dark:text-[#4ADE80]">
-                  {prj.statusAr}
-                </span>
-              </div>
-
-              <div>
-                <h4 className="text-sm font-bold text-[#1A241C] dark:text-[#F3EFE6]">{prj.nameAr}</h4>
-                <p className="text-xs text-[#5C665E] dark:text-[#8FA392] mt-0.5">{prj.locationAr}</p>
-              </div>
-
-              <div className="space-y-1.5 pt-1">
-                <div className="flex items-center justify-between text-xs font-bold">
-                  <span className="text-[#5C665E] dark:text-[#8FA392]">{t('نسبة الإنجاز', 'Progress')}</span>
-                  <span className="text-[#D99B26] dark:text-[#EBB34D]">{prj.completion}%</span>
-                </div>
-                <div className="w-full h-2 rounded-full bg-[#EAE4D7] dark:bg-[#1F2E23] overflow-hidden">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${prj.completion}%` }}
-                    transition={{ duration: 0.6, ease: 'easeOut' }}
-                    className="h-full bg-gradient-to-r from-[#D99B26] to-[#EBB34D] rounded-full"
-                  />
-                </div>
-              </div>
-
-              <div className="pt-2 border-t border-[#E0D9CB]/60 dark:border-[#243628] flex items-center justify-between text-xs text-[#5C665E] dark:text-[#8FA392]">
-                <span>{prj.contractorsCount} {isRtl ? 'مقاولين بالموقع' : 'Contractors'}</span>
-                <span className="font-bold text-[#1A241C] dark:text-[#F3EFE6]">
-                  {(prj.budget / 1000000).toFixed(0)} {isRtl ? 'مليون ر.س' : 'M SAR'}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
+        <CTSProjectsTab
+          onOpenDocDossier={(doc) => {
+            setSelectedDossierDoc(doc);
+            setIsDossierOpen(true);
+          }}
+        />
       </div>
     );
   };
@@ -1864,6 +1780,16 @@ export const EngineeringModule: React.FC<EngineeringModuleProps> = ({ activeSubI
           </div>
         )}
       </AnimatePresence>
+
+      {/* CTS Correspondence Dossier Modal for Engineering Projects */}
+      <DocumentDossierModal
+        isOpen={isDossierOpen}
+        onClose={() => {
+          setIsDossierOpen(false);
+          setSelectedDossierDoc(null);
+        }}
+        document={selectedDossierDoc}
+      />
     </div>
   );
 };

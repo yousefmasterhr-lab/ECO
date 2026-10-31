@@ -50,7 +50,6 @@ const ATS_ORDERED_SUBITEMS = [
 
 const CTS_ORDERED_SUBITEMS = [
   { id: 'cts_overview', titleAr: 'لوحة المؤشرات والتحليلات', titleEn: 'Dashboard & Telemetry' },
-  { id: 'cts_projects', titleAr: 'دليل المشاريع والجهات', titleEn: 'Projects & Stakeholders' },
   { id: 'cts_correspondences', titleAr: 'سجل المراسلات العام', titleEn: 'General Registry' },
   { id: 'cts_inbound', titleAr: 'قيد واستلام الوارد', titleEn: 'Inbound Intake' },
   { id: 'cts_outbound', titleAr: 'إعداد واعتماد الصادر', titleEn: 'Outbound & Approvals' },

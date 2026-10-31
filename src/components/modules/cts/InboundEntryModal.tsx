@@ -237,7 +237,7 @@ export const InboundEntryModal: React.FC<InboundEntryModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
       <div
-        className="relative w-full max-w-4xl max-h-[92vh] flex flex-col rounded-3xl bg-[#FFFDF9] dark:bg-[#0B1120] border border-amber-200/70 dark:border-stone-800 shadow-2xl overflow-hidden"
+        className="relative w-full max-w-4xl max-h-[92vh] flex flex-col rounded-3xl bg-[#FFFDF9] dark:bg-[#0D1F17] border border-amber-200/70 dark:border-amber-500/30 shadow-2xl overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
