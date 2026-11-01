@@ -4,9 +4,13 @@ import { SplashScreen } from '@capacitor/splash-screen';
 import { PushNotifications } from '@capacitor/push-notifications';
 import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics';
 import { App } from '@capacitor/app';
+import { BiometricAuth, BiometryType } from '@aparajita/capacitor-biometric-auth';
 
 export const isNative = Capacitor.isNativePlatform();
 export const platform = Capacitor.getPlatform(); // 'android' | 'ios' | 'web'
+
+const BIOMETRIC_ENABLED_KEY = 'eco_biometric_enabled';
+const BIOMETRIC_CREDENTIALS_KEY = 'eco_biometric_credentials';
 
 export const NativeBridge = {
   isNative: () => Capacitor.isNativePlatform(),
@@ -17,6 +21,11 @@ export const NativeBridge = {
    */
   async initApp() {
     if (!Capacitor.isNativePlatform()) return;
+
+    // Apply native Android styling class for responsive icon and card spacing
+    if (Capacitor.getPlatform() === 'android') {
+      document.documentElement.classList.add('is-native-android');
+    }
 
     try {
       // Hide native splash screen after smooth transition
@@ -56,7 +65,104 @@ export const NativeBridge = {
   },
 
   /**
-   * Request permissions and initialize Push Notifications
+   * Biometric Authentication Capabilities (Fingerprint / Face ID)
+   */
+  async checkBiometricsAvailable(): Promise<{ available: boolean; type: 'fingerprint' | 'face' | 'iris' | 'none' }> {
+    if (!Capacitor.isNativePlatform()) {
+      return { available: false, type: 'none' };
+    }
+
+    try {
+      const result = await BiometricAuth.checkBiometry();
+      if (!result.isAvailable) {
+        return { available: false, type: 'none' };
+      }
+
+      let typeName: 'fingerprint' | 'face' | 'iris' | 'none' = 'fingerprint';
+      if (
+        result.biometryType === BiometryType.faceId ||
+        result.biometryType === BiometryType.faceAuthentication
+      ) {
+        typeName = 'face';
+      } else if (
+        result.biometryType === BiometryType.touchId ||
+        result.biometryType === BiometryType.fingerprintAuthentication
+      ) {
+        typeName = 'fingerprint';
+      } else if (result.biometryType === BiometryType.irisAuthentication) {
+        typeName = 'iris';
+      }
+
+      return { available: true, type: typeName };
+    } catch (e) {
+      console.warn('[NativeBridge] checkBiometry error:', e);
+      return { available: false, type: 'none' };
+    }
+  },
+
+  async authenticateBiometrics(reason = 'تسجيل الدخول السريع إلى منظومة ECO ERP'): Promise<boolean> {
+    if (!Capacitor.isNativePlatform()) return false;
+
+    try {
+      await BiometricAuth.authenticate({
+        reason,
+        cancelTitle: 'إلغاء',
+        allowDeviceCredential: true,
+        androidTitle: 'التحقق البيومتري من الهوية',
+        androidSubtitle: 'منظومة ECO ERP',
+      });
+      return true;
+    } catch (error) {
+      console.warn('[NativeBridge] Biometric authentication failed or cancelled:', error);
+      return false;
+    }
+  },
+
+  saveBiometricCredentials(username: string, tokenOrPassword: string) {
+    try {
+      const payload = JSON.stringify({
+        u: btoa(unescape(encodeURIComponent(username))),
+        p: btoa(unescape(encodeURIComponent(tokenOrPassword))),
+        ts: Date.now(),
+      });
+      localStorage.setItem(BIOMETRIC_CREDENTIALS_KEY, payload);
+      localStorage.setItem(BIOMETRIC_ENABLED_KEY, 'true');
+    } catch (e) {
+      console.warn('[NativeBridge] Failed to save biometric credentials', e);
+    }
+  },
+
+  getStoredBiometricCredentials(): { username: string; tokenOrPassword: string } | null {
+    try {
+      const raw = localStorage.getItem(BIOMETRIC_CREDENTIALS_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      const username = decodeURIComponent(escape(atob(parsed.u)));
+      const tokenOrPassword = decodeURIComponent(escape(atob(parsed.p)));
+      return { username, tokenOrPassword };
+    } catch (e) {
+      console.warn('[NativeBridge] Failed to read biometric credentials', e);
+      return null;
+    }
+  },
+
+  hasBiometricCredentials(): boolean {
+    try {
+      return localStorage.getItem(BIOMETRIC_ENABLED_KEY) === 'true' && !!localStorage.getItem(BIOMETRIC_CREDENTIALS_KEY);
+    } catch {
+      return false;
+    }
+  },
+
+  clearBiometricCredentials() {
+    try {
+      localStorage.removeItem(BIOMETRIC_CREDENTIALS_KEY);
+      localStorage.removeItem(BIOMETRIC_ENABLED_KEY);
+    } catch (_) {}
+  },
+
+  /**
+   * Request permissions and initialize Push Notifications (Safe Explicit Opt-In)
    */
   async initPushNotifications() {
     if (!Capacitor.isNativePlatform()) return;
@@ -153,4 +259,3 @@ export const NativeBridge = {
     } catch (_) {}
   },
 };
-

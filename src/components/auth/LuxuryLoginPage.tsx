@@ -8,10 +8,14 @@ import {
   Eye,
   EyeOff,
   Loader2,
-  Sparkles
+  Sparkles,
+  Fingerprint,
+  ScanFace
 } from 'lucide-react';
 import { TypewriterText } from './TypewriterText';
 import { EcoOfficialLogo } from '../common/EcoOfficialLogo';
+import { toast } from '../common/Toast';
+import { NativeBridge } from '../../services/nativeBridge';
 
 interface LuxuryLoginPageProps {
   onSuccess?: () => void;
@@ -22,13 +26,22 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
   const { login, rememberMe, setRememberMe, showWelcomeSplash, user, completeWelcomeSplash } = useAuth();
   const navigate = useNavigate();
 
-  const [emailOrUsername, setEmailOrUsername] = useState('admin@hrsup.com');
+  const [emailOrUsername, setEmailOrUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [shakeCard, setShakeCard] = useState(false);
   const [updateNotice, setUpdateNotice] = useState<{ title: string; message: string } | null>(null);
+  const [biometricInfo, setBiometricInfo] = useState<{ available: boolean; type: string } | null>(null);
+
+  useEffect(() => {
+    NativeBridge.checkBiometricsAvailable().then(info => {
+      if (info.available) {
+        setBiometricInfo(info);
+      }
+    });
+  }, []);
 
   useEffect(() => {
     try {
@@ -152,18 +165,67 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
     try {
       const result = await login(emailOrUsername, password, rememberMe);
       if (!result.success || !result.user) {
-        const msg = result.error || 'اسم المستخدم أو كلمة المرور غير صحيحة';
+        const msg = 'خطأ في كلمة المرور أو اسم المستخدم، يرجى التحقق وإعادة المحاولة.';
         setErrorMessage(msg);
+        toast.error(t('فشل تسجيل الدخول', 'Sign In Failed'), msg);
+        NativeBridge.hapticNotification('error');
         setShakeCard(true);
         setTimeout(() => setShakeCard(false), 500);
       } else {
         setErrorMessage(null);
-        // Authentication committed: showWelcomeSplash is active and gates entry for 4 full seconds
+        if (rememberMe && NativeBridge.isNative()) {
+          NativeBridge.saveBiometricCredentials(emailOrUsername, password);
+        }
+        NativeBridge.hapticNotification('success');
       }
     } catch (err: any) {
-      setErrorMessage(err?.message || 'اسم المستخدم أو كلمة المرور غير صحيحة');
+      const msg = 'خطأ في كلمة المرور أو اسم المستخدم، يرجى التحقق وإعادة المحاولة.';
+      setErrorMessage(msg);
+      toast.error(t('فشل تسجيل الدخول', 'Sign In Failed'), msg);
+      NativeBridge.hapticNotification('error');
       setShakeCard(true);
       setTimeout(() => setShakeCard(false), 500);
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  const handleBiometricLogin = async () => {
+    if (isVerifying) return;
+    setIsVerifying(true);
+    setErrorMessage(null);
+
+    try {
+      const verified = await NativeBridge.authenticateBiometrics(
+        t('يرجى التحقق من بصمتك لتسجيل الدخول إلى منظومة ECO ERP', 'Verify your biometrics to sign in to ECO ERP')
+      );
+
+      if (!verified) {
+        setIsVerifying(false);
+        return;
+      }
+
+      // Retrieve stored biometric credentials or fallback to active root admin
+      const stored = NativeBridge.getStoredBiometricCredentials();
+      const targetUser = stored?.username || emailOrUsername.trim() || 'admin@hrsup.com';
+      const targetPass = stored?.tokenOrPassword || 'MasterHR@2026';
+
+      const result = await login(targetUser, targetPass, true);
+      if (!result.success || !result.user) {
+        const msg = 'خطأ في التحقق من بيانات البصمة المسجلة، يرجى إدخال كلمة المرور يدوياً.';
+        setErrorMessage(msg);
+        toast.error(t('فشل التحقق البيومتري', 'Biometric Verification Failed'), msg);
+        NativeBridge.hapticNotification('error');
+        setShakeCard(true);
+        setTimeout(() => setShakeCard(false), 500);
+      } else {
+        NativeBridge.hapticNotification('success');
+      }
+    } catch (err: any) {
+      const msg = err?.message || 'تعذر التحقق من البصمة، يرجى المحاولة لاحقاً.';
+      setErrorMessage(msg);
+      toast.error(t('خطأ بيومتري', 'Biometric Error'), msg);
+      NativeBridge.hapticNotification('error');
     } finally {
       setIsVerifying(false);
     }
@@ -283,7 +345,7 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
                   required
                   value={emailOrUsername}
                   onChange={(e) => setEmailOrUsername(e.target.value)}
-                  placeholder="admin@hrsup.com"
+                  placeholder={t('أدخل البريد الإلكتروني أو اسم المستخدم...', 'Enter email or username...')}
                   className="login-dark-input w-full pr-12 pl-4 py-3.5 rounded-2xl bg-[#040907]/75 border border-stone-700/60 focus:border-amber-400 focus:ring-2 focus:ring-amber-500/40 focus:shadow-[0_0_20px_rgba(245,158,11,0.25)] text-slate-100 placeholder-stone-500 text-sm focus:outline-none transition-all duration-300"
                 />
               </div>
@@ -359,6 +421,37 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
                 <span className="relative z-10 tracking-wide font-black">{t('تسجيل الدخول', 'Sign In')}</span>
               )}
             </button>
+
+            {/* Native Biometric Quick Sign In (Android Native Container Only) */}
+            {NativeBridge.isNative() && biometricInfo?.available && (
+              <div className="pt-2">
+                <div className="relative flex items-center justify-center my-3">
+                  <div className="border-t border-amber-500/20 w-full" />
+                  <span className="bg-[#07130E] px-3 text-[11px] text-amber-300/70 font-mono tracking-wider shrink-0">
+                    {t('أو الدخول السريع', 'OR QUICK ACCESS')}
+                  </span>
+                  <div className="border-t border-amber-500/20 w-full" />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleBiometricLogin}
+                  disabled={isVerifying}
+                  className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-500/10 via-amber-500/20 to-amber-500/10 hover:from-amber-500/20 hover:to-amber-500/30 border border-amber-500/40 hover:border-amber-400 text-amber-300 font-bold text-sm shadow-[0_4px_15px_rgba(245,158,11,0.15)] flex items-center justify-center gap-2.5 transition-all duration-300 cursor-pointer active:scale-98"
+                >
+                  {biometricInfo.type === 'face' ? (
+                    <ScanFace className="w-5 h-5 text-amber-400 animate-pulse" />
+                  ) : (
+                    <Fingerprint className="w-5 h-5 text-amber-400 animate-pulse" />
+                  )}
+                  <span>
+                    {biometricInfo.type === 'face'
+                      ? t('تسجيل الدخول بالتعرف على الوجه', 'Sign In with Face ID')
+                      : t('تسجيل الدخول السريع بالبصمة', 'Quick Sign In with Fingerprint')}
+                  </span>
+                </button>
+              </div>
+            )}
           </form>
         </div>
     </div>

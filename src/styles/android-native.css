@@ -1,0 +1,41 @@
+/* Mobile-First Capacitor Android Native UI/UX Polish */
+html.is-native-android {
+  --safe-area-top: env(safe-area-inset-top, 24px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 16px);
+}
+
+/* Prevent unwanted Android tap highlights, text drag glitches, and overscroll bounce */
+html.is-native-android body {
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: contain;
+}
+
+/* Enhanced icon alignment and anti-cramping for mobile cards */
+html.is-native-android svg {
+  flex-shrink: 0;
+}
+
+/* Mobile Grid & Spacing Polish */
+@media (max-width: 640px) {
+  html.is-native-android .grid {
+    gap: 0.875rem;
+  }
+
+  /* Relax card paddings on compact mobile screens so icons and badges have ample breathing room */
+  html.is-native-android .department-card,
+  html.is-native-android .structure-card,
+  html.is-native-android .kpi-card {
+    padding: 0.875rem !important;
+  }
+
+  /* Safe margins for icon containers */
+  html.is-native-android .icon-badge {
+    margin-inline-end: 0.625rem !important;
+  }
+
+  /* Mobile floating command docks & bottom actions */
+  html.is-native-android .floating-dock {
+    bottom: calc(env(safe-area-inset-bottom, 12px) + 8px) !important;
+  }
+}
+

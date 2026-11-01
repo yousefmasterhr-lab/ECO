@@ -15,6 +15,7 @@
     "android:release": "npm run build && npx cap sync android && cd android && (if not defined JAVA_HOME set \"JAVA_HOME=C:\\Program Files\\Eclipse Adoptium\\jdk-21.0.13.9-hotspot\") && gradlew assembleRelease"
   },
   "dependencies": {
+    "@aparajita/capacitor-biometric-auth": "^10.0.0",
     "@capacitor/android": "^8.6.0",
     "@capacitor/app": "^8.1.2",
     "@capacitor/cli": "^8.6.0",
