@@ -851,6 +851,8 @@
      - مزامنة حية لشريط الحالة (Status Bar) مع نمط المنظومة المعتمد (الزيتوني الملكي العاتم `#07130E` في الليلي والشمبانيا الدافئ `#FFFDF9` في النهاري).
      - إدارة زر الرجوع الفيزيائي في أندرويد (Hardware Back Button).
      - تسجيل ومعالجة رموز الإشعارات الفورية (Push Notification Device Tokens).
+   - **درع الأمان لتهيئة Firebase وتفادي الانهيار (FirebaseApp Crash Guard):**
+     - حقن تهيئة احترازية آمنة لـ `FirebaseApp` في `MainActivity.java` لحماية التطبيق من الانهيار عند استدعاء `@capacitor/push-notifications` في غياب ملف `google-services.json`.
    - **إجراءات إصدار حزم التثبيت (APK Build Workflow):**
      - المزامنة: `npm run android:sync`.
      - فتح المشروع في Android Studio: `npm run android:open`.

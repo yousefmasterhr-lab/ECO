@@ -32,9 +32,6 @@ export const NativeBridge = {
       console.warn('[NativeBridge] StatusBar init failed:', e);
     }
 
-    // Initialize Push Notifications
-    this.initPushNotifications();
-
     // Register hardware back button listener for Android
     this.initBackButtonListener();
   },

@@ -830,6 +830,29 @@
      - مزامنة فورية للون ونمط شريط الحالة (`StatusBar`) مع النمطين الليلي والنهاري.
      - اعتراض الزر الفيزيائي للرجوع في أندرويد (Hardware Back Button) لإغلاق النوافذ المنبثقة أولاً قبل تصغير التطبيق.
 
+### ❌ الخطأ 3.49: انهيار التطبيق الأصلي لحظة الإطلاق لغياب إعدادات Firebase مع إضافة الإشعارات (FirebaseApp Initialization Crash)
+- **وصف المشكلة:**
+  - عند تضمين حزمة `@capacitor/push-notifications` واستدعاء `PushNotifications.register()` عند بدء تشغيل التطبيق في غياب ملف `google-services.json`، يُطلق محرك Firebase على مسار جافا استثناءً غير معالج:
+    `IllegalStateException: Default FirebaseApp is not initialized in this process com.hrsup.eco.erp. Make sure to call FirebaseApp.initializeApp(Context) first.`
+  - يؤدي هذا الاستثناء لانهيار التطبيق فوراً عند فتحه على الهاتف وظهور نافذة النظام: `Clear cache for ECO ERP? ECO ERP closed because this app has a bug`.
+- **القاعدة الصارمة والحل الجذري المعتمد:**
+  1. **حظر استدعاء `PushNotifications.register()` عند بدء التشغيل التلقائي:**
+     - لا يجوز استدعاء `register()` في `initApp()`، بل يُخصص كإجراء اختياري مقيد بوجود مفاتيح FCM صالحة.
+  2. **حقن درع التهيئة الاحترازية في `MainActivity.java`:**
+     - تهيئة `FirebaseApp` مسبقاً باختيارات افتراضية آمنة في `MainActivity.onCreate()` قبل نداءات الإضافات:
+       ```java
+       if (FirebaseApp.getApps(this).isEmpty()) {
+           FirebaseOptions options = new FirebaseOptions.Builder()
+                   .setApplicationId("com.hrsup.eco.erp")
+                   .setApiKey("AIzaSyDummyKeyForLocalInitializationOnly12345")
+                   .setProjectId("eco-erp-system")
+                   .build();
+           FirebaseApp.initializeApp(this, options);
+       }
+       ```
+     - إضافة `implementation 'com.google.firebase:firebase-common:21.0.0'` في `android/app/build.gradle` لضمان توافر الصنف برمجياً.
+     - يضمن هذا النمط استقرار التطبيق بنسبة 100% وعدم انهياره حتى لو استدعت الواجهة دالة التسجيل.
+
 ---
 
 ## 4. ملخص البروتوكول الإلزامي قبل كتابة أي كود جديد

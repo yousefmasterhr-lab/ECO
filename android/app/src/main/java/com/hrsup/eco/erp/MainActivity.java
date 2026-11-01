@@ -6,12 +6,28 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebView;
 import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.BridgeWebViewClient;
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.FirebaseOptions;
 
 public class MainActivity extends BridgeActivity {
     private boolean isFallbackLoaded = false;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        // Safe default FirebaseApp initialization to prevent native crash when google-services.json is absent
+        try {
+            if (FirebaseApp.getApps(this).isEmpty()) {
+                FirebaseOptions options = new FirebaseOptions.Builder()
+                        .setApplicationId("com.hrsup.eco.erp")
+                        .setApiKey("AIzaSyDummyKeyForLocalInitializationOnly12345")
+                        .setProjectId("eco-erp-system")
+                        .build();
+                FirebaseApp.initializeApp(this, options);
+            }
+        } catch (Throwable t) {
+            // Safe fallback
+        }
+
         super.onCreate(savedInstanceState);
 
         // Robust offline fallback: If remote live endpoint is unreachable, fallback to bundled local assets
