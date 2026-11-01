@@ -11,8 +11,8 @@
     "android:add": "npx cap add android",
     "android:sync": "npm run build && npx cap sync android",
     "android:open": "npx cap open android",
-    "android:build": "npm run build && npx cap sync android && cd android && gradlew assembleDebug",
-    "android:release": "npm run build && npx cap sync android && cd android && gradlew assembleRelease"
+    "android:build": "npm run build && npx cap sync android && cd android && (if not defined JAVA_HOME set \"JAVA_HOME=C:\\Program Files\\Eclipse Adoptium\\jdk-21.0.13.9-hotspot\") && gradlew assembleDebug",
+    "android:release": "npm run build && npx cap sync android && cd android && (if not defined JAVA_HOME set \"JAVA_HOME=C:\\Program Files\\Eclipse Adoptium\\jdk-21.0.13.9-hotspot\") && gradlew assembleRelease"
   },
   "dependencies": {
     "@capacitor/android": "^8.6.0",
