@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ThemeProvider } from './context/ThemeContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -17,6 +17,7 @@ import { LuxuryLoginPage } from './components/auth/LuxuryLoginPage';
 import { CinematicWelcomeSplash } from './components/auth/CinematicWelcomeSplash';
 import { CinematicUpdateOverlay } from './components/common/CinematicUpdateOverlay';
 import { PublicCareersPortal } from './components/modules/ats/PublicCareersPortal';
+import { NativeBridge } from './services/nativeBridge';
 
 const AuthenticatedApp: React.FC = () => {
   return (
@@ -48,6 +49,10 @@ const AppContent: React.FC = () => {
     completeWelcomeSplash,
     navigate,
   } = useAuth();
+
+  useEffect(() => {
+    NativeBridge.initApp();
+  }, []);
 
   if (isLoading) {
     return (

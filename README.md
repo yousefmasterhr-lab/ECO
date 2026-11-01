@@ -559,6 +559,42 @@ CREATE TABLE IF NOT EXISTS system_configurations (
 - **اللغة الإدارية التنفيذية الراقية:**
   - استبعاد الاختصارات واللواحق الأجنبية: **`منظومة استقطاب الكفاءات والذكاء الوظيفي`**, **`مسار التوظيف والفرز التفاعلي`**, **`قاعدة بيانات المرشحين والمواهب`**, **`عروض العمل وتعيين الموظف`**.
 
+### 4.34 معمارية الحاوية الأصلية للأندرويد وتوليد حزم التثبيت (Capacitor Enterprise Android Wrapper & APK Generation)
+- **معرف وتكوين التطبيق الأصلي (Native Configuration):**
+  - معرف الحزمة (App ID): `com.hrsup.eco.erp`
+  - اسم التطبيق (App Name): `ECO ERP`
+  - مجلد الأصول (Web Dir): `dist`
+  - المزامنة السحابية اللحظية: توجيه الـ WebView تلقائياً إلى `https://eco.hrsup.com` لمزامنة كافة الموديولات والتحديثات حياً دون الحاجة لتحديث متجر التطبيقات.
+  - آلية التراجع الذاتي في وضع عدم الاتصال (Offline Resilient Fallback): في حال انقطاع الاتصال أو تعذر الوصول إلى الخادم السحابي، يتم تفعيل التراجع الآلي في `MainActivity.java` لتحميل الأصول المضمنة محلياً (`https://localhost`).
+- **أذونات أندرويد المؤسسية (`AndroidManifest.xml`):**
+  - أذونات الشبكة والاتصال: `INTERNET`, `ACCESS_NETWORK_STATE`, `ACCESS_WIFI_STATE`.
+  - أذونات الكاميرا والعتاد: `CAMERA` وميزات التركيز التلقائي لقراءة QR Codes وإرفاق الوثائق وتصوير بطاقات العمل.
+  - أذونات التخزين والوسائط: دعم شامل للأجهزة القديمة والحديثة (`READ_EXTERNAL_STORAGE`, `WRITE_EXTERNAL_STORAGE`, `READ_MEDIA_IMAGES`, `READ_MEDIA_VIDEO`).
+  - أذونات الإشعارات الفورية: `POST_NOTIFICATIONS` لضمان استلام إشعارات الصادر والوارد وتنبيهات الموارد البشرية الحية.
+  - تحكم النظام والاهتزازات: `WAKE_LOCK`, `VIBRATE`.
+- **مزامنة شريط الحالة وهوية البراند:**
+  - مزامنة حية لشريط الحالة (Status Bar) مع نمط الألوان: الزيتوني الملكي العاتم (`#07130E`) في الوضع الليلي، والشمبانيا والعاج الدافئ (`#FFFDF9`) في الوضع النهاري.
+  - أيقونات إطلاق وشاشة توقف (Splash Screen) رسمية بهوية ECO الكهرمانية الملكية.
+- **أوامر وإجراءات توليد حزم التثبيت (`APK Build Workflow`):**
+  - مزامنة الأصول وتحديث منصة أندرويد:
+    ```bash
+    npm run android:sync
+    ```
+  - فتح بيئة Android Studio للتطوير والتدقيق:
+    ```bash
+    npm run android:open
+    ```
+  - توليد حزمة الفحص والتجربة المباشرة (Debug APK):
+    ```bash
+    cd android && ./gradlew assembleDebug
+    ```
+    *الملف الناتج يقع في: `android/app/build/outputs/apk/debug/app-debug.apk`*
+  - توليد حزمة الإنتاج الموقعة المعتمدة للنشر (Release APK):
+    ```bash
+    cd android && ./gradlew assembleRelease
+    ```
+    *الملف الناتج يقع في: `android/app/build/outputs/apk/release/app-release-unsigned.apk` (أو الموقع بعد ربط مفتاح `keystore`)*
+
 ---
 
 ## 5. نظام الحوكمة والذاكرة الذكية الأربعة (4-File Governance System)
@@ -587,4 +623,20 @@ CREATE TABLE IF NOT EXISTS system_configurations (
 - **تشغيل بيئة التطوير المحلية:**
   ```bash
   npm run dev
+  ```
+- **مزامنة حزمة أندرويد الأصلية (Capacitor Android Sync):**
+  ```bash
+  npm run android:sync
+  ```
+- **فتح مشروع أندرويد في Android Studio:**
+  ```bash
+  npm run android:open
+  ```
+- **بناء حزمة أندرويد التجريبية (Debug APK):**
+  ```bash
+  npm run android:build
+  ```
+- **بناء حزمة أندرويد الإنتاجية (Release APK):**
+  ```bash
+  npm run android:release
   ```

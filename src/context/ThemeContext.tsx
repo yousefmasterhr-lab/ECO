@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { ThemeMode } from '../types';
+import { NativeBridge } from '../services/nativeBridge';
 
 export type { ThemeMode };
 
@@ -47,6 +48,9 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (metaColorScheme) {
       metaColorScheme.setAttribute('content', theme === 'dark' ? 'dark' : 'light');
     }
+
+    // Sync native Android status bar with ECO Luxury Brand palette
+    NativeBridge.syncStatusBar(theme === 'dark');
 
     try {
       localStorage.setItem('erp_portal_theme', theme);

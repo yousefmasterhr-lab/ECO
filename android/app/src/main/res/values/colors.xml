@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ECO ERP Luxury Brand Amber & Royal Olive Colors -->
+    <color name="colorPrimary">#07130E</color>
+    <color name="colorPrimaryDark">#050E0A</color>
+    <color name="colorAccent">#D99B26</color>
+    <color name="brandAmber">#D99B26</color>
+    <color name="brandAmberLight">#F59E0B</color>
+    <color name="royalOlive">#07130E</color>
+    <color name="royalOliveSurface">#0D1F17</color>
+    <color name="warmIvory">#FFFDF9</color>
+</resources>
+

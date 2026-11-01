@@ -828,3 +828,31 @@
      - إظهار الصفر الصريح `0` في الحالة الصفرية: `0 شواغر نشطة`, `0 مرشحين قيد الفرز`, `0 تعيينات مكتملة`, `لا توجد بيانات مسار توظيف حالياً`.
    - **تنقية العناوين والمصطلحات الإدارية:**
      - إزالة الاختصارات واللواحق الأجنبية: **`منظومة استقطاب الكفاءات والذكاء الوظيفي`**, **`مسار التوظيف والفرز التفاعلي`**, **`قاعدة بيانات المرشحين والمواهب`**, **`عروض العمل وتعيين الموظف`**.
+
+
+9. **معمارية الحاوية الأصلية للأندرويد وتوليد حزم التثبيت (Capacitor Enterprise Native Wrapper Pattern):**
+   - **التهيئة والتكوين القياسي (`capacitor.config.ts`):**
+     - معرف التطبيق المؤسسي: `com.hrsup.eco.erp`.
+     - اسم التطبيق الرسمي: `ECO ERP`.
+     - مجلد حزم الويب: `dist`.
+     - إعدادات الخادم السحابي الحي:
+       - `url: 'https://eco.hrsup.com'` للمزامنة الحية المباشرة مع بيئة الحافة وقاعدة بيانات Cloudflare D1.
+       - تمكين الملاحة الآمنة لنطاقات المنظومة عبر `allowNavigation`.
+   - **آلية التراجع الذاتي في وضع عدم الاتصال (Offline-First Resilient Fallback):**
+     - تجاوز أخطاء الاتصال في `MainActivity.java` عبر توسيع `BridgeWebViewClient`.
+     - عند تعذر الوصول للخادم السحابي في الإطار الرئيسي، يتم التحميل التلقائي لحزمة الأصول المحلية المضمنة داخل التطبيق (`https://localhost`).
+   - **منظومة الأذونات الشاملة (`AndroidManifest.xml`):**
+     - الشبكة والإنترنت: `INTERNET`, `ACCESS_NETWORK_STATE`, `ACCESS_WIFI_STATE`.
+     - الكاميرا والماسح الضوئي: `CAMERA`, `hardware.camera`, `hardware.camera.autofocus`.
+     - وسائط وتخزين المستندات: `READ_EXTERNAL_STORAGE`, `WRITE_EXTERNAL_STORAGE`, `READ_MEDIA_IMAGES`, `READ_MEDIA_VIDEO`.
+     - الإشعارات الفورية: `POST_NOTIFICATIONS` لضمان التوافق الكامل مع Android 13+.
+     - تحكم النظام: `WAKE_LOCK`, `VIBRATE`.
+   - **جسر الربط والمزامنة (`src/services/nativeBridge.ts`):**
+     - مزامنة حية لشريط الحالة (Status Bar) مع نمط المنظومة المعتمد (الزيتوني الملكي العاتم `#07130E` في الليلي والشمبانيا الدافئ `#FFFDF9` في النهاري).
+     - إدارة زر الرجوع الفيزيائي في أندرويد (Hardware Back Button).
+     - تسجيل ومعالجة رموز الإشعارات الفورية (Push Notification Device Tokens).
+   - **إجراءات إصدار حزم التثبيت (APK Build Workflow):**
+     - المزامنة: `npm run android:sync`.
+     - فتح المشروع في Android Studio: `npm run android:open`.
+     - تجميع حزمة الفحص: `cd android && ./gradlew assembleDebug`.
+     - تجميع حزمة الإنتاج: `cd android && ./gradlew assembleRelease`.
