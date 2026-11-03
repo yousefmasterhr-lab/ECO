@@ -4,6 +4,7 @@ import { useLanguage } from '../../../context/LanguageContext';
 import { useFinancial } from '../../../context/FinancialContext';
 import { useDatabase } from '../../../services/federation/DatabaseContext';
 import { JournalEntryModal } from './JournalEntryModal';
+import { HighDensityJournalVoucherGrid } from './HighDensityJournalVoucherGrid';
 import { JournalLineItem } from '../../../services/database/types';
 import { formatCurrency, formatNumber, toWesternDigits } from '@erp/ui-system';
 import {
@@ -47,6 +48,7 @@ export const GeneralJournal: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [dateFilter, setDateFilter] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isHighDensityOpen, setIsHighDensityOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [expandedJournalId, setExpandedJournalId] = useState<string | null>(null);
   const [loadedLines, setLoadedLines] = useState<Record<string, JournalLineItem[]>>({});
@@ -173,6 +175,15 @@ export const GeneralJournal: React.FC = () => {
 
           {/* Top Actions */}
           <div className="flex flex-wrap items-center gap-2.5 self-start lg:self-auto">
+            <button
+              onClick={() => setIsHighDensityOpen(true)}
+              className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold bg-[#1e293b] text-amber-300 dark:bg-amber-500/15 dark:text-amber-300 border border-slate-700 dark:border-amber-500/30 hover:bg-slate-800 transition-all cursor-pointer shadow-xs"
+              title={t('شاشة الإدخال السريع لسطور القيود بلوحة المفاتيح (Telerik Desktop)', 'High-Density Desktop Grid')}
+            >
+              <Sparkles className="w-4 h-4 text-amber-400" />
+              <span>{t('الإدخال السريع (Telerik Desktop)', 'Fast Desktop Entry')}</span>
+            </button>
+
             <button
               onClick={() => setIsModalOpen(true)}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-[#059669] text-white hover:bg-[#047857] shadow-xs transition-all cursor-pointer"
@@ -704,6 +715,21 @@ export const GeneralJournal: React.FC = () => {
         <JournalEntryModal
           onClose={() => setIsModalOpen(false)}
         />
+      )}
+
+      {/* High-Density Keyboard-Driven Journal Voucher Grid (Telerik Desktop) */}
+      {isHighDensityOpen && (
+        <div className="fixed inset-0 !m-0 !top-0 !left-0 !right-0 !bottom-0 w-screen h-screen z-[999] bg-black/80 backdrop-blur-sm p-2 sm:p-4 overflow-y-auto flex items-center justify-center">
+          <div className="w-full max-w-7xl h-[92vh] max-h-[92vh] flex flex-col">
+            <HighDensityJournalVoucherGrid
+              onClose={() => setIsHighDensityOpen(false)}
+              onSaved={async () => {
+                setIsHighDensityOpen(false);
+                await handleRefresh();
+              }}
+            />
+          </div>
+        </div>
       )}
     </div>
   );

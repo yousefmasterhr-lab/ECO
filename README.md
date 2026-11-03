@@ -595,7 +595,7 @@ CREATE TABLE IF NOT EXISTS system_configurations (
     ```
     *الملف الناتج يقع في: `android/app/build/outputs/apk/release/app-release-unsigned.apk` (أو الموقع بعد ربط مفتاح `keystore`)*
 
-### 4.33 المصادقة البيومترية الأصلية وتخصيصات شاشات الهاتف المحمول (Native Biometric Auth & Mobile Layout Isolation)
+### 4.35 المصادقة البيومترية الأصلية وتخصيصات شاشات الهاتف المحمول (Native Biometric Auth & Mobile Layout Isolation)
 - **عزل تنسيقات الهواتف الذكية (`src/styles/android-native.css`):**
   - تطبيق كلاس البادئة `html.is-native-android` لضمان عزل كافة تحسينات شاشات الموبايل بنسبة 100% وعدم تأثر واجهة سطح المكتب إطلاقاً.
   - ضبط التفاف أزرار الشركات والكيانات وبطاقات الهيكل التنظيمي لمنع التكدس مع تباعد متناسق وهوامش مريحة للعين.
@@ -606,6 +606,26 @@ CREATE TABLE IF NOT EXISTS system_configurations (
   - دمج إضافة `@aparajita/capacitor-biometric-auth` الرسمية وإضافة أذونات `USE_BIOMETRIC` و`USE_FINGERPRINT`.
   - التحقق التلقائي من توافر المستشعرات وعرض زر فاخر: `تسجيل الدخول السريع بالبصمة`.
   - تخزين واسترجاع بيانات الاعتماد المشفرة محلياً لتمكين الدخول الفوري الآمن.
+
+### 4.36 محرك الأستاذ العام وتعدد قواعد البيانات (Phase 01 Multi-Database General Ledger Engine)
+- **التطابق الحرفي الصارم مع المخطط الأصلي (`tarabot_erp_complete_schema.json`):**
+  - مطابقة تامة مع جداول دليل الحسابات الخماسي: `Level1_AccGuide` وحتى `Level5_AccGuide`.
+  - مطابقة جداول القيود ومراكز التكلفة والتحليلات: `GeneralLedger_Head`, `GeneralLedger_Details`, `Main_Costcenters`, `Costcenters`, `Accounts_Analysis`.
+- **معمارية إدارة أساطيل قواعد البيانات المتعددة (`DynamicDatabaseManager`):**
+  - دعم التبديل الديناميكي بين 16 قاعدة بيانات مالية (`MK_Khalil_Db_2026`, `Tarabot_Data_2026`, `acc`, `newhope`, إلخ) بناءً على مفتاح الرأس `X-Database-Key`.
+  - تخزين مؤقت لمجمعات الاتصال (Connection Pool Cache) مع فحص نبض دوري كل 30 ثانية واستعادة ذاتية للاتصال.
+  - تنفيذ المعاملات الذرية `executeTransaction` مع ضمان التراجع التام `ROLLBACK` عند أي خلل أثناء ترحيل سطور القيد.
+- **محرك التوازن المحاسبي اللانهائي (`Decimal.js Invariant Engine`):**
+  - شرط التوازن الصارم: $|TotalDebit - TotalCredit| === 0.0000$ بدقة 28 خانة عبر مكتبة `decimal.js`.
+  - حظر ترحيل القيود الأقل من سطرين ومنع المبالغ الصفرية أو السالبة.
+  - محرك تفقيط مالي فوري لتحويل صافي القيد إلى جملة لغوية عربية موثقة.
+- **التدقيق السحابي والتنبيهات المباشرة:**
+  - تسجيل حركات الترحيل غير المتزامن في سحابة Oracle Autonomous DB (`ADMIN.BackupAuditLogs`).
+  - بث تقارير HTML فورية عبر بوت Telegram وتنبيهات أمنية حمراء عاجلة عند رصد محاولات كسر التوازن.
+- **واجهة الإدخال السريع المكثفة (High-Density Telerik-Style Keyboard Grid):**
+  - محاكاة تجربة برمجيات المحاسبة المكتبية فائقة السرعة مع تنقل كامل بمفتاح `Enter`.
+  - مفاتيح إدراج السطور `Insert` / `Ctrl+Down` وحذف السطور `Ctrl+Delete`.
+  - بحث لحظي في الحسابات بالرقم أو الاسم العربي مع شريط توازن سفلي عائم وتفقيط عربي فوري.
 
 ---
 
