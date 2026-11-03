@@ -287,3 +287,4 @@ export interface CreateExtractDTO {
   }>;
   entryName?: string;
 }
+

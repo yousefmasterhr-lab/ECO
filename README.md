@@ -671,6 +671,33 @@ CREATE TABLE IF NOT EXISTS system_configurations (
   - تنقل انسيابي بلوحة المفاتيح عبر مفتاح `Enter` بين خلايا بنود المقايسة، واختصارات `Insert` و `Ctrl+Del`.
   - مصفوفة استقطاعات سفلية عائمة، شريط مؤشرات مالي، وتفقيط لغوي فوري لصافي المستخلص باللغة العربية.
 
+### 4.39 محرك المشتريات والموردين وفواتير البضاعة (Phase 04 Purchasing & Supplier Payables Engine)
+- **التطابق الحرفي الصارم مع المخطط الأصلي (`tarabot_erp_complete_schema.json`):**
+  - دليل وبطاقات الموردين: `dbo.Suppliers`.
+  - فواتير المشتريات المحلية والمخزنية: `dbo.Purchase_Head`, `dbo.Purchase_Details`.
+  - فواتير المشتريات الخدمية / الإضافية: `dbo.Purchase_Head1`, `dbo.Purchase_Details1`.
+  - مردودات المشتريات (إشعارات دائنة): `dbo.Purchase_R_Head`, `dbo.Purchase_R_Details`.
+  - أوامر الشراء والتوريد: `dbo.Purchase_Orders_Head`, `dbo.Purchase_Orders_Details`.
+  - إعدادات وتوجيه المشتريات: `dbo.Purchase_Settings`.
+- **محرك الحسابات الضريبية والتجارية الدقيقة (`Decimal.js Purchasing Engine`):**
+  - صافي السطر: $\text{LineNet} = \text{Qty} \times \text{Price} - \text{LineDiscount}$.
+  - إجمالي الفاتورة: $\text{GrossSubtotal} = \sum \text{LineNet}$.
+  - الوعاء الخاضع للضريبة: $\text{TaxableSubtotal} = \max(0, \text{GrossSubtotal} - \text{CommercialDiscount})$.
+  - ضريبة القيمة المضافة: $\text{VATAmount} = \text{TaxableSubtotal} \times (\text{VatTaxPer} / 100)$.
+  - ضريبة الخصم والإضافة: $\text{WHTAmount} = \text{TaxableSubtotal} \times (\text{DTaxPer} / 100)$.
+  - الصافي المستحق للمورد: $\text{NetPayable} = (\text{TaxableSubtotal} + \text{VATAmount}) - \text{WHTAmount}$.
+- **وحدة المعاملة الذرية الواحدة مع الأستاذ العام (Single Transaction ACID Boundary):**
+  - تنفيذ حفظ فاتورة المشتريات وترحيل قيد اليومية العام المزدوج المتزن داخل نفس معاملة SQL (`BEGIN TRANSACTION ... COMMIT`).
+  - التوجيه المحاسبي: مدين المخزون/المشتريات، مدين ضريبة القيمة المضافة 14%، دائن المورد بصافي المستحق، ودائن مصلحة الضرائب خصم وإضافة 1%.
+  - شرط التوازن الحتمي: $|\text{Debit} - \text{Credit}| === 0.0000$، والتراجع الفوري (`ROLLBACK`) عند أي خلل.
+  - التوجيه المحاسبي العكسي لمردودات المشتريات لتسوية حساب المورد والمخزون والضريبة.
+- **التدقيق السحابي والتنبيهات المباشرة:**
+  - تسجيل حركات اعتماد الفواتير والمردودات في سحابة Oracle Autonomous DB (`ADMIN.BackupAuditLogs`).
+  - إرسال تقارير إشعار Telegram HTML فورية لكل فاتورة ومردود.
+- **واجهة الإدخال السريع المكثفة (High-Density Telerik Purchasing HUD):**
+  - تنقل انسيابي بلوحة المفاتيح عبر مفتاح `Enter` واختصارات `Insert` و `Ctrl+Del`.
+  - شريط التوازن والتفقيط المالي اللغوي الفوري باللغة العربية.
+
 ---
 
 ## 5. نظام الحوكمة والذاكرة الذكية الأربعة (4-File Governance System)

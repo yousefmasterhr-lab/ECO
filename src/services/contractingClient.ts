@@ -284,3 +284,4 @@ export class ContractingClient {
 }
 
 export const contractingClient = ContractingClient.getInstance();
+

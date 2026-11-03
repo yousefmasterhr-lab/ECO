@@ -25,6 +25,20 @@ export interface TelegramIntegrityAlertPayload {
   errorMessage: string;
 }
 
+export interface TelegramPurchaseAlertPayload {
+  databaseKey: string;
+  invoiceNo: number;
+  noteDate: string;
+  vendorName: string;
+  subtotal: number;
+  vatAmount: number;
+  whtAmount: number;
+  netTotal: number;
+  entryName: string;
+  itemsCount: number;
+  isReturn?: boolean;
+}
+
 export class TelegramAlertService {
   private static instance: TelegramAlertService;
   private botToken: string | null = null;
@@ -95,6 +109,38 @@ export class TelegramAlertService {
         await this.sendTelegramMessage(messageHtml);
       } catch (err: any) {
         console.warn('[TelegramAlertService] Failed to send integrity alert:', err.message);
+      }
+    });
+  }
+
+  /**
+   * Dispatches an asynchronous luxury HTML report for a Purchase Invoice or Return
+   */
+  public dispatchPurchaseAlert(payload: TelegramPurchaseAlertPayload): void {
+    Promise.resolve().then(async () => {
+      try {
+        const title = payload.isReturn ? '↩️ ECO ERP — مردودات مشتريات معتمدة' : '📦 ECO ERP — فاتورة مشتريات جديدة معتمدة';
+        const messageHtml = `
+<b>${title}</b>
+━━━━━━━━━━━━━━━━━━━━
+<b>رقم الفاتورة:</b> <code>#${payload.invoiceNo}</code>
+<b>قاعدة البيانات:</b> <code>${payload.databaseKey}</code>
+<b>التاريخ:</b> ${payload.noteDate}
+<b>المورد:</b> 🏢 <b>${payload.vendorName}</b>
+<b>الإجمالي قبل الضريبة:</b> <code>${payload.subtotal.toLocaleString('ar-EG', { minimumFractionDigits: 2 })} ج.م</code>
+<b>ضريبة القيمة المضافة (14%):</b> <code>${payload.vatAmount.toLocaleString('ar-EG', { minimumFractionDigits: 2 })} ج.م</code>
+<b>ضريبة الخصم والإضافة (1%):</b> <code>${payload.whtAmount.toLocaleString('ar-EG', { minimumFractionDigits: 2 })} ج.م</code>
+<b>الصافي المستحق:</b> <code>${payload.netTotal.toLocaleString('ar-EG', { minimumFractionDigits: 2 })} ج.م</code>
+<b>عدد البنود:</b> ${payload.itemsCount} صنف
+<b>مدخل البيانات:</b> 👤 ${payload.entryName}
+<b>الحالة:</b> ✅ تم الترحيل المخزني والمحاسبي بنجاح
+━━━━━━━━━━━━━━━━━━━━
+<i>ECO ERP Purchasing & Payables Engine 2026</i>
+        `.trim();
+
+        await this.sendTelegramMessage(messageHtml);
+      } catch (err: any) {
+        console.warn('[TelegramAlertService] Failed to send purchase alert:', err.message);
       }
     });
   }

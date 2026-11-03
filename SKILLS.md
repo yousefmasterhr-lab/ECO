@@ -949,3 +949,39 @@
       - جدول إدخال مكثف مع تنقل انسيابي بلوحة المفاتيح عبر `Enter` بين الخلايا، والقفز التلقائي للسطر التالي.
       - اختصارات `Insert` / `Ctrl+Down` لإدراج بنود مقايسة جديدة، و `Ctrl+Delete` للحذف.
       - مصفوفة استقطاعات تفاعلية في أسفل الشاشة تعكس التأثير اللحظي لنسب الخصومات على صافي المستحق مع التفقيط المالي العربي الكامل.
+
+
+14. **معمارية المشتريات والموردين وفواتير البضاعة ومردوداتها (Phase 04 Purchasing, Supplier Payables & Vendor Invoicing Engine Architecture):**
+    - **التطابق الحرفي مع جداول المرحلة 04 في `tarabot_erp_complete_schema.json` و `Phase_04_PurchasingPayables_Spec.md`:**
+      - دليل وبطاقات الموردين: `dbo.Suppliers`.
+      - فواتير المشتريات المحلية والمخزنية: `dbo.Purchase_Head`, `dbo.Purchase_Details`.
+      - فواتير المشتريات الخدمية / الإضافية: `dbo.Purchase_Head1`, `dbo.Purchase_Details1`.
+      - مردودات المشتريات (إشعارات دائنة): `dbo.Purchase_R_Head`, `dbo.Purchase_R_Details`.
+      - أوامر الشراء والتوريد: `dbo.Purchase_Orders_Head`, `dbo.Purchase_Orders_Details`.
+      - إعدادات وتوجيه المشتريات: `dbo.Purchase_Settings`.
+    - **معادلة احتساب الضرائب والخصومات بدقة `Decimal.js` (Arbitrary-Precision Purchasing Engine):**
+      - صافي السطر: $\text{LineNet} = \text{Qty} \times \text{Price} - \text{LineDiscount}$.
+      - إجمالي الفاتورة: $\text{GrossSubtotal} = \sum \text{LineNet}$.
+      - الوعاء الخاضع للضريبة: $\text{TaxableSubtotal} = \max(0, \text{GrossSubtotal} - \text{CommercialDiscount})$.
+      - ضريبة القيمة المضافة: $\text{VATAmount} = \text{TaxableSubtotal} \times (\text{VatTaxPer} / 100)$.
+      - ضريبة الخصم والإضافة: $\text{WHTAmount} = \text{TaxableSubtotal} \times (\text{DTaxPer} / 100)$.
+      - الصافي المستحق للمورد: $\text{NetPayable} = (\text{TaxableSubtotal} + \text{VATAmount}) - \text{WHTAmount}$.
+    - **وحدة المعاملة الذرية الواحدة مع الأستاذ العام (Single Transaction Boundary with GL):**
+      - إنشاء فاتورة المشتريات وترحيل قيد اليومية العام المقابل (`postVoucherInTransaction`) داخل معاملة SQL Server ذاتها (`BEGIN TRANSACTION ... COMMIT`).
+      - القيد المزدوج لفاتورة المشتريات:
+        - مدين: حـ/ المخزون أو المشتريات (`1203001` / `3101001`) بـ `TaxableSubtotal`.
+        - مدين: حـ/ ضريبة القيمة المضافة - مدخلات 14% (`1205002`) بـ `VATAmount`.
+        - دائن: حـ/ المورد (`Supplier_ID` / `Level5_ID`) بـ `NetPayable`.
+        - دائن: حـ/ مصلحة الضرائب - خصم وإضافة 1% (`2105001`) بـ `WHTAmount`.
+        - شرط التوازن الحتمي: $|\text{Debit} - \text{Credit}| === 0.0000$، والتراجع الفوري (`ROLLBACK`) عند أي خلل.
+      - القيد المزدوج لمردودات المشتريات:
+        - مدين: حـ/ المورد بالصافي المسترد (`NetRefund`).
+        - مدين: حـ/ مصلحة الضرائب - تسوية خصم وإضافة (`WHTAmount`).
+        - دائن: حـ/ المخزون (`TaxableSubtotal`).
+        - دائن: حـ/ ضريبة القيمة المضافة - تسوية مدخلات (`VATAmount`).
+    - **التدقيق السحابي المزدوج وتنبيهات التيليجرام:**
+      - تدوين حركة اعتماد الفاتورة وقيدها في سحابة Oracle Autonomous DB (`ADMIN.BackupAuditLogs`).
+      - بث تقرير Telegram HTML فوري يتضمن رقم الفاتورة، اسم المورد، الإجمالي، ضريبة القيمة المضافة، الخصم والإضافة، وصافي المستحق.
+    - **واجهة الإدخال السريع المكثفة (High-Density Telerik Purchasing HUD):**
+      - جدول إدخال فائق السرعة يدعم التنقل بمفتاح `Enter` بين الخلايا والأسطر، واختصارات `Insert` و `Ctrl+Del`.
+      - بحث لحظي في الأصناف مع شريط التوازن السفلي وتفقيط عربي فوري.
