@@ -894,3 +894,24 @@
       - تنقل احترافي بلوحة المفاتيح عبر مفتاح `Enter` للخلايا، وإنشاء تلقائي للأسطر بالضغط على `Enter` في نهاية السطر الأخير أو `Insert` / `Ctrl+Down`.
       - حذف السطر بـ `Ctrl+Delete` مع اشتراط بقاء طرفين على الأقل (مدين ودائن).
       - قائمة بحث ذكية في الحسابات (`Typeahead Account Search`) تدعم البحث برقم الحساب أو جزء من اسمه العربي.
+
+
+12. **معمارية الخزائن والبنوك ومحفظة الشيكات (Phase 02 Cash, Banking & Cheques Engine Architecture):**
+    - **التطابق الحرفي مع جداول المرحلة 02 في `tarabot_erp_complete_schema.json`:**
+      - سندات الصرف: `Payable_Head`, `Payable_Details`.
+      - سندات القبض: `Receivable_Head`, `Receivable_Details`.
+      - التحويلات البنكية: `Banks_Transfers_Issue_Head/Details` (الصادرة) و `Banks_Transfers_Delivery_Head/Details` (الواردة).
+      - الشيكات الصادرة والواردة: `Cheques_Issue_Head/Details` (أوراق دفع) و `Cheques_Delivery_Head/Details` (أوراق قبض).
+      - حوافظ ومتابعة الشيكات: `Cheques_Receipt_Head/Details`, `Cheques_Issue_Receipt_Head/Details`, `Cheques_Transaction_Head/Details`.
+    - **وحدة المعاملة الذرية الواحدة مع الأستاذ العام (Single Transaction Boundary with GL):**
+      - تنفيذ إدراج سند الصرف أو القبض، وإدراج أسطر تفاصيله، وترحيل قيد اليومية العام المقابل (`postVoucherInTransaction`) داخل المعاملة ذاتها (`BEGIN TRANSACTION ... COMMIT`).
+      - أي خلل في توازن قيد اليومية العامة يستدعي التراجع الشامل (`ROLLBACK`) الفوري عن سند الصرف أو القبض.
+    - **محرك الحسابات المالية الدقيقة بالعملات المتعددة (`Decimal.js Multi-Currency Engine`):**
+      - احتساب المبالغ بالعملة الأساسية: `BaseAmount = ForeignAmount.times(Exchange)`.
+      - الالتزام التام بمعادلة التوازن: `TotalDebit === TotalCredit` بدقة 4 خانات عشرية وبدون فواصل عائمة.
+    - **آلة حالة دورة حياة الشيكات (Cheque Lifecycle State Machine):**
+      - التتبع الدقيق لحالات الشيكات: `UNDER_COLLECTION -> DEPOSITED -> COLLECTED / BOUNCED` لشيكات القبض، و `ISSUED -> CLEARED / CANCELLED` لشيكات الدفع.
+      - إنشاء قيد تسوية محاسبي فوري متزن لكل انتقال حالة (مثلاً عند التحصيل: من حـ/ البنك إلى حـ/ أوراق قبض تحت التحصيل 1204001).
+    - **واجهة الإدخال السريع المكثفة (Desktop Telerik HUD):**
+      - شاشات إدخال متجاوبة تدعم التنقل السريع بمفتاح `Enter`، واختصارات `Insert` و `Ctrl+Del`.
+      - شريط التوازن السفلي والتفقيط المالي اللغوي الفوري باللغة العربية.

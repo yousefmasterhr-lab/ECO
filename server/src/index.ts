@@ -5,6 +5,7 @@
 import express from 'express';
 import cors from 'cors';
 import { financialRouter } from './routes/financialRoutes.js';
+import { cashBankingRouter } from './routes/cashBankingRoutes.js';
 import { DynamicDatabaseManager } from './db/DynamicDatabaseManager.js';
 
 const app = express();
@@ -18,8 +19,9 @@ app.use(cors({
 
 app.use(express.json({ limit: '10mb' }));
 
-// Mount Financial Engine Routes
+// Mount Financial & Cash/Banking Engine Routes
 app.use('/api/financial', financialRouter);
+app.use('/api/cash-banking', cashBankingRouter);
 
 app.get('/health', async (_req, res) => {
   const dbManager = DynamicDatabaseManager.getInstance();
@@ -39,3 +41,4 @@ if (process.env.NODE_ENV !== 'test' && !process.env.VERCEL) {
     console.log(`[ECO Financial Engine] Server running on port ${port} (Ready for Phase 01 requests)`);
   });
 }
+

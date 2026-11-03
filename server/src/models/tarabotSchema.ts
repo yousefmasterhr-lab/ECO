@@ -158,3 +158,4 @@ export interface ChartOfAccountsTreeNode {
   balance?: number;
   children?: ChartOfAccountsTreeNode[];
 }
+

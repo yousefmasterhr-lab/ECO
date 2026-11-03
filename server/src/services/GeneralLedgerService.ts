@@ -199,141 +199,7 @@ export class GeneralLedgerService {
 
     // 2. Atomic SQL Server Transaction
     const result = await this.dbManager.executeTransaction(resolvedDb, async (tx) => {
-      let targetNoteNo = voucher.head.Note_No;
-
-      // Auto-assign Note_No if 0 or new
-      if (!targetNoteNo || targetNoteNo <= 0) {
-        const nextReq = new sql.Request(tx);
-        const nextRes = await nextReq.query('SELECT ISNULL(MAX(Note_No), 0) + 1 AS nextNo FROM GeneralLedger_Head');
-        targetNoteNo = Number(nextRes.recordset[0].nextNo);
-      }
-
-      // Check if updating existing
-      const checkReq = new sql.Request(tx);
-      checkReq.input('noteNo', targetNoteNo);
-      const checkRes = await checkReq.query('SELECT COUNT(1) AS cnt FROM GeneralLedger_Head WHERE Note_No = @noteNo');
-      const isExisting = checkRes.recordset[0].cnt > 0;
-
-      const totalDebitFloat = validation.totalDebit.toNumber();
-      const totalCreditFloat = validation.totalCredit.toNumber();
-
-      if (isExisting) {
-        // Update Head
-        const updateHeadReq = new sql.Request(tx);
-        updateHeadReq
-          .input('noteNo', targetNoteNo)
-          .input('noteTypeId', voucher.head.Note_Type_ID || 201)
-          .input('noteDate', voucher.head.Note_Date)
-          .input('noteDateH', voucher.head.Note_Date_H || '')
-          .input('journalType', voucher.head.Journal_Type || 0)
-          .input('debit', totalDebitFloat)
-          .input('credit', totalCreditFloat)
-          .input('netText', voucher.head.Note_Net_Text || '')
-          .input('desc', voucher.head.Description || '')
-          .input('entryId', voucher.head.Entry_ID || 1)
-          .input('entryName', voucher.head.Entry_Name || 'Admin')
-          .input('flag', voucher.head.Flag ? 1 : 0)
-          .input('flagN', voucher.head.Flag_N || 0)
-          .input('notice', voucher.head.Notice || '')
-          .query(`
-            UPDATE GeneralLedger_Head SET
-              Note_Type_ID = @noteTypeId,
-              Note_Date = @noteDate,
-              Note_Date_H = @noteDateH,
-              Journal_Type = @journalType,
-              Note_Debit = @debit,
-              Note_Credit = @credit,
-              Note_Net_Text = @netText,
-              Description = @desc,
-              Entry_ID = @entryId,
-              Entry_Name = @entryName,
-              Flag = @flag,
-              Flag_N = @flagN,
-              Notice = @notice
-            WHERE Note_No = @noteNo
-          `);
-
-        // Delete old details lines for atomic replacement
-        const delDetailsReq = new sql.Request(tx);
-        delDetailsReq.input('noteNo', targetNoteNo);
-        await delDetailsReq.query('DELETE FROM GeneralLedger_Details WHERE Note_No = @noteNo');
-      } else {
-        // Insert Head
-        const insertHeadReq = new sql.Request(tx);
-        insertHeadReq
-          .input('noteNo', targetNoteNo)
-          .input('noteTypeId', voucher.head.Note_Type_ID || 201)
-          .input('noteDate', voucher.head.Note_Date)
-          .input('noteDateH', voucher.head.Note_Date_H || '')
-          .input('journalType', voucher.head.Journal_Type || 0)
-          .input('debit', totalDebitFloat)
-          .input('credit', totalCreditFloat)
-          .input('netText', voucher.head.Note_Net_Text || '')
-          .input('desc', voucher.head.Description || '')
-          .input('entryId', voucher.head.Entry_ID || 1)
-          .input('entryName', voucher.head.Entry_Name || 'Admin')
-          .input('flag', voucher.head.Flag ? 1 : 0)
-          .input('flagN', voucher.head.Flag_N || 0)
-          .input('notice', voucher.head.Notice || '')
-          .query(`
-            INSERT INTO GeneralLedger_Head (
-              Note_No, Note_Type_ID, Note_Date, Note_Date_H, Journal_Type,
-              Note_Debit, Note_Credit, Note_Net_Text, Description,
-              Entry_ID, Entry_Name, Flag, Flag_N, Notice
-            ) VALUES (
-              @noteNo, @noteTypeId, @noteDate, @noteDateH, @journalType,
-              @debit, @credit, @netText, @desc,
-              @entryId, @entryName, @flag, @flagN, @notice
-            )
-          `);
-      }
-
-      // Insert Detail Lines with Sequential SR
-      for (let i = 0; i < voucher.details.length; i++) {
-        const line = voucher.details[i];
-        const sr = i + 1;
-        const lineDebit = new Decimal(line.Debit || 0).toNumber();
-        const lineCredit = new Decimal(line.Credit || 0).toNumber();
-        const exchange = new Decimal(line.Exchange || 1).toNumber();
-        const actualDebit = line.Actual_Debit ? new Decimal(line.Actual_Debit).toNumber() : lineDebit;
-        const actualCredit = line.Actual_Credit ? new Decimal(line.Actual_Credit).toNumber() : lineCredit;
-
-        const lineReq = new sql.Request(tx);
-        lineReq
-          .input('noteNo', targetNoteNo)
-          .input('sr', sr)
-          .input('l5', line.Level5_ID)
-          .input('desc', line.Description || voucher.head.Description || '')
-          .input('currencyId', line.Currency_ID || 1)
-          .input('exchange', exchange)
-          .input('actualDebit', actualDebit)
-          .input('debit', lineDebit)
-          .input('actualCredit', actualCredit)
-          .input('credit', lineCredit)
-          .input('costcenterId', line.Costcenter_ID || 0)
-          .input('analysisId', line.Analysis_ID || 0)
-          .input('jobOrderNo', line.Job_Order_No || 0)
-          .input('analyse1', line.Analyse1 || '-')
-          .input('analyse2', line.Analyse2 || '-')
-          .input('flag', line.Flag ? 1 : 0)
-          .input('flagN', line.Flag_N || 0)
-          .input('notice', line.Notice || '')
-          .query(`
-            INSERT INTO GeneralLedger_Details (
-              Note_No, SR, Level5_ID, Description, Currency_ID,
-              Exchange, Actual_Debit, Debit, Actual_Credit, Credit,
-              Costcenter_ID, Analysis_ID, Job_Order_No,
-              Analyse1, Analyse2, Flag, Flag_N, Notice
-            ) VALUES (
-              @noteNo, @sr, @l5, @desc, @currencyId,
-              @exchange, @actualDebit, @debit, @actualCredit, @credit,
-              @costcenterId, @analysisId, @jobOrderNo,
-              @analyse1, @analyse2, @flag, @flagN, @notice
-            )
-          `);
-      }
-
-      return targetNoteNo;
+      return await this.postVoucherInTransaction(tx, voucher, validation);
     });
 
     // 3. Post-Commit Asynchronous Cloud Audit & Telegram Dispatch (Non-Blocking)
@@ -365,6 +231,163 @@ export class GeneralLedgerService {
       noteNo: result,
       message: `تم حفظ وترحيل سند قيد اليومية رقم [#${result}] بنجاح في قاعدة البيانات [${resolvedDb}]. القيد متوازن ومطابق لمعايير الحوكمة المالية.`,
     };
+  }
+
+  /**
+   * Posts a General Ledger voucher directly within an existing SQL Server Transaction.
+   * Enables atomic cross-module voucher creation (e.g., Cash & Banking -> General Ledger).
+   */
+  public async postVoucherInTransaction(
+    tx: sql.Transaction,
+    voucher: CompleteVoucherDTO,
+    existingValidation?: {
+      isValid: boolean;
+      totalDebit: Decimal;
+      totalCredit: Decimal;
+      difference: Decimal;
+      errorMessage?: string;
+    }
+  ): Promise<number> {
+    const validation = existingValidation || this.validateVoucherInvariant(voucher.details);
+    if (!validation.isValid) {
+      throw new Error(validation.errorMessage || 'Invalid double-entry journal voucher');
+    }
+
+    let targetNoteNo = voucher.head.Note_No;
+
+    // Auto-assign Note_No if 0 or new
+    if (!targetNoteNo || targetNoteNo <= 0) {
+      const nextReq = new sql.Request(tx);
+      const nextRes = await nextReq.query('SELECT ISNULL(MAX(Note_No), 0) + 1 AS nextNo FROM GeneralLedger_Head');
+      targetNoteNo = Number(nextRes.recordset[0].nextNo);
+    }
+
+    // Check if updating existing
+    const checkReq = new sql.Request(tx);
+    checkReq.input('noteNo', targetNoteNo);
+    const checkRes = await checkReq.query('SELECT COUNT(1) AS cnt FROM GeneralLedger_Head WHERE Note_No = @noteNo');
+    const isExisting = checkRes.recordset[0].cnt > 0;
+
+    const totalDebitFloat = validation.totalDebit.toNumber();
+    const totalCreditFloat = validation.totalCredit.toNumber();
+
+    if (isExisting) {
+      // Update Head
+      const updateHeadReq = new sql.Request(tx);
+      await updateHeadReq
+        .input('noteNo', targetNoteNo)
+        .input('noteTypeId', voucher.head.Note_Type_ID || 201)
+        .input('noteDate', voucher.head.Note_Date)
+        .input('noteDateH', voucher.head.Note_Date_H || '')
+        .input('journalType', voucher.head.Journal_Type || 0)
+        .input('debit', totalDebitFloat)
+        .input('credit', totalCreditFloat)
+        .input('netText', voucher.head.Note_Net_Text || '')
+        .input('desc', voucher.head.Description || '')
+        .input('entryId', voucher.head.Entry_ID || 1)
+        .input('entryName', voucher.head.Entry_Name || 'Admin')
+        .input('flag', voucher.head.Flag ? 1 : 0)
+        .input('flagN', voucher.head.Flag_N || 0)
+        .input('notice', voucher.head.Notice || '')
+        .query(`
+          UPDATE GeneralLedger_Head SET
+            Note_Type_ID = @noteTypeId,
+            Note_Date = @noteDate,
+            Note_Date_H = @noteDateH,
+            Journal_Type = @journalType,
+            Note_Debit = @debit,
+            Note_Credit = @credit,
+            Note_Net_Text = @netText,
+            Description = @desc,
+            Entry_ID = @entryId,
+            Entry_Name = @entryName,
+            Flag = @flag,
+            Flag_N = @flagN,
+            Notice = @notice
+          WHERE Note_No = @noteNo
+        `);
+
+      // Delete old details lines for atomic replacement
+      const delDetailsReq = new sql.Request(tx);
+      delDetailsReq.input('noteNo', targetNoteNo);
+      await delDetailsReq.query('DELETE FROM GeneralLedger_Details WHERE Note_No = @noteNo');
+    } else {
+      // Insert Head
+      const insertHeadReq = new sql.Request(tx);
+      await insertHeadReq
+        .input('noteNo', targetNoteNo)
+        .input('noteTypeId', voucher.head.Note_Type_ID || 201)
+        .input('noteDate', voucher.head.Note_Date)
+        .input('noteDateH', voucher.head.Note_Date_H || '')
+        .input('journalType', voucher.head.Journal_Type || 0)
+        .input('debit', totalDebitFloat)
+        .input('credit', totalCreditFloat)
+        .input('netText', voucher.head.Note_Net_Text || '')
+        .input('desc', voucher.head.Description || '')
+        .input('entryId', voucher.head.Entry_ID || 1)
+        .input('entryName', voucher.head.Entry_Name || 'Admin')
+        .input('flag', voucher.head.Flag ? 1 : 0)
+        .input('flagN', voucher.head.Flag_N || 0)
+        .input('notice', voucher.head.Notice || '')
+        .query(`
+          INSERT INTO GeneralLedger_Head (
+            Note_No, Note_Type_ID, Note_Date, Note_Date_H, Journal_Type,
+            Note_Debit, Note_Credit, Note_Net_Text, Description,
+            Entry_ID, Entry_Name, Flag, Flag_N, Notice
+          ) VALUES (
+            @noteNo, @noteTypeId, @noteDate, @noteDateH, @journalType,
+            @debit, @credit, @netText, @desc,
+            @entryId, @entryName, @flag, @flagN, @notice
+          )
+        `);
+    }
+
+    // Insert Detail Lines with Sequential SR
+    for (let i = 0; i < voucher.details.length; i++) {
+      const line = voucher.details[i];
+      const sr = i + 1;
+      const lineDebit = new Decimal(line.Debit || 0).toNumber();
+      const lineCredit = new Decimal(line.Credit || 0).toNumber();
+      const exchange = new Decimal(line.Exchange || 1).toNumber();
+      const actualDebit = line.Actual_Debit ? new Decimal(line.Actual_Debit).toNumber() : lineDebit;
+      const actualCredit = line.Actual_Credit ? new Decimal(line.Actual_Credit).toNumber() : lineCredit;
+
+      const lineReq = new sql.Request(tx);
+      await lineReq
+        .input('noteNo', targetNoteNo)
+        .input('sr', sr)
+        .input('l5', line.Level5_ID)
+        .input('desc', line.Description || voucher.head.Description || '')
+        .input('currencyId', line.Currency_ID || 1)
+        .input('exchange', exchange)
+        .input('actualDebit', actualDebit)
+        .input('debit', lineDebit)
+        .input('actualCredit', actualCredit)
+        .input('credit', lineCredit)
+        .input('costcenterId', line.Costcenter_ID || 0)
+        .input('analysisId', line.Analysis_ID || 0)
+        .input('jobOrderNo', line.Job_Order_No || 0)
+        .input('analyse1', line.Analyse1 || '-')
+        .input('analyse2', line.Analyse2 || '-')
+        .input('flag', line.Flag ? 1 : 0)
+        .input('flagN', line.Flag_N || 0)
+        .input('notice', line.Notice || '')
+        .query(`
+          INSERT INTO GeneralLedger_Details (
+            Note_No, SR, Level5_ID, Description, Currency_ID,
+            Exchange, Actual_Debit, Debit, Actual_Credit, Credit,
+            Costcenter_ID, Analysis_ID, Job_Order_No,
+            Analyse1, Analyse2, Flag, Flag_N, Notice
+          ) VALUES (
+            @noteNo, @sr, @l5, @desc, @currencyId,
+            @exchange, @actualDebit, @debit, @actualCredit, @credit,
+            @costcenterId, @analysisId, @jobOrderNo,
+            @analyse1, @analyse2, @flag, @flagN, @notice
+          )
+        `);
+    }
+
+    return targetNoteNo;
   }
 
   /**

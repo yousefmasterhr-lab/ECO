@@ -627,6 +627,27 @@ CREATE TABLE IF NOT EXISTS system_configurations (
   - مفاتيح إدراج السطور `Insert` / `Ctrl+Down` وحذف السطور `Ctrl+Delete`.
   - بحث لحظي في الحسابات بالرقم أو الاسم العربي مع شريط توازن سفلي عائم وتفقيط عربي فوري.
 
+### 4.37 محرك الخزائن والبنوك ومحفظة الشيكات (Phase 02 Cash, Banking & Check Portfolio Engine)
+- **التطابق الحرفي الصارم مع المخطط الأصلي (`tarabot_erp_complete_schema.json`):**
+  - سندات الصرف: `Payable_Head`, `Payable_Details`.
+  - سندات القبض: `Receivable_Head`, `Receivable_Details`.
+  - التحويلات البنكية الصادرة والواردة: `Banks_Transfers_Issue_Head/Details`, `Banks_Transfers_Delivery_Head/Details`.
+  - محفظة وحركات الشيكات: `Cheques_Issue_Head/Details`, `Cheques_Delivery_Head/Details`, `Cheques_Receipt_Head/Details`, `Cheques_Transaction_Head/Details`.
+- **وحدة المعاملة الذرية الواحدة مع الأستاذ العام (Single Transaction ACID Boundary):**
+  - تنفيذ حفظ سند الصرف أو القبض، وإدراج أسطر تفاصيله، وترحيل قيد اليومية العام المزدوج المتزن داخل نفس المعاملة (`BEGIN TRANSACTION ... COMMIT`).
+  - التراجع الفوري الشامل (`ROLLBACK`) عند حدوث أي خطأ أو عدم توازن في قيد اليومية.
+- **الحسابات المالية متعددة العملات عبر `Decimal.js`:**
+  - احتساب المبالغ بالعملة الأساسية: `ForeignAmount * Exchange = BaseAmount` بدقة 4 خانات عشرية وبدون فواصل عائمة.
+- **آلة حالة دورة حياة الشيكات والترحيل المحاسبي اللحظي:**
+  - تتبع حالات الشيكات: `UNDER_COLLECTION`, `DEPOSITED`, `COLLECTED`, `BOUNCED`, `ISSUED`, `CLEARED`.
+  - توليد قيد يومية متزن آلياً عند كل انتقال حالة (مثلاً عند التحصيل: من حـ/ البنك إلى حـ/ أوراق قبض تحت التحصيل).
+- **التدقيق السحابي والتنبيهات المباشرة:**
+  - تسجيل حركات السندات في سحابة Oracle Autonomous DB (`ADMIN.BackupAuditLogs`).
+  - إرسال تقارير إشعار Telegram HTML فورية لكافة سندات الصرف والقبض وتغيرات الشيكات.
+- **واجهة الإدخال السريع المكثفة لسطور السندات (High-Density Desktop Grid):**
+  - تنقل انسيابي بلوحة المفاتيح عبر مفتاح `Enter` واختصارات `Insert` و `Ctrl+Del`.
+  - شريط التوازن والتفقيط المالي اللغوي الفوري باللغة العربية.
+
 ---
 
 ## 5. نظام الحوكمة والذاكرة الذكية الأربعة (4-File Governance System)
