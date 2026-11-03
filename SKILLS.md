@@ -915,3 +915,37 @@
     - **واجهة الإدخال السريع المكثفة (Desktop Telerik HUD):**
       - شاشات إدخال متجاوبة تدعم التنقل السريع بمفتاح `Enter`، واختصارات `Insert` و `Ctrl+Del`.
       - شريط التوازن السفلي والتفقيط المالي اللغوي الفوري باللغة العربية.
+
+
+13. **معمارية المقاولات والمشاريع واستخلاصات مقاولي الباطن والعملاء (Phase 03 Contracting, Projects & Progress Billing Engine Architecture):**
+    - **التطابق الحرفي مع جداول المرحلة 03 في `tarabot_erp_complete_schema.json` و `Phase_03_ContractingProjects_Spec.md`:**
+      - عقود مقاولي الباطن: `Contracts_Head`, `Contracts_Details`.
+      - عقود العملاء/المالك: `Contracts_Head_For_Clients`, `Contracts_Details_For_Clients`.
+      - مستخلصات مقاولي الباطن: `Extracts_Head`, `Extracts_Details` (الاسم البرمجي المعتمد لـ `AbsProjectH` و `AbsProjectD`).
+      - مستخلصات العملاء/المالك: `Extracts_Head_For_Clients`, `Extracts_Details_For_Clients`.
+      - تكاليف المشاريع وأوامر التشغيل: `Projects_Cost_Head`, `Projects_Cost_Details`, `Job_Orders`.
+    - **معادلة احتساب كميات واستقطاعات المستخلصات التراكمية الدقيقة (`Decimal.js Progress Billing Engine`):**
+      - الكمية الجارية: $\text{CurrentQty} = \text{CumulativeQty} - \text{PreviousQty}$.
+      - إجمالي الأعمال الجارية: $\text{GrossAmount} = \sum (\text{CurrentQty} \times \text{UnitPrice})$.
+      - استقطاع الدفعة المقدمة: $\text{AdvanceDeduction} = \text{GrossAmount} \times (\text{AdvancePer} / 100)$.
+      - استقطاع ضمان الأعمال: $\text{RetentionDeduction} = \text{GrossAmount} \times (\text{RetentionPer} / 100)$.
+      - استقطاع التأمينات: $\text{InsuranceDeduction} = \text{GrossAmount} \times (\text{InsurancePer} / 100)$.
+      - استقطاع ضريبة الخصم والإضافة: $\text{WHTDeduction} = \text{GrossAmount} \times (\text{WhtPer} / 100)$.
+      - صافي المستحق: $\text{NetPayable} = \text{GrossAmount} - (\text{Advance} + \text{Retention} + \text{Insurance} + \text{WHT} + \text{Penalties})$.
+    - **وحدة المعاملة الذرية الواحدة مع الأستاذ العام (Single Transaction Boundary with GL):**
+      - إنشاء وحفظ المستخلص وترحيل قيد اليومية العام المقابل (`postVoucherInTransaction`) داخل معاملة SQL Server ذاتها (`BEGIN TRANSACTION ... COMMIT`).
+      - التوجيه المحاسبي المزدوج الصارم:
+        - مدين: مشروعات تحت التنفيذ / تكاليف المقاولة (`3102001`) بإجمالي الأعمال (Gross Amount).
+        - دائن: حساب المقاول / الموردين (`2101001`) بصافي المستحق (Net Payable).
+        - دائن: استهلاك دفعات مقدمة للمقاولين (`1205001`) بقيمة استقطاع الدفعة المقدمة.
+        - دائن: أمانات ضمان أعمال محتجزة (`2104001`) بقيمة استقطاع حسن التنفيذ.
+        - دائن: ضريبة أرباح تجارية وصناعية مخصومة من المنبع (`2105001`) بقيمة الـ WHT.
+        - دائن: غرامات تأخير واستقطاعات جودة (`4201001`) بقيمة الجزاءات إن وجدت.
+      - فرض شرط التوازن الدقيق: $|\text{Debit} - \sum \text{Credits}| === 0.0000$، والتراجع الفوري (`ROLLBACK`) عند حدوث أي خطأ.
+    - **التدقيق السحابي المزدوج وتنبيهات التيليجرام:**
+      - تدوين حركة اعتماد المستخلص وقيده في سحابة Oracle Autonomous DB (`ADMIN.BackupAuditLogs`).
+      - بث إشعار Telegram فوري يحتوي على رقم المشروع، كود المقاول، إجمالي الأعمال، مصفوفة الاستقطاعات، وصافي المستحق.
+    - **واجهة العمل المكتبية لمستخلصات المقاولات (High-Density Contracting Telerik HUD):**
+      - جدول إدخال مكثف مع تنقل انسيابي بلوحة المفاتيح عبر `Enter` بين الخلايا، والقفز التلقائي للسطر التالي.
+      - اختصارات `Insert` / `Ctrl+Down` لإدراج بنود مقايسة جديدة، و `Ctrl+Delete` للحذف.
+      - مصفوفة استقطاعات تفاعلية في أسفل الشاشة تعكس التأثير اللحظي لنسب الخصومات على صافي المستحق مع التفقيط المالي العربي الكامل.

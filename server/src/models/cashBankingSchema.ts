@@ -344,3 +344,4 @@ export interface ChequeTransitionDTO {
   notes?: string;
   entryName?: string;
 }
+

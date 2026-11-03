@@ -648,6 +648,29 @@ CREATE TABLE IF NOT EXISTS system_configurations (
   - تنقل انسيابي بلوحة المفاتيح عبر مفتاح `Enter` واختصارات `Insert` و `Ctrl+Del`.
   - شريط التوازن والتفقيط المالي اللغوي الفوري باللغة العربية.
 
+### 4.38 محرك المقاولات والمشاريع واستخلاصات مقاولي الباطن (Phase 03 Contracting, Projects & Extraction Engine)
+- **التطابق الحرفي الصارم مع المخطط الأصلي (`tarabot_erp_complete_schema.json`):**
+  - عقود مقاولي الباطن: `Contracts_Head`, `Contracts_Details`.
+  - عقود العملاء/المالك: `Contracts_Head_For_Clients`, `Contracts_Details_For_Clients`.
+  - مستخلصات مقاولي الباطن: `Extracts_Head`, `Extracts_Details` (الاسم البرمجي المعتمد لـ `AbsProjectH` و `AbsProjectD`).
+  - مستخلصات العملاء/المالك: `Extracts_Head_For_Clients`, `Extracts_Details_For_Clients`.
+  - تكاليف المشاريع وأوامر التشغيل: `Projects_Cost_Head`, `Projects_Cost_Details`, `Job_Orders`.
+- **محرك احتساب كميات واستقطاعات المستخلصات التراكمية الدقيقة (`Decimal.js Progress Billing Engine`):**
+  - الكمية الحالية: $\text{CurrentQty} = \text{CumulativeQty} - \text{PreviousQty}$.
+  - إجمالي الأعمال الحالية: $\text{GrossAmount} = \sum (\text{CurrentQty} \times \text{UnitPrice})$.
+  - مصفوفة استقطاعات المستخلص: دفعة مقدمة، ضمان أعمال حسن تنفيذ، تأمينات اجتماعية، ضريبة أرباح تجارية وصناعية 1%، وغرامات واختبارات معملية.
+  - حساب صافي المستحق بدقة 4 خانات عشرية وبدون فواصل عائمة.
+- **وحدة المعاملة الذرية الواحدة مع الأستاذ العام (Single Transaction ACID Boundary):**
+  - تنفيذ حفظ رأس وتفاصيل المستخلص وترحيل قيد اليومية العام المزدوج المتزن (`postVoucherInTransaction`) داخل معاملة SQL Server ذاتها (`BEGIN TRANSACTION ... COMMIT`).
+  - التوجيه المحاسبي: مدين مشروعات تحت التنفيذ (`3102001`) بإجمالي الأعمال، ودائن حساب المقاول (`2101001`) بالصافي، ودائن استهلاك دفعات مقدمة (`1205001`)، وأمانات ضمان أعمال (`2104001`)، وضريبة أرباح تجارية وصناعية (`2105001`)، وغرامات (`4201001`).
+  - شرط التوازن الصارم: $|\text{Debit} - \sum \text{Credits}| === 0.0000$، مع التراجع الشامل (`ROLLBACK`) عند أي خطأ.
+- **التدقيق السحابي والتنبيهات المباشرة:**
+  - تسجيل حركات اعتماد المستخلصات في سحابة Oracle Autonomous DB (`ADMIN.BackupAuditLogs`).
+  - إرسال تقارير إشعار Telegram HTML فورية لكل مستخلص معتمد.
+- **واجهة الإدخال السريع المكثفة لمستخلصات المقاولات (High-Density Telerik Desktop HUD):**
+  - تنقل انسيابي بلوحة المفاتيح عبر مفتاح `Enter` بين خلايا بنود المقايسة، واختصارات `Insert` و `Ctrl+Del`.
+  - مصفوفة استقطاعات سفلية عائمة، شريط مؤشرات مالي، وتفقيط لغوي فوري لصافي المستخلص باللغة العربية.
+
 ---
 
 ## 5. نظام الحوكمة والذاكرة الذكية الأربعة (4-File Governance System)
