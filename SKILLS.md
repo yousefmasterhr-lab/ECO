@@ -985,3 +985,39 @@
     - **واجهة الإدخال السريع المكثفة (High-Density Telerik Purchasing HUD):**
       - جدول إدخال فائق السرعة يدعم التنقل بمفتاح `Enter` بين الخلايا والأسطر، واختصارات `Insert` و `Ctrl+Del`.
       - بحث لحظي في الأصناف مع شريط التوازن السفلي وتفقيط عربي فوري.
+
+15. **معمارية المبيعات والعملاء وفواتير البيع والمردودات والتحصيل (Phase 05 Sales, Customer Receivables & Invoicing Engine Architecture):**
+    - **التطابق الحرفي مع جداول المرحلة 05 في `tarabot_erp_complete_schema.json` و `Phase_05_SalesReceivables_Spec.md`:**
+      - دليل وسجل العملاء: `dbo.Clients`.
+      - مندوبو المبيعات ومناطق التوزيع: `dbo.SalesMen`.
+      - عروض الأسعار المقدمة للعملاء: `dbo.OfferPrice_Head`, `dbo.OfferPrice_Details`.
+      - فواتير المبيعات التجارية والضريبية: `dbo.Sales_Head`, `dbo.Sales_Details` (مع الحساب المدين `Debit_Level5_ID`).
+      - مردودات المبيعات وإشعارات الخصم: `dbo.Sales_R_Head`, `dbo.Sales_R_Details` (مع الحساب الدائن `Credit_Level5_ID`).
+      - إعدادات خيارات البيع والضرائب: `dbo.Sales_Settings`.
+    - **معادلة احتساب ضرائب ومستحقات المبيعات بدقة `Decimal.js` (Arbitrary-Precision Sales Engine):**
+      - صافي سطر المبيعات: $\text{LineNet} = \text{Qty} \times \text{Price} - \text{LineDiscount}$.
+      - إجمالي الأصناف: $\text{GrossSubtotal} = \sum \text{LineNet}$.
+      - الوعاء الخاضع للضريبة: $\text{TaxableSubtotal} = \max(0, \text{GrossSubtotal} - \text{CommercialDiscount})$.
+      - ضريبة القيمة المضافة - مخرجات (14%): $\text{VATAmount} = \text{TaxableSubtotal} \times (\text{VatTaxPer} / 100)$.
+      - خصم أرباح تجارية لصالح الشركة (1%): $\text{WHTAmount} = \text{TaxableSubtotal} \times (\text{DTaxPer} / 100)$.
+      - إجمالي الفاتورة شاملاً الضريبة: $\text{TotalWithVAT} = \text{TaxableSubtotal} + \text{VATAmount}$.
+      - الصافي المستحق على العميل: $\text{NetReceivable} = \text{TotalWithVAT} - \text{WHTAmount}$.
+    - **وحدة المعاملة الذرية الواحدة مع الأستاذ العام (Single Transaction Boundary with GL):**
+      - إنشاء فاتورة المبيعات وتحديث أرصدة المخزون وترحيل قيد اليومية العام المزدوج المتزن المقابل (`postVoucherInTransaction`) داخل نفس معاملة SQL Server (`BEGIN TRANSACTION ... COMMIT`).
+      - القيد المحاسبي المزدوج لفاتورة المبيعات:
+        - مدين: حـ/ العملاء (`Client_ID` / `Debit_Level5_ID`) بقيمة `NetReceivable`.
+        - مدين: حـ/ مصلحة الضرائب - خصم وتحصيل أرباح تجارية 1% لصالح الشركة (`1205001`) بقيمة `WHTAmount`.
+        - دائن: حـ/ إيرادات المبيعات العامة (`4101001`) بقيمة `TaxableSubtotal`.
+        - دائن: حـ/ ضريبة القيمة المضافة - مخرجات 14% (`2105002`) بقيمة `VATAmount`.
+        - شرط التوازن الحسابي الحتمي: $|\text{Debit} - \text{Credit}| === 0.0000$ والتراجع الفوري الشامل (`ROLLBACK`) عند أدنى اختلاف.
+      - القيد المحاسبي المزدوج لمردودات المبيعات:
+        - مدين: حـ/ مردودات ومسموحات المبيعات (`4102001`) بقيمة `TaxableSubtotal`.
+        - مدين: حـ/ ضريبة القيمة المضافة - تسوية مخرجات (`2105002`) بقيمة `VATAmount`.
+        - دائن: حـ/ العملاء (`Client_ID` / `Credit_Level5_ID`) بصافي الخصم (`NetReceivable`).
+        - دائن: حـ/ مصلحة الضرائب - تسوية خصم وتحصيل (`1205001`) بقيمة `WHTAmount`.
+    - **التدقيق السحابي المزدوج وبث تنبيهات التيليجرام:**
+      - تسجيل تتبع أمني فوري في سحابة Oracle Autonomous DB (`ADMIN.BackupAuditLogs`).
+      - بث تنبيه Telegram HTML فاخر عند اعتماد أي فاتورة مبيعات أو إشعار مردود مع كامل البيانات المالية ورقم قيد اليومية.
+    - **واجهة الإدخال المكتبي الفائقة (High-Density Telerik Sales Workbench):**
+      - جدول تفاعلي فائق السرعة يدعم التنقل بالأزرار (`Enter` للتنقل والسطر التالي، `Insert` للإضافة، `Ctrl+Del` للحذف).
+      - بطاقة HUD عائمة تفاعلية لحساب الضريبة والخصم وصافي المطالبة وتفقيط عربي فوري.

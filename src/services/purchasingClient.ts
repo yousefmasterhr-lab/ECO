@@ -522,3 +522,4 @@ export class PurchasingClient {
 }
 
 export const purchasingClient = PurchasingClient.getInstance();
+

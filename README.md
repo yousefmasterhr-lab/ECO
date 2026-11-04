@@ -698,6 +698,37 @@ CREATE TABLE IF NOT EXISTS system_configurations (
   - تنقل انسيابي بلوحة المفاتيح عبر مفتاح `Enter` واختصارات `Insert` و `Ctrl+Del`.
   - شريط التوازن والتفقيط المالي اللغوي الفوري باللغة العربية.
 
+### 4.40 محرك المبيعات والعملاء وفواتير البيع والمردودات (Phase 05 Sales, Receivables & Invoicing Engine)
+- **التطابق الحرفي الصارم مع المخطط الأصلي (`tarabot_erp_complete_schema.json`):**
+  - دليل وسجل العملاء: `dbo.Clients`.
+  - مندوبو المبيعات ومناطق التوزيع: `dbo.SalesMen`.
+  - عروض الأسعار المقدمة للعملاء: `dbo.OfferPrice_Head`, `dbo.OfferPrice_Details`.
+  - فواتير المبيعات التجارية والضريبية: `dbo.Sales_Head`, `dbo.Sales_Details` (مع الحساب المدين `Debit_Level5_ID`).
+  - مردودات المبيعات وإشعارات الخصم: `dbo.Sales_R_Head`, `dbo.Sales_R_Details` (مع الحساب الدائن `Credit_Level5_ID`).
+  - إعدادات وخيارات البيع والضرائب: `dbo.Sales_Settings`.
+- **محرك الحسابات الضريبية والتجارية الدقيقة (`Decimal.js Sales Engine`):**
+  - صافي السطر: $\text{LineNet} = \text{Qty} \times \text{Price} - \text{LineDiscount}$.
+  - إجمالي الفاتورة: $\text{GrossSubtotal} = \sum \text{LineNet}$.
+  - الوعاء الخاضع للضريبة: $\text{TaxableSubtotal} = \max(0, \text{GrossSubtotal} - \text{CommercialDiscount})$.
+  - ضريبة القيمة المضافة - مخرجات (14%): $\text{VATAmount} = \text{TaxableSubtotal} \times (\text{VatTaxPer} / 100)$.
+  - ضريبة الخصم والتحصيل لصالح الشركة (1%): $\text{WHTAmount} = \text{TaxableSubtotal} \times (\text{DTaxPer} / 100)$.
+  - صافي الفاتورة المستحق على العميل: $\text{NetReceivable} = (\text{TaxableSubtotal} + \text{VATAmount}) - \text{WHTAmount}$.
+- **وحدة المعاملة الذرية الواحدة مع الأستاذ العام (Single Transaction ACID Boundary):**
+  - حفظ فاتورة المبيعات وتحديث أرصدة المخازن وترحيل قيد اليومية العام المزدوج المتزن المقابل (`GeneralLedgerService.postVoucherInTransaction`) داخل المعاملة ذاتها (`BEGIN TRANSACTION ... COMMIT`).
+  - التوجيه المحاسبي المزدوج لفاتورة المبيعات:
+    - مدين: حـ/ العملاء (`Client_ID` / `Debit_Level5_ID`) بصافي المستحق `NetReceivable`.
+    - مدين: حـ/ مصلحة الضرائب - خصم وتحصيل أرباح تجارية 1% (`1205001`) بقيمة `WHTAmount`.
+    - دائن: حـ/ إيرادات المبيعات العامة (`4101001`) بقيمة `TaxableSubtotal`.
+    - دائن: حـ/ ضريبة القيمة المضافة - مخرجات 14% (`2105002`) بقيمة `VATAmount`.
+    - شرط التوازن الحسابي الحتمي: $|\text{TotalDebit} - \text{TotalCredit}| === 0.0000$ والتراجع الفوري الشامل (`ROLLBACK`) عند أدنى اختلاف.
+  - التوجيه المحاسبي العكسي لمردودات المبيعات لتسوية حساب العميل، مردودات المبيعات، ومخرجات الضريبة.
+- **التدقيق السحابي والتنبيهات المباشرة:**
+  - تسجيل حركات اعتماد فواتير ومردودات المبيعات في سحابة Oracle Autonomous DB (`ADMIN.BackupAuditLogs`).
+  - إرسال تقارير إشعار Telegram HTML فورية لكل فاتورة ومردود مبيعات.
+- **واجهة الإدخال المكتبي الفائقة (High-Density Telerik Sales Workbench):**
+  - جدول تفاعلي فائق السرعة يدعم التنقل بالأزرار (`Enter` للتنقل والسطر التالي، `Insert` للإضافة، `Ctrl+Del` للحذف).
+  - بطاقة HUD عائمة تفاعلية لحساب الضريبة والخصم وصافي المطالبة وتفقيط عربي فوري.
+
 ---
 
 ## 5. نظام الحوكمة والذاكرة الذكية الأربعة (4-File Governance System)

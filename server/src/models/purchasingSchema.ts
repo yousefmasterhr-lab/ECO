@@ -301,3 +301,4 @@ export interface CreateSupplierDTO {
   Limit_Amount?: number;
   Notice?: string;
 }
+

@@ -8,6 +8,7 @@ import { financialRouter } from './routes/financialRoutes.js';
 import { cashBankingRouter } from './routes/cashBankingRoutes.js';
 import { contractingRouter } from './routes/contractingRoutes.js';
 import { purchasingRouter } from './routes/purchasingRoutes.js';
+import { salesRouter } from './routes/salesRoutes.js';
 import { DynamicDatabaseManager } from './db/DynamicDatabaseManager.js';
 
 const app = express();
@@ -21,11 +22,12 @@ app.use(cors({
 
 app.use(express.json({ limit: '10mb' }));
 
-// Mount Financial, Cash/Banking, Contracting & Purchasing Engine Routes
+// Mount Financial, Cash/Banking, Contracting, Purchasing & Sales Engine Routes
 app.use('/api/financial', financialRouter);
 app.use('/api/cash-banking', cashBankingRouter);
 app.use('/api/contracting', contractingRouter);
 app.use('/api/purchasing', purchasingRouter);
+app.use('/api/sales', salesRouter);
 
 app.get('/health', async (_req, res) => {
   const dbManager = DynamicDatabaseManager.getInstance();
