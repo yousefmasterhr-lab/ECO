@@ -53,6 +53,22 @@ export interface TelegramSalesAlertPayload {
   isReturn?: boolean;
 }
 
+export interface TelegramInventoryAlertPayload {
+  databaseKey: string;
+  voucherType: 'ISSUE' | 'DELIVERY' | 'TRANSFER' | 'ADJUSTMENT' | 'OPENING';
+  voucherTypeNameAr: string;
+  voucherNo: number;
+  noteDate: string;
+  warehouseName: string;
+  targetWarehouseName?: string;
+  itemsCount: number;
+  totalQty: number;
+  totalValuation: number;
+  entryName: string;
+  journalNo?: number;
+  notice?: string;
+}
+
 export class TelegramAlertService {
   private static instance: TelegramAlertService;
   private botToken: string | null = null;
@@ -187,6 +203,41 @@ export class TelegramAlertService {
         await this.sendTelegramMessage(messageHtml);
       } catch (err: any) {
         console.warn('[TelegramAlertService] Failed to send sales alert:', err.message);
+      }
+    });
+  }
+
+  /**
+   * Dispatches an asynchronous luxury HTML report for an Inventory Movement Voucher
+   */
+  public dispatchInventoryAlert(payload: TelegramInventoryAlertPayload): void {
+    Promise.resolve().then(async () => {
+      try {
+        let icon = '📦';
+        if (payload.voucherType === 'ISSUE') icon = '📤';
+        else if (payload.voucherType === 'DELIVERY') icon = '📥';
+        else if (payload.voucherType === 'TRANSFER') icon = '🔄';
+        else if (payload.voucherType === 'ADJUSTMENT') icon = '⚖️';
+
+        const messageHtml = `
+<b>${icon} ECO ERP — ${payload.voucherTypeNameAr} معتمد</b>
+━━━━━━━━━━━━━━━━━━━━
+<b>رقم السند:</b> <code>#${payload.voucherNo}</code>
+<b>قاعدة البيانات:</b> <code>${payload.databaseKey}</code>
+<b>التاريخ:</b> ${payload.noteDate}
+<b>المستودع:</b> 🏬 <b>${payload.warehouseName}</b>
+${payload.targetWarehouseName ? `<b>المستودع المحول إليه:</b> 🏬 <b>${payload.targetWarehouseName}</b>\n` : ''}<b>إجمالي الكميات:</b> <code>${payload.totalQty.toLocaleString('ar-EG')} وحدة</code>
+<b>إجمالي تقييم البنود:</b> <code>${payload.totalValuation.toLocaleString('ar-EG', { minimumFractionDigits: 2 })} ج.م</code>
+<b>عدد الأصناف:</b> ${payload.itemsCount} صنف
+${payload.journalNo ? `<b>رقم القيد المحاسبي:</b> <code>#${payload.journalNo}</code>\n` : ''}<b>أمين المخزن / المدخل:</b> 👤 ${payload.entryName}
+${payload.notice ? `<b>البيان:</b> <i>${payload.notice}</i>\n` : ''}<b>الحالة:</b> ✅ تم الترحيل المخزني والمالي بنجاح
+━━━━━━━━━━━━━━━━━━━━
+<i>ECO ERP Inventory & Warehouses Engine 2026</i>
+        `.trim();
+
+        await this.sendTelegramMessage(messageHtml);
+      } catch (err: any) {
+        console.warn('[TelegramAlertService] Failed to send inventory alert:', err.message);
       }
     });
   }

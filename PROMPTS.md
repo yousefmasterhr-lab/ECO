@@ -922,3 +922,35 @@
 - [ ] **5. واجهة الإدخال السريع المكثفة (High-Density Telerik Sales HUD):**
   - تنقل انسيابي بمفتاح `Enter` بين الخلايا والأسطر، واختصارات `Insert` للإضافة و `Ctrl+Del` للحذف.
   - بطاقة HUD عائمة تفاعلية لحساب الوعاء والضرائب وتفقيط لغوي فوري بالجنيه المصري.
+
+---
+
+## 43. المعايير الذهبية لمحرك المخازن والأصناف وسندات الصرف والإضافة والتحويل والتسوية (Phase 06 Inventory & Warehouses Standards)
+
+- [ ] **1. التطابق الحرفي مع مخطط المرحلة 06 (Verbatim Schema Conformance):**
+  - استخدام أسماء الجداول والحقول الأصلية من `tarabot_erp_complete_schema.json` و `Phase_06_InventoryItems_Spec.md`:
+    - دليل المستودعات وأمناء المخازن: `dbo.Inventories`.
+    - بطاقات الأصناف والوحدات والتصنيفات: `dbo.Items`, `dbo.Items_Details`, `dbo.Units`, `dbo.Items_Types`, `dbo.Main_Categories`, `dbo.Sub_Categories`.
+    - سندات الصرف المخزني الداخلي: `dbo.Internal_Issue_Head`, `dbo.Internal_Issue_Details`.
+    - سندات الإضافة المخزنية الداخلية: `dbo.Internal_Delivery_Head`, `dbo.Internal_Delivery_Details`.
+    - سندات التحويل والمناقلة بين المستودعات: `dbo.Transfer_Issue_Head`, `dbo.Transfer_Issue_Details` (`Inventory_ID`, `Inventory_ID1`).
+    - سندات ومحاضر التسوية الجردية: `dbo.Stock_Adjustment_Head`, `dbo.Stock_Adjustment_Details` (`Prog_Balance`, `Actual_Balance`, `Qty`).
+    - إعدادات وخيارات المخزون والرقابة: `dbo.Stock_Settings`.
+- [ ] **2. متوسط التكلفة المرجح وحظر الصرف بالسالب (`Decimal.js Inventory Engine`):**
+  - تحديث متوسط التكلفة المرجح (WAC) آلياً عند كل استلام أو إضافة مخزنية بدقة 28 خانة عبر `Decimal.js`:
+    $$\text{NewWAC} = \frac{(\text{CurrentQty} \times \text{CurrentWAC}) + (\text{IncomingQty} \times \text{IncomingPrice})}{\text{CurrentQty} + \text{IncomingQty}}$$
+  - فحص رصيد المستودع المتاح وحظر الصرف بالسالب منعاً باتاً (`Negative Stock Guard`):
+    $$\text{AvailableQty} = \text{CurrentQty} - \text{ReservedQty} \ge \text{RequestedQty}$$
+- [ ] **3. وحدة المعاملة الذرية الواحدة مع الأستاذ العام (Single Transaction ACID Boundary):**
+  - حفظ رأس وتفاصيل السند المخزني وترحيل قيد اليومية العام المقابل (`GeneralLedgerService.postVoucherInTransaction`) داخل معاملة SQL Server ذاتها (`BEGIN TRANSACTION ... COMMIT`).
+  - **التوجيه المحاسبي لسندات الصرف:** مدين تكاليف المشروعات/العمليات (`3102001`) مع مركز التكلفة، ودائن المخزون السلعي (`1203001`).
+  - **التوجيه المحاسبي لسندات الإضافة:** مدين المخزون السلعي (`1203001`)، ودائن تكاليف الإنتاج التام أو الحساب الوسيط (`3101001`).
+  - **التوجيه المحاسبي للتحويل:** مدين المستودع المحول إليه (`Inventory_ID1`)، ودائن المستودع المحول منه (`Inventory_ID`).
+  - **التوجيه المحاسبي للتسوية الجردية:** في العجز مدين فروق الجرد (`5109001`) ودائن المخزون؛ في الزيادة مدين المخزون ودائن أرباح الجرد (`4201002`).
+  - شرط التوازن الحتمي: $|\text{TotalDebit} - \text{TotalCredit}| === 0.0000$ والتراجع الشامل (`ROLLBACK`) عند أدنى اختلاف.
+- [ ] **4. التدقيق السحابي المزدوج وبث تنبيهات التيليجرام:**
+  - تسجيل حركات اعتماد السندات والتسويات الجردية في سحابة Oracle Autonomous DB (`ADMIN.BackupAuditLogs`).
+  - بث تنبيهات Telegram HTML فورية غنية بالأيقونات المعبرة (`📤`, `📥`, `🔄`, `⚖️`) مع تفاصيل السند والمستودع وقيد الأستاذ العام.
+- [ ] **5. واجهة ورشة المخازن المكتبية الفائقة (High-Density Telerik Inventory HUD):**
+  - 6 تبويبات متخصصة تغطي كافة العمليات المخزنية مع دعم التنقل السريع بلوحة المفاتيح (`Enter`, `Insert`, `Ctrl+Del`).
+  - شريط HUD عائم تفاعلي يعرض إجمالي الكميات، القيمة المخزنية، الرصيد المتاح، وتفقيط لغوي فوري بالجنيه المصري.

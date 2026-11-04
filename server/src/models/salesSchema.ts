@@ -304,3 +304,4 @@ export interface CreateClientDTO {
   Client_Price_Option?: number;
   Notice?: string;
 }
+

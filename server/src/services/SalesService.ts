@@ -332,30 +332,6 @@ export class SalesService {
           Vat_Per: 14.0,
           Level5_ID: 4101001,
         },
-        {
-          Item_ID: 1004,
-          Item_Name_A: 'سن 2 دولوميت مغسول ومعتمد',
-          Item_Name_E: 'Crushed Dolomite Aggregate No. 2',
-          Item_Description: 'سن للخلطات الخرسانية عالية الإجهاد',
-          Default_Unit_ID: 2,
-          Unit_Name_A: 'متر مكعب',
-          Sales_Price: 320,
-          Last_Cost: 260,
-          Vat_Per: 14.0,
-          Level5_ID: 4101001,
-        },
-        {
-          Item_ID: 1005,
-          Item_Name_A: 'خرسانة جاهزة رتبة C30 مقاومة للملوحة',
-          Item_Name_E: 'Ready-Mix Concrete C30 Sulfate Resistant',
-          Item_Description: 'توريد محطة خرسانة معتمدة شامل الضخ بالمضخة',
-          Default_Unit_ID: 2,
-          Unit_Name_A: 'متر مكعب',
-          Sales_Price: 1650,
-          Last_Cost: 1350,
-          Vat_Per: 14.0,
-          Level5_ID: 4101001,
-        },
       ];
     }
   }
@@ -1022,3 +998,4 @@ export class SalesService {
     return transactionResult;
   }
 }
+
