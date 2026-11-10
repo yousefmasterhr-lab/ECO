@@ -1041,6 +1041,38 @@
 
 ---
 
+### ❌ الخطأ 3.57: صناديق الأرصدة السوداء المصمتة، بطاقات المؤشرات الباهتة، وتشويه شريط البحث وشارات شجرة الحسابات (Pitch-Black Amount Boxes, Pale Metric Cards & Muddy Tree Badges)
+- **وصف المشكلة:**
+  1. عرض أرصدة الحسابات المالية في شجرة الحسابات داخل كبسولات سوداء مصمتة ثقيلة (`bg-[#1F2E23]` / `bg-black`) تتنافر بصرياً مع النمط الفاتح وتسبب تلوثاً بصرياً حاداً.
+  2. تصميم كروت المؤشرات العلوية الستة بخلفيات بيج وبنية باهتة وميتة تفتقر للعمق والتباين والارتفاع المالي الحديث.
+  3. استخدام أزرار تصفية بلون خردلي داكن غير مريح، وتجريد حقل البحث من حلقات التركيز النظيفة (Focus Rings) والانسيابية التجاوبية مع اتجاه RTL.
+  4. شارات مستويات شجرة الحسابات (L1 إلى L5) كانت موحدة بلون خردلي مسطح دون دلالات عمق طبقي تسلسلي، وغياب خطوط الدلالة الرأسية للأبناء (Child Guide Lines).
+  5. استخدام مؤشرات اتصال ثقيلة بدون نبض ضوئي حديث (Sleek Glowing Status Dot).
+- **القاعدة الصارمة والحل الجذري المعتمد:**
+  1. **تطهير صناديق المبالغ المالية واعتماد النمط التنفيذي النقي:**
+     - استبدال الصناديق السوداء بكبسولات مالية فائقة النقاء:
+       `font-mono font-semibold text-xs text-stone-900 dark:text-stone-100 bg-stone-100/80 dark:bg-stone-800/80 border border-stone-200/70 dark:border-stone-700/60 px-3 py-1 rounded-md tabular-nums`
+     - جعل رمز العملة هادئاً وغير مزاحم: `text-xs font-normal text-stone-500 mr-1 ms-1`.
+  2. **ترقية كروت الإحصائيات الستة العلوية إلى بلاطات مالية حديثة (Elevated Financial Tiles):**
+     - خلفيات ناصعة/رمادية داكنة مع خطوط تمييز دلالية علوية (`border-t-2 border-t-emerald-500`, `border-t-amber-500`, `border-t-sky-500`, `border-t-purple-500`).
+     - أرقام كبرى بخط Monospace وأرقام جدولية `text-2xl font-black font-mono tabular-nums text-stone-900 dark:text-stone-100`.
+  3. **عناصر التحكم والتصفية التنفيذية (Executive Control Pills):**
+     - الزر النشط: `bg-stone-900 text-white dark:bg-emerald-600 dark:text-white shadow-xs font-medium px-4 py-2 rounded-lg text-xs`.
+     - الزر غير النشط: `bg-stone-50 hover:bg-stone-100 text-stone-600 dark:bg-stone-800/80 dark:hover:bg-stone-750 dark:text-stone-300 border border-stone-200/80 dark:border-stone-700/80 px-3.5 py-1.5 rounded-lg text-xs`.
+     - حقل بحث بحلقات تركيز زمردية انسيابية: `focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500`.
+  4. **شارات المستويات الهرمية الخمسة وخطوط الإرشاد:**
+     - **L1 (رئيسي):** `bg-emerald-100/90 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-300/60 font-bold`.
+     - **L2 (مساعد):** `bg-teal-100/90 text-teal-800 dark:bg-teal-950/60 dark:text-teal-300 border-teal-300/60 font-semibold`.
+     - **L3 (فرعي):** `bg-sky-100/90 text-sky-800 dark:bg-sky-950/60 dark:text-sky-300 border-sky-300/60`.
+     - **L4 (تحليلي):** `bg-indigo-100/90 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300 border-indigo-300/60`.
+     - **L5 (أستاذ نهائي):** `bg-purple-100/90 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300 border-purple-300/60 font-bold`.
+     - خط إرشاد يميني دقيق للأبناء: `border-r border-stone-200 dark:border-stone-800 pr-3 mr-1`.
+  5. **مؤشر الاتصال النبضي وكبسولة زمن الاستجابة:**
+     - نقطة نابضة حية `bg-emerald-500 animate-pulse w-2 h-2 rounded-full`.
+     - كبسولة زمن الاستجابة النحيفة `px-1.5 py-0.5 rounded bg-stone-100 dark:bg-stone-800 text-[10px] font-mono text-stone-500 border border-stone-200/80 dark:border-stone-700`.
+
+---
+
 ## 4. ملخص البروتوكول الإلزامي قبل كتابة أي كود جديد
 1. قراءة `MISTAKES.md` للتأكد من عدم الوقوع في أي فخ مسجل.
 2. مراجعة `SKILLS.md` لاتباع النمط البرمجي المعتمد.

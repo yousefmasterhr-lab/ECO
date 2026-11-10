@@ -954,3 +954,27 @@
 - [ ] **5. واجهة ورشة المخازن المكتبية الفائقة (High-Density Telerik Inventory HUD):**
   - 6 تبويبات متخصصة تغطي كافة العمليات المخزنية مع دعم التنقل السريع بلوحة المفاتيح (`Enter`, `Insert`, `Ctrl+Del`).
   - شريط HUD عائم تفاعلي يعرض إجمالي الكميات، القيمة المخزنية، الرصيد المتاح، وتفقيط لغوي فوري بالجنيه المصري.
+
+---
+
+## 44. المعيار الذهبي لتصميم شجرة الحسابات ولوحة المؤشرات العلوية (Phase 01 Chart of Accounts & GL Tree Refinement Standards)
+
+- [ ] **1. القضاء التام على كبسولات الأرصدة السوداء (Zero Pitch-Black Amount Containers):**
+  - استبدال أي خلفيات سوداء مصمتة (`bg-black` / `bg-[#1F2E23]`) بكبسولات مالية رمادية ناعمة عالية التباين:
+    `font-mono font-semibold text-xs text-stone-900 dark:text-stone-100 bg-stone-100/80 dark:bg-stone-800/80 border border-stone-200/70 dark:border-stone-700/60 px-3 py-1 rounded-md tabular-nums`.
+  - تخفيف رمز العملة لمنع الازدحام: `text-xs font-normal text-stone-500 mr-1 ms-1`.
+- [ ] **2. ترقية بلاطات المؤشرات العلوية الستة (Elevated Top KPI Tiles):**
+  - أسطح ناصعة ورمادية محاكمة ناعمة (`bg-white dark:bg-stone-900 border border-stone-200/80 dark:border-stone-800 rounded-xl shadow-xs p-4`).
+  - خطوط تمييز علوية دلالية ملونة (`border-t-2`) للمستويات الستة: أصول متداولة (Emerald)، خصوم وملكية (Amber)، مصروفات (Sky)، مراكز تكلفة (Purple)، إجمالي الحسابات وتوازن الدليل (Emerald/Teal).
+  - خط مونو عريض للأرقام مع ضبط `tabular-nums` لمنع الاهتزاز الرقمي.
+- [ ] **3. أزرار التحكم والتصفية التنفيذية (Executive Control Pills & Inset Focus Rings):**
+  - الزر النشط: `bg-stone-900 text-white dark:bg-emerald-600 dark:text-white shadow-xs font-medium px-4 py-2 rounded-lg text-xs`.
+  - الزر غير النشط: `bg-stone-50 hover:bg-stone-100 text-stone-600 dark:bg-stone-800/80 dark:hover:bg-stone-750 dark:text-stone-300 border border-stone-200/80 dark:border-stone-700/80 px-3.5 py-1.5 rounded-lg text-xs`.
+  - حقل بحث مزود بحلقات تركيز زمردية انسيابية: `focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500`.
+- [ ] **4. شارات المستويات الخمسة وخطوط الإرشاد الرأسية (Semantic Depth Badges & Guide Lines):**
+  - تدرج لوني دلالي للأصناف: L1 رئيسي (Emerald)، L2 مساعد (Teal)، L3 فرعي (Sky)، L4 تحليلي (Indigo)، L5 أستاذ نهائي (Purple).
+  - خطوط إرشاد رأسية دقيقة للأبناء من L2 إلى L5 لتوضيح التبعية الشجرية: `border-r border-stone-200 dark:border-stone-800 pr-3 mr-1`.
+  - شارات طبيعة الحساب مدين ودائن بألوان ناعمة كاملة التباين: مدين (Emerald-50)، دائن (Rose-50).
+- [ ] **5. مؤشر حالة الخادم النبضي وزمن الاستجابة:**
+  - نقطة خضراء نابضة `bg-emerald-500 animate-pulse w-2 h-2 rounded-full`.
+  - كبسولة زمن الاستجابة النحيفة `px-1.5 py-0.5 rounded bg-stone-100 dark:bg-stone-800 text-[10px] font-mono text-stone-500 border border-stone-200/80 dark:border-stone-700`.

@@ -1057,3 +1057,27 @@
     - **واجهة ورشة المخازن المكتبية الفائقة (High-Density Telerik Inventory Workbench):**
       - تبويبات تفاعلية سداسية: سندات الصرف، سندات الإضافة، تحويل المستودعات، التسوية الجردية، دليل الأصناف وتكلفة WAC، ودليل المستودعات.
       - تنقل فائق السرعة عبر لوحة المفاتيح (`Enter`, `Insert`, `Ctrl+Del`) مع شريط HUD ملخص للتكاليف وتفقيط عربي فوري.
+
+17. **معايير التصميم المالي عالي الكثافة لشجرة الحسابات ولوحة المؤشرات (Chart of Accounts & GL Tree Executive UI Patterns):**
+    - **التخلص من الصناديق السوداء المصمتة للأرصدة (Clean Financial Typography):**
+      - عرض مبالغ الأرصدة المالية المحاسبية في كبسولات هادئة عالية التباين بخط Monospace:
+        `font-mono font-semibold text-xs text-stone-900 dark:text-stone-100 bg-stone-100/80 dark:bg-stone-800/80 border border-stone-200/70 dark:border-stone-700/60 px-3 py-1 rounded-md tabular-nums`.
+      - تخفيف رمز العملة (`text-xs font-normal text-stone-500 mr-1 ms-1`).
+    - **كروت المؤشرات المالية الستة الحديثة (Modern Elevated Financial Tiles):**
+      - أسطح ناصعة ورمادية ناعمة (`bg-white dark:bg-stone-900 border border-stone-200/80 dark:border-stone-800 rounded-xl shadow-xs p-4`).
+      - حواف علوية تمييزية دلالية ملونة (`border-t-2`) للمستويات الستة: الأصول المتداولة (Emerald)، الخصوم والملكية (Amber)، المصروفات والتكاليف (Sky)، مراكز التكلفة (Purple)، إجمالي الحسابات وتوازن الدليل (Emerald/Teal).
+      - أرقام كبرى بخط Monospace مع أرقام جدولية تمنع الاهتزاز الرقمي (`tabular-nums`).
+    - **شارات المستويات الهيكلية الخمسة (Semantic Depth Level Badges L1 to L5):**
+      - **L1 (رئيسي):** `bg-emerald-100/90 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-300/60 font-bold`.
+      - **L2 (مساعد):** `bg-teal-100/90 text-teal-800 dark:bg-teal-950/60 dark:text-teal-300 border-teal-300/60 font-semibold`.
+      - **L3 (فرعي):** `bg-sky-100/90 text-sky-800 dark:bg-sky-950/60 dark:text-sky-300 border-sky-300/60`.
+      - **L4 (تحليلي):** `bg-indigo-100/90 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300 border-indigo-300/60`.
+      - **L5 (حساب أستاذ نهائي):** `bg-purple-100/90 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300 border-purple-300/60 font-bold`.
+      - خطوط إرشاد رأسية دقيقة للأبناء: `border-r border-stone-200 dark:border-stone-800 pr-3 mr-1`.
+    - **شريط البحث والتصفية التنفيذي (Executive Search & Filter Pills):**
+      - الزر النشط: `bg-stone-900 text-white dark:bg-emerald-600 dark:text-white shadow-xs font-medium px-4 py-2 rounded-lg text-xs`.
+      - الزر غير النشط: `bg-stone-50 hover:bg-stone-100 text-stone-600 dark:bg-stone-800/80 dark:hover:bg-stone-750 dark:text-stone-300 border border-stone-200/80 dark:border-stone-700/80 px-3.5 py-1.5 rounded-lg text-xs`.
+      - حلقات تركيز مريحة لحقل البحث: `focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500`.
+    - **شريط الحالة النبضي المضيء (Sleek Glowing Status Indicator):**
+      - نقطة نابضة دقيقة `bg-emerald-500 animate-pulse w-2 h-2 rounded-full`.
+      - كبسولة زمن الاستجابة النحيفة `px-1.5 py-0.5 rounded bg-stone-100 dark:bg-stone-800 text-[10px] font-mono text-stone-500 border border-stone-200/80 dark:border-stone-700`.

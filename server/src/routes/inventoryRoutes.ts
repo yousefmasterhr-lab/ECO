@@ -217,3 +217,4 @@ inventoryRouter.post('/adjustments', async (req: Request, res: Response): Promis
     res.status(400).json({ success: false, error: err.message });
   }
 });
+

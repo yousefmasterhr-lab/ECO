@@ -169,8 +169,14 @@ export const AccountDetailDrawer: React.FC<AccountDetailDrawerProps> = ({ accoun
               <div
                 className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold font-mono text-sm shadow-xs ${
                   account.level === 5
-                    ? 'bg-[#1F2E23] text-[#EBB34D] border border-[#EBB34D]/40'
-                    : 'bg-[#D99B26] text-[#0E1610]'
+                    ? 'bg-purple-100/90 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-300/60'
+                    : account.level === 1
+                    ? 'bg-emerald-100/90 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300/60'
+                    : account.level === 2
+                    ? 'bg-teal-100/90 text-teal-800 dark:bg-teal-950/60 dark:text-teal-300 border border-teal-300/60'
+                    : account.level === 3
+                    ? 'bg-sky-100/90 text-sky-800 dark:bg-sky-950/60 dark:text-sky-300 border border-sky-300/60'
+                    : 'bg-indigo-100/90 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-300/60'
                 }`}
               >
                 L{account.level}
@@ -209,7 +215,7 @@ export const AccountDetailDrawer: React.FC<AccountDetailDrawerProps> = ({ accoun
                   <Eye className="w-3.5 h-3.5 text-[#EBB34D]" />
                   {t('الرصيد الفعلي الحالي (المرحل للأستاذ العام)', 'Current Real-Time Ledger Balance')}
                 </span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#1F2E23] text-[#EBB34D] border border-[#EBB34D]/30">
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
                   {t('محدث لحظياً', 'Live Sync')}
                 </span>
               </div>
@@ -403,7 +409,7 @@ export const AccountDetailDrawer: React.FC<AccountDetailDrawerProps> = ({ accoun
                               {tx.noteDate || tx.entryDate || '-'}
                             </td>
                             <td className="py-2 px-2.5 whitespace-nowrap">
-                              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#1F2E23] text-[#EBB34D] border border-[#243628]">
+                              <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-stone-800 text-emerald-400 border border-stone-700">
                                 {tx.voucherType || tx.DocumentType || (tx.noteNo ? `#${tx.noteNo}` : 'قيد')}
                               </span>
                             </td>

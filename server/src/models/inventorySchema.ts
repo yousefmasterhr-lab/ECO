@@ -391,3 +391,4 @@ export interface CreateItemDTO {
   Level5_ID?: number;             // GL Inventory Asset Account (1203001)
   Request_Limit?: number;         // Minimum stock level
 }
+

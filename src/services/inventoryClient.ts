@@ -660,3 +660,4 @@ export class InventoryClient {
 }
 
 export const inventoryClient = InventoryClient.getInstance();
+
