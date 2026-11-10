@@ -957,24 +957,25 @@
 
 ---
 
-## 44. المعيار الذهبي لتصميم شجرة الحسابات ولوحة المؤشرات العلوية (Phase 01 Chart of Accounts & GL Tree Refinement Standards)
+## 44. المعيار الذهبي لتصميم شجرة الحسابات ولوحة المؤشرات المتناغم مع موديول الاستقبال والزوار (Warm Amber/Gold GL Standards)
 
-- [ ] **1. القضاء التام على كبسولات الأرصدة السوداء (Zero Pitch-Black Amount Containers):**
-  - استبدال أي خلفيات سوداء مصمتة (`bg-black` / `bg-[#1F2E23]`) بكبسولات مالية رمادية ناعمة عالية التباين:
-    `font-mono font-semibold text-xs text-stone-900 dark:text-stone-100 bg-stone-100/80 dark:bg-stone-800/80 border border-stone-200/70 dark:border-stone-700/60 px-3 py-1 rounded-md tabular-nums`.
-  - تخفيف رمز العملة لمنع الازدحام: `text-xs font-normal text-stone-500 mr-1 ms-1`.
-- [ ] **2. ترقية بلاطات المؤشرات العلوية الستة (Elevated Top KPI Tiles):**
-  - أسطح ناصعة ورمادية محاكمة ناعمة (`bg-white dark:bg-stone-900 border border-stone-200/80 dark:border-stone-800 rounded-xl shadow-xs p-4`).
-  - خطوط تمييز علوية دلالية ملونة (`border-t-2`) للمستويات الستة: أصول متداولة (Emerald)، خصوم وملكية (Amber)، مصروفات (Sky)، مراكز تكلفة (Purple)، إجمالي الحسابات وتوازن الدليل (Emerald/Teal).
-  - خط مونو عريض للأرقام مع ضبط `tabular-nums` لمنع الاهتزاز الرقمي.
-- [ ] **3. أزرار التحكم والتصفية التنفيذية (Executive Control Pills & Inset Focus Rings):**
-  - الزر النشط: `bg-stone-900 text-white dark:bg-emerald-600 dark:text-white shadow-xs font-medium px-4 py-2 rounded-lg text-xs`.
-  - الزر غير النشط: `bg-stone-50 hover:bg-stone-100 text-stone-600 dark:bg-stone-800/80 dark:hover:bg-stone-750 dark:text-stone-300 border border-stone-200/80 dark:border-stone-700/80 px-3.5 py-1.5 rounded-lg text-xs`.
-  - حقل بحث مزود بحلقات تركيز زمردية انسيابية: `focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500`.
-- [ ] **4. شارات المستويات الخمسة وخطوط الإرشاد الرأسية (Semantic Depth Badges & Guide Lines):**
-  - تدرج لوني دلالي للأصناف: L1 رئيسي (Emerald)، L2 مساعد (Teal)، L3 فرعي (Sky)، L4 تحليلي (Indigo)، L5 أستاذ نهائي (Purple).
-  - خطوط إرشاد رأسية دقيقة للأبناء من L2 إلى L5 لتوضيح التبعية الشجرية: `border-r border-stone-200 dark:border-stone-800 pr-3 mr-1`.
-  - شارات طبيعة الحساب مدين ودائن بألوان ناعمة كاملة التباين: مدين (Emerald-50)، دائن (Rose-50).
+- [ ] **1. الحظر المطلق للأزرار والصناديق السوداء الصماء (Absolute Ban on Solid Black Boxes):**
+  - استبدال أي خلفيات سوداء مصمتة (`bg-black` / `bg-stone-900`) للأزرار النشطة والأرصدة.
+  - الزر النشط في التصفية: `bg-amber-600 hover:bg-amber-700 text-white font-medium shadow-xs border border-amber-700/30 px-3.5 py-1.5 rounded-lg text-xs transition-all`.
+  - الزر غير النشط: `bg-[#FAF8F5] dark:bg-stone-850 hover:bg-[#F2ECE4] text-stone-700 dark:text-stone-300 border border-stone-200/80 dark:border-stone-700/60 px-3.5 py-1.5 rounded-lg text-xs font-normal`.
+  - حقل بحث بحلقات تركيز كهرمانية ناعمة: `focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500`.
+- [ ] **2. عرض الأرصدة المالية بنقاء تشغيلي فائق:**
+  - `font-mono font-semibold text-stone-800 dark:text-stone-200 px-2 py-0.5 rounded bg-stone-100 dark:bg-stone-800 border border-stone-200/70 dark:border-stone-700/50 text-xs tabular-nums`.
+- [ ] **3. بلاطات المؤشرات العلوية الستة (Warm Amber KPI Tiles):**
+  - أسطح ناصعة وحجرية ناعمة (`bg-white dark:bg-stone-900 border border-stone-200/80 dark:border-stone-800 rounded-xl p-3.5 shadow-xs`).
+  - خطوط تمييز علوية كهرمانية موحدة (`border-t-2 border-t-amber-500`) مع أيقونات كهرمانية فخمة (`bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30`).
+  - أرقام كبرى بخط Monospace مع ضبط `tabular-nums` لمنع الاهتزاز الرقمي.
+- [ ] **4. شارات المستويات الخمسة المتسقة مع موديول الاستقبال:**
+  - المستوى L1: `bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 border border-amber-300/70 font-bold text-[10px]`.
+  - المستوى L2: `bg-stone-200 dark:bg-stone-800 text-stone-800 dark:text-stone-200 border border-stone-300 dark:border-stone-700 font-semibold text-[10px]`.
+  - المستويات L3-L4: شارات حجرية رمادية هادئة بدون تشتيت لوني.
+  - المستوى L5 (أستاذ نهائي): `bg-amber-50/80 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 border border-amber-200/60 font-bold text-[10px]`.
+  - شارات الطبيعة: مدين بالكهرمان (`bg-amber-50 text-amber-800`) ودائن بالحجر الحيادي (`bg-stone-100 text-stone-700`).
 - [ ] **5. مؤشر حالة الخادم النبضي وزمن الاستجابة:**
-  - نقطة خضراء نابضة `bg-emerald-500 animate-pulse w-2 h-2 rounded-full`.
-  - كبسولة زمن الاستجابة النحيفة `px-1.5 py-0.5 rounded bg-stone-100 dark:bg-stone-800 text-[10px] font-mono text-stone-500 border border-stone-200/80 dark:border-stone-700`.
+  - كبسولة كهرمانية ناعمة: `inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 text-xs font-medium`.
+  - نقطة نابضة كهرمانية: `<span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>`.

@@ -1073,6 +1073,31 @@
 
 ---
 
+### ❌ الخطأ 3.58: استخدام الأزرار السوداء الصماء أو درجات الزمرد العشوائية بدلاً من هوية الكهرمان الدافئ والذهب الفاخر المعتمدة في موديول الاستقبال والزوار (Warm Amber/Gold ERP Palette Alignment)
+- **وصف المشكلة:**
+  1. استخدام أزرار سوداء مصمتة (`bg-black` / `bg-stone-900`) للأزرار النشطة (مثل `[جميع الحسابات]` و `[الكل]`)، أو إقحام درجات زمردية/خضراء عشوائية تخرج عن الهوية البصرية الرسمية لمنظومة ECO ERP.
+  2. عدم الامتثال لمرجعية التصميم الموحدة المعتمدة في موديول الاستقبال والزوار (`VisitorsModule.tsx` / `ReceptionHeroHeader.tsx`) والمبنية على بالتة الكهرمان الدافئ (Warm Amber) والذهب الفاخر والرمل الناعم.
+- **القاعدة الصارمة والحل الجذري المعتمد:**
+  1. **حظر الأزرار والكتل السوداء الصماء نهائياً (Absolute Ban on Solid Black Boxes):**
+     - الزر النشط في التصفية والتحكم يجب أن يعتمد تدرج الكهرمان الدافئ المعتمد:
+       `bg-amber-600 hover:bg-amber-700 text-white font-medium shadow-xs border border-amber-700/30 px-3.5 py-1.5 rounded-lg text-xs transition-all`.
+     - الزر غير النشط يعتمد خلفية النظام الرملية الدافئة:
+       `bg-[#FAF8F5] dark:bg-stone-850 hover:bg-[#F2ECE4] text-stone-700 dark:text-stone-300 border border-stone-200/80 dark:border-stone-700/60 px-3.5 py-1.5 rounded-lg text-xs font-normal transition-colors`.
+  2. **شارة الحالة الملكية الكهرمانية ([وضع محلي: نشط]):**
+     - اعتماد شارة الكهرمان الدائرية الفخمة:
+       `inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 text-xs font-medium`.
+     - نبض ضوئي كهرماني نابض: `<span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>`.
+  3. **كروت المؤشرات العلوية الستة ببصمة الكهرمان المعتمدة:**
+     - حواف علوية تمييزية كهرمانية ناعمة (`border-t-2 border-t-amber-500`) مع أسطح ناصعة/رمادية داكنة وأيقونات كهرمانية فخمة (`bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30`).
+  4. **شارات المستويات الهيكلية المتناغمة (L1 إلى L5):**
+     - المستوى L1: `bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 border border-amber-300/70 font-bold text-[10px]`.
+     - المستوى L2: `bg-stone-200 dark:bg-stone-800 text-stone-800 dark:text-stone-200 border border-stone-300 dark:border-stone-700 font-semibold text-[10px]`.
+     - المستويات L3-L4: كبسولات رملية رمادية هادئة بدون تشتيت لوني.
+     - المستوى L5 (أستاذ نهائي): `bg-amber-50/80 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 border border-amber-200/60 font-bold text-[10px]`.
+     - شارات الطبيعة: مدين بالكهرمان الناعم (`bg-amber-50 text-amber-800`) ودائن بالحجر الحيادي (`bg-stone-100 text-stone-700`).
+
+---
+
 ## 4. ملخص البروتوكول الإلزامي قبل كتابة أي كود جديد
 1. قراءة `MISTAKES.md` للتأكد من عدم الوقوع في أي فخ مسجل.
 2. مراجعة `SKILLS.md` لاتباع النمط البرمجي المعتمد.

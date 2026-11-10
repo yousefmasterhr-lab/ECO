@@ -33,7 +33,7 @@ export const FinancialHeader: React.FC = () => {
       {/* Top Bar: Title, Engine Status & Mode Switcher */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-4 sm:p-5 rounded-2xl border border-stone-200/80 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-xs">
         <div className="flex items-start sm:items-center gap-3.5">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/20 shadow-xs">
+          <div className="w-12 h-12 rounded-2xl bg-amber-500/15 text-amber-700 dark:text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/30 shadow-xs">
             <Layers className="w-6 h-6" />
           </div>
 
@@ -42,7 +42,7 @@ export const FinancialHeader: React.FC = () => {
               <h1 className="text-base sm:text-lg font-bold text-stone-900 dark:text-stone-100 tracking-tight">
                 {t('الأستاذ العام ودليل الحسابات (الشؤون المالية)', 'General Ledger & Chart of Accounts')}
               </h1>
-              <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/60">
+              <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30">
                 {t('المستوى 1 - 5', '5-Level Tree')}
               </span>
             </div>
@@ -58,18 +58,14 @@ export const FinancialHeader: React.FC = () => {
         {/* Engine Bridge Badge & Controls */}
         <div className="flex flex-wrap items-center gap-2.5 self-start lg:self-auto">
           {/* Active Connection Status Badge */}
-          <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-stone-50 dark:bg-stone-850 border border-stone-200/80 dark:border-stone-750 text-xs text-stone-800 dark:text-stone-200 shadow-2xs">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-stone-50 dark:bg-stone-850 border border-stone-200/80 dark:border-stone-750 text-xs text-stone-800 dark:text-stone-200 shadow-2xs">
             <span className="relative flex h-2 w-2">
-              <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
-                connectionStatus?.connected ? 'bg-emerald-400' : 'bg-amber-400'
-              }`} />
-              <span className={`relative inline-flex rounded-full h-2 w-2 ${
-                connectionStatus?.connected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'
-              }`} />
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 bg-amber-400" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500 animate-pulse" />
             </span>
 
             <div className="flex items-center gap-1.5 text-[11px]">
-              <Server className="w-3.5 h-3.5 text-stone-500 dark:text-stone-400" />
+              <Server className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
               <span className="font-semibold text-stone-800 dark:text-stone-200">
                 {mode === 'LOCAL' ? `SQL Server (${connectionStatus?.databaseName || 'Tarabot_Data_2026'})` : 'Cloud Repository (سحابي)'}
               </span>
@@ -79,7 +75,7 @@ export const FinancialHeader: React.FC = () => {
             </div>
           </div>
 
-          {/* Dual-Mode Toggle Button */}
+          {/* Luxury Warm Amber Status Pill ([وضع محلي: نشط]) */}
           <motion.button
             whileTap={{ scale: 0.96 }}
             onClick={() => {
@@ -90,17 +86,18 @@ export const FinancialHeader: React.FC = () => {
                 connectionStatus?.databaseName || 'Tarabot_Data_2026'
               );
             }}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 text-xs font-medium cursor-pointer transition-all hover:bg-amber-100 dark:hover:bg-amber-900/40 shadow-xs"
             title={t('التبديل بين الاتصال المحلي بقاعدة البيانات والوضع السحابي', 'Switch between Local SQL Server and Cloud Mode')}
           >
+            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse shrink-0" />
             {mode === 'LOCAL' ? (
               <>
-                <Database className="w-3.5 h-3.5" />
+                <Database className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                 <span>{t('وضع محلي: نشط', 'Local Mode: Active')}</span>
               </>
             ) : (
               <>
-                <Cloud className="w-3.5 h-3.5" />
+                <Cloud className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                 <span>{t('وضع سحابي: نشط', 'Cloud Mode: Active')}</span>
               </>
             )}
@@ -120,49 +117,49 @@ export const FinancialHeader: React.FC = () => {
               }
             }}
             disabled={isSyncing}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border border-stone-200/80 dark:border-stone-700/80 bg-stone-50 hover:bg-stone-100 dark:bg-stone-800 dark:hover:bg-stone-750 text-stone-700 dark:text-stone-200 transition-colors shadow-2xs ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border border-stone-200/80 dark:border-stone-700/80 bg-stone-50 hover:bg-stone-100 dark:bg-stone-800 dark:hover:bg-stone-750 text-stone-700 dark:text-stone-200 transition-colors shadow-2xs ${
               isSyncing ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'
             }`}
             title={t('مزامنة فورية من قاعدة البيانات', 'Sync from Database')}
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin text-emerald-600 dark:text-emerald-400' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 text-amber-600 dark:text-amber-400 ${isSyncing ? 'animate-spin' : ''}`} />
             <span>{isSyncing ? t('جارِ المزامنة...', 'Syncing...') : t('مزامنة', 'Sync')}</span>
           </button>
         </div>
       </div>
 
-      {/* Financial KPIs Strip (Modern Elevated Tiles) */}
+      {/* Financial KPIs Strip (Warm Amber Accent Tiles - Matching Reception & Visitors) */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         {/* Total Accounts */}
-        <div className="p-4 rounded-xl border border-stone-200/80 dark:border-stone-800 border-t-2 border-t-emerald-600 dark:border-t-emerald-500 bg-white dark:bg-stone-900 shadow-xs flex flex-col justify-between">
+        <div className="bg-white dark:bg-stone-900 border border-stone-200/80 dark:border-stone-800 border-t-2 border-t-amber-500 rounded-xl p-3.5 shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between text-stone-500 dark:text-stone-400 text-[11px] font-medium">
             <span>{t('إجمالي الحسابات', 'Total Accounts')}</span>
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400">
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30">
               <FolderTree className="w-3.5 h-3.5" />
             </div>
           </div>
           <div className="mt-2 flex items-baseline gap-1">
-            <span className="text-2xl font-black text-stone-900 dark:text-stone-100 font-mono tabular-nums">
+            <span className="font-mono text-xl font-bold text-stone-900 dark:text-stone-100 tabular-nums">
               {summary?.totalAccounts || 330}
             </span>
-            <span className="text-[11px] font-medium text-stone-400 dark:text-stone-500">{t('حساب', 'accts')}</span>
+            <span className="text-[10px] font-medium text-stone-400 dark:text-stone-500">{t('حساب', 'accts')}</span>
           </div>
-          <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium mt-1">
+          <span className="text-[10px] text-amber-700 dark:text-amber-400 font-medium mt-1">
             {t('5 مستويات محاسبية', '5 Accounting Levels')}
           </span>
         </div>
 
         {/* Current Assets */}
-        <div className="p-4 rounded-xl border border-stone-200/80 dark:border-stone-800 border-t-2 border-t-emerald-500 bg-white dark:bg-stone-900 shadow-xs flex flex-col justify-between">
+        <div className="bg-white dark:bg-stone-900 border border-stone-200/80 dark:border-stone-800 border-t-2 border-t-amber-500 rounded-xl p-3.5 shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between text-stone-500 dark:text-stone-400 text-[11px] font-medium">
             <span>{t('الأصول المتداولة (12)', 'Current Assets')}</span>
-            <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-xs" />
+            <span className="w-2 h-2 rounded-full bg-amber-500 shadow-xs" />
           </div>
           <div className="mt-2 flex items-baseline gap-1">
-            <span className="text-2xl font-black text-stone-900 dark:text-stone-100 font-mono tabular-nums">
+            <span className="font-mono text-xl font-bold text-stone-900 dark:text-stone-100 tabular-nums">
               {accounts.find(a => a.code === '1')?.leafCount || 108}
             </span>
-            <span className="text-[11px] font-medium text-stone-400 dark:text-stone-500">{t('حساب فرعي', 'sub')}</span>
+            <span className="text-[10px] font-medium text-stone-400 dark:text-stone-500">{t('حساب فرعي', 'sub')}</span>
           </div>
           <span className="text-[10px] text-stone-500 dark:text-stone-400 font-medium mt-1 truncate">
             {t('خزائن وبنوك وعملاء ومخزون', 'Treasury, Banks, Debtors')}
@@ -170,16 +167,16 @@ export const FinancialHeader: React.FC = () => {
         </div>
 
         {/* Liabilities & Equity */}
-        <div className="p-4 rounded-xl border border-stone-200/80 dark:border-stone-800 border-t-2 border-t-amber-500 bg-white dark:bg-stone-900 shadow-xs flex flex-col justify-between">
+        <div className="bg-white dark:bg-stone-900 border border-stone-200/80 dark:border-stone-800 border-t-2 border-t-amber-500 rounded-xl p-3.5 shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between text-stone-500 dark:text-stone-400 text-[11px] font-medium">
             <span>{t('الخصوم والملكية (2)', 'Liabilities & Equity')}</span>
-            <span className="w-2 h-2 rounded-full bg-amber-500 shadow-xs" />
+            <span className="w-2 h-2 rounded-full bg-amber-600 shadow-xs" />
           </div>
           <div className="mt-2 flex items-baseline gap-1">
-            <span className="text-2xl font-black text-stone-900 dark:text-stone-100 font-mono tabular-nums">
+            <span className="font-mono text-xl font-bold text-stone-900 dark:text-stone-100 tabular-nums">
               {accounts.find(a => a.code === '2')?.leafCount || 120}
             </span>
-            <span className="text-[11px] font-medium text-stone-400 dark:text-stone-500">{t('حساب فرعي', 'sub')}</span>
+            <span className="text-[10px] font-medium text-stone-400 dark:text-stone-500">{t('حساب فرعي', 'sub')}</span>
           </div>
           <span className="text-[10px] text-stone-500 dark:text-stone-400 font-medium mt-1 truncate">
             {t('موردون ودائنون ورأس مال', 'Vendors, Payables, Capital')}
@@ -187,16 +184,16 @@ export const FinancialHeader: React.FC = () => {
         </div>
 
         {/* Expenses & Costs */}
-        <div className="p-4 rounded-xl border border-stone-200/80 dark:border-stone-800 border-t-2 border-t-sky-500 bg-white dark:bg-stone-900 shadow-xs flex flex-col justify-between">
+        <div className="bg-white dark:bg-stone-900 border border-stone-200/80 dark:border-stone-800 border-t-2 border-t-amber-500 rounded-xl p-3.5 shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between text-stone-500 dark:text-stone-400 text-[11px] font-medium">
             <span>{t('المصروفات والتكاليف (3)', 'Expenses & Costs')}</span>
-            <span className="w-2 h-2 rounded-full bg-sky-500 shadow-xs" />
+            <span className="w-2 h-2 rounded-full bg-amber-700 shadow-xs" />
           </div>
           <div className="mt-2 flex items-baseline gap-1">
-            <span className="text-2xl font-black text-stone-900 dark:text-stone-100 font-mono tabular-nums">
+            <span className="font-mono text-xl font-bold text-stone-900 dark:text-stone-100 tabular-nums">
               {accounts.find(a => a.code === '3')?.leafCount || 102}
             </span>
-            <span className="text-[11px] font-medium text-stone-400 dark:text-stone-500">{t('حساب فرعي', 'sub')}</span>
+            <span className="text-[10px] font-medium text-stone-400 dark:text-stone-500">{t('حساب فرعي', 'sub')}</span>
           </div>
           <span className="text-[10px] text-stone-500 dark:text-stone-400 font-medium mt-1 truncate">
             {t('تكاليف مشروعات وعمومية', 'Project Costs & Overhead')}
@@ -204,34 +201,34 @@ export const FinancialHeader: React.FC = () => {
         </div>
 
         {/* Cost Centers */}
-        <div className="p-4 rounded-xl border border-stone-200/80 dark:border-stone-800 border-t-2 border-t-purple-500 bg-white dark:bg-stone-900 shadow-xs flex flex-col justify-between">
+        <div className="bg-white dark:bg-stone-900 border border-stone-200/80 dark:border-stone-800 border-t-2 border-t-amber-500 rounded-xl p-3.5 shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between text-stone-500 dark:text-stone-400 text-[11px] font-medium">
             <span>{t('مراكز التكلفة', 'Cost Centers')}</span>
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400">
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30">
               <Building className="w-3.5 h-3.5" />
             </div>
           </div>
           <div className="mt-2 flex items-baseline gap-1">
-            <span className="text-2xl font-black text-stone-900 dark:text-stone-100 font-mono tabular-nums">
+            <span className="font-mono text-xl font-bold text-stone-900 dark:text-stone-100 tabular-nums">
               {costCenters.length || 32}
             </span>
-            <span className="text-[11px] font-medium text-stone-400 dark:text-stone-500">{t('مركز نشط', 'active')}</span>
+            <span className="text-[10px] font-medium text-stone-400 dark:text-stone-500">{t('مركز نشط', 'active')}</span>
           </div>
-          <span className="text-[10px] text-purple-600 dark:text-purple-400 font-medium mt-1 truncate">
+          <span className="text-[10px] text-amber-700 dark:text-amber-400 font-medium mt-1 truncate">
             {t('مربوطة بالمشاريع والمواقع', 'Linked to Sites')}
           </span>
         </div>
 
         {/* Accounting Equilibrium Check */}
-        <div className="p-4 rounded-xl border border-stone-200/80 dark:border-stone-800 border-t-2 border-t-teal-500 bg-white dark:bg-stone-900 shadow-xs flex flex-col justify-between">
+        <div className="bg-white dark:bg-stone-900 border border-stone-200/80 dark:border-stone-800 border-t-2 border-t-amber-500 rounded-xl p-3.5 shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between text-stone-500 dark:text-stone-400 text-[11px] font-medium">
             <span>{t('توازن الدليل', 'Tree Balance')}</span>
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-teal-50 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400">
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30">
               <Scale className="w-3.5 h-3.5" />
             </div>
           </div>
-          <div className="mt-2 flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold text-sm">
-            <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+          <div className="mt-2 flex items-center gap-1.5 text-amber-700 dark:text-amber-400 font-bold text-xs">
+            <CheckCircle2 className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400" />
             <span>{t('متزن محاسبياً', 'Balanced')}</span>
           </div>
           <span className="text-[10px] text-stone-500 dark:text-stone-400 font-medium mt-1">

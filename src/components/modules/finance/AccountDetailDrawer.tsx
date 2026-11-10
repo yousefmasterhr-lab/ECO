@@ -169,14 +169,14 @@ export const AccountDetailDrawer: React.FC<AccountDetailDrawerProps> = ({ accoun
               <div
                 className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold font-mono text-sm shadow-xs ${
                   account.level === 5
-                    ? 'bg-purple-100/90 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-300/60'
+                    ? 'bg-amber-50/80 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/40'
                     : account.level === 1
-                    ? 'bg-emerald-100/90 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300/60'
+                    ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 border border-amber-300/70'
                     : account.level === 2
-                    ? 'bg-teal-100/90 text-teal-800 dark:bg-teal-950/60 dark:text-teal-300 border border-teal-300/60'
+                    ? 'bg-stone-200 dark:bg-stone-800 text-stone-800 dark:text-stone-200 border border-stone-300 dark:border-stone-700'
                     : account.level === 3
-                    ? 'bg-sky-100/90 text-sky-800 dark:bg-sky-950/60 dark:text-sky-300 border border-sky-300/60'
-                    : 'bg-indigo-100/90 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-300/60'
+                    ? 'bg-stone-100 dark:bg-stone-800/80 text-stone-700 dark:text-stone-300 border border-stone-200 dark:border-stone-700'
+                    : 'bg-stone-100/60 dark:bg-stone-850 text-stone-600 dark:text-stone-400 border border-stone-200/60 dark:border-stone-750'
                 }`}
               >
                 L{account.level}
@@ -215,7 +215,7 @@ export const AccountDetailDrawer: React.FC<AccountDetailDrawerProps> = ({ accoun
                   <Eye className="w-3.5 h-3.5 text-[#EBB34D]" />
                   {t('الرصيد الفعلي الحالي (المرحل للأستاذ العام)', 'Current Real-Time Ledger Balance')}
                 </span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
                   {t('محدث لحظياً', 'Live Sync')}
                 </span>
               </div>
@@ -409,7 +409,7 @@ export const AccountDetailDrawer: React.FC<AccountDetailDrawerProps> = ({ accoun
                               {tx.noteDate || tx.entryDate || '-'}
                             </td>
                             <td className="py-2 px-2.5 whitespace-nowrap">
-                              <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-stone-800 text-emerald-400 border border-stone-700">
+                              <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-stone-100 dark:bg-stone-800 text-stone-800 dark:text-stone-200 border border-stone-200 dark:border-stone-700">
                                 {tx.voucherType || tx.DocumentType || (tx.noteNo ? `#${tx.noteNo}` : 'قيد')}
                               </span>
                             </td>

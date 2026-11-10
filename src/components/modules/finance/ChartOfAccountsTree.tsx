@@ -45,11 +45,11 @@ const AccountTreeNodeRow: React.FC<AccountTreeNodeRowProps> = ({
   const isLeaf = node.level === 5 || !hasChildren;
   const isExpanded = Boolean(hasChildren && (expandedNodes.has(node.id) || Boolean(searchQuery.trim())));
 
-  // Level visual styles (L1 to L5 semantic badges)
+  // Level visual styles (Harmonized with Reception & Visitors Module hierarchy)
   const getLevelBadge = () => {
     if (isLeaf || node.level === 5) {
       return {
-        bg: 'bg-purple-100/90 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-300/60 font-bold text-xs px-2 py-0.5 rounded',
+        bg: 'bg-amber-50/80 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/40 font-bold text-[10px] px-1.5 py-0.5 rounded',
         label: 'L5',
         title: t('حساب أستاذ نهائي', 'General Ledger Leaf')
       };
@@ -57,31 +57,31 @@ const AccountTreeNodeRow: React.FC<AccountTreeNodeRowProps> = ({
     switch (level) {
       case 1:
         return {
-          bg: 'bg-emerald-100/90 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300/60 font-bold text-xs px-2 py-0.5 rounded',
+          bg: 'bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 border border-amber-300/70 font-bold text-[10px] px-1.5 py-0.5 rounded',
           label: 'L1',
           title: t('رئيسي', 'Root')
         };
       case 2:
         return {
-          bg: 'bg-teal-100/90 text-teal-800 dark:bg-teal-950/60 dark:text-teal-300 border border-teal-300/60 font-semibold text-xs px-2 py-0.5 rounded',
+          bg: 'bg-stone-200 dark:bg-stone-800 text-stone-800 dark:text-stone-200 border border-stone-300 dark:border-stone-700 text-[10px] px-1.5 py-0.5 rounded font-semibold',
           label: 'L2',
           title: t('مساعد', 'Branch')
         };
       case 3:
         return {
-          bg: 'bg-sky-100/90 text-sky-800 dark:bg-sky-950/60 dark:text-sky-300 border border-sky-300/60 text-xs px-2 py-0.5 rounded',
+          bg: 'bg-stone-100 dark:bg-stone-800/80 text-stone-700 dark:text-stone-300 border border-stone-200 dark:border-stone-700 text-[10px] px-1.5 py-0.5 rounded',
           label: 'L3',
           title: t('فرعي', 'Aux')
         };
       case 4:
         return {
-          bg: 'bg-indigo-100/90 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-300/60 text-xs px-2 py-0.5 rounded',
+          bg: 'bg-stone-100/60 dark:bg-stone-850 text-stone-600 dark:text-stone-400 border border-stone-200/60 dark:border-stone-750 text-[10px] px-1.5 py-0.5 rounded',
           label: 'L4',
           title: t('تحليلي', 'Sub')
         };
       default:
         return {
-          bg: 'bg-stone-100 text-stone-700 dark:bg-stone-800 dark:text-stone-300 border border-stone-300/60 text-xs px-2 py-0.5 rounded',
+          bg: 'bg-stone-100 text-stone-700 dark:bg-stone-800 dark:text-stone-300 border border-stone-300/60 text-[10px] px-1.5 py-0.5 rounded',
           label: `L${level}`,
           title: ''
         };
@@ -113,9 +113,9 @@ const AccountTreeNodeRow: React.FC<AccountTreeNodeRowProps> = ({
         }}
         className={`group flex items-center justify-between gap-3 py-2 px-3 rounded-xl border transition-all cursor-pointer ${
           isSelected
-            ? 'bg-emerald-50/80 dark:bg-emerald-950/40 border-emerald-400/60 dark:border-emerald-600/50 shadow-xs'
+            ? 'bg-amber-50/80 dark:bg-amber-950/30 border-amber-300/70 dark:border-amber-700/50 shadow-xs'
             : level === 1
-            ? 'bg-stone-50/90 dark:bg-stone-850 border-stone-200/90 dark:border-stone-750 hover:bg-stone-100 dark:hover:bg-stone-800'
+            ? 'bg-stone-50/90 dark:bg-stone-850 border-stone-200/90 dark:border-stone-750 hover:bg-[#F2ECE4]/60 dark:hover:bg-stone-800'
             : level === 2
             ? 'bg-white/80 dark:bg-stone-900 border-stone-200/70 dark:border-stone-800 hover:bg-stone-50 dark:hover:bg-stone-850'
             : 'bg-transparent border-transparent hover:bg-stone-100/60 dark:hover:bg-stone-800/50'
@@ -133,7 +133,7 @@ const AccountTreeNodeRow: React.FC<AccountTreeNodeRowProps> = ({
               className="w-6 h-6 rounded-lg flex items-center justify-center text-stone-400 dark:text-stone-500 hover:text-stone-900 dark:hover:text-stone-100 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors shrink-0"
             >
               {isExpanded ? (
-                <ChevronDown className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <ChevronDown className="w-4 h-4 text-amber-600 dark:text-amber-400" />
               ) : isRtl ? (
                 <ChevronLeft className="w-4 h-4" />
               ) : (
@@ -151,15 +151,15 @@ const AccountTreeNodeRow: React.FC<AccountTreeNodeRowProps> = ({
             {isLeaf ? (
               <FileText className="w-4 h-4 text-stone-400 dark:text-stone-500" />
             ) : isExpanded ? (
-              <FolderOpen className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <FolderOpen className="w-4 h-4 text-amber-600 dark:text-amber-400" />
             ) : (
-              <Folder className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <Folder className="w-4 h-4 text-amber-600 dark:text-amber-400" />
             )}
           </div>
 
           {/* Level Pill */}
           <span
-            className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md border shrink-0 font-mono ${badge.bg}`}
+            className={`font-mono shrink-0 ${badge.bg}`}
             title={badge.title}
           >
             {badge.label}
@@ -186,20 +186,20 @@ const AccountTreeNodeRow: React.FC<AccountTreeNodeRowProps> = ({
 
         {/* Right Side: Badges & Actions */}
         <div className="flex items-center gap-2 shrink-0">
-          {/* Live Balance Badge (Clean Executive Typography, No Solid Black Box) */}
+          {/* Live Balance Badge (Clean, Legible Financial Badge) */}
           {node.balance !== undefined && Math.abs(node.balance) > 0.001 && (
-            <span className="font-mono font-semibold text-xs text-stone-900 dark:text-stone-100 bg-stone-100/80 dark:bg-stone-800/80 border border-stone-200/70 dark:border-stone-700/60 px-3 py-1 rounded-md tabular-nums flex items-center shrink-0">
+            <span className="font-mono font-semibold text-stone-800 dark:text-stone-200 px-2 py-0.5 rounded bg-stone-100 dark:bg-stone-800 border border-stone-200/70 dark:border-stone-700/50 text-xs tabular-nums flex items-center shrink-0">
               <span>{Math.abs(node.balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               <span className="text-xs font-normal text-stone-500 mr-1 ms-1">{t('ج.م', 'EGP')}</span>
             </span>
           )}
 
-          {/* Nature Badge */}
+          {/* Nature Badge (Warm Amber for Debit / Soft Slate for Credit) */}
           <span
-            className={`text-xs font-medium px-2 py-0.5 rounded-full border ${
+            className={`text-[11px] px-2 py-0.5 rounded-full font-medium border ${
               node.nature === 0
-                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 border-emerald-200/70'
-                : 'bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300 border-rose-200/70'
+                ? 'bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800/50'
+                : 'bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 border-stone-200 dark:border-stone-700'
             }`}
           >
             {node.natureLabelAr}
@@ -399,7 +399,7 @@ export const ChartOfAccountsTree: React.FC = () => {
 
   return (
     <div className="w-full space-y-4">
-      {/* Search, Filters & Action Toolbar (Refactored Executive Controls) */}
+      {/* Search, Filters & Action Toolbar (Warm Amber & Sand Palette) */}
       <div className="p-4 rounded-2xl border border-stone-200/80 dark:border-stone-800 bg-white dark:bg-stone-900 space-y-3.5 shadow-xs">
         {/* Top Row: Search Input + Action Buttons */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
@@ -414,7 +414,7 @@ export const ChartOfAccountsTree: React.FC = () => {
                 'بحث برمز الحساب أو الاسم بالعربية/الإنجليزية (مثال: 1201001، الخزينة، بنك مصر)...',
                 'Search by code or account name...'
               )}
-              className="w-full ps-10 pe-10 py-2.5 text-xs sm:text-sm rounded-xl border border-stone-200/80 dark:border-stone-700 bg-stone-50/70 dark:bg-stone-850 text-stone-900 dark:text-stone-100 placeholder-stone-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+              className="w-full ps-10 pe-10 py-2.5 text-xs sm:text-sm rounded-xl border border-stone-200/80 dark:border-stone-700 bg-stone-50/70 dark:bg-stone-850 text-stone-900 dark:text-stone-100 placeholder-stone-400 focus:outline-hidden focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
             />
             {searchQuery && (
               <button
@@ -430,7 +430,7 @@ export const ChartOfAccountsTree: React.FC = () => {
           <div className="flex items-center gap-2 self-end sm:self-auto">
             <button
               onClick={handleExpandAll}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium border border-stone-200/80 dark:border-stone-700/80 bg-stone-50 hover:bg-stone-100 dark:bg-stone-800 dark:hover:bg-stone-750 text-stone-700 dark:text-stone-200 transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium border border-stone-200/80 dark:border-stone-700/80 bg-[#FAF8F5] dark:bg-stone-850 hover:bg-[#F2ECE4] text-stone-700 dark:text-stone-200 transition-colors cursor-pointer"
               title={t('توسيع كافة المستويات', 'Expand All')}
             >
               <Maximize2 className="w-3.5 h-3.5" />
@@ -439,7 +439,7 @@ export const ChartOfAccountsTree: React.FC = () => {
 
             <button
               onClick={handleCollapseAll}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium border border-stone-200/80 dark:border-stone-700/80 bg-stone-50 hover:bg-stone-100 dark:bg-stone-800 dark:hover:bg-stone-750 text-stone-700 dark:text-stone-200 transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium border border-stone-200/80 dark:border-stone-700/80 bg-[#FAF8F5] dark:bg-stone-850 hover:bg-[#F2ECE4] text-stone-700 dark:text-stone-200 transition-colors cursor-pointer"
               title={t('طي إلى الحسابات الرئيسية فقط', 'Collapse All')}
             >
               <Minimize2 className="w-3.5 h-3.5" />
@@ -448,19 +448,19 @@ export const ChartOfAccountsTree: React.FC = () => {
           </div>
         </div>
 
-        {/* Filter Chips Bar (Refactored Pills: Deep Slate or Emerald vs Crisp Neutral Border) */}
+        {/* Filter Chips Bar (Warm Amber Surface for Active / Warm Neutral for Inactive) */}
         <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-stone-200/60 dark:border-stone-800 text-xs">
           <span className="text-stone-500 dark:text-stone-400 font-medium text-[11px] flex items-center gap-1">
-            <Filter className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+            <Filter className="w-3 h-3 text-amber-600 dark:text-amber-400" />
             {t('تصفية حسب الطبيعة:', 'Nature:')}
           </span>
 
           <button
             onClick={() => setFilterNature('ALL')}
-            className={`cursor-pointer transition-colors ${
+            className={`cursor-pointer transition-all ${
               filterNature === 'ALL'
-                ? 'bg-stone-900 text-white dark:bg-emerald-600 dark:text-white shadow-xs font-medium px-4 py-2 rounded-lg text-xs'
-                : 'bg-stone-50 hover:bg-stone-100 text-stone-600 dark:bg-stone-800/80 dark:hover:bg-stone-750 dark:text-stone-300 border border-stone-200/80 dark:border-stone-700/80 px-3.5 py-1.5 rounded-lg text-xs'
+                ? 'bg-amber-600 hover:bg-amber-700 text-white font-medium shadow-xs border border-amber-700/30 px-3.5 py-1.5 rounded-lg text-xs'
+                : 'bg-[#FAF8F5] dark:bg-stone-850 hover:bg-[#F2ECE4] text-stone-700 dark:text-stone-300 border border-stone-200/80 dark:border-stone-700/60 px-3.5 py-1.5 rounded-lg text-xs font-normal'
             }`}
           >
             {t('جميع الحسابات', 'All')}
@@ -468,10 +468,10 @@ export const ChartOfAccountsTree: React.FC = () => {
 
           <button
             onClick={() => setFilterNature(0)}
-            className={`cursor-pointer transition-colors ${
+            className={`cursor-pointer transition-all ${
               filterNature === 0
-                ? 'bg-stone-900 text-white dark:bg-emerald-600 dark:text-white shadow-xs font-medium px-4 py-2 rounded-lg text-xs'
-                : 'bg-stone-50 hover:bg-stone-100 text-stone-600 dark:bg-stone-800/80 dark:hover:bg-stone-750 dark:text-stone-300 border border-stone-200/80 dark:border-stone-700/80 px-3.5 py-1.5 rounded-lg text-xs'
+                ? 'bg-amber-600 hover:bg-amber-700 text-white font-medium shadow-xs border border-amber-700/30 px-3.5 py-1.5 rounded-lg text-xs'
+                : 'bg-[#FAF8F5] dark:bg-stone-850 hover:bg-[#F2ECE4] text-stone-700 dark:text-stone-300 border border-stone-200/80 dark:border-stone-700/60 px-3.5 py-1.5 rounded-lg text-xs font-normal'
             }`}
           >
             {t('مدين فقط (Debit)', 'Debit Only')}
@@ -479,10 +479,10 @@ export const ChartOfAccountsTree: React.FC = () => {
 
           <button
             onClick={() => setFilterNature(1)}
-            className={`cursor-pointer transition-colors ${
+            className={`cursor-pointer transition-all ${
               filterNature === 1
-                ? 'bg-stone-900 text-white dark:bg-emerald-600 dark:text-white shadow-xs font-medium px-4 py-2 rounded-lg text-xs'
-                : 'bg-stone-50 hover:bg-stone-100 text-stone-600 dark:bg-stone-800/80 dark:hover:bg-stone-750 dark:text-stone-300 border border-stone-200/80 dark:border-stone-700/80 px-3.5 py-1.5 rounded-lg text-xs'
+                ? 'bg-amber-600 hover:bg-amber-700 text-white font-medium shadow-xs border border-amber-700/30 px-3.5 py-1.5 rounded-lg text-xs'
+                : 'bg-[#FAF8F5] dark:bg-stone-850 hover:bg-[#F2ECE4] text-stone-700 dark:text-stone-300 border border-stone-200/80 dark:border-stone-700/60 px-3.5 py-1.5 rounded-lg text-xs font-normal'
             }`}
           >
             {t('دائن فقط (Credit)', 'Credit Only')}
@@ -494,10 +494,10 @@ export const ChartOfAccountsTree: React.FC = () => {
 
           <button
             onClick={() => setFilterStatement('ALL')}
-            className={`cursor-pointer transition-colors ${
+            className={`cursor-pointer transition-all ${
               filterStatement === 'ALL'
-                ? 'bg-stone-900 text-white dark:bg-emerald-600 dark:text-white shadow-xs font-medium px-4 py-2 rounded-lg text-xs'
-                : 'bg-stone-50 hover:bg-stone-100 text-stone-600 dark:bg-stone-800/80 dark:hover:bg-stone-750 dark:text-stone-300 border border-stone-200/80 dark:border-stone-700/80 px-3.5 py-1.5 rounded-lg text-xs'
+                ? 'bg-amber-600 hover:bg-amber-700 text-white font-medium shadow-xs border border-amber-700/30 px-3.5 py-1.5 rounded-lg text-xs'
+                : 'bg-[#FAF8F5] dark:bg-stone-850 hover:bg-[#F2ECE4] text-stone-700 dark:text-stone-300 border border-stone-200/80 dark:border-stone-700/60 px-3.5 py-1.5 rounded-lg text-xs font-normal'
             }`}
           >
             {t('الكل', 'All')}
@@ -505,10 +505,10 @@ export const ChartOfAccountsTree: React.FC = () => {
 
           <button
             onClick={() => setFilterStatement('BALANCE_SHEET')}
-            className={`cursor-pointer transition-colors ${
+            className={`cursor-pointer transition-all ${
               filterStatement === 'BALANCE_SHEET'
-                ? 'bg-stone-900 text-white dark:bg-emerald-600 dark:text-white shadow-xs font-medium px-4 py-2 rounded-lg text-xs'
-                : 'bg-stone-50 hover:bg-stone-100 text-stone-600 dark:bg-stone-800/80 dark:hover:bg-stone-750 dark:text-stone-300 border border-stone-200/80 dark:border-stone-700/80 px-3.5 py-1.5 rounded-lg text-xs'
+                ? 'bg-amber-600 hover:bg-amber-700 text-white font-medium shadow-xs border border-amber-700/30 px-3.5 py-1.5 rounded-lg text-xs'
+                : 'bg-[#FAF8F5] dark:bg-stone-850 hover:bg-[#F2ECE4] text-stone-700 dark:text-stone-300 border border-stone-200/80 dark:border-stone-700/60 px-3.5 py-1.5 rounded-lg text-xs font-normal'
             }`}
           >
             {t('ميزانية عمومية (أصول / خصوم)', 'Balance Sheet')}
@@ -516,10 +516,10 @@ export const ChartOfAccountsTree: React.FC = () => {
 
           <button
             onClick={() => setFilterStatement('INCOME_STATEMENT')}
-            className={`cursor-pointer transition-colors ${
+            className={`cursor-pointer transition-all ${
               filterStatement === 'INCOME_STATEMENT'
-                ? 'bg-stone-900 text-white dark:bg-emerald-600 dark:text-white shadow-xs font-medium px-4 py-2 rounded-lg text-xs'
-                : 'bg-stone-50 hover:bg-stone-100 text-stone-600 dark:bg-stone-800/80 dark:hover:bg-stone-750 dark:text-stone-300 border border-stone-200/80 dark:border-stone-700/80 px-3.5 py-1.5 rounded-lg text-xs'
+                ? 'bg-amber-600 hover:bg-amber-700 text-white font-medium shadow-xs border border-amber-700/30 px-3.5 py-1.5 rounded-lg text-xs'
+                : 'bg-[#FAF8F5] dark:bg-stone-850 hover:bg-[#F2ECE4] text-stone-700 dark:text-stone-300 border border-stone-200/80 dark:border-stone-700/60 px-3.5 py-1.5 rounded-lg text-xs font-normal'
             }`}
           >
             {t('قائمة الدخل (مصروفات / تكاليف)', 'Income Statement')}
@@ -531,14 +531,14 @@ export const ChartOfAccountsTree: React.FC = () => {
       <div className="rounded-2xl border border-stone-200/80 dark:border-stone-800 bg-white dark:bg-stone-900 p-4 sm:p-5 shadow-xs">
         {isLoading ? (
           <div className="p-12 text-center flex flex-col items-center justify-center space-y-3">
-            <div className="w-10 h-10 border-3 border-emerald-600 dark:border-emerald-400 border-t-transparent rounded-full animate-spin" />
+            <div className="w-10 h-10 border-3 border-amber-600 dark:border-amber-400 border-t-transparent rounded-full animate-spin" />
             <span className="text-xs font-semibold text-stone-800 dark:text-stone-200">
               {t('جارِ تحميل شجرة الحسابات المحاسبية...', 'Loading Chart of Accounts...')}
             </span>
           </div>
         ) : filteredAccounts.length === 0 ? (
           <div className="p-12 text-center flex flex-col items-center justify-center space-y-3">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+            <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 flex items-center justify-center">
               <Search className="w-6 h-6" />
             </div>
             <h3 className="text-sm font-bold text-stone-900 dark:text-stone-100">
