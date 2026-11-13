@@ -99,33 +99,33 @@ export const Modal: React.FC<ModalProps> = ({
               transition={{ type: 'spring', damping: 25, stiffness: 350 }}
               onClick={(e) => e.stopPropagation()}
               className={`print-wrapper w-full ${maxWidth} max-h-[92vh] flex flex-col rounded-2xl shadow-2xl overflow-hidden ${
-                className.includes('border-') ? '' : 'border border-[#243628]'
+                className.includes('border-') ? '' : 'border border-[#E0D9CB] dark:border-[#243628]'
               } ${
-                className.includes('bg-') ? '' : 'bg-[#17231A]'
+                className.includes('bg-') ? '' : 'bg-[#FBF9F5] dark:bg-[#141E16]'
               } ${
-                className.includes('text-') ? '' : 'text-[#F3EFE6]'
+                className.includes('text-') ? '' : 'text-[#1A241C] dark:text-[#F3EFE6]'
               } print:static print:max-h-none print:h-auto print:overflow-visible print:border-none print:shadow-none print:rounded-none print:p-0 print:m-0 print:w-full print:block print:bg-white print:text-black ${className}`}
             >
               {/* Optional Custom Header or Default Header */}
               {customHeader ? (
                 customHeader
               ) : title ? (
-                <div className="flex items-center justify-between p-4 sm:p-5 border-b border-[#243628] bg-[#121B14] shrink-0 print:hidden">
+                <div className="flex items-center justify-between p-4 sm:p-5 border-b border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#121B14] shrink-0 print:hidden">
                   <div className="flex items-center gap-3 min-w-0">
                     {Icon && (
-                      <div className="w-10 h-10 rounded-xl bg-[#2A3F30] text-[#A3CFAC] border border-[#3E5C46] flex items-center justify-center shadow-xs shrink-0">
+                      <div className="w-10 h-10 rounded-xl bg-[#EAF3EB] dark:bg-[#2A3F30] text-[#245E33] dark:text-[#A3CFAC] border border-[#B8D8BC] dark:border-[#3E5C46] flex items-center justify-center shadow-xs shrink-0">
                         <Icon className="w-5 h-5" />
                       </div>
                     )}
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="text-base sm:text-lg font-black text-[#F3EFE6] truncate">
+                        <h3 className="text-base sm:text-lg font-black text-[#1A241C] dark:text-[#F3EFE6] truncate">
                           {title}
                         </h3>
                         {badge}
                       </div>
                       {subtitle && (
-                        <p className="text-xs text-[#8FA392] mt-0.5 truncate">
+                        <p className="text-xs text-[#5C665E] dark:text-[#8FA392] mt-0.5 truncate">
                           {subtitle}
                         </p>
                       )}
@@ -138,7 +138,7 @@ export const Modal: React.FC<ModalProps> = ({
                       <button
                         type="button"
                         onClick={onClose}
-                        className="w-9 h-9 rounded-xl flex items-center justify-center text-[#8FA392] hover:text-[#F3EFE6] hover:bg-[#1F2E23] transition-colors cursor-pointer"
+                        className="w-9 h-9 rounded-xl flex items-center justify-center text-[#5C665E] hover:text-[#1A241C] hover:bg-[#F3EFE6] dark:text-[#8FA392] dark:hover:text-[#F3EFE6] dark:hover:bg-[#1F2E23] transition-colors cursor-pointer"
                         aria-label="Close"
                       >
                         <X className="w-5 h-5" />
@@ -155,7 +155,7 @@ export const Modal: React.FC<ModalProps> = ({
 
               {/* Optional Footer */}
               {footer && (
-                <div className="p-4 sm:p-5 border-t border-[#243628] bg-[#121B14] shrink-0 flex items-center justify-between gap-3">
+                <div className="p-4 sm:p-5 border-t border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#121B14] shrink-0 flex items-center justify-between gap-3">
                   {footer}
                 </div>
               )}

@@ -146,8 +146,8 @@ export const ChequeModal: React.FC<ChequeModalProps> = ({
         <span
           className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
             type === 'RECEIVABLE'
-              ? 'bg-[#2A3F30] text-[#A3CFAC] border border-[#3E5C46]'
-              : 'bg-[#3D2D14] text-[#EBB34D] border border-[#5C431D]'
+              ? 'bg-[#EAF3EB] text-[#245E33] border border-[#B8D8BC] dark:bg-[#2A3F30] dark:text-[#A3CFAC] dark:border-[#3E5C46]'
+              : 'bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] dark:bg-[#3D2D14] dark:text-[#EBB34D] dark:border-[#5C431D]'
           }`}
         >
           {type === 'RECEIVABLE' ? t('ورقة قبض (وارد)', 'Receivable') : t('ورقة دفع (صادر)', 'Payable')}
@@ -158,7 +158,7 @@ export const ChequeModal: React.FC<ChequeModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="px-5 py-2.5 text-xs font-bold rounded-xl border border-[#243628] bg-[#1F2E23] text-[#8FA392] hover:text-[#F3EFE6] transition-colors cursor-pointer"
+            className="px-5 py-2.5 text-xs font-bold rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-[#F3EFE6] dark:bg-[#1F2E23] text-[#5C665E] dark:text-[#8FA392] hover:text-[#1A241C] dark:hover:text-[#F3EFE6] transition-colors cursor-pointer"
           >
             {t('إلغاء', 'Cancel')}
           </button>
@@ -180,21 +180,21 @@ export const ChequeModal: React.FC<ChequeModalProps> = ({
     >
       <form onSubmit={handleSubmit} className="p-6 space-y-5">
         {errorMessage && (
-          <div className="p-3.5 rounded-xl bg-[#3F2A2A] border border-[#5C3E3E] text-[#EFA3A3] text-xs flex items-center gap-2">
+          <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 dark:bg-[#3F2A2A] dark:border-[#5C3E3E] dark:text-[#EFA3A3] text-xs flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{errorMessage}</span>
           </div>
         )}
 
         {/* Cheque Type Toggle */}
-        <div className="flex p-1 bg-[#121B14] rounded-xl border border-[#243628]">
+        <div className="flex p-1 bg-[#F3EFE6] dark:bg-[#121B14] rounded-xl border border-[#E0D9CB] dark:border-[#243628]">
           <button
             type="button"
             onClick={() => setType('RECEIVABLE')}
             className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
               type === 'RECEIVABLE'
-                ? 'bg-[#2A3F30] text-[#A3CFAC] border border-[#3E5C46] shadow-xs'
-                : 'text-[#8FA392] hover:text-[#F3EFE6]'
+                ? 'bg-[#EAF3EB] text-[#245E33] border border-[#B8D8BC] dark:bg-[#2A3F30] dark:text-[#A3CFAC] dark:border-[#3E5C46] shadow-xs'
+                : 'text-[#5C665E] dark:text-[#8FA392] hover:text-[#1A241C] dark:hover:text-[#F3EFE6]'
             }`}
           >
             {t('شيك وارد - ورقة قبض (+)', 'Receivable Cheque (+)')}
@@ -204,8 +204,8 @@ export const ChequeModal: React.FC<ChequeModalProps> = ({
             onClick={() => setType('PAYABLE')}
             className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
               type === 'PAYABLE'
-                ? 'bg-[#3D2D14] text-[#EBB34D] border border-[#5C431D] shadow-xs'
-                : 'text-[#8FA392] hover:text-[#F3EFE6]'
+                ? 'bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] dark:bg-[#3D2D14] dark:text-[#EBB34D] dark:border-[#5C431D] shadow-xs'
+                : 'text-[#5C665E] dark:text-[#8FA392] hover:text-[#1A241C] dark:hover:text-[#F3EFE6]'
             }`}
           >
             {t('شيك صادر - ورقة دفع (-)', 'Payable Cheque (-)')}
@@ -215,7 +215,7 @@ export const ChequeModal: React.FC<ChequeModalProps> = ({
         {/* Cheque Core Details */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-bold text-[#F3EFE6] mb-1.5">
+            <label className="block text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6] mb-1.5">
               {t('رقم الشيك الدفتري', 'Cheque Number')} *
             </label>
             <input
@@ -224,26 +224,26 @@ export const ChequeModal: React.FC<ChequeModalProps> = ({
               placeholder="مثال: 0048921"
               value={chequeNo}
               onChange={e => setChequeNo(e.target.value)}
-              className="w-full px-3 py-2 text-xs font-mono font-bold rounded-xl border border-[#243628] bg-[#121B14] text-[#F3EFE6] focus:outline-hidden focus:border-[#EBB34D] tabular-nums"
+              className="w-full px-3 py-2 text-xs font-mono font-bold rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#121B14] text-[#1A241C] dark:text-[#F3EFE6] focus:outline-hidden focus:border-[#EBB34D] tabular-nums shadow-2xs"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-[#F3EFE6] mb-1.5">
+            <label className="block text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6] mb-1.5">
               {type === 'RECEIVABLE'
                 ? t('اسم الساحب (المحرر للشيك)', 'Drawer / Issuer')
                 : t('اسم المستفيد (يُصرف لأمر)', 'Beneficiary / Payee')}{' '}
               *
             </label>
             <div className="relative">
-              <User className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-[#8FA392]" />
+              <User className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-[#5C665E] dark:text-[#8FA392]" />
               <input
                 type="text"
                 required
                 placeholder={type === 'RECEIVABLE' ? 'اسم العميل / الشركة المودعة' : 'اسم المورد / الجهة المستحقة'}
                 value={drawerName}
                 onChange={e => setDrawerName(e.target.value)}
-                className="w-full ps-9 pe-3 py-2 text-xs font-semibold rounded-xl border border-[#243628] bg-[#121B14] text-[#F3EFE6] focus:outline-hidden focus:border-[#EBB34D]"
+                className="w-full ps-9 pe-3 py-2 text-xs font-semibold rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#121B14] text-[#1A241C] dark:text-[#F3EFE6] focus:outline-hidden focus:border-[#EBB34D] shadow-2xs"
               />
             </div>
           </div>
@@ -252,29 +252,29 @@ export const ChequeModal: React.FC<ChequeModalProps> = ({
         {/* Bank Selection */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-bold text-[#F3EFE6] mb-1.5">
+            <label className="block text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6] mb-1.5">
               {t('البنك المسحوب عليه', 'Drawee Bank')} *
             </label>
             <div className="relative">
-              <Building className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-[#8FA392]" />
+              <Building className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-[#5C665E] dark:text-[#8FA392]" />
               <select
                 value={bankName}
                 onChange={e => setBankName(e.target.value)}
-                className="w-full ps-9 pe-3 py-2 text-xs font-semibold rounded-xl border border-[#243628] bg-[#121B14] text-[#F3EFE6] focus:outline-hidden focus:border-[#EBB34D]"
+                className="w-full ps-9 pe-3 py-2 text-xs font-semibold rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#121B14] text-[#1A241C] dark:text-[#F3EFE6] focus:outline-hidden focus:border-[#EBB34D] shadow-2xs cursor-pointer"
               >
                 {COMMON_BANKS.map(b => (
-                  <option key={b} value={b}>
+                  <option key={b} value={b} className="bg-white dark:bg-[#17231A]">
                     {b}
                   </option>
                 ))}
-                <option value="أخرى">{t('بنك آخر...', 'Other bank...')}</option>
+                <option value="أخرى" className="bg-white dark:bg-[#17231A]">{t('بنك آخر...', 'Other bank...')}</option>
               </select>
             </div>
           </div>
 
           {bankName === 'أخرى' && (
             <div>
-              <label className="block text-xs font-bold text-[#F3EFE6] mb-1.5">
+              <label className="block text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6] mb-1.5">
                 {t('اسم البنك المخصص', 'Custom Bank Name')} *
               </label>
               <input
@@ -283,24 +283,24 @@ export const ChequeModal: React.FC<ChequeModalProps> = ({
                 placeholder="اكتب اسم البنك..."
                 value={customBank}
                 onChange={e => setCustomBank(e.target.value)}
-                className="w-full px-3 py-2 text-xs rounded-xl border border-[#243628] bg-[#121B14] text-[#F3EFE6] focus:outline-hidden focus:border-[#EBB34D]"
+                className="w-full px-3 py-2 text-xs rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#121B14] text-[#1A241C] dark:text-[#F3EFE6] focus:outline-hidden focus:border-[#EBB34D] shadow-2xs"
               />
             </div>
           )}
 
           <div>
-            <label className="block text-xs font-bold text-[#F3EFE6] mb-1.5">
+            <label className="block text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6] mb-1.5">
               {t('مركز التكلفة / المشروع', 'Cost Center')}
             </label>
             <div className="relative">
-              <Briefcase className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-[#8FA392]" />
+              <Briefcase className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-[#5C665E] dark:text-[#8FA392]" />
               <select
                 value={costcenterId}
                 onChange={e => setCostcenterId(e.target.value)}
-                className="w-full ps-9 pe-3 py-2 text-xs font-semibold rounded-xl border border-[#243628] bg-[#121B14] text-[#F3EFE6] focus:outline-hidden focus:border-[#EBB34D]"
+                className="w-full ps-9 pe-3 py-2 text-xs font-semibold rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#121B14] text-[#1A241C] dark:text-[#F3EFE6] focus:outline-hidden focus:border-[#EBB34D] shadow-2xs cursor-pointer"
               >
                 {costCenters.map(cc => (
-                  <option key={cc.id || cc.Costcenter_ID} value={cc.id || cc.Costcenter_ID}>
+                  <option key={cc.id || cc.Costcenter_ID} value={cc.id || cc.Costcenter_ID} className="bg-white dark:bg-[#17231A]">
                     {cc.nameAr || cc.Costcenter_Name_A}
                   </option>
                 ))}
@@ -310,13 +310,13 @@ export const ChequeModal: React.FC<ChequeModalProps> = ({
         </div>
 
         {/* Amount & Tafqeet */}
-        <div className="p-4 rounded-xl border border-[#243628] bg-[#121B14] space-y-3">
+        <div className="p-4 rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-[#FBF9F5] dark:bg-[#121B14] space-y-3">
           <div>
-            <label className="block text-xs font-bold text-[#F3EFE6] mb-1.5">
+            <label className="block text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6] mb-1.5">
               {t('مبلغ الشيك (ج.م)', 'Amount (EGP)')} *
             </label>
             <div className="relative">
-              <DollarSign className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-[#EBB34D]" />
+              <DollarSign className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-[#D99B26] dark:text-[#EBB34D]" />
               <input
                 type="number"
                 min="1"
@@ -325,21 +325,21 @@ export const ChequeModal: React.FC<ChequeModalProps> = ({
                 placeholder="0.00"
                 value={amount}
                 onChange={e => setAmount(e.target.value)}
-                className="w-full ps-9 pe-3 py-2 text-base font-bold rounded-xl border border-[#243628] bg-[#17231A] text-[#EBB34D] focus:outline-hidden focus:border-[#EBB34D] tabular-nums"
+                className="w-full ps-9 pe-3 py-2 text-base font-bold rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#17231A] text-[#D99B26] dark:text-[#EBB34D] focus:outline-hidden focus:border-[#EBB34D] tabular-nums shadow-2xs"
               />
             </div>
             {numAmount > 0 && (
-              <div className="text-[11px] text-[#8FA392] mt-1 tabular-nums">
+              <div className="text-[11px] text-[#5C665E] dark:text-[#8FA392] mt-1 tabular-nums">
                 = {formatNumber(numAmount)} ج.م
               </div>
             )}
           </div>
 
           {tafqeetText && (
-            <div className="p-2.5 rounded-lg bg-[#17231A] border border-[#243628] text-xs text-[#F3EFE6] flex items-start gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-[#A3CFAC] shrink-0 mt-0.5" />
+            <div className="p-2.5 rounded-lg bg-white dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] text-xs text-[#1A241C] dark:text-[#F3EFE6] flex items-start gap-1.5 shadow-2xs">
+              <CheckCircle2 className="w-4 h-4 text-[#059669] dark:text-[#A3CFAC] shrink-0 mt-0.5" />
               <div>
-                <span className="font-bold text-[#EBB34D]">فقط وقدره: </span>
+                <span className="font-bold text-[#D99B26] dark:text-[#EBB34D]">فقط وقدره: </span>
                 <span className="font-semibold">{tafqeetText}</span>
               </div>
             </div>
@@ -349,33 +349,33 @@ export const ChequeModal: React.FC<ChequeModalProps> = ({
         {/* Dates */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-bold text-[#F3EFE6] mb-1.5">
+            <label className="block text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6] mb-1.5">
               {t('تاريخ التحرير (الإصدار)', 'Issue Date')} *
             </label>
             <div className="relative">
-              <Calendar className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-[#8FA392]" />
+              <Calendar className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-[#5C665E] dark:text-[#8FA392]" />
               <input
                 type="date"
                 required
                 value={issueDate}
                 onChange={e => setIssueDate(e.target.value)}
-                className="w-full ps-9 pe-3 py-2 text-xs font-mono rounded-xl border border-[#243628] bg-[#121B14] text-[#F3EFE6] focus:outline-hidden focus:border-[#EBB34D] tabular-nums"
+                className="w-full ps-9 pe-3 py-2 text-xs font-mono rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#121B14] text-[#1A241C] dark:text-[#F3EFE6] focus:outline-hidden focus:border-[#EBB34D] tabular-nums shadow-2xs"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-[#F3EFE6] mb-1.5">
+            <label className="block text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6] mb-1.5">
               {t('تاريخ الاستحقاق (الصرف)', 'Due Date')} *
             </label>
             <div className="relative">
-              <Calendar className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-[#EBB34D]" />
+              <Calendar className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-[#D99B26] dark:text-[#EBB34D]" />
               <input
                 type="date"
                 required
                 value={dueDate}
                 onChange={e => setDueDate(e.target.value)}
-                className="w-full ps-9 pe-3 py-2 text-xs font-mono font-bold rounded-xl border border-[#243628] bg-[#121B14] text-[#EBB34D] focus:outline-hidden focus:border-[#EBB34D] tabular-nums"
+                className="w-full ps-9 pe-3 py-2 text-xs font-mono font-bold rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#121B14] text-[#D99B26] dark:text-[#EBB34D] focus:outline-hidden focus:border-[#EBB34D] tabular-nums shadow-2xs"
               />
             </div>
           </div>
@@ -383,17 +383,17 @@ export const ChequeModal: React.FC<ChequeModalProps> = ({
 
         {/* Notes */}
         <div>
-          <label className="block text-xs font-bold text-[#F3EFE6] mb-1.5">
+          <label className="block text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6] mb-1.5">
             {t('ملاحظات وبيان الشيك', 'Remarks')}
           </label>
           <div className="relative">
-            <FileText className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-[#8FA392]" />
+            <FileText className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-[#5C665E] dark:text-[#8FA392]" />
             <input
               type="text"
               placeholder="دفعة تحت الحساب / ضمان أعمال..."
               value={notes}
               onChange={e => setNotes(e.target.value)}
-              className="w-full ps-9 pe-3 py-2 text-xs rounded-xl border border-[#243628] bg-[#121B14] text-[#F3EFE6] focus:outline-hidden focus:border-[#EBB34D]"
+              className="w-full ps-9 pe-3 py-2 text-xs rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#121B14] text-[#1A241C] dark:text-[#F3EFE6] focus:outline-hidden focus:border-[#EBB34D] shadow-2xs"
             />
           </div>
         </div>

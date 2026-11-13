@@ -161,36 +161,36 @@ export const AccountDetailDrawer: React.FC<AccountDetailDrawerProps> = ({ accoun
           animate={{ x: 0 }}
           exit={{ x: isRtl ? -520 : 520 }}
           transition={{ type: 'spring', damping: 28, stiffness: 260 }}
-          className="relative w-full max-w-xl bg-[#0E1610] text-[#F3EFE6] border-s border-[#243628] shadow-2xl z-[101] flex flex-col h-full overflow-hidden"
+          className="relative w-full max-w-xl bg-[#FBF9F5] dark:bg-[#0E1610] text-[#1A241C] dark:text-[#F3EFE6] border-s border-[#E0D9CB] dark:border-[#243628] shadow-2xl z-[101] flex flex-col h-full overflow-hidden"
         >
           {/* Header */}
-          <div className="p-5 border-b border-[#243628] flex items-center justify-between shrink-0 bg-[#17231A]/90 backdrop-blur-md">
+          <div className="p-5 border-b border-[#E0D9CB] dark:border-[#243628] flex items-center justify-between shrink-0 bg-white/90 dark:bg-[#17231A]/90 backdrop-blur-md">
             <div className="flex items-center gap-3">
               <div
                 className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold font-mono text-sm shadow-xs ${
                   account.level === 5
-                    ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                    ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30'
                     : account.level === 1
-                    ? 'bg-[#059669]/15 text-[#34D399] border border-[#059669]/30'
+                    ? 'bg-[#EAF3EB] text-[#245E33] border border-[#B8D8BC] dark:bg-[#059669]/15 dark:text-[#34D399] dark:border-[#059669]/30'
                     : account.level === 2
-                    ? 'bg-[#1A241C] text-[#F3EFE6] border border-[#243628]'
+                    ? 'bg-white dark:bg-[#1A241C] text-[#1A241C] dark:text-[#F3EFE6] border border-[#E0D9CB] dark:border-[#243628]'
                     : account.level === 3
-                    ? 'bg-[#17231A] text-[#8FA392] border border-[#243628]'
-                    : 'bg-[#141E16] text-[#8FA392] border border-[#243628]/70'
+                    ? 'bg-[#F3EFE6] dark:bg-[#17231A] text-[#5C665E] dark:text-[#8FA392] border border-[#E0D9CB] dark:border-[#243628]'
+                    : 'bg-[#F3EFE6] dark:bg-[#141E16] text-[#5C665E] dark:text-[#8FA392] border border-[#E0D9CB] dark:border-[#243628]/70'
                 }`}
               >
                 L{account.level}
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[11px] font-bold text-[#8FA392]">
+                  <span className="text-[11px] font-bold text-[#5C665E] dark:text-[#8FA392]">
                     {t('بطاقة الحساب المحاسبي الفوري', 'Live Account Inspection Card')}
                   </span>
                   {isLoading && (
-                    <RotateCw className="w-3 h-3 text-[#EBB34D] animate-spin" />
+                    <RotateCw className="w-3 h-3 text-[#D99B26] dark:text-[#EBB34D] animate-spin" />
                   )}
                 </div>
-                <h3 className="text-base font-bold text-[#F3EFE6] leading-snug">
+                <h3 className="text-base font-bold text-[#1A241C] dark:text-[#F3EFE6] leading-snug">
                   {account.nameAr}
                 </h3>
               </div>
@@ -198,7 +198,7 @@ export const AccountDetailDrawer: React.FC<AccountDetailDrawerProps> = ({ accoun
 
             <button
               onClick={onClose}
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-[#8FA392] hover:text-[#F3EFE6] hover:bg-[#243628] transition-colors cursor-pointer"
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-[#5C665E] hover:text-[#1A241C] hover:bg-[#F3EFE6] dark:text-[#8FA392] dark:hover:text-[#F3EFE6] dark:hover:bg-[#243628] transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -207,12 +207,12 @@ export const AccountDetailDrawer: React.FC<AccountDetailDrawerProps> = ({ accoun
           {/* Body Content */}
           <div className="flex-1 overflow-y-auto p-5 space-y-5 custom-sidebar-scrollbar">
             {/* Live Real-Time Balance Hero Card */}
-            <div className="p-4 rounded-2xl border border-[#EBB34D]/30 bg-gradient-to-br from-[#17231A] via-[#141F16] to-[#0E1610] shadow-md space-y-3 relative overflow-hidden">
-              <div className="absolute top-0 end-0 w-32 h-32 bg-[#EBB34D]/5 rounded-full blur-2xl pointer-events-none" />
+            <div className="p-4 rounded-2xl border border-[#D99B26]/30 dark:border-[#EBB34D]/30 bg-gradient-to-br from-[#FBF9F5] via-[#F3EFE6] to-[#EAE4D7] dark:from-[#17231A] dark:via-[#141F16] dark:to-[#0E1610] shadow-xs space-y-3 relative overflow-hidden">
+              <div className="absolute top-0 end-0 w-32 h-32 bg-[#D99B26]/5 dark:bg-[#EBB34D]/5 rounded-full blur-2xl pointer-events-none" />
 
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-[#8FA392] flex items-center gap-1.5">
-                  <Eye className="w-3.5 h-3.5 text-[#EBB34D]" />
+                <span className="text-xs font-bold text-[#5C665E] dark:text-[#8FA392] flex items-center gap-1.5">
+                  <Eye className="w-3.5 h-3.5 text-[#D99B26] dark:text-[#EBB34D]" />
                   {t('الرصيد الفعلي الحالي (المرحل للأستاذ العام)', 'Current Real-Time Ledger Balance')}
                 </span>
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
@@ -220,41 +220,41 @@ export const AccountDetailDrawer: React.FC<AccountDetailDrawerProps> = ({ accoun
                 </span>
               </div>
 
-              <div className="text-2xl sm:text-3xl font-black font-mono text-[#EBB34D] tracking-tight">
+              <div className="text-2xl sm:text-3xl font-black font-mono text-[#D99B26] dark:text-[#EBB34D] tracking-tight">
                 {formatBalanceWithNature(endingBalance, account.nature)}
               </div>
 
               {/* 3 Summary Pills */}
-              <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[#243628]/70">
+              <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[#E0D9CB] dark:border-[#243628]/70">
                 {/* Total Debit Turnovers */}
-                <div className="p-2 rounded-xl bg-[#17231A] border border-[#243628] space-y-1">
-                  <span className="text-[10px] text-[#8FA392] flex items-center gap-1">
-                    <ArrowDownLeft className="w-3 h-3 text-[#A3CFAC]" />
+                <div className="p-2 rounded-xl bg-white dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] space-y-1 shadow-2xs">
+                  <span className="text-[10px] text-[#5C665E] dark:text-[#8FA392] flex items-center gap-1">
+                    <ArrowDownLeft className="w-3 h-3 text-[#245E33] dark:text-[#A3CFAC]" />
                     {t('إجمالي المدين', 'Total Debit')}
                   </span>
-                  <div className="text-xs font-mono font-bold text-[#A3CFAC] truncate tabular-nums">
+                  <div className="text-xs font-mono font-bold text-[#245E33] dark:text-[#A3CFAC] truncate tabular-nums">
                     {formatCurrency(totalDebit, false)}
                   </div>
                 </div>
 
                 {/* Total Credit Turnovers */}
-                <div className="p-2 rounded-xl bg-[#17231A] border border-[#243628] space-y-1">
-                  <span className="text-[10px] text-[#8FA392] flex items-center gap-1">
-                    <ArrowUpRight className="w-3 h-3 text-[#EFA3A3]" />
+                <div className="p-2 rounded-xl bg-white dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] space-y-1 shadow-2xs">
+                  <span className="text-[10px] text-[#5C665E] dark:text-[#8FA392] flex items-center gap-1">
+                    <ArrowUpRight className="w-3 h-3 text-[#7A2828] dark:text-[#EFA3A3]" />
                     {t('إجمالي الدائن', 'Total Credit')}
                   </span>
-                  <div className="text-xs font-mono font-bold text-[#EFA3A3] truncate tabular-nums">
+                  <div className="text-xs font-mono font-bold text-[#7A2828] dark:text-[#EFA3A3] truncate tabular-nums">
                     {formatCurrency(totalCredit, false)}
                   </div>
                 </div>
 
                 {/* Posted Vouchers Count */}
-                <div className="p-2 rounded-xl bg-[#17231A] border border-[#243628] space-y-1">
-                  <span className="text-[10px] text-[#8FA392] flex items-center gap-1">
-                    <FileSpreadsheet className="w-3 h-3 text-[#EBB34D]" />
+                <div className="p-2 rounded-xl bg-white dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] space-y-1 shadow-2xs">
+                  <span className="text-[10px] text-[#5C665E] dark:text-[#8FA392] flex items-center gap-1">
+                    <FileSpreadsheet className="w-3 h-3 text-[#D99B26] dark:text-[#EBB34D]" />
                     {t('القيود المرحلة', 'Postings')}
                   </span>
-                  <div className="text-xs font-mono font-bold text-[#EBB34D] truncate">
+                  <div className="text-xs font-mono font-bold text-[#D99B26] dark:text-[#EBB34D] truncate">
                     {movementCount} {t('قيد', 'entries')}
                   </div>
                 </div>
@@ -262,23 +262,23 @@ export const AccountDetailDrawer: React.FC<AccountDetailDrawerProps> = ({ accoun
             </div>
 
             {/* Account Code & Copy */}
-            <div className="p-3.5 rounded-xl border border-[#243628] bg-[#17231A] flex items-center justify-between">
+            <div className="p-3.5 rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#17231A] flex items-center justify-between shadow-2xs">
               <div>
-                <span className="text-[11px] font-semibold text-[#8FA392] block">
+                <span className="text-[11px] font-semibold text-[#5C665E] dark:text-[#8FA392] block">
                   {t('رمز / كود الحساب المعتمد', 'Verified Account Code')}
                 </span>
-                <span className="text-lg font-black font-mono text-[#EBB34D] tracking-wider mt-0.5 block">
+                <span className="text-lg font-black font-mono text-[#D99B26] dark:text-[#EBB34D] tracking-wider mt-0.5 block">
                   {account.code}
                 </span>
               </div>
 
               <button
                 onClick={handleCopyCode}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border border-[#243628] bg-[#0E1610] text-[#F3EFE6] hover:bg-[#1F2E23] transition-all cursor-pointer"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border border-[#E0D9CB] dark:border-[#243628] bg-[#F3EFE6] dark:bg-[#0E1610] text-[#1A241C] dark:text-[#F3EFE6] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23] transition-all cursor-pointer shadow-2xs"
               >
                 {copied ? (
                   <>
-                    <Check className="w-3.5 h-3.5 text-[#A3CFAC]" />
+                    <Check className="w-3.5 h-3.5 text-[#059669] dark:text-[#A3CFAC]" />
                     <span>{t('تم النسخ', 'Copied')}</span>
                   </>
                 ) : (
@@ -293,16 +293,16 @@ export const AccountDetailDrawer: React.FC<AccountDetailDrawerProps> = ({ accoun
             {/* Core Classification Grid */}
             <div className="grid grid-cols-2 gap-3">
               {/* Nature */}
-              <div className="p-3 rounded-xl border border-[#243628] bg-[#17231A]/70">
-                <span className="text-[11px] font-semibold text-[#8FA392] block">
+              <div className="p-3 rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#17231A]/70 shadow-2xs">
+                <span className="text-[11px] font-semibold text-[#5C665E] dark:text-[#8FA392] block">
                   {t('طبيعة الحساب المحاسبية', 'Account Nature')}
                 </span>
                 <div className="mt-1 flex items-center gap-1.5">
                   <span
                     className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${
                       account.nature === 0
-                        ? 'bg-[#2A3F30] text-[#A3CFAC] border border-[#37533E]'
-                        : 'bg-[#3F2A2A] text-[#EFA3A3] border border-[#533737]'
+                        ? 'bg-[#EAF3EB] text-[#245E33] border border-[#B8D8BC] dark:bg-[#2A3F30] dark:text-[#A3CFAC] dark:border-[#37533E]'
+                        : 'bg-[#F8EBEB] text-[#7A2828] border border-[#E3B8B8] dark:bg-[#3F2A2A] dark:text-[#EFA3A3] dark:border-[#533737]'
                     }`}
                   >
                     {account.natureLabelAr} ({account.nature === 0 ? 'Debit' : 'Credit'})
@@ -311,12 +311,12 @@ export const AccountDetailDrawer: React.FC<AccountDetailDrawerProps> = ({ accoun
               </div>
 
               {/* Statement Type */}
-              <div className="p-3 rounded-xl border border-[#243628] bg-[#17231A]/70">
-                <span className="text-[11px] font-semibold text-[#8FA392] block">
+              <div className="p-3 rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#17231A]/70 shadow-2xs">
+                <span className="text-[11px] font-semibold text-[#5C665E] dark:text-[#8FA392] block">
                   {t('القائمة المالية التابع لها', 'Financial Statement')}
                 </span>
                 <div className="mt-1 flex items-center gap-1.5">
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#EBB34D]/15 text-[#EBB34D] border border-[#EBB34D]/30">
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] dark:bg-[#EBB34D]/15 dark:text-[#EBB34D] dark:border-[#EBB34D]/30">
                     {account.statementType === 'BALANCE_SHEET'
                       ? t('ميزانية عمومية', 'Balance Sheet')
                       : t('قائمة الدخل والأرباح والخسائر', 'Income Statement')}
@@ -326,33 +326,33 @@ export const AccountDetailDrawer: React.FC<AccountDetailDrawerProps> = ({ accoun
             </div>
 
             {/* Level Classification */}
-            <div className="p-3.5 rounded-xl border border-[#243628] bg-[#17231A]/70 space-y-1.5">
-              <span className="text-[11px] font-semibold text-[#8FA392] block">
+            <div className="p-3.5 rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#17231A]/70 space-y-1.5 shadow-2xs">
+              <span className="text-[11px] font-semibold text-[#5C665E] dark:text-[#8FA392] block">
                 {t('الموقع في الهيكل التنظيمي المالي', 'Hierarchy Level')}
               </span>
-              <p className="text-xs font-bold text-[#F3EFE6]">
+              <p className="text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6]">
                 {getLevelLabel(account.level)}
               </p>
               {account.parentNameAr && (
-                <div className="pt-1.5 border-t border-[#243628] flex items-center gap-1.5 text-xs text-[#8FA392]">
+                <div className="pt-1.5 border-t border-[#E0D9CB] dark:border-[#243628] flex items-center gap-1.5 text-xs text-[#5C665E] dark:text-[#8FA392]">
                   <span>{t('الحساب الأب المباشر:', 'Parent Account:')}</span>
-                  <span className="font-bold text-[#F3EFE6]">{account.parentNameAr}</span>
+                  <span className="font-bold text-[#1A241C] dark:text-[#F3EFE6]">{account.parentNameAr}</span>
                 </div>
               )}
             </div>
 
             {/* Sub-accounts Count if Parent */}
             {account.level < 5 && (
-              <div className="p-3.5 rounded-xl border border-[#243628] bg-[#17231A] space-y-1">
+              <div className="p-3.5 rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#17231A] space-y-1 shadow-2xs">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-[#EBB34D]">
+                  <span className="text-xs font-bold text-[#D99B26] dark:text-[#EBB34D]">
                     {t('الحسابات التحليلية التابعة (أوراق الشجرة)', 'Sub-Accounts Rollup')}
                   </span>
-                  <span className="text-sm font-black font-mono text-[#EBB34D]">
+                  <span className="text-sm font-black font-mono text-[#D99B26] dark:text-[#EBB34D]">
                     {account.leafCount} {t('حساب', 'accounts')}
                   </span>
                 </div>
-                <p className="text-[11px] text-[#8FA392]">
+                <p className="text-[11px] text-[#5C665E] dark:text-[#8FA392]">
                   {t(
                     'يتفرع من هذا الحساب القيود التفصيلية ومراكز التكلفة المرتبطة.',
                     'Detailed transactional vouchers and cost centers roll up under this branch.'
@@ -365,23 +365,23 @@ export const AccountDetailDrawer: React.FC<AccountDetailDrawerProps> = ({ accoun
             <div className="space-y-2.5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <History className="w-4 h-4 text-[#EBB34D]" />
-                  <h4 className="text-xs font-bold text-[#F3EFE6]">
+                  <History className="w-4 h-4 text-[#D99B26] dark:text-[#EBB34D]" />
+                  <h4 className="text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6]">
                     {t(
                       `سجل حركات الأستاذ العام (إجمالي ${totalCount} حركة)`,
                       `General Ledger Transactions (${totalCount} Total Movements)`
                     )}
                   </h4>
                 </div>
-                <span className="text-[11px] font-mono text-[#8FA392]">
+                <span className="text-[11px] font-mono text-[#5C665E] dark:text-[#8FA392]">
                   {totalCount > 0 ? `${totalCount} ${t('حركة مسجلة', 'movements')}` : ''}
                 </span>
               </div>
 
               {allTransactions.length === 0 ? (
-                <div className="py-7 px-4 rounded-xl border border-dashed border-[#243628] bg-[#17231A]/40 flex flex-col items-center justify-center text-center gap-2">
-                  <History className="w-6 h-6 text-[#8FA392]/50" />
-                  <p className="text-xs font-medium text-[#8FA392]">
+                <div className="py-7 px-4 rounded-xl border border-dashed border-[#E0D9CB] dark:border-[#243628] bg-white/60 dark:bg-[#17231A]/40 flex flex-col items-center justify-center text-center gap-2">
+                  <History className="w-6 h-6 text-[#5C665E]/50 dark:text-[#8FA392]/50" />
+                  <p className="text-xs font-medium text-[#5C665E] dark:text-[#8FA392]">
                     {t(
                       'لا توجد حركات مسجلة لهذا الحساب في الفترة المحددة',
                       'No transactions recorded for this account in the specified period'
@@ -390,10 +390,10 @@ export const AccountDetailDrawer: React.FC<AccountDetailDrawerProps> = ({ accoun
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <div className="rounded-xl border border-[#243628] bg-[#17231A] overflow-hidden shadow-xs max-h-80 overflow-y-auto custom-sidebar-scrollbar relative">
+                  <div className="rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#17231A] overflow-hidden shadow-xs max-h-80 overflow-y-auto custom-sidebar-scrollbar relative">
                     <table className="w-full text-start text-[11px]">
-                      <thead className="sticky top-0 bg-[#141F16] z-10">
-                        <tr className="border-b border-[#243628] text-[#8FA392]">
+                      <thead className="sticky top-0 bg-[#F3EFE6] dark:bg-[#141F16] z-10">
+                        <tr className="border-b border-[#E0D9CB] dark:border-[#243628] text-[#5C665E] dark:text-[#8FA392]">
                           <th className="py-2.5 px-2.5 text-start font-bold">{t('التاريخ', 'Date')}</th>
                           <th className="py-2.5 px-2.5 text-start font-bold">{t('نوع المستند', 'Doc Type')}</th>
                           <th className="py-2.5 px-2.5 text-start font-bold">{t('البيان', 'Memo')}</th>
@@ -402,27 +402,27 @@ export const AccountDetailDrawer: React.FC<AccountDetailDrawerProps> = ({ accoun
                           <th className="py-2.5 px-2.5 text-end font-bold">{t('الرصيد', 'Balance')}</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-[#243628]/60">
+                      <tbody className="divide-y divide-[#E0D9CB] dark:divide-[#243628]/60">
                         {allTransactions.map((tx, idx) => (
-                          <tr key={tx.id || idx} className="hover:bg-[#1F2E23]/40 transition-colors">
-                            <td className="py-2 px-2.5 font-mono text-[#8FA392] whitespace-nowrap">
+                          <tr key={tx.id || idx} className="hover:bg-[#F3EFE6]/50 dark:hover:bg-[#1F2E23]/40 transition-colors">
+                            <td className="py-2 px-2.5 font-mono text-[#5C665E] dark:text-[#8FA392] whitespace-nowrap">
                               {tx.noteDate || tx.entryDate || '-'}
                             </td>
                             <td className="py-2 px-2.5 whitespace-nowrap">
-                              <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-stone-100 dark:bg-stone-800 text-stone-800 dark:text-stone-200 border border-stone-200 dark:border-stone-700">
+                              <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#F3EFE6] dark:bg-stone-800 text-[#1A241C] dark:text-stone-200 border border-[#E0D9CB] dark:border-stone-700">
                                 {tx.voucherType || tx.DocumentType || (tx.noteNo ? `#${tx.noteNo}` : 'قيد')}
                               </span>
                             </td>
-                            <td className="py-2 px-2.5 text-[#F3EFE6] max-w-[130px] truncate" title={tx.description}>
+                            <td className="py-2 px-2.5 text-[#1A241C] dark:text-[#F3EFE6] max-w-[130px] truncate" title={tx.description}>
                               {tx.description || '-'}
                             </td>
-                            <td className="py-2 px-2.5 text-end font-mono font-bold text-[#A3CFAC] whitespace-nowrap tabular-nums">
+                            <td className="py-2 px-2.5 text-end font-mono font-bold text-[#245E33] dark:text-[#A3CFAC] whitespace-nowrap tabular-nums">
                               {Number(tx.debit) > 0 ? formatCurrency(Number(tx.debit), false) : '-'}
                             </td>
-                            <td className="py-2 px-2.5 text-end font-mono font-bold text-[#EFA3A3] whitespace-nowrap tabular-nums">
+                            <td className="py-2 px-2.5 text-end font-mono font-bold text-[#7A2828] dark:text-[#EFA3A3] whitespace-nowrap tabular-nums">
                               {Number(tx.credit) > 0 ? formatCurrency(Number(tx.credit), false) : '-'}
                             </td>
-                            <td className="py-2 px-2.5 text-end font-mono font-bold text-[#EBB34D] whitespace-nowrap tabular-nums">
+                            <td className="py-2 px-2.5 text-end font-mono font-bold text-[#D99B26] dark:text-[#EBB34D] whitespace-nowrap tabular-nums">
                               {tx.runningBalance !== undefined ? formatCurrency(tx.runningBalance, false) : '-'}
                             </td>
                           </tr>
@@ -432,22 +432,22 @@ export const AccountDetailDrawer: React.FC<AccountDetailDrawerProps> = ({ accoun
                   </div>
 
                   {/* Summary Pills: إجمالي المدين | إجمالي الدائن | الرصيد الختامي المتحرك */}
-                  <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[#243628]">
-                    <div className="p-2 rounded-xl bg-[#141F16] border border-[#243628] text-center">
-                      <span className="text-[10px] text-[#8FA392] block">{t('إجمالي المدين', 'Total Debit')}</span>
-                      <span className="text-xs font-mono font-bold text-[#A3CFAC] tabular-nums">
+                  <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[#E0D9CB] dark:border-[#243628]">
+                    <div className="p-2 rounded-xl bg-white dark:bg-[#141F16] border border-[#E0D9CB] dark:border-[#243628] text-center shadow-2xs">
+                      <span className="text-[10px] text-[#5C665E] dark:text-[#8FA392] block">{t('إجمالي المدين', 'Total Debit')}</span>
+                      <span className="text-xs font-mono font-bold text-[#245E33] dark:text-[#A3CFAC] tabular-nums">
                         {formatCurrency(totalDebit, false)}
                       </span>
                     </div>
-                    <div className="p-2 rounded-xl bg-[#141F16] border border-[#243628] text-center">
-                      <span className="text-[10px] text-[#8FA392] block">{t('إجمالي الدائن', 'Total Credit')}</span>
-                      <span className="text-xs font-mono font-bold text-[#EFA3A3] tabular-nums">
+                    <div className="p-2 rounded-xl bg-white dark:bg-[#141F16] border border-[#E0D9CB] dark:border-[#243628] text-center shadow-2xs">
+                      <span className="text-[10px] text-[#5C665E] dark:text-[#8FA392] block">{t('إجمالي الدائن', 'Total Credit')}</span>
+                      <span className="text-xs font-mono font-bold text-[#7A2828] dark:text-[#EFA3A3] tabular-nums">
                         {formatCurrency(totalCredit, false)}
                       </span>
                     </div>
-                    <div className="p-2 rounded-xl bg-[#141F16] border border-[#243628] text-center">
-                      <span className="text-[10px] text-[#8FA392] block">{t('الرصيد الختامي المتحرك', 'Closing Balance')}</span>
-                      <span className="text-xs font-mono font-bold text-[#EBB34D] tabular-nums truncate block">
+                    <div className="p-2 rounded-xl bg-white dark:bg-[#141F16] border border-[#E0D9CB] dark:border-[#243628] text-center shadow-2xs">
+                      <span className="text-[10px] text-[#5C665E] dark:text-[#8FA392] block">{t('الرصيد الختامي المتحرك', 'Closing Balance')}</span>
+                      <span className="text-xs font-mono font-bold text-[#D99B26] dark:text-[#EBB34D] tabular-nums truncate block">
                         {formatBalanceWithNature(endingBalance, account.nature)}
                       </span>
                     </div>
@@ -457,13 +457,13 @@ export const AccountDetailDrawer: React.FC<AccountDetailDrawerProps> = ({ accoun
             </div>
 
             {/* Posting Specifications */}
-            <div className="p-3.5 rounded-xl border border-[#243628] bg-[#17231A]/70 space-y-2">
-              <span className="text-xs font-bold text-[#F3EFE6] block">
+            <div className="p-3.5 rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#17231A]/70 space-y-2 shadow-2xs">
+              <span className="text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6] block">
                 {t('مواصفات الترحيل والتسجيل', 'Posting & Operational Rules')}
               </span>
-              <ul className="text-xs text-[#8FA392] space-y-1.5">
+              <ul className="text-xs text-[#5C665E] dark:text-[#8FA392] space-y-1.5">
                 <li className="flex items-center gap-2">
-                  <Check className="w-3.5 h-3.5 text-[#A3CFAC] shrink-0" />
+                  <Check className="w-3.5 h-3.5 text-[#059669] dark:text-[#A3CFAC] shrink-0" />
                   <span>
                     {account.level === 5
                       ? t('يقبل تسجيل قيود اليومية العامة وسندات القبض والصرف المباشرة', 'Accepts direct journal vouchers and receipts/payments')
@@ -471,11 +471,11 @@ export const AccountDetailDrawer: React.FC<AccountDetailDrawerProps> = ({ accoun
                   </span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <Check className="w-3.5 h-3.5 text-[#A3CFAC] shrink-0" />
+                  <Check className="w-3.5 h-3.5 text-[#059669] dark:text-[#A3CFAC] shrink-0" />
                   <span>{t('العملة المعتمدة: الجنيه المصري (ج.م - EGP)', 'Approved Currency: Egyptian Pound (EGP)')}</span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <Check className="w-3.5 h-3.5 text-[#A3CFAC] shrink-0" />
+                  <Check className="w-3.5 h-3.5 text-[#059669] dark:text-[#A3CFAC] shrink-0" />
                   <span>{t('الربط بمراكز التكلفة والمشروعات: متاح للتحليل المالي', 'Cost center & project linking: Fully enabled')}</span>
                 </li>
               </ul>
@@ -483,17 +483,17 @@ export const AccountDetailDrawer: React.FC<AccountDetailDrawerProps> = ({ accoun
           </div>
 
           {/* Drawer Footer Actions */}
-          <div className="p-4 border-t border-[#243628] bg-[#17231A] flex items-center justify-between gap-3 shrink-0">
+          <div className="p-4 border-t border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#17231A] flex items-center justify-between gap-3 shrink-0">
             <button
               onClick={onClose}
-              className="px-4 py-2.5 rounded-xl text-xs font-bold border border-[#243628] bg-[#0E1610] text-[#8FA392] hover:text-[#F3EFE6] hover:bg-[#1F2E23] transition-colors cursor-pointer"
+              className="px-4 py-2.5 rounded-xl text-xs font-bold border border-[#E0D9CB] dark:border-[#243628] bg-[#F3EFE6] dark:bg-[#0E1610] text-[#5C665E] dark:text-[#8FA392] hover:text-[#1A241C] dark:hover:text-[#F3EFE6] hover:bg-[#EAE4D7] dark:hover:bg-[#1F2E23] transition-colors cursor-pointer"
             >
               {t('إغلاق البطاقة', 'Close')}
             </button>
 
             <button
               onClick={handleOpenStatement}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold bg-[#D99B26] hover:bg-[#C58F38] text-[#0E1610] shadow-md shadow-amber-950/40 transition-all hover:scale-[1.02] cursor-pointer"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-l from-amber-600 to-amber-500 hover:from-amber-700 hover:to-amber-600 text-white shadow-md shadow-amber-500/20 transition-all hover:scale-[1.02] cursor-pointer"
             >
               <ExternalLink className="w-4 h-4" />
               <span>{t('كشف حساب تفصيلي', 'Statement of Account')}</span>

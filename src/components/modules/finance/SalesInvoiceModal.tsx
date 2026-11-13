@@ -270,23 +270,23 @@ export const SalesInvoiceModal: React.FC<SalesInvoiceModalProps> = ({
       icon={ShoppingCart}
       badge={
         <div className="flex items-center gap-2">
-          <span className="font-mono text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#3D2D14] text-[#EBB34D] border border-[#5C431D]">
+          <span className="font-mono text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] dark:bg-[#3D2D14] dark:text-[#EBB34D] dark:border-[#5C431D]">
             #{toWesternDigits(noteNo)}
           </span>
-          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#2A3F30] text-[#A3CFAC] border border-[#3E5C46]">
+          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#EAF3EB] text-[#245E33] border border-[#B8D8BC] dark:bg-[#2A3F30] dark:text-[#A3CFAC] dark:border-[#3E5C46]">
             {currentTax.countryNameAr} ({currentTax.vatLabel})
           </span>
         </div>
       }
       headerActions={
-        <div className="inline-flex rounded-xl p-1 bg-[#121B14] border border-[#243628]">
+        <div className="inline-flex rounded-xl p-1 bg-[#F3EFE6] dark:bg-[#121B14] border border-[#E0D9CB] dark:border-[#243628]">
           <button
             type="button"
             onClick={() => handleJurisdictionChange('KSA')}
             className={`flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
               jurisdiction === 'KSA'
-                ? 'bg-[#3D2D14] text-[#EBB34D] border border-[#5C431D] shadow-xs'
-                : 'text-[#8FA392] hover:text-[#F3EFE6]'
+                ? 'bg-white text-[#92400E] border border-[#FDE68A] dark:bg-[#3D2D14] dark:text-[#EBB34D] dark:border-[#5C431D] shadow-xs'
+                : 'text-[#5C665E] dark:text-[#8FA392] hover:text-[#1A241C] dark:hover:text-[#F3EFE6]'
             }`}
           >
             <span>🇸🇦</span>
@@ -298,8 +298,8 @@ export const SalesInvoiceModal: React.FC<SalesInvoiceModalProps> = ({
             onClick={() => handleJurisdictionChange('EGYPT')}
             className={`flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
               jurisdiction === 'EGYPT'
-                ? 'bg-[#2A3F30] text-[#A3CFAC] border border-[#3E5C46] shadow-xs'
-                : 'text-[#8FA392] hover:text-[#F3EFE6]'
+                ? 'bg-white text-[#245E33] border border-[#B8D8BC] dark:bg-[#2A3F30] dark:text-[#A3CFAC] dark:border-[#3E5C46] shadow-xs'
+                : 'text-[#5C665E] dark:text-[#8FA392] hover:text-[#1A241C] dark:hover:text-[#F3EFE6]'
             }`}
           >
             <span>🇪🇬</span>
@@ -312,7 +312,7 @@ export const SalesInvoiceModal: React.FC<SalesInvoiceModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="px-5 py-2.5 text-xs font-bold rounded-xl border border-[#243628] bg-[#1F2E23] text-[#8FA392] hover:text-[#F3EFE6] transition-colors cursor-pointer"
+            className="px-5 py-2.5 text-xs font-bold rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-[#F3EFE6] dark:bg-[#1F2E23] text-[#5C665E] dark:text-[#8FA392] hover:text-[#1A241C] dark:hover:text-[#F3EFE6] transition-colors cursor-pointer"
           >
             {t('إلغاء', 'Cancel')}
           </button>
@@ -321,9 +321,9 @@ export const SalesInvoiceModal: React.FC<SalesInvoiceModalProps> = ({
             type="button"
             onClick={handleSubmit}
             disabled={isSubmitting || grandTotal <= 0 || stockErrors.length > 0}
-            className="flex items-center gap-2 px-6 py-2.5 text-xs font-bold rounded-xl bg-[#D99B26] hover:bg-[#C58F38] text-[#0E1610] shadow-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+            className="flex items-center gap-2 px-6 py-2.5 text-xs font-bold rounded-xl bg-gradient-to-l from-amber-600 to-amber-500 hover:from-amber-700 hover:to-amber-600 text-white shadow-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
           >
-            <CheckCircle2 className="w-4 h-4 text-[#0E1610]" />
+            <CheckCircle2 className="w-4 h-4 text-white" />
             {isSubmitting ? (
               <span>{t('جاري الحفظ والترحيل...', 'Committing...')}</span>
             ) : (
@@ -335,14 +335,14 @@ export const SalesInvoiceModal: React.FC<SalesInvoiceModalProps> = ({
     >
       <form onSubmit={handleSubmit} className="p-6 space-y-5">
         {errorMessage && (
-          <div className="p-3.5 rounded-xl bg-[#3F2A2A] border border-[#5C3E3E] text-[#EFA3A3] text-xs flex items-center gap-2">
+          <div className="p-3.5 rounded-xl bg-[#F8EBEB] text-[#7A2828] border border-[#E3B8B8] dark:bg-[#3F2A2A] dark:border-[#5C3E3E] dark:text-[#EFA3A3] text-xs flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{errorMessage}</span>
           </div>
         )}
 
         {stockErrors.length > 0 && (
-          <div className="p-3.5 rounded-xl bg-[#3D2D14] border border-[#5C431D] text-[#EBB34D] text-xs space-y-1">
+          <div className="p-3.5 rounded-xl bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] dark:bg-[#3D2D14] dark:border-[#5C431D] dark:text-[#EBB34D] text-xs space-y-1">
             <div className="flex items-center gap-1.5 font-bold">
               <AlertTriangle className="w-4 h-4" />
               <span>تنبيه أرصدة المخزون:</span>
@@ -356,20 +356,20 @@ export const SalesInvoiceModal: React.FC<SalesInvoiceModalProps> = ({
         )}
 
         {/* Invoice Parameters Form Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 rounded-xl border border-[#243628] bg-[#121B14]">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-[#FBF9F5] dark:bg-[#121B14]">
           {/* Note Type */}
           <div>
-            <label className="block text-xs font-bold text-[#F3EFE6] mb-1.5">
+            <label className="block text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6] mb-1.5">
               {t('نوع المعاملة', 'Payment Terms')}
             </label>
-            <div className="flex p-0.5 bg-[#17231A] rounded-xl border border-[#243628]">
+            <div className="flex p-0.5 bg-[#F3EFE6] dark:bg-[#17231A] rounded-xl border border-[#E0D9CB] dark:border-[#243628]">
               <button
                 type="button"
                 onClick={() => setNoteType('CREDIT')}
                 className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
                   noteType === 'CREDIT'
-                    ? 'bg-[#1F2E23] text-[#A3CFAC] border border-[#3E5C46] shadow-xs'
-                    : 'text-[#8FA392] hover:text-[#F3EFE6]'
+                    ? 'bg-white text-[#245E33] border border-[#B8D8BC] dark:bg-[#1F2E23] dark:text-[#A3CFAC] dark:border-[#3E5C46] shadow-xs'
+                    : 'text-[#5C665E] dark:text-[#8FA392] hover:text-[#1A241C] dark:hover:text-[#F3EFE6]'
                 }`}
               >
                 {t('آجل (Credit)', 'Credit')}
@@ -379,8 +379,8 @@ export const SalesInvoiceModal: React.FC<SalesInvoiceModalProps> = ({
                 onClick={() => setNoteType('CASH')}
                 className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
                   noteType === 'CASH'
-                    ? 'bg-[#3D2D14] text-[#EBB34D] border border-[#5C431D] shadow-xs'
-                    : 'text-[#8FA392] hover:text-[#F3EFE6]'
+                    ? 'bg-white text-[#92400E] border border-[#FDE68A] dark:bg-[#3D2D14] dark:text-[#EBB34D] dark:border-[#5C431D] shadow-xs'
+                    : 'text-[#5C665E] dark:text-[#8FA392] hover:text-[#1A241C] dark:hover:text-[#F3EFE6]'
                 }`}
               >
                 {t('نقدي (Cash)', 'Cash')}
@@ -390,18 +390,18 @@ export const SalesInvoiceModal: React.FC<SalesInvoiceModalProps> = ({
 
           {/* Client Lookup */}
           <div>
-            <label className="block text-xs font-bold text-[#F3EFE6] mb-1.5">
+            <label className="block text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6] mb-1.5">
               {t('العميل / المستلم', 'Customer')} *
             </label>
             <div className="relative">
-              <User className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-[#8FA392]" />
+              <User className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-[#5C665E] dark:text-[#8FA392]" />
               <select
                 value={clientId}
                 onChange={e => setClientId(Number(e.target.value))}
-                className="w-full ps-9 pe-3 py-2 text-xs font-semibold rounded-xl border border-[#243628] bg-[#17231A] text-[#F3EFE6] focus:outline-hidden focus:border-[#EBB34D] focus:ring-1 focus:ring-[#EBB34D]"
+                className="w-full ps-9 pe-3 py-2 text-xs font-semibold rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#17231A] text-[#1A241C] dark:text-[#F3EFE6] focus:outline-hidden focus:border-[#EBB34D] focus:ring-1 focus:ring-[#EBB34D] shadow-2xs cursor-pointer"
               >
                 {clients.map(c => (
-                  <option key={c.clientId} value={c.clientId}>
+                  <option key={c.clientId} value={c.clientId} className="bg-white dark:bg-[#17231A]">
                     {c.nameAr}
                   </option>
                 ))}
@@ -411,36 +411,36 @@ export const SalesInvoiceModal: React.FC<SalesInvoiceModalProps> = ({
 
           {/* Inventory Warehouse */}
           <div>
-            <label className="block text-xs font-bold text-[#F3EFE6] mb-1.5">
+            <label className="block text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6] mb-1.5">
               {t('مستودع الصرف', 'Warehouse')} *
             </label>
             <div className="relative">
-              <Building className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-[#8FA392]" />
+              <Building className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-[#5C665E] dark:text-[#8FA392]" />
               <select
                 value={inventoryNameAr}
                 onChange={e => setInventoryNameAr(e.target.value)}
-                className="w-full ps-9 pe-3 py-2 text-xs font-semibold rounded-xl border border-[#243628] bg-[#17231A] text-[#F3EFE6] focus:outline-hidden focus:border-[#EBB34D] focus:ring-1 focus:ring-[#EBB34D]"
+                className="w-full ps-9 pe-3 py-2 text-xs font-semibold rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#17231A] text-[#1A241C] dark:text-[#F3EFE6] focus:outline-hidden focus:border-[#EBB34D] focus:ring-1 focus:ring-[#EBB34D] shadow-2xs cursor-pointer"
               >
-                <option value="المستودع الرئيسي - القاهرة">المستودع الرئيسي - القاهرة</option>
-                <option value="مستودع الموقع - مراسي الساحل">مستودع الموقع - مراسي الساحل</option>
-                <option value="المستودع المركزي - العاشر من رمضان">المستودع المركزي - العاشر من رمضان</option>
+                <option value="المستودع الرئيسي - القاهرة" className="bg-white dark:bg-[#17231A]">المستودع الرئيسي - القاهرة</option>
+                <option value="مستودع الموقع - مراسي الساحل" className="bg-white dark:bg-[#17231A]">مستودع الموقع - مراسي الساحل</option>
+                <option value="المستودع المركزي - العاشر من رمضان" className="bg-white dark:bg-[#17231A]">المستودع المركزي - العاشر من رمضان</option>
               </select>
             </div>
           </div>
 
           {/* Invoice Date */}
           <div>
-            <label className="block text-xs font-bold text-[#F3EFE6] mb-1.5">
+            <label className="block text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6] mb-1.5">
               {t('تاريخ الفاتورة', 'Invoice Date')} *
             </label>
             <div className="relative">
-              <Calendar className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-[#8FA392]" />
+              <Calendar className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-[#5C665E] dark:text-[#8FA392]" />
               <input
                 type="date"
                 required
                 value={noteDate}
                 onChange={e => setNoteDate(e.target.value)}
-                className="w-full ps-9 pe-3 py-2 text-xs rounded-xl border border-[#243628] bg-[#17231A] text-[#F3EFE6] focus:outline-hidden focus:border-[#EBB34D] focus:ring-1 focus:ring-[#EBB34D] tabular-nums"
+                className="w-full ps-9 pe-3 py-2 text-xs rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#17231A] text-[#1A241C] dark:text-[#F3EFE6] focus:outline-hidden focus:border-[#EBB34D] focus:ring-1 focus:ring-[#EBB34D] tabular-nums shadow-2xs"
               />
             </div>
           </div>
@@ -450,8 +450,8 @@ export const SalesInvoiceModal: React.FC<SalesInvoiceModalProps> = ({
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Package className="w-4 h-4 text-[#EBB34D]" />
-              <h3 className="text-xs font-bold text-[#F3EFE6]">
+              <Package className="w-4 h-4 text-[#D99B26] dark:text-[#EBB34D]" />
+              <h3 className="text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6]">
                 {t('جدول بنود وأصناف الفاتورة (Sales Cart)', 'Invoice Items & Stock')}
               </h3>
             </div>
@@ -459,17 +459,17 @@ export const SalesInvoiceModal: React.FC<SalesInvoiceModalProps> = ({
             <button
               type="button"
               onClick={handleAddLine}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl bg-[#1F2E23] hover:bg-[#3D2D14] text-[#EBB34D] border border-[#243628] transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl bg-white dark:bg-[#1F2E23] hover:bg-[#F3EFE6] dark:hover:bg-[#3D2D14] text-[#D99B26] dark:text-[#EBB34D] border border-[#E0D9CB] dark:border-[#243628] transition-colors cursor-pointer shadow-2xs"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>{t('إضافة بند جديد', 'Add Item')}</span>
             </button>
           </div>
 
-          <div className="border border-[#243628] rounded-xl overflow-hidden bg-[#121B14]">
+          <div className="border border-[#E0D9CB] dark:border-[#243628] rounded-xl overflow-hidden bg-white dark:bg-[#121B14] shadow-xs">
             <table className="w-full text-start text-xs border-collapse">
               <thead>
-                <tr className="border-b border-[#243628] bg-[#17231A] text-[#8FA392] font-bold">
+                <tr className="border-b border-[#E0D9CB] dark:border-[#243628] bg-[#F3EFE6] dark:bg-[#17231A] text-[#5C665E] dark:text-[#8FA392] font-bold">
                   <th className="py-2.5 px-3 text-start w-12">#</th>
                   <th className="py-2.5 px-3 text-start min-w-[200px]">{t('الصنف / المادة', 'Item')}</th>
                   <th className="py-2.5 px-3 text-center w-20">{t('الوحدة', 'Unit')}</th>
@@ -480,17 +480,17 @@ export const SalesInvoiceModal: React.FC<SalesInvoiceModalProps> = ({
                   <th className="py-2.5 px-3 text-center w-12">✕</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#243628]">
+              <tbody className="divide-y divide-[#E0D9CB] dark:divide-[#243628]">
                 {lines.map((line, idx) => {
                   const isOutOfStock = line.currentStock !== undefined && line.qty > line.currentStock;
                   return (
                     <tr
                       key={idx}
-                      className={`hover:bg-[#1F2E23]/30 transition-colors ${
-                        isOutOfStock ? 'bg-[#3F2A2A]/20' : ''
+                      className={`hover:bg-[#F3EFE6]/50 dark:hover:bg-[#1F2E23]/30 transition-colors ${
+                        isOutOfStock ? 'bg-[#F8EBEB]/50 dark:bg-[#3F2A2A]/20' : ''
                       }`}
                     >
-                      <td className="py-2 px-3 text-center font-bold text-[#8FA392] tabular-nums">
+                      <td className="py-2 px-3 text-center font-bold text-[#5C665E] dark:text-[#8FA392] tabular-nums">
                         {idx + 1}
                       </td>
 
@@ -498,17 +498,17 @@ export const SalesInvoiceModal: React.FC<SalesInvoiceModalProps> = ({
                         <select
                           value={line.itemId}
                           onChange={e => handleLineChange(idx, 'itemId', Number(e.target.value))}
-                          className="w-full px-2.5 py-1.5 text-xs font-semibold rounded-lg border border-[#243628] bg-[#17231A] text-[#F3EFE6] focus:outline-hidden focus:border-[#EBB34D]"
+                          className="w-full px-2.5 py-1.5 text-xs font-semibold rounded-lg border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#17231A] text-[#1A241C] dark:text-[#F3EFE6] focus:outline-hidden focus:border-[#EBB34D] shadow-2xs cursor-pointer"
                         >
                           {items.map(item => (
-                            <option key={item.itemId} value={item.itemId}>
+                            <option key={item.itemId} value={item.itemId} className="bg-white dark:bg-[#17231A]">
                               {item.skuCode} - {item.nameAr}
                             </option>
                           ))}
                         </select>
                       </td>
 
-                      <td className="py-2 px-3 text-center font-bold text-[#8FA392]">
+                      <td className="py-2 px-3 text-center font-bold text-[#5C665E] dark:text-[#8FA392]">
                         {line.unitNameAr}
                       </td>
 
@@ -516,8 +516,8 @@ export const SalesInvoiceModal: React.FC<SalesInvoiceModalProps> = ({
                         <span
                           className={`px-2 py-0.5 rounded-md text-[11px] font-bold ${
                             isOutOfStock
-                              ? 'bg-[#3F2A2A] text-[#EFA3A3] border border-[#5C3E3E]'
-                              : 'bg-[#2A3F30] text-[#A3CFAC] border border-[#3E5C46]'
+                              ? 'bg-[#F8EBEB] text-[#7A2828] border border-[#E3B8B8] dark:bg-[#3F2A2A] dark:text-[#EFA3A3] dark:border-[#5C3E3E]'
+                              : 'bg-[#EAF3EB] text-[#245E33] border border-[#B8D8BC] dark:bg-[#2A3F30] dark:text-[#A3CFAC] dark:border-[#3E5C46]'
                           }`}
                         >
                           {line.currentStock ?? 0} {line.unitNameAr}
@@ -530,10 +530,10 @@ export const SalesInvoiceModal: React.FC<SalesInvoiceModalProps> = ({
                           min="1"
                           value={line.qty}
                           onChange={e => handleLineChange(idx, 'qty', Math.max(1, Number(e.target.value)))}
-                          className={`w-full px-2 py-1.5 text-xs text-center font-bold rounded-lg border tabular-nums ${
+                          className={`w-full px-2 py-1.5 text-xs text-center font-bold rounded-lg border tabular-nums shadow-2xs ${
                             isOutOfStock
-                              ? 'border-rose-500 bg-[#3F2A2A] text-rose-300'
-                              : 'border-[#243628] bg-[#17231A] text-[#F3EFE6] focus:border-[#EBB34D]'
+                              ? 'border-rose-500 bg-[#F8EBEB] text-rose-700 dark:bg-[#3F2A2A] dark:text-rose-300'
+                              : 'border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#17231A] text-[#1A241C] dark:text-[#F3EFE6] focus:border-[#EBB34D]'
                           }`}
                         />
                       </td>
@@ -545,11 +545,11 @@ export const SalesInvoiceModal: React.FC<SalesInvoiceModalProps> = ({
                           step="any"
                           value={line.price}
                           onChange={e => handleLineChange(idx, 'price', Math.max(0, Number(e.target.value)))}
-                          className="w-full px-2 py-1.5 text-xs text-end font-bold rounded-lg border border-[#243628] bg-[#17231A] text-[#F3EFE6] focus:border-[#EBB34D] tabular-nums"
+                          className="w-full px-2 py-1.5 text-xs text-end font-bold rounded-lg border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#17231A] text-[#1A241C] dark:text-[#F3EFE6] focus:border-[#EBB34D] tabular-nums shadow-2xs"
                         />
                       </td>
 
-                      <td className="py-2 px-3 text-end font-bold text-xs text-[#EBB34D] tabular-nums">
+                      <td className="py-2 px-3 text-end font-bold text-xs text-[#D99B26] dark:text-[#EBB34D] tabular-nums">
                         {formatCurrency(line.total, false)}
                       </td>
 
@@ -558,7 +558,7 @@ export const SalesInvoiceModal: React.FC<SalesInvoiceModalProps> = ({
                           type="button"
                           onClick={() => handleRemoveLine(idx)}
                           disabled={lines.length <= 1}
-                          className="text-rose-400 hover:text-rose-300 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                          className="text-rose-500 hover:text-rose-400 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -572,9 +572,9 @@ export const SalesInvoiceModal: React.FC<SalesInvoiceModalProps> = ({
         </div>
 
         {/* Calculation Summary Footer Strip */}
-        <div className="p-4 rounded-xl border border-[#243628] bg-[#121B14] flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="p-4 rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-[#FBF9F5] dark:bg-[#121B14] flex flex-col sm:flex-row items-center justify-between gap-4 shadow-2xs">
           <div className="space-y-1">
-            <span className="text-[10px] font-bold text-[#8FA392] uppercase">
+            <span className="text-[10px] font-bold text-[#5C665E] dark:text-[#8FA392] uppercase">
               {t('التفقيط المالي باللغة العربية (Tafqeet)', 'Arabic Tafqeet')}
             </span>
             <p className="text-xs font-semibold text-[#EBB34D]">
@@ -584,15 +584,15 @@ export const SalesInvoiceModal: React.FC<SalesInvoiceModalProps> = ({
 
           <div className="flex items-center gap-5 text-xs self-end sm:self-auto tabular-nums">
             <div className="text-end">
-              <span className="text-[10px] text-[#8FA392] block">الصافي الخاضع:</span>
-              <span className="font-bold text-[#F3EFE6]">{formatCurrency(netAmount, true, currentTax.currencySymbolAr)}</span>
+              <span className="text-[10px] text-[#5C665E] dark:text-[#8FA392] block">الصافي الخاضع:</span>
+              <span className="font-bold text-[#1A241C] dark:text-[#F3EFE6]">{formatCurrency(netAmount, true, currentTax.currencySymbolAr)}</span>
             </div>
             <div className="text-end">
-              <span className="text-[10px] text-[#8FA392] block">ضريبة {currentTax.vatLabel}:</span>
-              <span className="font-bold text-[#A3CFAC]">{formatCurrency(vatAmount, true, currentTax.currencySymbolAr)}</span>
+              <span className="text-[10px] text-[#5C665E] dark:text-[#8FA392] block">ضريبة {currentTax.vatLabel}:</span>
+              <span className="font-bold text-[#245E33] dark:text-[#A3CFAC]">{formatCurrency(vatAmount, true, currentTax.currencySymbolAr)}</span>
             </div>
-            <div className="text-end border-s border-[#243628] ps-4">
-              <span className="text-[10px] text-[#8FA392] block">الإجمالي الشامل:</span>
+            <div className="text-end border-s border-[#E0D9CB] dark:border-[#243628] ps-4">
+              <span className="text-[10px] text-[#5C665E] dark:text-[#8FA392] block">الإجمالي الشامل:</span>
               <span className="font-black text-sm text-[#EBB34D]">
                 {formatCurrency(grandTotal, true, currentTax.currencySymbolAr)}
               </span>

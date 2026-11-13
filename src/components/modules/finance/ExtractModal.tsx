@@ -231,7 +231,7 @@ export const ExtractModal: React.FC<ExtractModalProps> = ({
       subtitle={t('المستخلصات الجارية والختامية وحصر الكميات (FIDIC / Egyptian Standard)', 'Progressive Billing & Cumulative Progress')}
       icon={FileSpreadsheet}
       badge={
-        <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#3D2D14] text-[#EBB34D] border border-[#5C431D]">
+        <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] dark:bg-[#3D2D14] dark:text-[#EBB34D] dark:border-[#5C431D]">
           {extractType === 'OWNER' ? t('مستخلص مالك / عميل', 'Owner Extract') : t('مستخلص مقاول باطن', 'Subcontractor Extract')}
         </span>
       }
@@ -240,7 +240,7 @@ export const ExtractModal: React.FC<ExtractModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="px-5 py-2.5 rounded-xl border border-[#243628] bg-[#1F2E23] text-xs font-bold text-[#8FA392] hover:text-[#F3EFE6] transition-colors cursor-pointer"
+            className="px-5 py-2.5 rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-[#F3EFE6] dark:bg-[#1F2E23] text-xs font-bold text-[#5C665E] dark:text-[#8FA392] hover:text-[#1A241C] dark:hover:text-[#F3EFE6] transition-colors cursor-pointer"
           >
             {t('إلغاء', 'Cancel')}
           </button>
@@ -249,7 +249,7 @@ export const ExtractModal: React.FC<ExtractModalProps> = ({
             type="button"
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#D99B26] hover:bg-[#C58F38] text-[#0E1610] text-xs font-bold shadow-md hover:shadow-lg transition-all disabled:opacity-50 cursor-pointer"
+            className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-l from-amber-600 to-amber-500 hover:from-amber-700 hover:to-amber-600 text-white text-xs font-bold shadow-md hover:shadow-lg transition-all disabled:opacity-50 cursor-pointer"
           >
             <FileCheck className="w-4 h-4" />
             <span>
@@ -263,7 +263,7 @@ export const ExtractModal: React.FC<ExtractModalProps> = ({
     >
       <form onSubmit={handleSubmit} className="p-5 space-y-5">
         {errorMsg && (
-          <div className="flex items-center gap-2 p-3.5 rounded-xl bg-[#3F2A2A] border border-[#5C3E3E] text-[#EFA3A3] text-xs font-bold">
+          <div className="flex items-center gap-2 p-3.5 rounded-xl bg-[#F8EBEB] text-[#7A2828] border border-[#E3B8B8] dark:bg-[#3F2A2A] dark:border-[#5C3E3E] dark:text-[#EFA3A3] text-xs font-bold">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{errorMsg}</span>
           </div>
@@ -276,8 +276,8 @@ export const ExtractModal: React.FC<ExtractModalProps> = ({
             onClick={() => setExtractType('OWNER')}
             className={`flex items-center justify-center gap-2 py-2.5 px-4 rounded-2xl border text-xs font-bold transition-all cursor-pointer ${
               extractType === 'OWNER'
-                ? 'border-[#EBB34D] bg-[#3D2D14] text-[#EBB34D] shadow-xs'
-                : 'border-[#243628] bg-[#121B14] text-[#8FA392] hover:text-[#F3EFE6]'
+                ? 'border-[#D99B26] bg-[#FEF3C7] text-[#92400E] dark:border-[#EBB34D] dark:bg-[#3D2D14] dark:text-[#EBB34D] shadow-xs'
+                : 'border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#121B14] text-[#5C665E] dark:text-[#8FA392] hover:text-[#1A241C] dark:hover:text-[#F3EFE6]'
             }`}
           >
             <Building className="w-4 h-4" />
@@ -289,8 +289,8 @@ export const ExtractModal: React.FC<ExtractModalProps> = ({
             onClick={() => setExtractType('SUBCONTRACTOR')}
             className={`flex items-center justify-center gap-2 py-2.5 px-4 rounded-2xl border text-xs font-bold transition-all cursor-pointer ${
               extractType === 'SUBCONTRACTOR'
-                ? 'border-[#EBB34D] bg-[#3D2D14] text-[#EBB34D] shadow-xs'
-                : 'border-[#243628] bg-[#121B14] text-[#8FA392] hover:text-[#F3EFE6]'
+                ? 'border-[#D99B26] bg-[#FEF3C7] text-[#92400E] dark:border-[#EBB34D] dark:bg-[#3D2D14] dark:text-[#EBB34D] shadow-xs'
+                : 'border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#121B14] text-[#5C665E] dark:text-[#8FA392] hover:text-[#1A241C] dark:hover:text-[#F3EFE6]'
             }`}
           >
             <HardHat className="w-4 h-4" />
@@ -299,19 +299,19 @@ export const ExtractModal: React.FC<ExtractModalProps> = ({
         </div>
 
         {/* Header Metadata Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 p-4 rounded-2xl border border-[#243628] bg-[#121B14]">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 p-4 rounded-2xl border border-[#E0D9CB] dark:border-[#243628] bg-[#FBF9F5] dark:bg-[#121B14]">
           {/* Linked Contract */}
           <div className="md:col-span-2">
-            <label className="block text-[11px] font-bold text-[#F3EFE6] mb-1">
+            <label className="block text-[11px] font-bold text-[#1A241C] dark:text-[#F3EFE6] mb-1">
               {t('العقد الهندسي المرتبط والمشروع', 'Linked Contract & Project')}
             </label>
             <select
               value={selectedContractId}
               onChange={e => setSelectedContractId(Number(e.target.value))}
-              className="w-full h-10 px-3 rounded-xl border border-[#243628] bg-[#17231A] text-xs font-bold text-[#F3EFE6] focus:outline-hidden focus:border-[#EBB34D] focus:ring-1 focus:ring-[#EBB34D]"
+              className="w-full h-10 px-3 rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#17231A] text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6] focus:outline-hidden focus:border-[#EBB34D] focus:ring-1 focus:ring-[#EBB34D] shadow-2xs cursor-pointer"
             >
               {availableContracts.map(c => (
-                <option key={c.id} value={c.contractNo}>
+                <option key={c.id} value={c.contractNo} className="bg-white dark:bg-[#17231A]">
                   [CTR-{c.contractNo}] {c.projectNameAr} - {c.partyNameAr}
                 </option>
               ))}
@@ -320,95 +320,95 @@ export const ExtractModal: React.FC<ExtractModalProps> = ({
 
           {/* Extract Seq */}
           <div>
-            <label className="block text-[11px] font-bold text-[#F3EFE6] mb-1">
+            <label className="block text-[11px] font-bold text-[#1A241C] dark:text-[#F3EFE6] mb-1">
               {t('رقم المستخلص التسلسلي', 'Extract Sequence No')}
             </label>
             <input
               type="number"
               value={extractNo}
               onChange={e => setExtractNo(Number(e.target.value))}
-              className="w-full h-10 px-3 rounded-xl border border-[#243628] bg-[#17231A] text-xs font-bold text-[#F3EFE6] focus:outline-hidden focus:border-[#EBB34D] focus:ring-1 focus:ring-[#EBB34D] tabular-nums"
+              className="w-full h-10 px-3 rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#17231A] text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6] focus:outline-hidden focus:border-[#EBB34D] focus:ring-1 focus:ring-[#EBB34D] tabular-nums shadow-2xs"
             />
           </div>
 
           {/* Extract Date */}
           <div>
-            <label className="block text-[11px] font-bold text-[#F3EFE6] mb-1">
+            <label className="block text-[11px] font-bold text-[#1A241C] dark:text-[#F3EFE6] mb-1">
               {t('تاريخ اعتماد المستخلص', 'Extract Date')}
             </label>
             <input
               type="date"
               value={extractDate}
               onChange={e => setExtractDate(e.target.value)}
-              className="w-full h-10 px-3 rounded-xl border border-[#243628] bg-[#17231A] text-xs font-bold text-[#F3EFE6] focus:outline-hidden focus:border-[#EBB34D] focus:ring-1 focus:ring-[#EBB34D] tabular-nums"
+              className="w-full h-10 px-3 rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#17231A] text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6] focus:outline-hidden focus:border-[#EBB34D] focus:ring-1 focus:ring-[#EBB34D] tabular-nums shadow-2xs"
             />
           </div>
         </div>
 
         {/* Execution Period & Deductions Terms */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 p-4 rounded-2xl border border-[#243628] bg-[#121B14]">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 p-4 rounded-2xl border border-[#E0D9CB] dark:border-[#243628] bg-[#FBF9F5] dark:bg-[#121B14]">
           <div>
-            <label className="block text-[11px] font-bold text-[#8FA392] mb-1">
+            <label className="block text-[11px] font-bold text-[#5C665E] dark:text-[#8FA392] mb-1">
               {t('الفترة المحاسبية: من', 'Period From')}
             </label>
             <input
               type="date"
               value={periodFrom}
               onChange={e => setPeriodFrom(e.target.value)}
-              className="w-full h-9 px-3 rounded-xl border border-[#243628] bg-[#17231A] text-xs text-[#F3EFE6] tabular-nums"
+              className="w-full h-9 px-3 rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#17231A] text-xs text-[#1A241C] dark:text-[#F3EFE6] tabular-nums shadow-2xs"
             />
           </div>
 
           <div>
-            <label className="block text-[11px] font-bold text-[#8FA392] mb-1">
+            <label className="block text-[11px] font-bold text-[#5C665E] dark:text-[#8FA392] mb-1">
               {t('الفترة المحاسبية: إلى', 'Period To')}
             </label>
             <input
               type="date"
               value={periodTo}
               onChange={e => setPeriodTo(e.target.value)}
-              className="w-full h-9 px-3 rounded-xl border border-[#243628] bg-[#17231A] text-xs text-[#F3EFE6] tabular-nums"
+              className="w-full h-9 px-3 rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#17231A] text-xs text-[#1A241C] dark:text-[#F3EFE6] tabular-nums shadow-2xs"
             />
           </div>
 
           <div>
-            <label className="block text-[11px] font-bold text-[#8FA392] mb-1">
+            <label className="block text-[11px] font-bold text-[#5C665E] dark:text-[#8FA392] mb-1">
               {t('استرداد دفعة مقدمة (%)', 'Advance Rec. %')}
             </label>
             <input
               type="number"
               value={advancePercent}
               onChange={e => setAdvancePercent(Number(e.target.value))}
-              className="w-full h-9 px-3 rounded-xl border border-[#243628] bg-[#17231A] text-xs font-bold text-[#EBB34D] tabular-nums"
+              className="w-full h-9 px-3 rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#17231A] text-xs font-bold text-[#D99B26] dark:text-[#EBB34D] tabular-nums shadow-2xs"
             />
           </div>
 
           <div>
-            <label className="block text-[11px] font-bold text-[#8FA392] mb-1">
+            <label className="block text-[11px] font-bold text-[#5C665E] dark:text-[#8FA392] mb-1">
               {t('استقطاع ضمان أعمال (%)', 'Retention %')}
             </label>
             <input
               type="number"
               value={retentionPercent}
               onChange={e => setRetentionPercent(Number(e.target.value))}
-              className="w-full h-9 px-3 rounded-xl border border-[#243628] bg-[#17231A] text-xs font-bold text-[#A3CFAC] tabular-nums"
+              className="w-full h-9 px-3 rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#17231A] text-xs font-bold text-[#059669] dark:text-[#A3CFAC] tabular-nums shadow-2xs"
             />
           </div>
         </div>
 
         {/* Dynamic Itemized Quantity & Value Grid */}
-        <div className="rounded-2xl border border-[#243628] bg-[#121B14] overflow-hidden">
-          <div className="p-3.5 border-b border-[#243628] flex items-center justify-between bg-[#17231A]">
+        <div className="rounded-2xl border border-[#E0D9CB] dark:border-[#243628] bg-[#FBF9F5] dark:bg-[#121B14] overflow-hidden shadow-xs">
+          <div className="p-3.5 border-b border-[#E0D9CB] dark:border-[#243628] flex items-center justify-between bg-[#F3EFE6] dark:bg-[#17231A]">
             <div className="flex items-center gap-2">
-              <Calculator className="w-4 h-4 text-[#EBB34D]" />
-              <span className="text-xs font-black text-[#F3EFE6]">
+              <Calculator className="w-4 h-4 text-[#D99B26] dark:text-[#EBB34D]" />
+              <span className="text-xs font-black text-[#1A241C] dark:text-[#F3EFE6]">
                 {t('جدول حصر الكميات والأعمال التراكمية (Total = Previous + Current)', 'Cumulative Work Quantities Table')}
               </span>
             </div>
             <button
               type="button"
               onClick={addLine}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1F2E23] border border-[#243628] text-[#EBB34D] hover:bg-[#3D2D14] text-[11px] font-bold transition-all cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-[#1F2E23] border border-[#E0D9CB] dark:border-[#243628] text-[#D99B26] dark:text-[#EBB34D] hover:bg-[#F3EFE6] dark:hover:bg-[#3D2D14] text-[11px] font-bold transition-all cursor-pointer shadow-2xs"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>{t('إضافة بند مقايسة', 'Add BOQ Item')}</span>
@@ -418,38 +418,38 @@ export const ExtractModal: React.FC<ExtractModalProps> = ({
           <div className="overflow-x-auto">
             <table className="w-full text-right text-xs">
               <thead>
-                <tr className="border-b border-[#243628] bg-[#17231A] text-[#8FA392] font-black">
+                <tr className="border-b border-[#E0D9CB] dark:border-[#243628] bg-[#F3EFE6]/80 dark:bg-[#17231A] text-[#5C665E] dark:text-[#8FA392] font-black">
                   <th className="py-2.5 px-3 w-10">#</th>
                   <th className="py-2.5 px-3 min-w-[200px]">{t('بيان بند الأعمال / المقايسة', 'Item Description')}</th>
                   <th className="py-2.5 px-3 w-16">{t('الوحدة', 'Unit')}</th>
                   <th className="py-2.5 px-3 w-24">{t('كمية العقد', 'Contract Qty')}</th>
                   <th className="py-2.5 px-3 w-24">{t('سعر الفئة', 'Unit Rate')}</th>
-                  <th className="py-2.5 px-3 w-24 text-[#8FA392]">{t('كمية سابقة', 'Prev Qty')}</th>
-                  <th className="py-2.5 px-3 w-28 text-[#EBB34D]">{t('كمية حالية', 'Curr Qty')}</th>
+                  <th className="py-2.5 px-3 w-24 text-[#5C665E] dark:text-[#8FA392]">{t('كمية سابقة', 'Prev Qty')}</th>
+                  <th className="py-2.5 px-3 w-28 text-[#D99B26] dark:text-[#EBB34D]">{t('كمية حالية', 'Curr Qty')}</th>
                   <th className="py-2.5 px-3 w-24">{t('كمية إجمالية', 'Total Qty')}</th>
                   <th className="py-2.5 px-3 w-20">{t('الإنجاز %', '% Done')}</th>
                   <th className="py-2.5 px-3 w-28">{t('قيمة الأعمال الحالية', 'Current Value')}</th>
                   <th className="py-2.5 px-3 w-10"></th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#243628]">
+              <tbody className="divide-y divide-[#E0D9CB] dark:divide-[#243628]">
                 {lines.map((line, idx) => (
-                  <tr key={idx} className="hover:bg-[#1F2E23]/30 transition-colors">
-                    <td className="py-2.5 px-3 font-bold text-[#8FA392] tabular-nums">{line.sr}</td>
+                  <tr key={idx} className="hover:bg-[#F3EFE6]/50 dark:hover:bg-[#1F2E23]/30 transition-colors">
+                    <td className="py-2.5 px-3 font-bold text-[#5C665E] dark:text-[#8FA392] tabular-nums">{line.sr}</td>
                     <td className="py-2.5 px-3">
                       <input
                         type="text"
                         value={line.descriptionAr}
                         onChange={e => updateLine(idx, 'descriptionAr', e.target.value)}
                         placeholder="وصف البند الهندسي..."
-                        className="w-full h-8 px-2.5 rounded-lg border border-[#243628] bg-[#17231A] text-xs font-bold text-[#F3EFE6] focus:border-[#EBB34D]"
+                        className="w-full h-8 px-2.5 rounded-lg border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#17231A] text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6] focus:border-[#EBB34D] shadow-2xs"
                       />
                     </td>
                     <td className="py-2.5 px-3">
                       <select
                         value={line.unitNameAr}
                         onChange={e => updateLine(idx, 'unitNameAr', e.target.value)}
-                        className="w-full h-8 px-1.5 rounded-lg border border-[#243628] bg-[#17231A] text-[11px] font-bold text-[#F3EFE6]"
+                        className="w-full h-8 px-1.5 rounded-lg border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#17231A] text-[11px] font-bold text-[#1A241C] dark:text-[#F3EFE6] shadow-2xs cursor-pointer"
                       >
                         <option value="م3">م3</option>
                         <option value="م2">م2</option>
@@ -464,7 +464,7 @@ export const ExtractModal: React.FC<ExtractModalProps> = ({
                         type="number"
                         value={line.contractQty}
                         onChange={e => updateLine(idx, 'contractQty', Number(e.target.value))}
-                        className="w-full h-8 px-2 rounded-lg border border-[#243628] bg-[#17231A] text-xs font-bold text-[#F3EFE6] tabular-nums"
+                        className="w-full h-8 px-2 rounded-lg border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#17231A] text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6] tabular-nums shadow-2xs"
                       />
                     </td>
                     <td className="py-2.5 px-3">
@@ -472,7 +472,7 @@ export const ExtractModal: React.FC<ExtractModalProps> = ({
                         type="number"
                         value={line.unitRate}
                         onChange={e => updateLine(idx, 'unitRate', Number(e.target.value))}
-                        className="w-full h-8 px-2 rounded-lg border border-[#243628] bg-[#17231A] text-xs font-bold text-[#F3EFE6] tabular-nums"
+                        className="w-full h-8 px-2 rounded-lg border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#17231A] text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6] tabular-nums shadow-2xs"
                       />
                     </td>
                     <td className="py-2.5 px-3">
@@ -480,7 +480,7 @@ export const ExtractModal: React.FC<ExtractModalProps> = ({
                         type="number"
                         value={line.previousQty}
                         onChange={e => updateLine(idx, 'previousQty', Number(e.target.value))}
-                        className="w-full h-8 px-2 rounded-lg border border-[#243628] bg-[#17231A] text-xs font-bold text-[#8FA392] tabular-nums"
+                        className="w-full h-8 px-2 rounded-lg border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#17231A] text-xs font-bold text-[#5C665E] dark:text-[#8FA392] tabular-nums shadow-2xs"
                       />
                     </td>
                     <td className="py-2.5 px-3">
@@ -488,23 +488,23 @@ export const ExtractModal: React.FC<ExtractModalProps> = ({
                         type="number"
                         value={line.currentQty}
                         onChange={e => updateLine(idx, 'currentQty', Number(e.target.value))}
-                        className="w-full h-8 px-2 rounded-lg border border-[#EBB34D]/40 bg-[#3D2D14]/20 text-xs font-bold text-[#EBB34D] tabular-nums"
+                        className="w-full h-8 px-2 rounded-lg border border-[#D99B26]/40 dark:border-[#EBB34D]/40 bg-[#FEF3C7]/40 dark:bg-[#3D2D14]/20 text-xs font-bold text-[#92400E] dark:text-[#EBB34D] tabular-nums shadow-2xs"
                       />
                     </td>
-                    <td className="py-2.5 px-3 font-bold text-[#F3EFE6] tabular-nums">
+                    <td className="py-2.5 px-3 font-bold text-[#1A241C] dark:text-[#F3EFE6] tabular-nums">
                       {formatNumber(line.totalQty)}
                     </td>
-                    <td className="py-2.5 px-3 font-bold text-[#EBB34D] tabular-nums">
+                    <td className="py-2.5 px-3 font-bold text-[#D99B26] dark:text-[#EBB34D] tabular-nums">
                       {line.completionPercent}%
                     </td>
-                    <td className="py-2.5 px-3 font-bold text-[#F3EFE6] tabular-nums">
+                    <td className="py-2.5 px-3 font-bold text-[#1A241C] dark:text-[#F3EFE6] tabular-nums">
                       {formatCurrency(line.currentValue)}
                     </td>
                     <td className="py-2.5 px-3">
                       <button
                         type="button"
                         onClick={() => removeLine(idx)}
-                        className="w-7 h-7 rounded-lg flex items-center justify-center text-rose-400 hover:bg-[#3F2A2A] transition-colors"
+                        className="w-7 h-7 rounded-lg flex items-center justify-center text-rose-500 hover:bg-[#F8EBEB] dark:hover:bg-[#3F2A2A] transition-colors cursor-pointer"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -519,30 +519,30 @@ export const ExtractModal: React.FC<ExtractModalProps> = ({
         {/* Deductions & Settlement Calculation Panel */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Deductions Breakdown */}
-          <div className="p-4 rounded-2xl border border-[#243628] bg-[#121B14] space-y-3">
-            <h4 className="text-xs font-black text-[#F3EFE6] flex items-center gap-2">
-              <Percent className="w-4 h-4 text-[#EBB34D]" />
+          <div className="p-4 rounded-2xl border border-[#E0D9CB] dark:border-[#243628] bg-[#FBF9F5] dark:bg-[#121B14] space-y-3 shadow-2xs">
+            <h4 className="text-xs font-black text-[#1A241C] dark:text-[#F3EFE6] flex items-center gap-2">
+              <Percent className="w-4 h-4 text-[#D99B26] dark:text-[#EBB34D]" />
               <span>{t('تسوية الاستقطاعات والضمانات التعاقدية', 'Contractual Deductions & Retentions')}</span>
             </h4>
 
             <div className="space-y-2 text-xs">
-              <div className="flex justify-between items-center py-1 border-b border-[#243628]">
-                <span className="text-[#8FA392]">
+              <div className="flex justify-between items-center py-1 border-b border-[#E0D9CB] dark:border-[#243628]">
+                <span className="text-[#5C665E] dark:text-[#8FA392]">
                   {t('إجمالي قيمة الأعمال الحالية المنجزة:', 'Total Current Work:')}
                 </span>
-                <span className="font-bold text-[#F3EFE6] tabular-nums">
+                <span className="font-bold text-[#1A241C] dark:text-[#F3EFE6] tabular-nums">
                   {formatCurrency(currentWorkTotal)}
                 </span>
               </div>
 
-              <div className="flex justify-between items-center py-1 border-b border-[#243628] text-rose-400">
+              <div className="flex justify-between items-center py-1 border-b border-[#E0D9CB] dark:border-[#243628] text-rose-600 dark:text-rose-400">
                 <span>(-) استرداد الدفعة المقدمة ({advancePercent}%):</span>
                 <span className="font-bold tabular-nums">
                   -{formatCurrency(advanceDeductionAmount)}
                 </span>
               </div>
 
-              <div className="flex justify-between items-center py-1 border-b border-[#243628] text-blue-400">
+              <div className="flex justify-between items-center py-1 border-b border-[#E0D9CB] dark:border-[#243628] text-blue-600 dark:text-blue-400">
                 <span>(-) استقطاع ضمان أعمال محتجز ({retentionPercent}%):</span>
                 <span className="font-bold tabular-nums">
                   -{formatCurrency(retentionDeductionAmount)}
@@ -550,7 +550,7 @@ export const ExtractModal: React.FC<ExtractModalProps> = ({
               </div>
 
               <div className="flex justify-between items-center py-1">
-                <span className="text-[#8FA392]">
+                <span className="text-[#5C665E] dark:text-[#8FA392]">
                   (-) جزاءات واستقطاعات فنية أخرى:
                 </span>
                 <div className="w-32">
@@ -558,7 +558,7 @@ export const ExtractModal: React.FC<ExtractModalProps> = ({
                     type="number"
                     value={otherDeductions}
                     onChange={e => setOtherDeductions(Number(e.target.value))}
-                    className="w-full h-7 px-2 text-left rounded-lg border border-[#243628] bg-[#17231A] text-xs font-bold text-[#F3EFE6] tabular-nums"
+                    className="w-full h-7 px-2 text-left rounded-lg border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#17231A] text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6] tabular-nums shadow-2xs"
                   />
                 </div>
               </div>
@@ -566,9 +566,9 @@ export const ExtractModal: React.FC<ExtractModalProps> = ({
           </div>
 
           {/* Net Due & Automated Double-Entry GL Preview */}
-          <div className="p-4 rounded-2xl border border-[#EBB34D]/30 bg-[#3D2D14]/20 space-y-3">
+          <div className="p-4 rounded-2xl border border-[#EBB34D]/40 bg-[#FEF3C7]/20 dark:bg-[#3D2D14]/20 space-y-3 shadow-2xs">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-black text-[#F3EFE6]">
+              <span className="text-xs font-black text-[#1A241C] dark:text-[#F3EFE6]">
                 {t('صافي المبلغ المستحق للصرف', 'Net Payable Amount')}
               </span>
               <span className="text-xl font-mono font-black text-[#D99B26] dark:text-[#EBB34D] tabular-nums">
@@ -577,27 +577,27 @@ export const ExtractModal: React.FC<ExtractModalProps> = ({
             </div>
 
             {/* Arabic Tafqeet Box */}
-            <div className="p-2.5 rounded-xl bg-[#121B14] border border-[#243628] text-[11px] text-[#F3EFE6] leading-relaxed">
-              <span className="font-bold text-[#EBB34D] ml-1">{t('فقط وقدره:', 'Tafqeet:')}</span>
+            <div className="p-2.5 rounded-xl bg-white dark:bg-[#121B14] border border-[#E0D9CB] dark:border-[#243628] text-[11px] text-[#1A241C] dark:text-[#F3EFE6] leading-relaxed shadow-2xs">
+              <span className="font-bold text-[#D99B26] dark:text-[#EBB34D] ml-1">{t('فقط وقدره:', 'Tafqeet:')}</span>
               <span className="font-serif font-bold">{tafqeetText || 'صفر جنيه مصري'}</span>
             </div>
 
             {/* Automated Journal Voucher Preview */}
-            <div className="p-2.5 rounded-xl bg-[#121B14] border border-[#243628] text-[10px] space-y-1">
-              <div className="font-bold text-[#A3CFAC] flex items-center gap-1">
+            <div className="p-2.5 rounded-xl bg-white dark:bg-[#121B14] border border-[#E0D9CB] dark:border-[#243628] text-[10px] space-y-1 shadow-2xs">
+              <div className="font-bold text-[#059669] dark:text-[#A3CFAC] flex items-center gap-1">
                 <CheckCircle2 className="w-3 h-3" />
                 <span>{t('توليد القيد المحاسبي المزدوج آلياً في اليومية العامة (GL Voucher):', 'Automated GL Voucher Posting:')}</span>
               </div>
               {extractType === 'OWNER' ? (
-                <div className="text-[#8FA392] space-y-0.5 tabular-nums">
+                <div className="text-[#5C665E] dark:text-[#8FA392] space-y-0.5 tabular-nums">
                   <div>من حـ/ العميل المدين (صافي المستحق): {formatCurrency(netPayable)}</div>
                   <div>من حـ/ أمانات ضمان أعمال محتجزة (5%): {formatCurrency(retentionDeductionAmount)}</div>
                   <div>من حـ/ إطفاء دفعات مقدمة واستقطاعات: {formatCurrency(advanceDeductionAmount + (otherDeductions || 0))}</div>
-                  <div className="text-[#EBB34D] font-bold">إلى حـ/ إيرادات عقود ومقاولات: {formatCurrency(currentWorkTotal)}</div>
+                  <div className="text-[#D99B26] dark:text-[#EBB34D] font-bold">إلى حـ/ إيرادات عقود ومقاولات: {formatCurrency(currentWorkTotal)}</div>
                 </div>
               ) : (
-                <div className="text-[#8FA392] space-y-0.5 tabular-nums">
-                  <div className="text-[#EBB34D] font-bold">من حـ/ تكاليف مشروعات ومقاولي باطن (WIP): {formatCurrency(currentWorkTotal)}</div>
+                <div className="text-[#5C665E] dark:text-[#8FA392] space-y-0.5 tabular-nums">
+                  <div className="text-[#D99B26] dark:text-[#EBB34D] font-bold">من حـ/ تكاليف مشروعات ومقاولي باطن (WIP): {formatCurrency(currentWorkTotal)}</div>
                   <div>إلى حـ/ مقاول الباطن الدائن (صافي المستحق): {formatCurrency(netPayable)}</div>
                   <div>إلى حـ/ أمانات محتجزة لمقاول الباطن (5%): {formatCurrency(retentionDeductionAmount)}</div>
                   <div>إلى حـ/ استرداد دفعات مقدمة مقاولي باطن: {formatCurrency(advanceDeductionAmount + (otherDeductions || 0))}</div>

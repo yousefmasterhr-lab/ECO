@@ -120,8 +120,8 @@ export const ReportsModule: React.FC = () => {
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="space-y-1.5">
             <div className="flex items-center gap-2">
-              <span className="text-[11px] font-black px-3 py-1 rounded-full bg-[#2A3F30] text-[#A3CFAC] border border-[#3E5C46] flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-[#EBB34D]" />
+              <span className="text-[11px] font-black px-3 py-1 rounded-full bg-[#EAF3EB] text-[#245E33] border border-[#B8D8BC] dark:bg-[#2A3F30] dark:text-[#A3CFAC] dark:border-[#3E5C46] flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-[#D99B26] dark:text-[#EBB34D]" />
                 {t('منظومة التقارير المالية والذكاء التحليلي (المرحلة 5)', 'Financial BI & Reporting Engine (Phase 5)')}
               </span>
               <span className="text-xs font-bold text-[#5C665E] dark:text-[#8FA392]">
@@ -141,10 +141,10 @@ export const ReportsModule: React.FC = () => {
 
           <div className="flex items-center gap-3 shrink-0 self-start lg:self-center">
             <div className="px-3.5 py-2 rounded-2xl bg-white/80 dark:bg-[#121B14] border border-[#E0D9CB] dark:border-[#243628] flex items-center gap-2 text-xs shadow-xs">
-              <ShieldCheck className="w-4 h-4 text-[#EBB34D]" />
+              <ShieldCheck className="w-4 h-4 text-[#D99B26] dark:text-[#EBB34D]" />
               <div className="text-right">
                 <span className="text-[10px] text-[#5C665E] dark:text-[#8FA392] block">{t('قاعدة البيانات النشطة:', 'Active DB Context:')}</span>
-                <span className="font-mono font-bold text-[#EBB34D]">{activeDatabase}</span>
+                <span className="font-mono font-bold text-[#D99B26] dark:text-[#EBB34D]">{activeDatabase}</span>
               </div>
             </div>
           </div>
@@ -161,7 +161,7 @@ export const ReportsModule: React.FC = () => {
                 onClick={() => handleTabChange(tab.id)}
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
                   isActive
-                    ? 'bg-[#1F2E23] text-[#EBB34D] border border-[#EBB34D] shadow-md shadow-black/20'
+                    ? 'bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] dark:bg-[#1F2E23] dark:text-[#EBB34D] dark:border-[#EBB34D] shadow-xs'
                     : 'bg-white dark:bg-[#121A13] border border-[#E0D9CB] dark:border-[#243628] text-[#5C665E] dark:text-[#8FA392] hover:text-[#1A241C] dark:hover:text-[#F3EFE6] hover:bg-[#EAE4D7] dark:hover:bg-[#1D2B20]'
                 }`}
               >
@@ -171,8 +171,8 @@ export const ReportsModule: React.FC = () => {
                   <span
                     className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
                       isActive
-                        ? 'bg-[#EBB34D]/20 text-[#EBB34D] border border-[#EBB34D]/30'
-                        : 'bg-[#2A3F30] border border-[#3E5C46] text-[#A3CFAC]'
+                        ? 'bg-[#D99B26]/20 text-[#92400E] dark:text-[#EBB34D] border border-[#D99B26]/30'
+                        : 'bg-[#EAF3EB] text-[#245E33] border border-[#B8D8BC] dark:bg-[#2A3F30] dark:border-[#3E5C46] dark:text-[#A3CFAC]'
                     }`}
                   >
                     {tab.badgeAr}

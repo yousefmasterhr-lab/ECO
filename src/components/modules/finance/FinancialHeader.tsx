@@ -170,11 +170,11 @@ export const FinancialHeader: React.FC = () => {
         >
           <div className="flex items-center justify-between text-xs text-[#5C665E] dark:text-[#8FA392]">
             <span>{t('الأصول المتداولة (12)', 'Current Assets')}</span>
-            <div className="w-8 h-8 rounded-lg bg-[#2A3F30] text-[#A3CFAC] flex items-center justify-center">
-              <span className="w-2 h-2 rounded-full bg-[#34D399]" />
+            <div className="w-8 h-8 rounded-lg bg-[#EAF3EB] dark:bg-[#2A3F30] text-[#245E33] dark:text-[#A3CFAC] flex items-center justify-center">
+              <span className="w-2 h-2 rounded-full bg-[#059669] dark:bg-[#34D399]" />
             </div>
           </div>
-          <div className="text-lg sm:text-xl font-mono font-black text-[#A3CFAC] tabular-nums">
+          <div className="text-lg sm:text-xl font-mono font-black text-[#245E33] dark:text-[#A3CFAC] tabular-nums">
             {accounts.find(a => a.code === '1')?.leafCount || 108}{' '}
             <span className="text-xs font-normal text-[#5C665E] dark:text-[#8FA392]">{t('فرعي', 'sub')}</span>
           </div>
@@ -191,11 +191,11 @@ export const FinancialHeader: React.FC = () => {
         >
           <div className="flex items-center justify-between text-xs text-[#5C665E] dark:text-[#8FA392]">
             <span>{t('الخصوم والملكية (2)', 'Liabilities & Equity')}</span>
-            <div className="w-8 h-8 rounded-lg bg-[#3F2A2A] text-[#EFA3A3] flex items-center justify-center">
-              <span className="w-2 h-2 rounded-full bg-[#EFA3A3]" />
+            <div className="w-8 h-8 rounded-lg bg-[#F8EBEB] dark:bg-[#3F2A2A] text-[#7A2828] dark:text-[#EFA3A3] flex items-center justify-center">
+              <span className="w-2 h-2 rounded-full bg-[#DC2626] dark:bg-[#EFA3A3]" />
             </div>
           </div>
-          <div className="text-lg sm:text-xl font-mono font-black text-[#EFA3A3] tabular-nums">
+          <div className="text-lg sm:text-xl font-mono font-black text-[#7A2828] dark:text-[#EFA3A3] tabular-nums">
             {accounts.find(a => a.code === '2')?.leafCount || 120}{' '}
             <span className="text-xs font-normal text-[#5C665E] dark:text-[#8FA392]">{t('فرعي', 'sub')}</span>
           </div>

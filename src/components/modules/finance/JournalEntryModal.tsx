@@ -267,8 +267,8 @@ export const JournalEntryModal: React.FC<JournalEntryModalProps> = ({ onClose, o
           <span
             className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
               isBalanced
-                ? 'bg-[#2A3F30] text-[#A3CFAC] border border-[#3E5C46]'
-                : 'bg-[#3F2A2A] text-[#EFA3A3] border border-[#5C3E3E]'
+                ? 'bg-[#EAF3EB] text-[#245E33] border border-[#B8D8BC] dark:bg-[#2A3F30] dark:text-[#A3CFAC] dark:border-[#3E5C46]'
+                : 'bg-[#F8EBEB] text-[#7A2828] border border-[#E3B8B8] dark:bg-[#3F2A2A] dark:text-[#EFA3A3] dark:border-[#5C3E3E]'
             }`}
           >
             {isBalanced ? t('القيد متزن تماماً', 'Balanced') : t('القيد غير متزن', 'Unbalanced')}
@@ -280,7 +280,7 @@ export const JournalEntryModal: React.FC<JournalEntryModalProps> = ({ onClose, o
           <button
             type="button"
             onClick={onClose}
-            className="px-5 py-2.5 text-xs font-bold rounded-xl border border-[#243628] bg-[#1F2E23] text-[#8FA392] hover:text-[#F3EFE6] transition-colors cursor-pointer"
+            className="px-5 py-2.5 text-xs font-bold rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-[#F3EFE6] dark:bg-[#1F2E23] text-[#5C665E] dark:text-[#8FA392] hover:text-[#1A241C] dark:hover:text-[#F3EFE6] transition-colors cursor-pointer"
           >
             {t('إلغاء', 'Cancel')}
           </button>
@@ -303,22 +303,22 @@ export const JournalEntryModal: React.FC<JournalEntryModalProps> = ({ onClose, o
     >
       <form onSubmit={handleSubmit} className="p-6 space-y-5">
         {errorMessage && (
-          <div className="p-3.5 rounded-xl bg-[#3F2A2A] border border-[#5C3E3E] text-[#EFA3A3] text-xs flex items-center gap-2">
+          <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 dark:bg-[#3F2A2A] dark:border-[#5C3E3E] dark:text-[#EFA3A3] text-xs flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{errorMessage}</span>
           </div>
         )}
 
         {/* Form Header Parameters */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 rounded-xl border border-[#243628] bg-[#121B14]">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-[#FBF9F5] dark:bg-[#121B14]">
           <div>
-            <label className="block text-xs font-bold text-[#F3EFE6] mb-1.5">
+            <label className="block text-xs font-bold text-[#5C665E] dark:text-[#8FA392] mb-1.5">
               {t('نوع القيد المحاسبي', 'Voucher Type')}
             </label>
             <select
               value={entryType}
               onChange={e => setEntryType(e.target.value)}
-              className="w-full px-3 py-2 text-xs font-semibold rounded-xl border border-[#243628] bg-[#17231A] text-[#F3EFE6] focus:outline-hidden focus:border-[#EBB34D]"
+              className="w-full px-3 py-2 text-xs font-semibold rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#17231A] text-[#1A241C] dark:text-[#F3EFE6] focus:outline-hidden focus:border-[#EBB34D]"
             >
               <option value="قيد يومية عام">قيد يومية عام (General Journal)</option>
               <option value="قيد تسوية وإقفال">قيد تسوية وإقفال (Adjustment)</option>
@@ -328,23 +328,23 @@ export const JournalEntryModal: React.FC<JournalEntryModalProps> = ({ onClose, o
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-[#F3EFE6] mb-1.5">
+            <label className="block text-xs font-bold text-[#5C665E] dark:text-[#8FA392] mb-1.5">
               {t('تاريخ القيد الدفتري', 'Journal Date')} *
             </label>
             <div className="relative">
-              <Calendar className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-[#8FA392]" />
+              <Calendar className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-[#5C665E] dark:text-[#8FA392]" />
               <input
                 type="date"
                 required
                 value={noteDate}
                 onChange={e => setNoteDate(e.target.value)}
-                className="w-full ps-9 pe-3 py-2 text-xs font-mono rounded-xl border border-[#243628] bg-[#17231A] text-[#F3EFE6] focus:outline-hidden focus:border-[#EBB34D] tabular-nums"
+                className="w-full ps-9 pe-3 py-2 text-xs font-mono rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#17231A] text-[#1A241C] dark:text-[#F3EFE6] focus:outline-hidden focus:border-[#EBB34D] tabular-nums"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-[#F3EFE6] mb-1.5">
+            <label className="block text-xs font-bold text-[#5C665E] dark:text-[#8FA392] mb-1.5">
               {t('البيان العام / شرح القيد', 'General Memo')} *
             </label>
             <input
@@ -353,7 +353,7 @@ export const JournalEntryModal: React.FC<JournalEntryModalProps> = ({ onClose, o
               placeholder={t('مثال: إثبات استحقاق مصاريف إدارية أو إيرادات مشاريع...', 'e.g. Accrual of expenses...')}
               value={generalMemo}
               onChange={e => setGeneralMemo(e.target.value)}
-              className="w-full px-3 py-2 text-xs rounded-xl border border-[#243628] bg-[#17231A] text-[#F3EFE6] focus:outline-hidden focus:border-[#EBB34D]"
+              className="w-full px-3 py-2 text-xs rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#17231A] text-[#1A241C] dark:text-[#F3EFE6] focus:outline-hidden focus:border-[#EBB34D]"
             />
           </div>
         </div>
@@ -363,7 +363,7 @@ export const JournalEntryModal: React.FC<JournalEntryModalProps> = ({ onClose, o
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <FileSpreadsheet className="w-4 h-4 text-[#EBB34D]" />
-              <h3 className="text-xs font-bold text-[#F3EFE6]">
+              <h3 className="text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6]">
                 {t('جدول الأطراف المحاسبية المتزنة (Debit & Credit Lines)', 'Journal Lines')}
               </h3>
             </div>
@@ -371,18 +371,18 @@ export const JournalEntryModal: React.FC<JournalEntryModalProps> = ({ onClose, o
             <button
               type="button"
               onClick={handleAddLine}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl bg-[#1F2E23] hover:bg-[#3D2D14] text-[#EBB34D] border border-[#243628] transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl bg-[#F3EFE6] hover:bg-[#EAE4D7] dark:bg-[#1F2E23] dark:hover:bg-[#3D2D14] text-[#D99B26] dark:text-[#EBB34D] border border-[#E0D9CB] dark:border-[#243628] transition-colors cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>{t('إضافة طرف / سطر محاسبي', 'Add Line')}</span>
             </button>
           </div>
 
-          <div className="rounded-xl border border-[#243628] bg-[#121B14] overflow-hidden">
+          <div className="rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#121B14] overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-start text-xs">
                 <thead>
-                  <tr className="border-b border-[#243628] bg-[#17231A] text-[#8FA392]">
+                  <tr className="border-b border-[#E0D9CB] dark:border-[#243628] bg-[#F3EFE6] dark:bg-[#17231A] text-[#5C665E] dark:text-[#8FA392]">
                     <th className="py-2.5 px-3 text-start w-10">#</th>
                     <th className="py-2.5 px-3 text-start min-w-[220px]">
                       {t('الحساب المحاسبي (المستوى 5)', 'Level 5 Account')} *
@@ -394,13 +394,13 @@ export const JournalEntryModal: React.FC<JournalEntryModalProps> = ({ onClose, o
                     <th className="py-2.5 px-2 text-center w-20">{t('إجراء', 'Action')}</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#243628]">
+                <tbody className="divide-y divide-[#E0D9CB] dark:divide-[#243628]">
                   {lines.map((line, index) => (
                     <tr
                       key={line.sr}
-                      className="hover:bg-[#1F2E23]/30 transition-colors"
+                      className="hover:bg-[#F3EFE6]/50 dark:hover:bg-[#1F2E23]/30 transition-colors"
                     >
-                      <td className="py-2.5 px-3 font-bold text-[#8FA392] tabular-nums">
+                      <td className="py-2.5 px-3 font-bold text-[#5C665E] dark:text-[#8FA392] tabular-nums">
                         {line.sr}
                       </td>
 
@@ -409,7 +409,7 @@ export const JournalEntryModal: React.FC<JournalEntryModalProps> = ({ onClose, o
                         <select
                           value={line.level5Id}
                           onChange={e => handleLineChange(index, 'level5Id', e.target.value)}
-                          className="w-full px-2.5 py-1.5 text-xs font-semibold rounded-lg border border-[#243628] bg-[#17231A] text-[#F3EFE6] focus:outline-hidden focus:border-[#EBB34D]"
+                          className="w-full px-2.5 py-1.5 text-xs font-semibold rounded-lg border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#17231A] text-[#1A241C] dark:text-[#F3EFE6] focus:outline-hidden focus:border-[#EBB34D]"
                         >
                           {leafAccounts.map(acc => (
                             <option key={acc.code} value={acc.code}>
@@ -430,7 +430,7 @@ export const JournalEntryModal: React.FC<JournalEntryModalProps> = ({ onClose, o
                             handleLineChange(index, 'debit', parseFloat(e.target.value) || 0)
                           }
                           placeholder="0.00"
-                          className="w-full px-2.5 py-1.5 text-xs text-end font-bold rounded-lg border border-[#243628] bg-[#17231A] text-[#A3CFAC] focus:outline-hidden focus:border-[#A3CFAC] tabular-nums"
+                          className="w-full px-2.5 py-1.5 text-xs text-end font-bold rounded-lg border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#17231A] text-[#245E33] dark:text-[#A3CFAC] focus:outline-hidden focus:border-[#245E33] dark:focus:border-[#A3CFAC] tabular-nums"
                         />
                       </td>
 
@@ -445,7 +445,7 @@ export const JournalEntryModal: React.FC<JournalEntryModalProps> = ({ onClose, o
                             handleLineChange(index, 'credit', parseFloat(e.target.value) || 0)
                           }
                           placeholder="0.00"
-                          className="w-full px-2.5 py-1.5 text-xs text-end font-bold rounded-lg border border-[#243628] bg-[#17231A] text-[#EBB34D] focus:outline-hidden focus:border-[#EBB34D] tabular-nums"
+                          className="w-full px-2.5 py-1.5 text-xs text-end font-bold rounded-lg border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#17231A] text-[#7A2828] dark:text-[#EBB34D] focus:outline-hidden focus:border-[#7A2828] dark:focus:border-[#EBB34D] tabular-nums"
                         />
                       </td>
 
@@ -454,7 +454,7 @@ export const JournalEntryModal: React.FC<JournalEntryModalProps> = ({ onClose, o
                         <select
                           value={line.costcenterId}
                           onChange={e => handleLineChange(index, 'costcenterId', e.target.value)}
-                          className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-[#243628] bg-[#17231A] text-[#F3EFE6] focus:outline-hidden focus:border-[#EBB34D]"
+                          className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#17231A] text-[#1A241C] dark:text-[#F3EFE6] focus:outline-hidden focus:border-[#EBB34D]"
                         >
                           {costCenters.map(cc => (
                             <option key={cc.id || cc.Costcenter_ID} value={cc.id || cc.Costcenter_ID}>
@@ -471,7 +471,7 @@ export const JournalEntryModal: React.FC<JournalEntryModalProps> = ({ onClose, o
                           value={line.description}
                           placeholder={generalMemo || t('بيان تفصيلي لهذا السطر...', 'Line memo...')}
                           onChange={e => handleLineChange(index, 'description', e.target.value)}
-                          className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-[#243628] bg-[#17231A] text-[#F3EFE6] focus:outline-hidden focus:border-[#EBB34D]"
+                          className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#17231A] text-[#1A241C] dark:text-[#F3EFE6] focus:outline-hidden focus:border-[#EBB34D]"
                         />
                       </td>
 
@@ -481,7 +481,7 @@ export const JournalEntryModal: React.FC<JournalEntryModalProps> = ({ onClose, o
                           type="button"
                           onClick={() => handleRemoveLine(index)}
                           disabled={lines.length <= 2}
-                          className="p-1 rounded-lg text-rose-400 hover:text-rose-300 hover:bg-[#3F2A2A] transition-colors disabled:opacity-20 disabled:cursor-not-allowed cursor-pointer"
+                          className="p-1 rounded-lg text-rose-500 hover:text-rose-600 dark:text-rose-400 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-[#3F2A2A] transition-colors disabled:opacity-20 disabled:cursor-not-allowed cursor-pointer"
                           title={t('حذف السطر', 'Delete line')}
                         >
                           <Trash2 className="w-4 h-4 mx-auto" />
@@ -496,14 +496,14 @@ export const JournalEntryModal: React.FC<JournalEntryModalProps> = ({ onClose, o
         </div>
 
         {/* Real-Time Balance Verification Strip */}
-        <div className="p-4 rounded-xl border border-[#243628] bg-[#121B14] flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="p-4 rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-[#FBF9F5] dark:bg-[#121B14] flex flex-col sm:flex-row items-center justify-between gap-4">
           {/* Status Indicator */}
           <div className="flex items-center gap-3">
             <div
               className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold ${
                 isBalanced
-                  ? 'bg-[#2A3F30] text-[#A3CFAC] border border-[#3E5C46]'
-                  : 'bg-[#3F2A2A] text-[#EFA3A3] border border-[#5C3E3E]'
+                  ? 'bg-[#EAF3EB] text-[#245E33] border border-[#B8D8BC] dark:bg-[#2A3F30] dark:text-[#A3CFAC] dark:border-[#3E5C46]'
+                  : 'bg-[#F8EBEB] text-[#7A2828] border border-[#E3B8B8] dark:bg-[#3F2A2A] dark:text-[#EFA3A3] dark:border-[#5C3E3E]'
               }`}
             >
               {isBalanced ? <CheckCircle2 className="w-5 h-5" /> : <Scale className="w-5 h-5" />}
@@ -513,7 +513,7 @@ export const JournalEntryModal: React.FC<JournalEntryModalProps> = ({ onClose, o
               <div className="flex items-center gap-2">
                 <span
                   className={`text-xs font-black ${
-                    isBalanced ? 'text-[#A3CFAC]' : 'text-[#EFA3A3]'
+                    isBalanced ? 'text-[#245E33] dark:text-[#A3CFAC]' : 'text-[#7A2828] dark:text-[#EFA3A3]'
                   }`}
                 >
                   {isBalanced
@@ -535,11 +535,11 @@ export const JournalEntryModal: React.FC<JournalEntryModalProps> = ({ onClose, o
               </div>
 
               {isBalanced ? (
-                <p className="text-[11px] text-[#8FA392]">
+                <p className="text-[11px] text-[#5C665E] dark:text-[#8FA392]">
                   {tafqeetText}
                 </p>
               ) : (
-                <p className="text-[11px] text-[#EFA3A3] font-mono">
+                <p className="text-[11px] text-[#7A2828] dark:text-[#EFA3A3] font-mono">
                   {t('قيمة الفارق غير المتزن:', 'Difference:')}{' '}
                   <strong>{formatCurrency(difference)}</strong>
                 </p>
@@ -550,19 +550,19 @@ export const JournalEntryModal: React.FC<JournalEntryModalProps> = ({ onClose, o
           {/* Sum Balances Box */}
           <div className="flex items-center gap-4 text-xs font-mono self-end sm:self-auto tabular-nums">
             <div className="text-end">
-              <span className="text-[10px] text-[#8FA392] block">
+              <span className="text-[10px] text-[#5C665E] dark:text-[#8FA392] block">
                 {t('إجمالي المدين', 'Total Debit')}
               </span>
-              <span className="font-bold text-[#A3CFAC] text-sm">
+              <span className="font-bold text-[#245E33] dark:text-[#A3CFAC] text-sm">
                 {formatCurrency(debitTotal)}
               </span>
             </div>
-            <div className="h-8 w-px bg-[#243628]" />
+            <div className="h-8 w-px bg-[#E0D9CB] dark:bg-[#243628]" />
             <div className="text-end">
-              <span className="text-[10px] text-[#8FA392] block">
+              <span className="text-[10px] text-[#5C665E] dark:text-[#8FA392] block">
                 {t('إجمالي الدائن', 'Total Credit')}
               </span>
-              <span className="font-bold text-[#EBB34D] text-sm">
+              <span className="font-bold text-[#D99B26] dark:text-[#EBB34D] text-sm">
                 {formatCurrency(creditTotal)}
               </span>
             </div>

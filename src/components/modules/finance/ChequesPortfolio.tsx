@@ -278,11 +278,11 @@ export const ChequesPortfolio: React.FC = () => {
               <span>{t('تم تحصيلها بالبنك', 'Cleared in Bank')}</span>
               <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold">({t('تجريبي', 'Preview')})</span>
             </span>
-            <div className="w-8 h-8 rounded-lg bg-[#2A3F30] text-[#A3CFAC] flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-[#EAF3EB] text-[#245E33] dark:bg-[#2A3F30] dark:text-[#A3CFAC] flex items-center justify-center">
               <CheckCircle2 className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-lg sm:text-xl font-inter font-black text-[#A3CFAC] tabular-nums">
+          <div className="text-lg sm:text-xl font-inter font-black text-[#245E33] dark:text-[#A3CFAC] tabular-nums">
             {formatCurrency(clearedAmount, false)} <span className="text-xs font-normal">ج.م</span>
           </div>
           <div className="text-[11px] text-[#5C665E] dark:text-[#8FA392]">
@@ -297,11 +297,11 @@ export const ChequesPortfolio: React.FC = () => {
               <span>{t('شيكات مرتدة / مرفوضة', 'Bounced Cheques')}</span>
               <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold">({t('تجريبي', 'Preview')})</span>
             </span>
-            <div className="w-8 h-8 rounded-lg bg-[#3F2A2A] text-[#EFA3A3] flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-[#F8EBEB] text-[#7A2828] dark:bg-[#3F2A2A] dark:text-[#EFA3A3] flex items-center justify-center">
               <AlertTriangle className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-lg sm:text-xl font-inter font-black text-[#EFA3A3] tabular-nums">
+          <div className="text-lg sm:text-xl font-inter font-black text-[#7A2828] dark:text-[#EFA3A3] tabular-nums">
             {formatCurrency(bouncedAmount, false)} <span className="text-xs font-normal">ج.م</span>
           </div>
           <div className="text-[11px] text-[#5C665E] dark:text-[#8FA392]">
@@ -423,7 +423,7 @@ export const ChequesPortfolio: React.FC = () => {
                     </td>
 
                     <td className="py-3 px-3.5 text-end font-inter font-black text-[#1A241C] dark:text-[#F3EFE6] whitespace-nowrap tabular-nums">
-                      {formatCurrency(cheque.amount, false)} <span className="text-[10px] font-normal text-[#8FA392]">ج.م</span>
+                      {formatCurrency(cheque.amount, false)} <span className="text-[10px] font-normal text-[#5C665E] dark:text-[#8FA392]">ج.م</span>
                     </td>
 
                     <td className="py-3 px-3.5 text-center whitespace-nowrap">

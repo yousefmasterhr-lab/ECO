@@ -300,7 +300,7 @@ export const PurchaseBillModal: React.FC<PurchaseBillModalProps> = ({ onClose, o
       )}
       icon={Truck}
       badge={
-        <span className="px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-[#3D2D14] text-[#EBB34D] border border-[#5C431D]">
+        <span className="px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] dark:bg-[#3D2D14] dark:text-[#EBB34D] dark:border-[#5C431D]">
           #{toWesternDigits(noteNo)}
         </span>
       }
@@ -309,7 +309,7 @@ export const PurchaseBillModal: React.FC<PurchaseBillModalProps> = ({ onClose, o
           <button
             type="button"
             onClick={onClose}
-            className="px-5 py-2.5 text-xs font-bold rounded-xl border border-[#243628] bg-[#1F2E23] text-[#8FA392] hover:text-[#F3EFE6] transition-colors cursor-pointer"
+            className="px-5 py-2.5 text-xs font-bold rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-[#F3EFE6] dark:bg-[#1F2E23] text-[#5C665E] dark:text-[#8FA392] hover:text-[#1A241C] dark:hover:text-[#F3EFE6] transition-colors cursor-pointer"
           >
             {t('إلغاء', 'Cancel')}
           </button>
@@ -318,9 +318,9 @@ export const PurchaseBillModal: React.FC<PurchaseBillModalProps> = ({ onClose, o
             type="button"
             onClick={handleSubmit}
             disabled={isSubmitting || grandTotal <= 0}
-            className="flex items-center gap-2 px-6 py-2.5 text-xs font-bold rounded-xl bg-[#D99B26] hover:bg-[#C58F38] text-[#0E1610] shadow-md transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+            className="flex items-center gap-2 px-6 py-2.5 text-xs font-bold rounded-xl bg-gradient-to-l from-amber-600 to-amber-500 hover:from-amber-700 hover:to-amber-600 text-white shadow-md transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
           >
-            <CheckCircle2 className="w-4 h-4 text-[#0E1610]" />
+            <CheckCircle2 className="w-4 h-4 text-white" />
             {isSubmitting ? (
               <span>{t('جاري الحفظ والتسعير...', 'Processing & Costing...')}</span>
             ) : (

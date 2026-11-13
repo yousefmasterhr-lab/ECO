@@ -88,17 +88,17 @@ export const TreasuryModule: React.FC = () => {
           <div className="flex flex-wrap items-center gap-2.5 self-start lg:self-auto">
             <button
               onClick={() => setModalMode('RECEIPT')}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-[#2A3F30] text-[#A3CFAC] hover:bg-[#344F3C] border border-[#344F3C] shadow-xs transition-all cursor-pointer"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-[#EAF3EB] text-[#245E33] border border-[#B8D8BC] hover:bg-[#D5EAD8] dark:bg-[#2A3F30] dark:text-[#A3CFAC] dark:border-[#344F3C] dark:hover:bg-[#344F3C] shadow-xs transition-all cursor-pointer"
             >
-              <ArrowDownLeft className="w-4 h-4 text-[#A3CFAC]" />
+              <ArrowDownLeft className="w-4 h-4 text-[#245E33] dark:text-[#A3CFAC]" />
               <span>{t('تحرير سند قبض (+)', 'New Receipt Voucher (+)')}</span>
             </button>
 
             <button
               onClick={() => setModalMode('PAYMENT')}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-[#3F2A2A] text-[#EFA3A3] hover:bg-[#4E3535] border border-[#4E3535] shadow-xs transition-all cursor-pointer"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-[#F8EBEB] text-[#7A2828] border border-[#E3B8B8] hover:bg-[#F3D5D5] dark:bg-[#3F2A2A] dark:text-[#EFA3A3] dark:border-[#4E3535] dark:hover:bg-[#4E3535] shadow-xs transition-all cursor-pointer"
             >
-              <ArrowUpRight className="w-4 h-4 text-[#EFA3A3]" />
+              <ArrowUpRight className="w-4 h-4 text-[#7A2828] dark:text-[#EFA3A3]" />
               <span>{t('تحرير سند صرف (-)', 'New Payment Voucher (-)')}</span>
             </button>
 
@@ -135,7 +135,7 @@ export const TreasuryModule: React.FC = () => {
               </span>
               <span className="text-[#5C665E] dark:text-[#8FA392]">
                 {t('الالتزامات الوشيكة (تجريبي):', 'Obligations (Est):')}
-                <strong className="text-[#8FA392] ms-1 font-inter tabular-nums">
+                <strong className="text-[#5C665E] dark:text-[#8FA392] ms-1 font-inter tabular-nums">
                   {formatCurrency(shortTermPayables)}
                 </strong>
               </span>
@@ -167,7 +167,7 @@ export const TreasuryModule: React.FC = () => {
             <div>
               <h2 className="text-sm font-bold text-[#1A241C] dark:text-[#F3EFE6] flex items-center gap-2">
                 <span>{t('صناديق الخزينة النقدية (Cash Registers)', 'Cash Registers')}</span>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#2A3F30] text-[#A3CFAC] border border-[#243628]">
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#EAF3EB] text-[#245E33] border border-[#B8D8BC] dark:bg-[#2A3F30] dark:text-[#A3CFAC] dark:border-[#243628]">
                   {t('بيانات مطابقة لقاعدة البيانات', 'Live Database Verified')}
                 </span>
               </h2>
@@ -206,7 +206,7 @@ export const TreasuryModule: React.FC = () => {
                   </div>
                 </div>
 
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#2A3F30] text-[#A3CFAC] border border-[#243628] shrink-0">
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#EAF3EB] text-[#245E33] border border-[#B8D8BC] dark:bg-[#2A3F30] dark:text-[#A3CFAC] dark:border-[#243628] shrink-0">
                   {t('نشط', 'Active')}
                 </span>
               </div>
@@ -316,8 +316,8 @@ export const TreasuryModule: React.FC = () => {
                 >
                   {copiedId === bank.id ? (
                     <>
-                      <Check className="w-3.5 h-3.5 text-[#A3CFAC]" />
-                      <span className="text-[#A3CFAC]">{t('تم النسخ', 'Copied')}</span>
+                      <Check className="w-3.5 h-3.5 text-[#245E33] dark:text-[#A3CFAC]" />
+                      <span className="text-[#245E33] dark:text-[#A3CFAC]">{t('تم النسخ', 'Copied')}</span>
                     </>
                   ) : (
                     <>
@@ -379,8 +379,8 @@ export const TreasuryModule: React.FC = () => {
                     <span
                       className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-[10px] font-bold border ${
                         v.voucherType === 'RECEIPT'
-                          ? 'bg-[#2A3F30] text-[#A3CFAC] border-[#243628]'
-                          : 'bg-[#3F2A2A] text-[#EFA3A3] border-[#243628]'
+                          ? 'bg-[#EAF3EB] text-[#245E33] border-[#B8D8BC] dark:bg-[#2A3F30] dark:text-[#A3CFAC] dark:border-[#243628]'
+                          : 'bg-[#F8EBEB] text-[#7A2828] border-[#E3B8B8] dark:bg-[#3F2A2A] dark:text-[#EFA3A3] dark:border-[#243628]'
                       }`}
                     >
                       {v.voucherType === 'RECEIPT' ? t('سند قبض', 'Receipt') : t('سند صرف', 'Payment')}
@@ -397,7 +397,7 @@ export const TreasuryModule: React.FC = () => {
                   </td>
                   <td className="py-3 px-3 text-end font-inter font-black text-[#1A241C] dark:text-[#F3EFE6] tabular-nums">
                     <span className="me-1.5">{formatCurrency(v.amount, false)}</span>
-                    <span className="text-[10px] font-bold text-[#8FA392]">ج.م</span>
+                    <span className="text-[10px] font-bold text-[#5C665E] dark:text-[#8FA392]">ج.م</span>
                   </td>
                 </tr>
               ))}

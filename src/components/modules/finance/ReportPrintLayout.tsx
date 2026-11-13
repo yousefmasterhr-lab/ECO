@@ -79,30 +79,30 @@ export const ReportPrintLayout: React.FC<ReportPrintLayoutProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       maxWidth={currentOrientation === 'landscape' ? 'max-w-[96vw]' : 'max-w-6xl'}
-      overlayClassName="bg-[#07130E]/95 backdrop-blur-md"
-      className="bg-[#091812] border border-[#1A3327] text-slate-900 print:border-none print:shadow-none print:bg-white print:text-slate-900 print:max-w-none print:w-full print:h-auto"
-      contentClassName="bg-[#091812] print:bg-white print:p-0"
+      overlayClassName="bg-black/60 backdrop-blur-md"
+      className="bg-[#FBF9F5] dark:bg-[#0E1610] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6] print:border-none print:shadow-none print:bg-white print:text-slate-900 print:max-w-none print:w-full print:h-auto"
+      contentClassName="bg-[#F3EFE6] dark:bg-[#0E1610] print:bg-white print:p-0"
       customHeader={
-        <div className="flex items-center justify-between p-4 border-b border-[#1A3327] bg-[#0D1F17] print:hidden shrink-0">
+        <div className="flex items-center justify-between p-4 border-b border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#121B14] print:hidden shrink-0">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-[#1A3327] text-[#A3CFAC] border border-[#244737] flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-[#EAF3EB] text-[#245E33] border border-[#B8D8BC] dark:bg-[#1A3327] dark:text-[#A3CFAC] dark:border-[#244737] flex items-center justify-center">
               <Printer className="w-4 h-4" />
             </div>
-            <span className="text-xs font-black text-[#F3EFE6]">
+            <span className="text-xs font-black text-[#1A241C] dark:text-[#F3EFE6]">
               {t('معاينة طباعة التقرير المالي المعتمد', 'Official Financial Report Print Preview')}
             </span>
           </div>
 
           <div className="flex items-center gap-2">
             {/* Landscape / Portrait Orientation Toggle */}
-            <div className="flex items-center gap-1 bg-[#091812] p-1 rounded-lg border border-[#1A3327] text-xs text-white">
+            <div className="flex items-center gap-1 bg-[#F3EFE6] dark:bg-[#1A241C] p-1 rounded-lg border border-[#E0D9CB] dark:border-[#243628] text-xs">
               <button
                 type="button"
                 onClick={() => handleOrientationChange('landscape')}
                 className={`px-2.5 py-1 rounded transition-all cursor-pointer ${
                   currentOrientation === 'landscape'
-                    ? 'bg-amber-500 font-bold text-slate-950'
-                    : 'text-slate-300 hover:text-white'
+                    ? 'bg-[#D99B26] font-bold text-[#0E1610]'
+                    : 'text-[#5C665E] dark:text-[#8FA392] hover:text-[#1A241C] dark:hover:text-[#F3EFE6]'
                 }`}
               >
                 أفقي (Landscape)
@@ -112,8 +112,8 @@ export const ReportPrintLayout: React.FC<ReportPrintLayoutProps> = ({
                 onClick={() => handleOrientationChange('portrait')}
                 className={`px-2.5 py-1 rounded transition-all cursor-pointer ${
                   currentOrientation === 'portrait'
-                    ? 'bg-amber-500 font-bold text-slate-950'
-                    : 'text-slate-300 hover:text-white'
+                    ? 'bg-[#D99B26] font-bold text-[#0E1610]'
+                    : 'text-[#5C665E] dark:text-[#8FA392] hover:text-[#1A241C] dark:hover:text-[#F3EFE6]'
                 }`}
               >
                 رأسي (Portrait)
@@ -130,7 +130,7 @@ export const ReportPrintLayout: React.FC<ReportPrintLayoutProps> = ({
 
             <button
               onClick={onClose}
-              className="w-8 h-8 rounded-xl flex items-center justify-center text-[#8FA392] hover:text-[#F3EFE6] hover:bg-[#1A3327] transition-colors cursor-pointer"
+              className="w-8 h-8 rounded-xl flex items-center justify-center text-[#5C665E] hover:text-[#1A241C] hover:bg-[#F3EFE6] dark:text-[#8FA392] dark:hover:text-[#F3EFE6] dark:hover:bg-[#1A3327] transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>

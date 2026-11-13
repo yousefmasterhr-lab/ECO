@@ -172,12 +172,12 @@ export const TaxInvoicePrintModal: React.FC<TaxInvoicePrintModalProps> = ({ invo
       customHeader={
         <>
           {/* Phase 3 & 4: Top Modal Header Action Bar (Clean Single-Row Flex Toolbar) */}
-          <div className="flex items-center justify-between gap-4 px-6 py-3.5 border-b border-[#243628] bg-[#121B14] print:hidden w-full select-none shrink-0">
+          <div className="flex items-center justify-between gap-4 px-6 py-3.5 border-b border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#121B14] print:hidden w-full select-none shrink-0">
           {/* Right Side (RTL Start): Close button (X), Print CTA, Scanner Toggle */}
           <div className="flex items-center gap-3 shrink-0">
             <button
               onClick={onClose}
-              className="min-h-[44px] min-w-[44px] p-2.5 rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#1F2E23] hover:bg-[#EAE4D7] dark:hover:bg-[#283C2E] text-[#5C665E] dark:text-[#8FA392] hover:text-[#1A241C] dark:hover:text-[#F3EFE6] transition-colors flex items-center justify-center cursor-pointer shadow-2xs"
+              className="min-h-[44px] min-w-[44px] p-2.5 rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-[#F3EFE6] dark:bg-[#1F2E23] hover:bg-[#EAE4D7] dark:hover:bg-[#283C2E] text-[#5C665E] dark:text-[#8FA392] hover:text-[#1A241C] dark:hover:text-[#F3EFE6] transition-colors flex items-center justify-center cursor-pointer shadow-2xs"
               title={t('إغلاق النافذة', 'Close')}
             >
               <X className="w-5 h-5" />
@@ -185,9 +185,9 @@ export const TaxInvoicePrintModal: React.FC<TaxInvoicePrintModalProps> = ({ invo
 
             <button
               onClick={handlePrint}
-              className="min-h-[44px] px-5 py-2.5 text-xs font-bold rounded-xl bg-[#D99B26] hover:bg-[#EBB34D] text-[#0E1610] shadow-sm transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer active:scale-98"
+              className="min-h-[44px] px-5 py-2.5 text-xs font-bold rounded-xl bg-gradient-to-l from-amber-600 to-amber-500 hover:from-amber-700 hover:to-amber-600 text-white shadow-sm transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer active:scale-98"
             >
-              <Printer className="w-4 h-4 text-[#0E1610]" />
+              <Printer className="w-4 h-4 text-white" />
               <span>{t('طباعة الفاتورة الضريبية', 'Print Invoice')}</span>
             </button>
 
@@ -205,12 +205,12 @@ export const TaxInvoicePrintModal: React.FC<TaxInvoicePrintModalProps> = ({ invo
             <span
               className={`min-h-[38px] px-4 py-1.5 rounded-full text-xs font-bold flex items-center gap-2 whitespace-nowrap border ${
                 qrResult?.validation.isValid
-                  ? 'bg-[#2A3F30] text-[#A3CFAC] border-[#3E5C46]'
-                  : 'bg-[#3F2A2A] text-[#EFA3A3] border-[#5C3E3E]'
+                  ? 'bg-[#EAF3EB] text-[#245E33] border-[#B8D8BC] dark:bg-[#2A3F30] dark:text-[#A3CFAC] dark:border-[#3E5C46]'
+                  : 'bg-[#F8EBEB] text-[#7A2828] border-[#E3B8B8] dark:bg-[#3F2A2A] dark:text-[#EFA3A3] dark:border-[#5C3E3E]'
               }`}
             >
               <CheckCircle2
-                className={`w-4 h-4 ${qrResult?.validation.isValid ? 'text-[#A3CFAC]' : 'text-[#EFA3A3]'}`}
+                className={`w-4 h-4 ${qrResult?.validation.isValid ? 'text-[#059669] dark:text-[#A3CFAC]' : 'text-[#DC2626] dark:text-[#EFA3A3]'}`}
               />
               <span>
                 {qrResult?.validation.statusBadge ||
@@ -224,13 +224,13 @@ export const TaxInvoicePrintModal: React.FC<TaxInvoicePrintModalProps> = ({ invo
             <span className="text-xs font-semibold text-[#5C665E] dark:text-[#8FA392] hidden lg:inline-block">
               {t('النظام الضريبي:', 'Tax Profile:')}
             </span>
-            <div className="inline-flex rounded-xl p-1 bg-white dark:bg-[#131E15] border border-[#E0D9CB] dark:border-[#243628] shadow-2xs">
+            <div className="inline-flex rounded-xl p-1 bg-[#F3EFE6] dark:bg-[#131E15] border border-[#E0D9CB] dark:border-[#243628] shadow-2xs">
               <button
                 type="button"
                 onClick={() => setSelectedJurisdiction('EGYPT')}
                 className={`min-h-[38px] flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                   selectedJurisdiction === 'EGYPT'
-                    ? 'bg-[#1F2E23] text-[#F3EFE6] border border-[#D99B26]/60 shadow-xs'
+                    ? 'bg-white text-[#92400E] border border-[#FDE68A] dark:bg-[#1F2E23] dark:text-[#F3EFE6] dark:border-[#D99B26]/60 shadow-xs'
                     : 'text-[#5C665E] dark:text-[#8FA392] hover:text-[#1A241C] dark:hover:text-[#F3EFE6]'
                 }`}
               >
@@ -243,7 +243,7 @@ export const TaxInvoicePrintModal: React.FC<TaxInvoicePrintModalProps> = ({ invo
                 onClick={() => setSelectedJurisdiction('KSA')}
                 className={`min-h-[38px] flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                   selectedJurisdiction === 'KSA'
-                    ? 'bg-[#1F2E23] text-[#F3EFE6] border border-[#D99B26]/60 shadow-xs'
+                    ? 'bg-white text-[#92400E] border border-[#FDE68A] dark:bg-[#1F2E23] dark:text-[#F3EFE6] dark:border-[#D99B26]/60 shadow-xs'
                     : 'text-[#5C665E] dark:text-[#8FA392] hover:text-[#1A241C] dark:hover:text-[#F3EFE6]'
                 }`}
               >
@@ -256,14 +256,14 @@ export const TaxInvoicePrintModal: React.FC<TaxInvoicePrintModalProps> = ({ invo
 
         {/* Live Compliance & QR Inspector Card (Interactive Drawer) */}
         {showInspector && qrResult && (
-          <div className="px-6 py-4 border-b border-[#E0D9CB] dark:border-[#243628] bg-[#1F2E23]/40 dark:bg-[#131E15] text-xs space-y-3 print:hidden">
+          <div className="px-6 py-4 border-b border-[#E0D9CB] dark:border-[#243628] bg-[#FBF9F5] dark:bg-[#131E15] text-xs space-y-3 print:hidden">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-[#D99B26]" />
                 <span className="font-bold text-[#1A241C] dark:text-[#F3EFE6]">
                   {t('تقرير المطابقة والتحقق الإلكتروني المعتمد:', 'Official Compliance Audit:')}
                 </span>
-                <span className="px-2.5 py-0.5 rounded-md font-bold bg-[#2A3F30] text-[#A3CFAC] border border-[#3E5C46] text-[11px]">
+                <span className="px-2.5 py-0.5 rounded-md font-bold bg-[#EAF3EB] text-[#245E33] border border-[#B8D8BC] dark:bg-[#2A3F30] dark:text-[#A3CFAC] dark:border-[#3E5C46] text-[11px]">
                   {qrResult.validation.statusBadge}
                 </span>
               </div>
@@ -513,7 +513,7 @@ export const TaxInvoicePrintModal: React.FC<TaxInvoicePrintModalProps> = ({ invo
                     : `رمز تحقق إلكتروني رسمي مرتبط بالمعرف الرقمي (UUID: ${calculatedInvoice.etaUuid}) بمصلحة الضرائب المصرية.`}
                 </p>
                 <div className="flex items-center gap-2 pt-0.5">
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded text-[10px] font-bold bg-[#2A3F30] text-[#A3CFAC] border border-[#3E5C46]">
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded text-[10px] font-bold bg-[#EAF3EB] text-[#245E33] border border-[#B8D8BC] dark:bg-[#2A3F30] dark:text-[#A3CFAC] dark:border-[#3E5C46]">
                     {isKsa ? '✓ ZATCA Checksum Valid' : '✓ ETA 14% Verified'}
                   </span>
                 </div>

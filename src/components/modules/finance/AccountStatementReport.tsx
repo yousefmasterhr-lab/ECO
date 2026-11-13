@@ -533,14 +533,14 @@ export const AccountStatementReport: React.FC = () => {
         <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
           {/* Header Title */}
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-[#1F2E23] text-[#EBB34D] flex items-center justify-center border border-[#243628] shadow-xs">
+            <div className="w-12 h-12 rounded-2xl bg-[#EAF3EB] text-[#245E33] dark:bg-[#1F2E23] dark:text-[#EBB34D] flex items-center justify-center border border-[#B8D8BC] dark:border-[#243628] shadow-xs">
               <BookOpen className="w-6 h-6" />
             </div>
             <div>
               <h2 className="text-lg font-black text-[#1A241C] dark:text-[#F3EFE6] flex items-center gap-2">
                 <span>{t('كشف الحساب التفصيلي والتحليلي', 'Statement of Account / Sub-Ledger')}</span>
                 {data && (
-                  <span className="text-xs px-2.5 py-0.5 rounded-full bg-[#2A3F30] text-[#A3CFAC] font-bold border border-[#3E5C46]">
+                  <span className="text-xs px-2.5 py-0.5 rounded-full bg-[#EAF3EB] text-[#245E33] border border-[#B8D8BC] dark:bg-[#2A3F30] dark:text-[#A3CFAC] font-bold dark:border-[#3E5C46]">
                     {data.accountNameAr} ({String(data.level5Id || '').replace(/^L[1-5]-/i, '')})
                   </span>
                 )}
@@ -622,13 +622,13 @@ export const AccountStatementReport: React.FC = () => {
                       setAccountSearchText(`${acc.code} - ${acc.nameAr}`);
                       setIsAccountDropdownOpen(false);
                     }}
-                    className="w-full text-right p-2.5 rounded-xl hover:bg-[#1F2E23] transition-colors flex items-center justify-between text-xs cursor-pointer"
+                    className="w-full text-right p-2.5 rounded-xl hover:bg-[#F3EFE6] dark:hover:bg-[#1F2E23] transition-colors flex items-center justify-between text-xs cursor-pointer"
                   >
                     <div>
                       <div className="font-bold text-[#1A241C] dark:text-[#F3EFE6]">{acc.nameAr}</div>
                       <div className="font-mono text-[10px] text-gray-500">{acc.code}</div>
                     </div>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-[#121B14] border border-[#243628] text-[#8FA392] font-mono">
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-[#F3EFE6] dark:bg-[#121B14] border border-[#E0D9CB] dark:border-[#243628] text-[#5C665E] dark:text-[#8FA392] font-mono">
                       م{acc.level}
                     </span>
                   </button>
@@ -764,7 +764,7 @@ export const AccountStatementReport: React.FC = () => {
           <div className={`p-4 rounded-2xl border shadow-xs transition-colors ${
             data.endingBalance < 0
               ? 'border-rose-400 dark:border-rose-900/60 bg-rose-50/60 dark:bg-rose-950/30'
-              : 'border-[#243628] bg-white dark:bg-[#17231A]'
+              : 'border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#17231A]'
           }`}>
             <span className={`text-[11px] font-bold block mb-1 ${
               data.endingBalance < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-[#EBB34D]'
@@ -810,7 +810,7 @@ export const AccountStatementReport: React.FC = () => {
                 <th className="py-3 px-3 w-32">{t('مركز التكلفة', 'Cost Center')}</th>
                 <th className="py-3 px-3 w-28 text-left font-mono">{t('مدين', 'Debit')}</th>
                 <th className="py-3 px-3 w-28 text-left font-mono">{t('دائن', 'Credit')}</th>
-                <th className="py-3 px-4 w-36 text-left font-mono bg-[#1F2E23] text-[#EBB34D] border-l border-[#243628]">
+                <th className="py-3 px-4 w-36 text-left font-mono bg-[#EAE4D7] dark:bg-[#1F2E23] text-[#1A241C] dark:text-[#EBB34D] border-l border-[#E0D9CB] dark:border-[#243628]">
                   {t('الرصيد المتحرك', 'Running Balance')}
                 </th>
               </tr>
@@ -868,7 +868,7 @@ export const AccountStatementReport: React.FC = () => {
                     <tr
                       key={tx.id || idx}
                       onClick={() => setInspectingLine(tx)}
-                      className="hover:bg-[#1F2E23]/60 transition-colors cursor-pointer group"
+                      className="hover:bg-[#F3EFE6]/70 dark:hover:bg-[#1F2E23]/60 transition-colors cursor-pointer group"
                     >
                       {/* Date */}
                       <td className="py-2.5 px-3 font-mono text-gray-600 dark:text-gray-400">
@@ -884,7 +884,7 @@ export const AccountStatementReport: React.FC = () => {
 
                       {/* Voucher Type */}
                       <td className="py-2.5 px-3">
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#2A3F30] border border-[#3E5C46] text-[#A3CFAC]">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#EAF3EB] text-[#245E33] border border-[#B8D8BC] dark:bg-[#2A3F30] dark:border-[#3E5C46] dark:text-[#A3CFAC]">
                           {tx.voucherType || 'قيد تسوية'}
                         </span>
                       </td>
@@ -913,7 +913,7 @@ export const AccountStatementReport: React.FC = () => {
                       </td>
 
                       {/* Running Balance */}
-                      <td className={`py-2.5 px-4 text-left font-mono font-black tabular-nums bg-[#1F2E23]/20 whitespace-nowrap ${
+                      <td className={`py-2.5 px-4 text-left font-mono font-black tabular-nums bg-[#F3EFE6]/60 dark:bg-[#1F2E23]/20 whitespace-nowrap ${
                         tx.runningBalance < 0
                           ? 'text-rose-600 dark:text-rose-400 text-negative-balance'
                           : 'text-[#1A241C] dark:text-[#F3EFE6]'
@@ -966,7 +966,7 @@ export const AccountStatementReport: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setInspectingLine(null)}
-                className="px-5 py-2.5 rounded-xl text-xs font-bold border border-[#243628] bg-[#1F2E23] text-[#8FA392] hover:text-[#F3EFE6] transition-colors cursor-pointer"
+                className="px-5 py-2.5 rounded-xl text-xs font-bold border border-[#E0D9CB] dark:border-[#243628] bg-[#F3EFE6] dark:bg-[#1F2E23] text-[#5C665E] dark:text-[#8FA392] hover:text-[#1A241C] dark:hover:text-[#F3EFE6] transition-colors cursor-pointer"
               >
                 {t('إغلاق', 'Close')}
               </button>
@@ -974,48 +974,48 @@ export const AccountStatementReport: React.FC = () => {
           }
         >
           <div className="p-6 space-y-4 text-xs">
-            <div className="grid grid-cols-2 gap-3 p-3.5 rounded-2xl bg-[#121B14] border border-[#243628]">
+            <div className="grid grid-cols-2 gap-3 p-3.5 rounded-2xl bg-[#FBF9F5] dark:bg-[#121B14] border border-[#E0D9CB] dark:border-[#243628] shadow-2xs">
               <div>
-                <span className="text-[10px] text-[#8FA392] block">رقم القيد / السند:</span>
-                <span className="font-mono font-bold text-sm text-[#EBB34D]">#{inspectingLine.noteNo}</span>
+                <span className="text-[10px] text-[#5C665E] dark:text-[#8FA392] block">رقم القيد / السند:</span>
+                <span className="font-mono font-bold text-sm text-[#D99B26] dark:text-[#EBB34D]">#{inspectingLine.noteNo}</span>
               </div>
               <div>
-                <span className="text-[10px] text-[#8FA392] block">تاريخ القيد:</span>
-                <span className="font-mono font-bold text-[#F3EFE6]">{inspectingLine.noteDate}</span>
+                <span className="text-[10px] text-[#5C665E] dark:text-[#8FA392] block">تاريخ القيد:</span>
+                <span className="font-mono font-bold text-[#1A241C] dark:text-[#F3EFE6]">{inspectingLine.noteDate}</span>
               </div>
               <div>
-                <span className="text-[10px] text-[#8FA392] block">نوع المعاملة:</span>
-                <span className="font-bold text-[#F3EFE6]">{inspectingLine.voucherType || 'قيد تسوية عام'}</span>
+                <span className="text-[10px] text-[#5C665E] dark:text-[#8FA392] block">نوع المعاملة:</span>
+                <span className="font-bold text-[#1A241C] dark:text-[#F3EFE6]">{inspectingLine.voucherType || 'قيد تسوية عام'}</span>
               </div>
               <div>
-                <span className="text-[10px] text-[#8FA392] block">مركز التكلفة المرتبط:</span>
-                <span className="font-bold text-[#F3EFE6]">{inspectingLine.costCenterNameAr || 'عام'}</span>
+                <span className="text-[10px] text-[#5C665E] dark:text-[#8FA392] block">مركز التكلفة المرتبط:</span>
+                <span className="font-bold text-[#1A241C] dark:text-[#F3EFE6]">{inspectingLine.costCenterNameAr || 'عام'}</span>
               </div>
             </div>
 
             <div>
-              <span className="text-[10px] text-[#8FA392] block mb-1">البيان والشرح المحاسبي:</span>
-              <p className="p-3 rounded-xl bg-[#121B14] border border-[#243628] font-medium text-[#F3EFE6]">
+              <span className="text-[10px] text-[#5C665E] dark:text-[#8FA392] block mb-1">البيان والشرح المحاسبي:</span>
+              <p className="p-3 rounded-xl bg-white dark:bg-[#121B14] border border-[#E0D9CB] dark:border-[#243628] font-medium text-[#1A241C] dark:text-[#F3EFE6] shadow-2xs">
                 {inspectingLine.description}
               </p>
             </div>
 
             <div className="grid grid-cols-3 gap-2 text-center pt-2">
-              <div className="p-2.5 rounded-xl bg-[#121B14] border border-blue-900/40">
-                <span className="text-[10px] text-blue-400 block">المبلغ المدين</span>
-                <span className="font-mono font-black text-sm text-blue-300">
+              <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-[#121B14] border border-blue-200 dark:border-blue-900/40">
+                <span className="text-[10px] text-blue-700 dark:text-blue-400 block font-bold">المبلغ المدين</span>
+                <span className="font-mono font-black text-sm text-blue-800 dark:text-blue-300">
                   {formatEGP(inspectingLine.debit)} جم
                 </span>
               </div>
-              <div className="p-2.5 rounded-xl bg-[#121B14] border border-[#5C431D]">
-                <span className="text-[10px] text-[#EBB34D] block">المبلغ الدائن</span>
-                <span className="font-mono font-black text-sm text-[#EBB34D]">
+              <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-[#121B14] border border-amber-200 dark:border-[#5C431D]">
+                <span className="text-[10px] text-amber-700 dark:text-[#EBB34D] block font-bold">المبلغ الدائن</span>
+                <span className="font-mono font-black text-sm text-amber-800 dark:text-[#EBB34D]">
                   {formatEGP(inspectingLine.credit)} جم
                 </span>
               </div>
-              <div className="p-2.5 rounded-xl bg-[#121B14] border border-[#3E5C46]">
-                <span className="text-[10px] text-[#A3CFAC] block">الرصيد بعد الحركة</span>
-                <span className="font-mono font-black text-sm text-[#A3CFAC]">
+              <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-[#121B14] border border-emerald-200 dark:border-[#3E5C46]">
+                <span className="text-[10px] text-emerald-700 dark:text-[#A3CFAC] block font-bold">الرصيد بعد الحركة</span>
+                <span className="font-mono font-black text-sm text-emerald-800 dark:text-[#A3CFAC]">
                   {formatEGP(inspectingLine.runningBalance)} جم
                 </span>
               </div>

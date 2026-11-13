@@ -235,11 +235,11 @@ export const GeneralJournal: React.FC = () => {
             <span className="text-xs text-[#5C665E] dark:text-[#8FA392]">
               {t('إجمالي الحركات المدينة', 'Total Debit Turnovers')}
             </span>
-            <div className="w-8 h-8 rounded-lg bg-[#2A3F30] text-[#A3CFAC] flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-[#EAF3EB] text-[#245E33] dark:bg-[#2A3F30] dark:text-[#A3CFAC] flex items-center justify-center">
               <ArrowDownLeft className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-lg sm:text-xl font-inter font-black text-[#A3CFAC] tabular-nums">
+          <div className="text-lg sm:text-xl font-inter font-black text-[#245E33] dark:text-[#A3CFAC] tabular-nums">
             {formatCurrency(totalDebit, false)} <span className="text-xs font-normal">ج.م</span>
           </div>
           <div className="text-[11px] text-[#5C665E] dark:text-[#8FA392]">
@@ -253,11 +253,11 @@ export const GeneralJournal: React.FC = () => {
             <span className="text-xs text-[#5C665E] dark:text-[#8FA392]">
               {t('إجمالي الحركات الدائنة', 'Total Credit Turnovers')}
             </span>
-            <div className="w-8 h-8 rounded-lg bg-[#3F2A2A] text-[#EFA3A3] flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-[#F8EBEB] text-[#7A2828] dark:bg-[#3F2A2A] dark:text-[#EFA3A3] flex items-center justify-center">
               <ArrowUpRight className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-lg sm:text-xl font-inter font-black text-[#EFA3A3] tabular-nums">
+          <div className="text-lg sm:text-xl font-inter font-black text-[#7A2828] dark:text-[#EFA3A3] tabular-nums">
             {formatCurrency(totalCredit, false)} <span className="text-xs font-normal">ج.م</span>
           </div>
           <div className="text-[11px] text-[#5C665E] dark:text-[#8FA392]">
@@ -450,16 +450,16 @@ export const GeneralJournal: React.FC = () => {
                           {journal.description}
                         </td>
 
-                        <td className="py-3 px-3.5 text-end font-inter font-bold text-[#A3CFAC] whitespace-nowrap tabular-nums">
-                          {formatCurrency(journal.debitTotal, false)} <span className="text-[10px] font-normal text-[#8FA392]">ج.م</span>
+                        <td className="py-3 px-3.5 text-end font-inter font-bold text-[#245E33] dark:text-[#A3CFAC] whitespace-nowrap tabular-nums">
+                          {formatCurrency(journal.debitTotal, false)} <span className="text-[10px] font-normal text-[#5C665E] dark:text-[#8FA392]">ج.م</span>
                         </td>
 
-                        <td className="py-3 px-3.5 text-end font-inter font-bold text-[#EFA3A3] whitespace-nowrap tabular-nums">
-                          {formatCurrency(journal.creditTotal, false)} <span className="text-[10px] font-normal text-[#8FA392]">ج.م</span>
+                        <td className="py-3 px-3.5 text-end font-inter font-bold text-[#7A2828] dark:text-[#EFA3A3] whitespace-nowrap tabular-nums">
+                          {formatCurrency(journal.creditTotal, false)} <span className="text-[10px] font-normal text-[#5C665E] dark:text-[#8FA392]">ج.م</span>
                         </td>
 
                         <td className="py-3 px-3.5 text-center whitespace-nowrap">
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#2A3F30] text-[#A3CFAC] border border-[#243628]">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#EAF3EB] text-[#245E33] border border-[#B8D8BC] dark:bg-[#2A3F30] dark:text-[#A3CFAC] dark:border-[#243628]">
                             <CheckCircle2 className="w-3 h-3" />
                             <span>{t('مرحل للأستاذ', 'Posted')}</span>
                           </span>
@@ -559,21 +559,21 @@ export const GeneralJournal: React.FC = () => {
                                                 <div className="flex flex-wrap items-center gap-1.5">
                                                   <span>{acctName}</span>
                                                   {l.analysisName && l.analysisName !== 'حســاب عـــــام' && (
-                                                    <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-[#193220] text-[#A3CFAC] border border-[#2E5A36] font-normal">
+                                                    <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-[#EAF3EB] text-[#245E33] border border-[#B8D8BC] dark:bg-[#193220] dark:text-[#A3CFAC] dark:border-[#2E5A36] font-normal">
                                                       {l.analysisName}
                                                     </span>
                                                   )}
                                                 </div>
                                               </td>
-                                              <td className="py-2 px-3 text-end font-inter font-bold text-[#A3CFAC] tabular-nums">
+                                              <td className="py-2 px-3 text-end font-inter font-bold text-[#245E33] dark:text-[#A3CFAC] tabular-nums">
                                                 {debitVal > 0 ? formatCurrency(debitVal, false) : '-'}
                                               </td>
-                                              <td className="py-2 px-3 text-end font-inter font-bold text-[#EFA3A3] tabular-nums">
+                                              <td className="py-2 px-3 text-end font-inter font-bold text-[#7A2828] dark:text-[#EFA3A3] tabular-nums">
                                                 {creditVal > 0 ? formatCurrency(creditVal, false) : '-'}
                                               </td>
                                               <td className="py-2 px-3 text-[#5C665E] dark:text-[#8FA392]">
                                                 {ccName ? (
-                                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#17231A] text-[#A3CFAC] border border-[#243628] font-medium text-[11px]">
+                                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#EAF3EB] text-[#245E33] border border-[#B8D8BC] dark:bg-[#17231A] dark:text-[#A3CFAC] dark:border-[#243628] font-medium text-[11px]">
                                                     {ccName}
                                                   </span>
                                                 ) : (

@@ -33,12 +33,12 @@ export const VoucherPrintModal: React.FC<VoucherPrintModalProps> = ({ voucher, o
       maxWidth="max-w-3xl"
       className="print:border-none print:shadow-none print:bg-white print:text-black print:max-w-none print:w-full print:h-auto"
       customHeader={
-        <div className="p-4 border-b border-[#243628] bg-[#121B14] flex items-center justify-between print:hidden">
+        <div className="p-4 border-b border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#121B14] flex items-center justify-between print:hidden">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-[#2A3F30] text-[#A3CFAC] border border-[#3E5C46] flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-[#EAF3EB] text-[#245E33] border border-[#B8D8BC] dark:bg-[#2A3F30] dark:text-[#A3CFAC] dark:border-[#3E5C46] flex items-center justify-center">
               <FileText className="w-4 h-4" />
             </div>
-            <span className="text-xs font-bold text-[#F3EFE6]">
+            <span className="text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6]">
               {isReceipt ? t('معاينة وطباعة سند القبض', 'Print Receipt Voucher') : t('معاينة وطباعة سند الصرف', 'Print Payment Voucher')}
             </span>
           </div>
@@ -54,7 +54,7 @@ export const VoucherPrintModal: React.FC<VoucherPrintModalProps> = ({ voucher, o
 
             <button
               onClick={onClose}
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-[#8FA392] hover:text-[#F3EFE6] hover:bg-[#1F2E23] transition-colors cursor-pointer"
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-[#5C665E] hover:text-[#1A241C] hover:bg-[#F3EFE6] dark:text-[#8FA392] dark:hover:text-[#F3EFE6] dark:hover:bg-[#1F2E23] transition-colors cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -82,8 +82,8 @@ export const VoucherPrintModal: React.FC<VoucherPrintModalProps> = ({ voucher, o
             <span
               className={`inline-block px-3 py-1 rounded-lg text-sm font-black border ${
                 isReceipt
-                  ? 'bg-[#2A3F30] text-[#A3CFAC] border-[#3E5C46]'
-                  : 'bg-[#3F2A2A] text-[#EFA3A3] border-[#5C3E3E]'
+                  ? 'bg-[#EAF3EB] text-[#245E33] border-[#B8D8BC] dark:bg-[#2A3F30] dark:text-[#A3CFAC] dark:border-[#3E5C46]'
+                  : 'bg-[#F8EBEB] text-[#7A2828] border-[#E3B8B8] dark:bg-[#3F2A2A] dark:text-[#EFA3A3] dark:border-[#5C3E3E]'
               }`}
             >
               {isReceipt ? 'سند قبض نقدية / بنك' : 'سند صرف نقدية / بنك'}
@@ -117,9 +117,9 @@ export const VoucherPrintModal: React.FC<VoucherPrintModalProps> = ({ voucher, o
         </div>
 
         {/* Amount Box & Arabic Tafqeet */}
-        <div className="p-4 rounded-xl border border-[#243628] bg-[#121B14] space-y-2">
+        <div className="p-4 rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-[#FBF9F5] dark:bg-[#121B14] space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-[#8FA392]">
+            <span className="text-xs font-bold text-[#5C665E] dark:text-[#8FA392]">
               المبلغ بالأرقام:
             </span>
             <span className="text-xl font-black font-inter text-[#D99B26] dark:text-[#EBB34D] tabular-nums">
@@ -127,8 +127,8 @@ export const VoucherPrintModal: React.FC<VoucherPrintModalProps> = ({ voucher, o
             </span>
           </div>
 
-          <div className="pt-2 border-t border-[#243628] flex items-start gap-2">
-            <span className="text-xs font-bold text-[#8FA392] shrink-0">
+          <div className="pt-2 border-t border-[#E0D9CB] dark:border-[#243628] flex items-start gap-2">
+            <span className="text-xs font-bold text-[#5C665E] dark:text-[#8FA392] shrink-0">
               المبلغ بالحروف:
             </span>
             <span className="text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6] leading-relaxed">

@@ -323,7 +323,9 @@ export const CostCentersModule: React.FC = () => {
                               </td>
                               <td className="py-3 px-4 text-center">
                                 <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold font-inter tabular-nums ${
-                                  margin >= 20 ? 'bg-[#2A3F30] text-[#A3CFAC] border border-[#243628]' : 'bg-[#1F2E23] text-[#EBB34D] border border-[#243628]'
+                                  margin >= 20
+                                    ? 'bg-[#EAF3EB] text-[#245E33] border border-[#B8D8BC] dark:bg-[#2A3F30] dark:text-[#A3CFAC] dark:border-[#243628]'
+                                    : 'bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] dark:bg-[#1F2E23] dark:text-[#EBB34D] dark:border-[#243628]'
                                 }`}>
                                   +{formatNumber(margin)}%
                                 </span>

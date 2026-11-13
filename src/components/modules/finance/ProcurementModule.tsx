@@ -141,9 +141,9 @@ export const ProcurementModule: React.FC = () => {
                 <span>{t('ضريبة المدخلات (15%)', 'Input VAT (15%)')}</span>
                 <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold">({t('تجريبي', 'Preview')})</span>
               </span>
-              <Percent className="w-3.5 h-3.5 text-[#A3CFAC]" />
+              <Percent className="w-3.5 h-3.5 text-[#245E33] dark:text-[#A3CFAC]" />
             </div>
-            <div className="font-inter font-black text-lg text-[#A3CFAC] tabular-nums">
+            <div className="font-inter font-black text-lg text-[#245E33] dark:text-[#A3CFAC] tabular-nums">
               {formatCurrency(totalInputVat)}
             </div>
             <div className="text-[11px] text-[#5C665E] dark:text-[#8FA392] mt-1">
@@ -360,7 +360,7 @@ export const ProcurementModule: React.FC = () => {
                       </td>
 
                       {/* VAT */}
-                      <td className="py-3 px-4 text-end font-inter font-bold text-xs text-[#A3CFAC] tabular-nums">
+                      <td className="py-3 px-4 text-end font-inter font-bold text-xs text-[#245E33] dark:text-[#A3CFAC] tabular-nums">
                         {formatCurrency(bill.vatAmount)}
                       </td>
 
@@ -371,8 +371,8 @@ export const ProcurementModule: React.FC = () => {
 
                       {/* GL Journal Status */}
                       <td className="py-3 px-4 text-center">
-                        <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-[#2A3F30] text-[#A3CFAC] text-[10px] font-inter font-bold border border-[#243628] tabular-nums">
-                          <CheckCircle2 className="w-3 h-3 text-[#A3CFAC]" />
+                        <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-[#EAF3EB] text-[#245E33] text-[10px] font-inter font-bold border border-[#B8D8BC] dark:bg-[#2A3F30] dark:text-[#A3CFAC] dark:border-[#243628] tabular-nums">
+                          <CheckCircle2 className="w-3 h-3 text-[#245E33] dark:text-[#A3CFAC]" />
                           <span>قيد مشتريات #{toWesternDigits(bill.journalNo || '9002')}</span>
                         </div>
                       </td>
@@ -474,7 +474,7 @@ export const ProcurementModule: React.FC = () => {
                         {item.units[0]?.unitNameAr || 'وحدة'}
                       </td>
                       <td className="py-3 px-4 text-center font-inter font-bold text-xs tabular-nums">
-                        <span className={`px-2 py-0.5 rounded-full ${item.stockBalance < 100 ? 'bg-[#3F2A2A] text-[#EFA3A3] border border-[#243628]' : 'bg-[#2A3F30] text-[#A3CFAC] border border-[#243628]'}`}>
+                        <span className={`px-2 py-0.5 rounded-full ${item.stockBalance < 100 ? 'bg-rose-50 text-rose-700 border border-rose-200 dark:bg-[#3F2A2A] dark:text-[#EFA3A3] dark:border-[#243628]' : 'bg-[#EAF3EB] text-[#245E33] border border-[#B8D8BC] dark:bg-[#2A3F30] dark:text-[#A3CFAC] dark:border-[#243628]'}`}>
                           {formatNumber(item.stockBalance)} {item.units[0]?.unitNameAr || 'وحدة'}
                         </span>
                       </td>
@@ -488,7 +488,7 @@ export const ProcurementModule: React.FC = () => {
                         {formatCurrency(item.retailPrice)}
                       </td>
                       <td className="py-3 px-4 text-center font-inter text-xs tabular-nums">
-                        <span className="font-bold text-[#A3CFAC]">
+                        <span className="font-bold text-[#245E33] dark:text-[#A3CFAC]">
                           +{formatCurrency(margin)} (+{formatNumber(marginPercent)}%)
                         </span>
                       </td>
