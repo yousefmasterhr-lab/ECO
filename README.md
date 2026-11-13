@@ -632,7 +632,7 @@ CREATE TABLE IF NOT EXISTS system_configurations (
   - ترقية بلاطات المؤشرات المالية الستة العلوية بحواف علوية كهرمانية براندية (`border-t-2 border-t-amber-500`)، أيقونات ذات خلفيات كهرمانية شفافة (`bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30`)، وأرقام مونو تنفيذية واضحة.
   - مؤشر حالة ومزامنة الاتصال النبضي بتصميم بيضاوي فاخر ونابض (`bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60`).
   - كبسولات أرصدة مالية احترافية (`font-mono font-semibold text-stone-800 dark:text-stone-200 px-2 py-0.5 rounded bg-stone-100 dark:bg-stone-800 border border-stone-200/70 dark:border-stone-700/50 text-xs tabular-nums`).
-  - تدرج دلالي هرمي فاخر لشارات المستويات الخمسة (L1 كهرماني بارز `bg-amber-100`، L2 حجري رصين `bg-stone-200`، L3-L4 بطاقات حجرية دقيقة، L5 كهرماني فاتح `bg-amber-50/80` للحسابات التحليلية)، مع تمييز شارات طبيعة الحساب (مدين كهرماني ناعم ودائن حجري هادئ) وخطوط إرشاد شجرية رأسية دقيقة.
+  - تدرج دلالي هرمي فاخر لشارات المستويات الخمسة (L1 كهرماني بارز `bg-amber-100`، L2 حجري رصين `bg-stone-200`، L3-L4 بطاقات حجرية دقيقة، L5 كهرماني فاتح `bg-amber-50/80` للحسابات التحليلية)، مع تمييز شارات طبيعة الحساب (مدين كهرماني ناعم ودائن حجري هادئ) مع إزالة تامة لكافة خطوط الحدود الرأسية الزائدة والباركود الشائه في وضع RTL، والاعتماد النقي على الإزاحة الدلالية الذكية.
 
 ### 4.37 محرك الخزائن والبنوك ومحفظة الشيكات (Phase 02 Cash, Banking & Check Portfolio Engine)
 - **التطابق الحرفي الصارم مع المخطط الأصلي (`tarabot_erp_complete_schema.json`):**

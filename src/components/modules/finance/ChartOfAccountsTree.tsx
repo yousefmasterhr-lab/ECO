@@ -37,7 +37,7 @@ const AccountTreeNodeRow: React.FC<AccountTreeNodeRowProps> = ({
   selectedId,
   searchQuery
 }) => {
-  const { isRtl, t } = useLanguage();
+  const { t } = useLanguage();
   const hasChildren = Boolean(node.children && node.children.length > 0);
   const isSelected = selectedId === node.id;
   const isLeaf = node.level === 5 || !hasChildren;
@@ -89,13 +89,8 @@ const AccountTreeNodeRow: React.FC<AccountTreeNodeRowProps> = ({
   const badge = getLevelBadge();
   const indentPx = (level - 1) * 20;
 
-  // Tree guide line class
-  const guideLineClass = level > 1
-    ? (isRtl ? 'border-r border-[#E0D9CB] dark:border-[#243628] pr-3 mr-1' : 'border-l border-[#E0D9CB] dark:border-[#243628] pl-3 ml-1')
-    : '';
-
   return (
-    <div className={`flex flex-col select-none ${guideLineClass}`}>
+    <div className="flex flex-col select-none">
       <motion.div
         whileHover={{ scale: 1.002 }}
         whileTap={{ scale: 0.995 }}
@@ -240,30 +235,20 @@ const AccountTreeNodeRow: React.FC<AccountTreeNodeRowProps> = ({
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.22, ease: 'easeInOut' }}
-            className="relative overflow-hidden"
+            className="space-y-1 pt-1 overflow-hidden"
           >
-            {/* Tree guide line */}
-            <div
-              style={{
-                insetInlineStart: `${indentPx + 20}px`,
-              }}
-              className="absolute top-0 bottom-2 w-px bg-[#E0D9CB] dark:bg-[#243628]"
-            />
-
-            <div className="space-y-1 pt-1">
-              {node.children.map(child => (
-                <AccountTreeNodeRow
-                  key={child.id}
-                  node={child}
-                  level={level + 1}
-                  expandedNodes={expandedNodes}
-                  onToggle={onToggle}
-                  onSelect={onSelect}
-                  selectedId={selectedId}
-                  searchQuery={searchQuery}
-                />
-              ))}
-            </div>
+            {node.children.map(child => (
+              <AccountTreeNodeRow
+                key={child.id}
+                node={child}
+                level={level + 1}
+                expandedNodes={expandedNodes}
+                onToggle={onToggle}
+                onSelect={onSelect}
+                selectedId={selectedId}
+                searchQuery={searchQuery}
+              />
+            ))}
           </motion.div>
         )}
       </AnimatePresence>
