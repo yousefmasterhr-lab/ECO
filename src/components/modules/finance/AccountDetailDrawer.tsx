@@ -176,7 +176,7 @@ export const AccountDetailDrawer: React.FC<AccountDetailDrawerProps> = ({ accoun
                     ? 'bg-stone-200 dark:bg-stone-800 text-stone-800 dark:text-stone-200 border border-stone-300 dark:border-stone-700'
                     : account.level === 3
                     ? 'bg-stone-100 dark:bg-stone-800/80 text-stone-700 dark:text-stone-300 border border-stone-200 dark:border-stone-700'
-                    : 'bg-stone-100/60 dark:bg-stone-850 text-stone-600 dark:text-stone-400 border border-stone-200/60 dark:border-stone-750'
+                    : 'bg-stone-100/60 dark:bg-stone-800/80 text-stone-600 dark:text-stone-400 border border-stone-200/60 dark:border-stone-700'
                 }`}
               >
                 L{account.level}

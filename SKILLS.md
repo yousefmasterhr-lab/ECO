@@ -1064,7 +1064,7 @@
       - الزر النشط في التصفية والتحكم:
         `bg-amber-600 hover:bg-amber-700 text-white font-medium shadow-xs border border-amber-700/30 px-3.5 py-1.5 rounded-lg text-xs transition-all`.
       - الزر غير النشط:
-        `bg-[#FAF8F5] dark:bg-stone-850 hover:bg-[#F2ECE4] text-stone-700 dark:text-stone-300 border border-stone-200/80 dark:border-stone-700/60 px-3.5 py-1.5 rounded-lg text-xs font-normal transition-colors`.
+        `bg-[#FAF8F5] dark:bg-stone-800 hover:bg-[#F2ECE4] dark:hover:bg-stone-700 text-stone-700 dark:text-stone-200 border border-stone-200/80 dark:border-stone-700 px-3.5 py-1.5 rounded-lg text-xs font-normal transition-colors`.
     - **عرض الأرصدة المالية بنقاء فائق (Clean Financial Badge):**
       - `font-mono font-semibold text-stone-800 dark:text-stone-200 px-2 py-0.5 rounded bg-stone-100 dark:bg-stone-800 border border-stone-200/70 dark:border-stone-700/50 text-xs tabular-nums`.
     - **كروت المؤشرات المالية الستة الحديثة (Warm Amber KPI Tiles):**

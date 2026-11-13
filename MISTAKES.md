@@ -1082,7 +1082,7 @@
      - الزر النشط في التصفية والتحكم يجب أن يعتمد تدرج الكهرمان الدافئ المعتمد:
        `bg-amber-600 hover:bg-amber-700 text-white font-medium shadow-xs border border-amber-700/30 px-3.5 py-1.5 rounded-lg text-xs transition-all`.
      - الزر غير النشط يعتمد خلفية النظام الرملية الدافئة:
-       `bg-[#FAF8F5] dark:bg-stone-850 hover:bg-[#F2ECE4] text-stone-700 dark:text-stone-300 border border-stone-200/80 dark:border-stone-700/60 px-3.5 py-1.5 rounded-lg text-xs font-normal transition-colors`.
+       `bg-[#FAF8F5] dark:bg-stone-800 hover:bg-[#F2ECE4] dark:hover:bg-stone-700 text-stone-700 dark:text-stone-200 border border-stone-200/80 dark:border-stone-700 px-3.5 py-1.5 rounded-lg text-xs font-normal transition-colors`.
   2. **شارة الحالة الملكية الكهرمانية ([وضع محلي: نشط]):**
      - اعتماد شارة الكهرمان الدائرية الفخمة:
        `inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 text-xs font-medium`.
@@ -1095,6 +1095,26 @@
      - المستويات L3-L4: كبسولات رملية رمادية هادئة بدون تشتيت لوني.
      - المستوى L5 (أستاذ نهائي): `bg-amber-50/80 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 border border-amber-200/60 font-bold text-[10px]`.
      - شارات الطبيعة: مدين بالكهرمان الناعم (`bg-amber-50 text-amber-800`) ودائن بالحجر الحيادي (`bg-stone-100 text-stone-700`).
+
+---
+
+
+### ❌ الخطأ 3.59: استخدام درجات ألوان غير معرفة في Tailwind (مثل `stone-850` و `stone-750`) وتسرب خلفيات النمط الفاتح للنمط الداكن (Undeclared Tailwind Shades & Dark Mode Color Leakage)
+- **وصف المشكلة:**
+  1. في Tailwind CSS القياسي، تتوقف درجات `stone` عند (50, 100, ..., 800, 900, 950). لا توجد فئة تسمى `stone-850` أو `stone-750` بشكل مسبق.
+  2. استخدام كلاس غير معرف مثل `dark:bg-stone-850` أو `dark:border-stone-750` يؤدي إلى فشل Tailwind الصامت في توليد كود CSS لهذا الكلاس.
+  3. النتيجة الكارثية: عند التبديل إلى الوضع الليلي (Dark Mode)، لا يتم تطبيق أي خلفية داكنة وتظل الخلفية الفاتحة `bg-stone-50` أو `bg-[#FAF8F5]` نشطة، مما يجعل حقل البحث وأزرار التصفية وشريط المستوى الأول (L1 الأصول) تظهر ككتل بيضاء ساطعة مشوهة لا يمكن قراءة النصوص البيضاء أو الرمادية بداخلها.
+  4. استخدام تأثيرات التحويم الفاتحة مثل `hover:bg-[#F2ECE4]` بدون نظير داكن `dark:hover:bg-stone-700` يتسبب في تحول الأزرار للون البيج الفاتح عند وضع المؤشر عليها في الوضع الليلي.
+- **القاعدة الصارمة والحل الجذري المعتمد:**
+  1. **الالتزام الحرفي بدرجات ألوان Tailwind المعتمدة والمدعومة:**
+     - للأسطح الداكنة الداخلية: استخدام `dark:bg-stone-800` أو `dark:bg-stone-900` أو قيم Hex معتمدة بدقة `dark:bg-[#17231A]`.
+     - للهوامش والحدود الداكنة: استخدام `dark:border-stone-700` أو `dark:border-stone-800`.
+     - للنصوص في الوضع الداكن: استخدام `dark:text-stone-100` أو `dark:text-stone-200` لضمان أعلى تباين وقراءة مريحة.
+  2. **اقتران إلزامي لكل كلاس فاتح بكلاس داكن مناظر (Mandatory Dark Mode Mirroring):**
+     - أي عنصر يحمل خلفية فاتحة مخصصة مثل `bg-[#FAF8F5]` يجب أن يرافقه دائماً `dark:bg-stone-800`.
+     - أي عنصر يحمل تحويم فاتح مثل `hover:bg-[#F2ECE4]` يجب أن يرافقه دائماً `dark:hover:bg-stone-700`.
+  3. **تعريف درجات الأمان في `tailwind.config.js`:**
+     - إضافة امتداد الأمان لـ `stone: { 750: '#2c2724', 850: '#1c1917' }` لمنع أي كسر مفاجئ مستقبلي.
 
 ---
 

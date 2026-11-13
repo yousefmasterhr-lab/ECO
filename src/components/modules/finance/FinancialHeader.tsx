@@ -58,7 +58,7 @@ export const FinancialHeader: React.FC = () => {
         {/* Engine Bridge Badge & Controls */}
         <div className="flex flex-wrap items-center gap-2.5 self-start lg:self-auto">
           {/* Active Connection Status Badge */}
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-stone-50 dark:bg-stone-850 border border-stone-200/80 dark:border-stone-750 text-xs text-stone-800 dark:text-stone-200 shadow-2xs">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-stone-50 dark:bg-stone-800 border border-stone-200/80 dark:border-stone-700 text-xs text-stone-800 dark:text-stone-200 shadow-2xs">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 bg-amber-400" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500 animate-pulse" />
@@ -69,7 +69,7 @@ export const FinancialHeader: React.FC = () => {
               <span className="font-semibold text-stone-800 dark:text-stone-200">
                 {mode === 'LOCAL' ? `SQL Server (${connectionStatus?.databaseName || 'Tarabot_Data_2026'})` : 'Cloud Repository (سحابي)'}
               </span>
-              <span className="text-[10px] font-mono font-medium text-stone-500 dark:text-stone-400 px-1.5 py-0.5 rounded bg-stone-100 dark:bg-stone-800 border border-stone-200/80 dark:border-stone-700">
+              <span className="text-[10px] font-mono font-medium text-stone-500 dark:text-stone-400 px-1.5 py-0.5 rounded bg-stone-100 dark:bg-stone-700/60 border border-stone-200/80 dark:border-stone-600/60">
                 {connectionStatus?.latencyMs || 12}ms
               </span>
             </div>
@@ -117,7 +117,7 @@ export const FinancialHeader: React.FC = () => {
               }
             }}
             disabled={isSyncing}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border border-stone-200/80 dark:border-stone-700/80 bg-stone-50 hover:bg-stone-100 dark:bg-stone-800 dark:hover:bg-stone-750 text-stone-700 dark:text-stone-200 transition-colors shadow-2xs ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border border-stone-200/80 dark:border-stone-700 bg-stone-50 hover:bg-stone-100 dark:bg-stone-800 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-200 transition-colors shadow-2xs ${
               isSyncing ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'
             }`}
             title={t('مزامنة فورية من قاعدة البيانات', 'Sync from Database')}

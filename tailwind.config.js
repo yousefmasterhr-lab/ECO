@@ -20,6 +20,10 @@ export default {
         'accent-primary': 'var(--accent-primary)',
         'accent-secondary': 'var(--accent-secondary)',
         'accent-cta': 'var(--accent-cta, var(--accent-primary))',
+        stone: {
+          750: '#2c2724',
+          850: '#1c1917',
+        },
         olive: {
           canvas: 'var(--bg-canvas)',
           card: 'var(--surface-card)',

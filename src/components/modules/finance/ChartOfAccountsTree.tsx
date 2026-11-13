@@ -75,7 +75,7 @@ const AccountTreeNodeRow: React.FC<AccountTreeNodeRowProps> = ({
         };
       case 4:
         return {
-          bg: 'bg-stone-100/60 dark:bg-stone-850 text-stone-600 dark:text-stone-400 border border-stone-200/60 dark:border-stone-750 text-[10px] px-1.5 py-0.5 rounded',
+          bg: 'bg-stone-100/60 dark:bg-stone-800/60 text-stone-600 dark:text-stone-400 border border-stone-200/60 dark:border-stone-700/70 text-[10px] px-1.5 py-0.5 rounded',
           label: 'L4',
           title: t('تحليلي', 'Sub')
         };
@@ -115,9 +115,9 @@ const AccountTreeNodeRow: React.FC<AccountTreeNodeRowProps> = ({
           isSelected
             ? 'bg-amber-50/80 dark:bg-amber-950/30 border-amber-300/70 dark:border-amber-700/50 shadow-xs'
             : level === 1
-            ? 'bg-stone-50/90 dark:bg-stone-850 border-stone-200/90 dark:border-stone-750 hover:bg-[#F2ECE4]/60 dark:hover:bg-stone-800'
+            ? 'bg-stone-50/90 dark:bg-stone-800/80 border-stone-200/90 dark:border-stone-700/80 hover:bg-[#F2ECE4]/60 dark:hover:bg-stone-800'
             : level === 2
-            ? 'bg-white/80 dark:bg-stone-900 border-stone-200/70 dark:border-stone-800 hover:bg-stone-50 dark:hover:bg-stone-850'
+            ? 'bg-white/80 dark:bg-stone-900 border-stone-200/70 dark:border-stone-800 hover:bg-stone-50 dark:hover:bg-stone-800'
             : 'bg-transparent border-transparent hover:bg-stone-100/60 dark:hover:bg-stone-800/50'
         }`}
       >
@@ -414,7 +414,7 @@ export const ChartOfAccountsTree: React.FC = () => {
                 'بحث برمز الحساب أو الاسم بالعربية/الإنجليزية (مثال: 1201001، الخزينة، بنك مصر)...',
                 'Search by code or account name...'
               )}
-              className="w-full ps-10 pe-10 py-2.5 text-xs sm:text-sm rounded-xl border border-stone-200/80 dark:border-stone-700 bg-stone-50/70 dark:bg-stone-850 text-stone-900 dark:text-stone-100 placeholder-stone-400 focus:outline-hidden focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
+              className="w-full ps-10 pe-10 py-2.5 text-xs sm:text-sm rounded-xl border border-stone-200/80 dark:border-stone-700 bg-stone-50/70 dark:bg-stone-800 text-stone-900 dark:text-stone-100 placeholder-stone-400 dark:placeholder-stone-500 focus:outline-hidden focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
             />
             {searchQuery && (
               <button
@@ -430,7 +430,7 @@ export const ChartOfAccountsTree: React.FC = () => {
           <div className="flex items-center gap-2 self-end sm:self-auto">
             <button
               onClick={handleExpandAll}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium border border-stone-200/80 dark:border-stone-700/80 bg-[#FAF8F5] dark:bg-stone-850 hover:bg-[#F2ECE4] text-stone-700 dark:text-stone-200 transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium border border-stone-200/80 dark:border-stone-700 bg-[#FAF8F5] dark:bg-stone-800 hover:bg-[#F2ECE4] dark:hover:bg-stone-700 text-stone-700 dark:text-stone-200 transition-colors cursor-pointer"
               title={t('توسيع كافة المستويات', 'Expand All')}
             >
               <Maximize2 className="w-3.5 h-3.5" />
@@ -439,7 +439,7 @@ export const ChartOfAccountsTree: React.FC = () => {
 
             <button
               onClick={handleCollapseAll}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium border border-stone-200/80 dark:border-stone-700/80 bg-[#FAF8F5] dark:bg-stone-850 hover:bg-[#F2ECE4] text-stone-700 dark:text-stone-200 transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium border border-stone-200/80 dark:border-stone-700 bg-[#FAF8F5] dark:bg-stone-800 hover:bg-[#F2ECE4] dark:hover:bg-stone-700 text-stone-700 dark:text-stone-200 transition-colors cursor-pointer"
               title={t('طي إلى الحسابات الرئيسية فقط', 'Collapse All')}
             >
               <Minimize2 className="w-3.5 h-3.5" />
@@ -460,7 +460,7 @@ export const ChartOfAccountsTree: React.FC = () => {
             className={`cursor-pointer transition-all ${
               filterNature === 'ALL'
                 ? 'bg-amber-600 hover:bg-amber-700 text-white font-medium shadow-xs border border-amber-700/30 px-3.5 py-1.5 rounded-lg text-xs'
-                : 'bg-[#FAF8F5] dark:bg-stone-850 hover:bg-[#F2ECE4] text-stone-700 dark:text-stone-300 border border-stone-200/80 dark:border-stone-700/60 px-3.5 py-1.5 rounded-lg text-xs font-normal'
+                : 'bg-[#FAF8F5] dark:bg-stone-800 hover:bg-[#F2ECE4] dark:hover:bg-stone-700 text-stone-700 dark:text-stone-200 border border-stone-200/80 dark:border-stone-700 px-3.5 py-1.5 rounded-lg text-xs font-normal'
             }`}
           >
             {t('جميع الحسابات', 'All')}
@@ -471,7 +471,7 @@ export const ChartOfAccountsTree: React.FC = () => {
             className={`cursor-pointer transition-all ${
               filterNature === 0
                 ? 'bg-amber-600 hover:bg-amber-700 text-white font-medium shadow-xs border border-amber-700/30 px-3.5 py-1.5 rounded-lg text-xs'
-                : 'bg-[#FAF8F5] dark:bg-stone-850 hover:bg-[#F2ECE4] text-stone-700 dark:text-stone-300 border border-stone-200/80 dark:border-stone-700/60 px-3.5 py-1.5 rounded-lg text-xs font-normal'
+                : 'bg-[#FAF8F5] dark:bg-stone-800 hover:bg-[#F2ECE4] dark:hover:bg-stone-700 text-stone-700 dark:text-stone-200 border border-stone-200/80 dark:border-stone-700 px-3.5 py-1.5 rounded-lg text-xs font-normal'
             }`}
           >
             {t('مدين فقط (Debit)', 'Debit Only')}
@@ -482,7 +482,7 @@ export const ChartOfAccountsTree: React.FC = () => {
             className={`cursor-pointer transition-all ${
               filterNature === 1
                 ? 'bg-amber-600 hover:bg-amber-700 text-white font-medium shadow-xs border border-amber-700/30 px-3.5 py-1.5 rounded-lg text-xs'
-                : 'bg-[#FAF8F5] dark:bg-stone-850 hover:bg-[#F2ECE4] text-stone-700 dark:text-stone-300 border border-stone-200/80 dark:border-stone-700/60 px-3.5 py-1.5 rounded-lg text-xs font-normal'
+                : 'bg-[#FAF8F5] dark:bg-stone-800 hover:bg-[#F2ECE4] dark:hover:bg-stone-700 text-stone-700 dark:text-stone-200 border border-stone-200/80 dark:border-stone-700 px-3.5 py-1.5 rounded-lg text-xs font-normal'
             }`}
           >
             {t('دائن فقط (Credit)', 'Credit Only')}
@@ -497,7 +497,7 @@ export const ChartOfAccountsTree: React.FC = () => {
             className={`cursor-pointer transition-all ${
               filterStatement === 'ALL'
                 ? 'bg-amber-600 hover:bg-amber-700 text-white font-medium shadow-xs border border-amber-700/30 px-3.5 py-1.5 rounded-lg text-xs'
-                : 'bg-[#FAF8F5] dark:bg-stone-850 hover:bg-[#F2ECE4] text-stone-700 dark:text-stone-300 border border-stone-200/80 dark:border-stone-700/60 px-3.5 py-1.5 rounded-lg text-xs font-normal'
+                : 'bg-[#FAF8F5] dark:bg-stone-800 hover:bg-[#F2ECE4] dark:hover:bg-stone-700 text-stone-700 dark:text-stone-200 border border-stone-200/80 dark:border-stone-700 px-3.5 py-1.5 rounded-lg text-xs font-normal'
             }`}
           >
             {t('الكل', 'All')}
@@ -508,7 +508,7 @@ export const ChartOfAccountsTree: React.FC = () => {
             className={`cursor-pointer transition-all ${
               filterStatement === 'BALANCE_SHEET'
                 ? 'bg-amber-600 hover:bg-amber-700 text-white font-medium shadow-xs border border-amber-700/30 px-3.5 py-1.5 rounded-lg text-xs'
-                : 'bg-[#FAF8F5] dark:bg-stone-850 hover:bg-[#F2ECE4] text-stone-700 dark:text-stone-300 border border-stone-200/80 dark:border-stone-700/60 px-3.5 py-1.5 rounded-lg text-xs font-normal'
+                : 'bg-[#FAF8F5] dark:bg-stone-800 hover:bg-[#F2ECE4] dark:hover:bg-stone-700 text-stone-700 dark:text-stone-200 border border-stone-200/80 dark:border-stone-700 px-3.5 py-1.5 rounded-lg text-xs font-normal'
             }`}
           >
             {t('ميزانية عمومية (أصول / خصوم)', 'Balance Sheet')}
@@ -519,7 +519,7 @@ export const ChartOfAccountsTree: React.FC = () => {
             className={`cursor-pointer transition-all ${
               filterStatement === 'INCOME_STATEMENT'
                 ? 'bg-amber-600 hover:bg-amber-700 text-white font-medium shadow-xs border border-amber-700/30 px-3.5 py-1.5 rounded-lg text-xs'
-                : 'bg-[#FAF8F5] dark:bg-stone-850 hover:bg-[#F2ECE4] text-stone-700 dark:text-stone-300 border border-stone-200/80 dark:border-stone-700/60 px-3.5 py-1.5 rounded-lg text-xs font-normal'
+                : 'bg-[#FAF8F5] dark:bg-stone-800 hover:bg-[#F2ECE4] dark:hover:bg-stone-700 text-stone-700 dark:text-stone-200 border border-stone-200/80 dark:border-stone-700 px-3.5 py-1.5 rounded-lg text-xs font-normal'
             }`}
           >
             {t('قائمة الدخل (مصروفات / تكاليف)', 'Income Statement')}
