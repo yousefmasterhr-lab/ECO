@@ -169,14 +169,14 @@ export const AccountDetailDrawer: React.FC<AccountDetailDrawerProps> = ({ accoun
               <div
                 className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold font-mono text-sm shadow-xs ${
                   account.level === 5
-                    ? 'bg-amber-50/80 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/40'
+                    ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
                     : account.level === 1
-                    ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 border border-amber-300/70'
+                    ? 'bg-[#059669]/15 text-[#34D399] border border-[#059669]/30'
                     : account.level === 2
-                    ? 'bg-stone-200 dark:bg-stone-800 text-stone-800 dark:text-stone-200 border border-stone-300 dark:border-stone-700'
+                    ? 'bg-[#1A241C] text-[#F3EFE6] border border-[#243628]'
                     : account.level === 3
-                    ? 'bg-stone-100 dark:bg-stone-800/80 text-stone-700 dark:text-stone-300 border border-stone-200 dark:border-stone-700'
-                    : 'bg-stone-100/60 dark:bg-stone-800/80 text-stone-600 dark:text-stone-400 border border-stone-200/60 dark:border-stone-700'
+                    ? 'bg-[#17231A] text-[#8FA392] border border-[#243628]'
+                    : 'bg-[#141E16] text-[#8FA392] border border-[#243628]/70'
                 }`}
               >
                 L{account.level}

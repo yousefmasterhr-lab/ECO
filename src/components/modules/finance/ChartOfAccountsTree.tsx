@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '../../../context/LanguageContext';
 import { useFinancial } from '../../../context/FinancialContext';
 import { AccountNode } from '../../../services/database/types';
@@ -8,8 +8,6 @@ import { AccountDetailDrawer } from './AccountDetailDrawer';
 import { toast } from '@erp/ui-system';
 import {
   ChevronDown,
-  ChevronRight,
-  ChevronLeft,
   Search,
   Folder,
   FolderOpen,
@@ -17,7 +15,7 @@ import {
   Filter,
   Maximize2,
   Minimize2,
-  Eye,
+  Eye
 } from 'lucide-react';
 
 interface AccountTreeNodeRowProps {
@@ -45,11 +43,11 @@ const AccountTreeNodeRow: React.FC<AccountTreeNodeRowProps> = ({
   const isLeaf = node.level === 5 || !hasChildren;
   const isExpanded = Boolean(hasChildren && (expandedNodes.has(node.id) || Boolean(searchQuery.trim())));
 
-  // Level visual styles (Harmonized with Reception & Visitors Module hierarchy)
+  // Level visual styles (Harmonized with General Journal & Eco ERP Brand Tokens)
   const getLevelBadge = () => {
     if (isLeaf || node.level === 5) {
       return {
-        bg: 'bg-amber-50/80 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/40 font-bold text-[10px] px-1.5 py-0.5 rounded',
+        bg: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 font-bold text-[10px] px-1.5 py-0.5 rounded-md',
         label: 'L5',
         title: t('حساب أستاذ نهائي', 'General Ledger Leaf')
       };
@@ -57,31 +55,31 @@ const AccountTreeNodeRow: React.FC<AccountTreeNodeRowProps> = ({
     switch (level) {
       case 1:
         return {
-          bg: 'bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 border border-amber-300/70 font-bold text-[10px] px-1.5 py-0.5 rounded',
+          bg: 'bg-[#059669]/15 text-[#059669] dark:text-[#34D399] border border-[#059669]/30 font-bold text-[10px] px-1.5 py-0.5 rounded-md',
           label: 'L1',
           title: t('رئيسي', 'Root')
         };
       case 2:
         return {
-          bg: 'bg-stone-200 dark:bg-stone-800 text-stone-800 dark:text-stone-200 border border-stone-300 dark:border-stone-700 text-[10px] px-1.5 py-0.5 rounded font-semibold',
+          bg: 'bg-[#F3EFE6] dark:bg-[#1A241C] text-[#1A241C] dark:text-[#F3EFE6] border border-[#E0D9CB] dark:border-[#243628] text-[10px] px-1.5 py-0.5 rounded-md font-bold',
           label: 'L2',
           title: t('مساعد', 'Branch')
         };
       case 3:
         return {
-          bg: 'bg-stone-100 dark:bg-stone-800/80 text-stone-700 dark:text-stone-300 border border-stone-200 dark:border-stone-700 text-[10px] px-1.5 py-0.5 rounded',
+          bg: 'bg-[#F3EFE6]/70 dark:bg-[#17231A] text-[#5C665E] dark:text-[#8FA392] border border-[#E0D9CB]/70 dark:border-[#243628] text-[10px] px-1.5 py-0.5 rounded-md',
           label: 'L3',
           title: t('فرعي', 'Aux')
         };
       case 4:
         return {
-          bg: 'bg-stone-100/60 dark:bg-stone-800/60 text-stone-600 dark:text-stone-400 border border-stone-200/60 dark:border-stone-700/70 text-[10px] px-1.5 py-0.5 rounded',
+          bg: 'bg-[#F3EFE6]/40 dark:bg-[#141E16] text-[#5C665E] dark:text-[#8FA392] border border-[#E0D9CB]/50 dark:border-[#243628]/70 text-[10px] px-1.5 py-0.5 rounded-md',
           label: 'L4',
           title: t('تحليلي', 'Sub')
         };
       default:
         return {
-          bg: 'bg-stone-100 text-stone-700 dark:bg-stone-800 dark:text-stone-300 border border-stone-300/60 text-[10px] px-1.5 py-0.5 rounded',
+          bg: 'bg-[#F3EFE6]/60 dark:bg-[#17231A] text-[#5C665E] dark:text-[#8FA392] border border-[#E0D9CB] dark:border-[#243628] text-[10px] px-1.5 py-0.5 rounded-md',
           label: `L${level}`,
           title: ''
         };
@@ -89,18 +87,18 @@ const AccountTreeNodeRow: React.FC<AccountTreeNodeRowProps> = ({
   };
 
   const badge = getLevelBadge();
-
-  // Indentation padding per visual hierarchy depth
   const indentPx = (level - 1) * 20;
 
-  // Subtle right-hand guide lines for child accounts (L2 to L5)
+  // Tree guide line class
   const guideLineClass = level > 1
-    ? (isRtl ? 'border-r border-stone-200 dark:border-stone-800 pr-3 mr-1' : 'border-l border-stone-200 dark:border-stone-800 pl-3 ml-1')
+    ? (isRtl ? 'border-r border-[#E0D9CB] dark:border-[#243628] pr-3 mr-1' : 'border-l border-[#E0D9CB] dark:border-[#243628] pl-3 ml-1')
     : '';
 
   return (
     <div className={`flex flex-col select-none ${guideLineClass}`}>
-      <div
+      <motion.div
+        whileHover={{ scale: 1.002 }}
+        whileTap={{ scale: 0.995 }}
         onClick={() => {
           if (hasChildren) {
             onToggle(node.id);
@@ -111,17 +109,17 @@ const AccountTreeNodeRow: React.FC<AccountTreeNodeRowProps> = ({
         style={{
           paddingInlineStart: `${indentPx + 10}px`,
         }}
-        className={`group flex items-center justify-between gap-3 py-2 px-3 rounded-xl border transition-all cursor-pointer ${
+        className={`group flex items-center justify-between gap-3 py-2.5 px-3 rounded-xl border transition-all duration-200 cursor-pointer ${
           isSelected
-            ? 'bg-amber-50/80 dark:bg-amber-950/30 border-amber-300/70 dark:border-amber-700/50 shadow-xs'
+            ? 'bg-[#059669]/10 dark:bg-[#059669]/20 border-[#059669]/50 shadow-xs'
             : level === 1
-            ? 'bg-stone-50/90 dark:bg-stone-800/80 border-stone-200/90 dark:border-stone-700/80 hover:bg-[#F2ECE4]/60 dark:hover:bg-stone-800'
+            ? 'bg-[#F3EFE6]/80 dark:bg-[#17231A] border-[#E0D9CB] dark:border-[#243628] hover:bg-[#EAE4D7]/70 dark:hover:bg-[#1C2A1E] shadow-2xs'
             : level === 2
-            ? 'bg-white/80 dark:bg-stone-900 border-stone-200/70 dark:border-stone-800 hover:bg-stone-50 dark:hover:bg-stone-800'
-            : 'bg-transparent border-transparent hover:bg-stone-100/60 dark:hover:bg-stone-800/50'
+            ? 'bg-white/90 dark:bg-[#141E16] border-[#E0D9CB]/70 dark:border-[#243628]/80 hover:bg-[#F3EFE6]/60 dark:hover:bg-[#17231A]/60'
+            : 'bg-transparent border-transparent hover:bg-[#F3EFE6]/40 dark:hover:bg-[#17231A]/40'
         }`}
       >
-        {/* Left Side: Expand Chevron + Icon + Code + Name */}
+        {/* Left Side: Expand Chevron + Folder Icon + Code + Name */}
         <div className="flex items-center gap-2.5 min-w-0 flex-1">
           {/* Chevron expander or leaf bullet */}
           {hasChildren ? (
@@ -130,30 +128,29 @@ const AccountTreeNodeRow: React.FC<AccountTreeNodeRowProps> = ({
                 e.stopPropagation();
                 onToggle(node.id);
               }}
-              className="w-6 h-6 rounded-lg flex items-center justify-center text-stone-400 dark:text-stone-500 hover:text-stone-900 dark:hover:text-stone-100 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors shrink-0"
+              className="w-6 h-6 rounded-lg flex items-center justify-center text-[#5C665E] dark:text-[#8FA392] hover:text-[#059669] hover:bg-[#F3EFE6] dark:hover:bg-[#17231A] transition-colors shrink-0"
             >
-              {isExpanded ? (
-                <ChevronDown className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-              ) : isRtl ? (
-                <ChevronLeft className="w-4 h-4" />
-              ) : (
-                <ChevronRight className="w-4 h-4" />
-              )}
+              <motion.div
+                animate={{ rotate: isExpanded ? 180 : 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <ChevronDown className="w-4 h-4 text-[#059669] dark:text-[#34D399]" />
+              </motion.div>
             </button>
           ) : (
             <div className="w-6 h-6 flex items-center justify-center shrink-0">
-              <span className="w-1.5 h-1.5 rounded-full bg-stone-300 dark:bg-stone-600" />
+              <span className="w-1.5 h-1.5 rounded-full bg-[#059669]/50 dark:bg-[#34D399]/50" />
             </div>
           )}
 
-          {/* Icon */}
-          <div className="shrink-0 text-stone-400 dark:text-stone-500">
+          {/* Folder / File Icon */}
+          <div className="shrink-0 text-[#059669] dark:text-[#34D399]">
             {isLeaf ? (
-              <FileText className="w-4 h-4 text-stone-400 dark:text-stone-500" />
+              <FileText className="w-4 h-4 text-[#5C665E] dark:text-[#8FA392]" />
             ) : isExpanded ? (
-              <FolderOpen className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+              <FolderOpen className="w-4 h-4 text-[#059669] dark:text-[#34D399]" />
             ) : (
-              <Folder className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+              <Folder className="w-4 h-4 text-[#059669] dark:text-[#34D399]" />
             )}
           </div>
 
@@ -166,7 +163,7 @@ const AccountTreeNodeRow: React.FC<AccountTreeNodeRowProps> = ({
           </span>
 
           {/* Account Code */}
-          <span className="font-mono text-xs font-semibold text-stone-700 dark:text-stone-300 bg-stone-100 dark:bg-stone-800 px-2 py-0.5 rounded border border-stone-200 dark:border-stone-700 tracking-wider shrink-0">
+          <span className="font-mono text-xs font-bold text-[#059669] dark:text-[#34D399] bg-[#059669]/10 dark:bg-[#059669]/15 px-2 py-0.5 rounded-md border border-[#059669]/20 tracking-wider shrink-0">
             {node.code}
           </span>
 
@@ -174,10 +171,10 @@ const AccountTreeNodeRow: React.FC<AccountTreeNodeRowProps> = ({
           <span
             className={`truncate text-xs sm:text-sm ${
               level === 1
-                ? 'text-stone-950 dark:text-white font-bold'
+                ? 'text-[#1A241C] dark:text-[#F3EFE6] font-bold text-sm'
                 : level === 2
-                ? 'text-stone-900 dark:text-stone-100 font-semibold'
-                : 'text-stone-800 dark:text-stone-200 font-medium'
+                ? 'text-[#1A241C] dark:text-[#F3EFE6] font-semibold'
+                : 'text-[#1A241C] dark:text-[#F3EFE6] font-medium'
             }`}
           >
             {node.nameAr}
@@ -186,86 +183,90 @@ const AccountTreeNodeRow: React.FC<AccountTreeNodeRowProps> = ({
 
         {/* Right Side: Badges & Actions */}
         <div className="flex items-center gap-2 shrink-0">
-          {/* Live Balance Badge (Clean, Legible Financial Badge) */}
+          {/* Live Balance Badge */}
           {node.balance !== undefined && Math.abs(node.balance) > 0.001 && (
-            <span className="font-mono font-semibold text-stone-800 dark:text-stone-200 px-2 py-0.5 rounded bg-stone-100 dark:bg-stone-800 border border-stone-200/70 dark:border-stone-700/50 text-xs tabular-nums flex items-center shrink-0">
+            <span className="font-mono font-bold text-xs text-[#1A241C] dark:text-[#F3EFE6] px-2.5 py-1 rounded-lg bg-white dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] tabular-nums flex items-center shrink-0 shadow-2xs">
               <span>{Math.abs(node.balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-              <span className="text-xs font-normal text-stone-500 mr-1 ms-1">{t('ج.م', 'EGP')}</span>
+              <span className="text-xs font-normal text-[#5C665E] dark:text-[#8FA392] mr-1 ms-1">{t('ج.م', 'EGP')}</span>
             </span>
           )}
 
-          {/* Nature Badge (Warm Amber for Debit / Soft Slate for Credit) */}
+          {/* Nature Badge (Soft Green for Debit / Soft Rose for Credit - matching General Journal) */}
           <span
-            className={`text-[11px] px-2 py-0.5 rounded-full font-medium border ${
+            className={`text-[11px] px-2 py-0.5 rounded-full font-bold border ${
               node.nature === 0
-                ? 'bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800/50'
-                : 'bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 border-stone-200 dark:border-stone-700'
+                ? 'bg-[#EAF3EB] dark:bg-[#2A3F30] text-[#245E33] dark:text-[#A3CFAC] border-[#B8D8BC] dark:border-[#3D5A45]'
+                : 'bg-[#F8EBEB] dark:bg-[#3F2A2A] text-[#7A2828] dark:text-[#EFA3A3] border-[#E3B8B8] dark:border-[#5A3D3D]'
             }`}
           >
             {node.natureLabelAr}
           </span>
 
-          {/* Statement Type Badge on Higher Levels */}
+          {/* Statement Type Badge */}
           {node.level <= 3 && (
-            <span className="hidden md:inline-flex text-[10px] font-medium px-2 py-0.5 rounded-md bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 border border-stone-200/80 dark:border-stone-700/80">
+            <span className="hidden md:inline-flex text-[10px] font-semibold px-2 py-0.5 rounded-md bg-[#F3EFE6] dark:bg-[#17231A] text-[#5C665E] dark:text-[#8FA392] border border-[#E0D9CB] dark:border-[#243628]">
               {node.statementType === 'BALANCE_SHEET' ? t('ميزانية', 'Balance') : t('دخل', 'Income')}
             </span>
           )}
 
-          {/* Leaf Count Badge for non-leaf accounts */}
+          {/* Leaf Count Badge */}
           {hasChildren && (
-            <span className="text-[10.5px] font-medium px-2 py-0.5 rounded-md bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 border border-stone-200/80 dark:border-stone-700/80 font-mono">
+            <span className="text-[10.5px] font-mono px-2 py-0.5 rounded-md bg-[#F3EFE6] dark:bg-[#17231A] text-[#5C665E] dark:text-[#8FA392] border border-[#E0D9CB] dark:border-[#243628]">
               {node.leafCount} {t('حساب', 'accts')}
             </span>
           )}
 
           {/* Quick Details Trigger */}
-          <button
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
             onClick={e => {
               e.stopPropagation();
               onSelect(node);
             }}
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors cursor-pointer"
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-[#5C665E] dark:text-[#8FA392] hover:text-[#059669] hover:bg-[#F3EFE6] dark:hover:bg-[#17231A] transition-colors cursor-pointer"
             title={t('عرض التفاصيل المحاسبية', 'View Account Details')}
           >
             <Eye className="w-3.5 h-3.5" />
-          </button>
+          </motion.button>
         </div>
-      </div>
+      </motion.div>
 
-      {/* Children Container with Smooth Animation */}
-      {hasChildren && isExpanded && (
-        <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: 'auto' }}
-          exit={{ opacity: 0, height: 0 }}
-          transition={{ duration: 0.15 }}
-          className="relative"
-        >
-          {/* Tree guide line */}
-          <div
-            style={{
-              insetInlineStart: `${indentPx + 20}px`,
-            }}
-            className="absolute top-0 bottom-2 w-px bg-stone-200 dark:bg-stone-800"
-          />
+      {/* Children Container with Spring Animation */}
+      <AnimatePresence>
+        {hasChildren && isExpanded && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.22, ease: 'easeInOut' }}
+            className="relative overflow-hidden"
+          >
+            {/* Tree guide line */}
+            <div
+              style={{
+                insetInlineStart: `${indentPx + 20}px`,
+              }}
+              className="absolute top-0 bottom-2 w-px bg-[#E0D9CB] dark:bg-[#243628]"
+            />
 
-          <div className="space-y-1 pt-1">
-            {node.children.map(child => (
-              <AccountTreeNodeRow
-                key={child.id}
-                node={child}
-                level={level + 1}
-                expandedNodes={expandedNodes}
-                onToggle={onToggle}
-                onSelect={onSelect}
-                selectedId={selectedId}
-                searchQuery={searchQuery}
-              />
-            ))}
-          </div>
-        </motion.div>
-      )}
+            <div className="space-y-1 pt-1">
+              {node.children.map(child => (
+                <AccountTreeNodeRow
+                  key={child.id}
+                  node={child}
+                  level={level + 1}
+                  expandedNodes={expandedNodes}
+                  onToggle={onToggle}
+                  onSelect={onSelect}
+                  selectedId={selectedId}
+                  searchQuery={searchQuery}
+                />
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
@@ -285,9 +286,7 @@ export const ChartOfAccountsTree: React.FC = () => {
     setSelectedAccount
   } = useFinancial();
 
-  // Smart Tree Hierarchy Flattening:
-  // Automatically bypass redundant duplicate levels (e.g. L1 'الأصول' -> L2 'الأصول')
-  // and promote functional branches directly under root categories.
+  // Smart Tree Hierarchy Flattening
   const treeAccounts = useMemo(() => {
     return flattenAccountTree(accounts);
   }, [accounts]);
@@ -399,13 +398,18 @@ export const ChartOfAccountsTree: React.FC = () => {
 
   return (
     <div className="w-full space-y-4">
-      {/* Search, Filters & Action Toolbar (Warm Amber & Sand Palette) */}
-      <div className="p-4 rounded-2xl border border-stone-200/80 dark:border-stone-800 bg-white dark:bg-stone-900 space-y-3.5 shadow-xs">
+      {/* Search, Filters & Action Toolbar (General Journal Master Theme) */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.25 }}
+        className="p-4 sm:p-5 rounded-2xl border border-[#E0D9CB] dark:border-[#243628] bg-[#FBF9F5] dark:bg-[#141E16] space-y-4 shadow-xs"
+      >
         {/* Top Row: Search Input + Action Buttons */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-          {/* Search Box with Inset Rings & Smooth RTL Padding */}
+          {/* Search Box */}
           <div className="relative flex-1">
-            <Search className="w-4 h-4 absolute inset-y-0 my-auto start-3.5 text-stone-400 dark:text-stone-500" />
+            <Search className="w-4 h-4 absolute start-3.5 top-1/2 -translate-y-1/2 text-[#5C665E] dark:text-[#8FA392]" />
             <input
               type="text"
               value={searchQuery}
@@ -414,12 +418,12 @@ export const ChartOfAccountsTree: React.FC = () => {
                 'بحث برمز الحساب أو الاسم بالعربية/الإنجليزية (مثال: 1201001، الخزينة، بنك مصر)...',
                 'Search by code or account name...'
               )}
-              className="w-full ps-10 pe-10 py-2.5 text-xs sm:text-sm rounded-xl border border-stone-200/80 dark:border-stone-700 bg-stone-50/70 dark:bg-stone-800 text-stone-900 dark:text-stone-100 placeholder-stone-400 dark:placeholder-stone-500 focus:outline-hidden focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
+              className="w-full ps-10 pe-10 py-2.5 text-xs sm:text-sm rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#17231A] text-[#1A241C] dark:text-[#F3EFE6] placeholder-[#5C665E]/60 dark:placeholder-[#8FA392]/60 focus:outline-none focus:border-[#059669] focus:ring-1 focus:ring-[#059669]/30 transition-all"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute inset-y-0 my-auto end-3 text-xs text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 cursor-pointer"
+                className="absolute end-3 top-1/2 -translate-y-1/2 text-xs text-[#5C665E] dark:text-[#8FA392] hover:text-[#059669] cursor-pointer"
               >
                 ✕
               </button>
@@ -428,123 +432,144 @@ export const ChartOfAccountsTree: React.FC = () => {
 
           {/* Expand/Collapse Action Buttons */}
           <div className="flex items-center gap-2 self-end sm:self-auto">
-            <button
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.96 }}
               onClick={handleExpandAll}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium border border-stone-200/80 dark:border-stone-700 bg-[#FAF8F5] dark:bg-stone-800 hover:bg-[#F2ECE4] dark:hover:bg-stone-700 text-stone-700 dark:text-stone-200 transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-bold border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#1A241C] text-[#5C665E] dark:text-[#8FA392] hover:text-[#1A241C] dark:hover:text-[#F3EFE6] hover:bg-[#F3EFE6] dark:hover:bg-[#1F2E23] transition-all cursor-pointer shadow-2xs"
               title={t('توسيع كافة المستويات', 'Expand All')}
             >
-              <Maximize2 className="w-3.5 h-3.5" />
+              <Maximize2 className="w-3.5 h-3.5 text-[#059669]" />
               <span>{t('توسيع الكل', 'Expand All')}</span>
-            </button>
+            </motion.button>
 
-            <button
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.96 }}
               onClick={handleCollapseAll}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium border border-stone-200/80 dark:border-stone-700 bg-[#FAF8F5] dark:bg-stone-800 hover:bg-[#F2ECE4] dark:hover:bg-stone-700 text-stone-700 dark:text-stone-200 transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-bold border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#1A241C] text-[#5C665E] dark:text-[#8FA392] hover:text-[#1A241C] dark:hover:text-[#F3EFE6] hover:bg-[#F3EFE6] dark:hover:bg-[#1F2E23] transition-all cursor-pointer shadow-2xs"
               title={t('طي إلى الحسابات الرئيسية فقط', 'Collapse All')}
             >
-              <Minimize2 className="w-3.5 h-3.5" />
+              <Minimize2 className="w-3.5 h-3.5 text-[#059669]" />
               <span>{t('طي الكل', 'Collapse All')}</span>
-            </button>
+            </motion.button>
           </div>
         </div>
 
-        {/* Filter Chips Bar (Warm Amber Surface for Active / Warm Neutral for Inactive) */}
-        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-stone-200/60 dark:border-stone-800 text-xs">
-          <span className="text-stone-500 dark:text-stone-400 font-medium text-[11px] flex items-center gap-1">
-            <Filter className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+        {/* Filter Chips Bar (Emerald Active Pill / Clean Neutral Inactive Pill) */}
+        <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-[#E0D9CB]/60 dark:border-[#243628] text-xs">
+          <span className="text-[#5C665E] dark:text-[#8FA392] font-bold text-[11px] flex items-center gap-1">
+            <Filter className="w-3.5 h-3.5 text-[#059669]" />
             {t('تصفية حسب الطبيعة:', 'Nature:')}
           </span>
 
-          <button
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.96 }}
             onClick={() => setFilterNature('ALL')}
-            className={`cursor-pointer transition-all ${
+            className={`cursor-pointer transition-all px-3.5 py-1.5 rounded-xl text-xs font-bold ${
               filterNature === 'ALL'
-                ? 'bg-amber-600 hover:bg-amber-700 text-white font-medium shadow-xs border border-amber-700/30 px-3.5 py-1.5 rounded-lg text-xs'
-                : 'bg-[#FAF8F5] dark:bg-stone-800 hover:bg-[#F2ECE4] dark:hover:bg-stone-700 text-stone-700 dark:text-stone-200 border border-stone-200/80 dark:border-stone-700 px-3.5 py-1.5 rounded-lg text-xs font-normal'
+                ? 'bg-[#059669] text-white shadow-xs border border-[#059669]'
+                : 'bg-white dark:bg-[#1A241C] hover:bg-[#F3EFE6] dark:hover:bg-[#1F2E23] text-[#5C665E] dark:text-[#8FA392] hover:text-[#1A241C] dark:hover:text-[#F3EFE6] border border-[#E0D9CB] dark:border-[#243628]'
             }`}
           >
             {t('جميع الحسابات', 'All')}
-          </button>
+          </motion.button>
 
-          <button
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.96 }}
             onClick={() => setFilterNature(0)}
-            className={`cursor-pointer transition-all ${
+            className={`cursor-pointer transition-all px-3.5 py-1.5 rounded-xl text-xs font-bold ${
               filterNature === 0
-                ? 'bg-amber-600 hover:bg-amber-700 text-white font-medium shadow-xs border border-amber-700/30 px-3.5 py-1.5 rounded-lg text-xs'
-                : 'bg-[#FAF8F5] dark:bg-stone-800 hover:bg-[#F2ECE4] dark:hover:bg-stone-700 text-stone-700 dark:text-stone-200 border border-stone-200/80 dark:border-stone-700 px-3.5 py-1.5 rounded-lg text-xs font-normal'
+                ? 'bg-[#059669] text-white shadow-xs border border-[#059669]'
+                : 'bg-white dark:bg-[#1A241C] hover:bg-[#F3EFE6] dark:hover:bg-[#1F2E23] text-[#5C665E] dark:text-[#8FA392] hover:text-[#1A241C] dark:hover:text-[#F3EFE6] border border-[#E0D9CB] dark:border-[#243628]'
             }`}
           >
             {t('مدين فقط (Debit)', 'Debit Only')}
-          </button>
+          </motion.button>
 
-          <button
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.96 }}
             onClick={() => setFilterNature(1)}
-            className={`cursor-pointer transition-all ${
+            className={`cursor-pointer transition-all px-3.5 py-1.5 rounded-xl text-xs font-bold ${
               filterNature === 1
-                ? 'bg-amber-600 hover:bg-amber-700 text-white font-medium shadow-xs border border-amber-700/30 px-3.5 py-1.5 rounded-lg text-xs'
-                : 'bg-[#FAF8F5] dark:bg-stone-800 hover:bg-[#F2ECE4] dark:hover:bg-stone-700 text-stone-700 dark:text-stone-200 border border-stone-200/80 dark:border-stone-700 px-3.5 py-1.5 rounded-lg text-xs font-normal'
+                ? 'bg-[#059669] text-white shadow-xs border border-[#059669]'
+                : 'bg-white dark:bg-[#1A241C] hover:bg-[#F3EFE6] dark:hover:bg-[#1F2E23] text-[#5C665E] dark:text-[#8FA392] hover:text-[#1A241C] dark:hover:text-[#F3EFE6] border border-[#E0D9CB] dark:border-[#243628]'
             }`}
           >
             {t('دائن فقط (Credit)', 'Credit Only')}
-          </button>
+          </motion.button>
 
-          <span className="ms-2 text-stone-500 dark:text-stone-400 font-medium text-[11px]">
+          <span className="ms-2 text-[#5C665E] dark:text-[#8FA392] font-bold text-[11px]">
             {t('القائمة:', 'Statement:')}
           </span>
 
-          <button
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.96 }}
             onClick={() => setFilterStatement('ALL')}
-            className={`cursor-pointer transition-all ${
+            className={`cursor-pointer transition-all px-3.5 py-1.5 rounded-xl text-xs font-bold ${
               filterStatement === 'ALL'
-                ? 'bg-amber-600 hover:bg-amber-700 text-white font-medium shadow-xs border border-amber-700/30 px-3.5 py-1.5 rounded-lg text-xs'
-                : 'bg-[#FAF8F5] dark:bg-stone-800 hover:bg-[#F2ECE4] dark:hover:bg-stone-700 text-stone-700 dark:text-stone-200 border border-stone-200/80 dark:border-stone-700 px-3.5 py-1.5 rounded-lg text-xs font-normal'
+                ? 'bg-[#059669] text-white shadow-xs border border-[#059669]'
+                : 'bg-white dark:bg-[#1A241C] hover:bg-[#F3EFE6] dark:hover:bg-[#1F2E23] text-[#5C665E] dark:text-[#8FA392] hover:text-[#1A241C] dark:hover:text-[#F3EFE6] border border-[#E0D9CB] dark:border-[#243628]'
             }`}
           >
             {t('الكل', 'All')}
-          </button>
+          </motion.button>
 
-          <button
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.96 }}
             onClick={() => setFilterStatement('BALANCE_SHEET')}
-            className={`cursor-pointer transition-all ${
+            className={`cursor-pointer transition-all px-3.5 py-1.5 rounded-xl text-xs font-bold ${
               filterStatement === 'BALANCE_SHEET'
-                ? 'bg-amber-600 hover:bg-amber-700 text-white font-medium shadow-xs border border-amber-700/30 px-3.5 py-1.5 rounded-lg text-xs'
-                : 'bg-[#FAF8F5] dark:bg-stone-800 hover:bg-[#F2ECE4] dark:hover:bg-stone-700 text-stone-700 dark:text-stone-200 border border-stone-200/80 dark:border-stone-700 px-3.5 py-1.5 rounded-lg text-xs font-normal'
+                ? 'bg-[#059669] text-white shadow-xs border border-[#059669]'
+                : 'bg-white dark:bg-[#1A241C] hover:bg-[#F3EFE6] dark:hover:bg-[#1F2E23] text-[#5C665E] dark:text-[#8FA392] hover:text-[#1A241C] dark:hover:text-[#F3EFE6] border border-[#E0D9CB] dark:border-[#243628]'
             }`}
           >
             {t('ميزانية عمومية (أصول / خصوم)', 'Balance Sheet')}
-          </button>
+          </motion.button>
 
-          <button
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.96 }}
             onClick={() => setFilterStatement('INCOME_STATEMENT')}
-            className={`cursor-pointer transition-all ${
+            className={`cursor-pointer transition-all px-3.5 py-1.5 rounded-xl text-xs font-bold ${
               filterStatement === 'INCOME_STATEMENT'
-                ? 'bg-amber-600 hover:bg-amber-700 text-white font-medium shadow-xs border border-amber-700/30 px-3.5 py-1.5 rounded-lg text-xs'
-                : 'bg-[#FAF8F5] dark:bg-stone-800 hover:bg-[#F2ECE4] dark:hover:bg-stone-700 text-stone-700 dark:text-stone-200 border border-stone-200/80 dark:border-stone-700 px-3.5 py-1.5 rounded-lg text-xs font-normal'
+                ? 'bg-[#059669] text-white shadow-xs border border-[#059669]'
+                : 'bg-white dark:bg-[#1A241C] hover:bg-[#F3EFE6] dark:hover:bg-[#1F2E23] text-[#5C665E] dark:text-[#8FA392] hover:text-[#1A241C] dark:hover:text-[#F3EFE6] border border-[#E0D9CB] dark:border-[#243628]'
             }`}
           >
             {t('قائمة الدخل (مصروفات / تكاليف)', 'Income Statement')}
-          </button>
+          </motion.button>
         </div>
-      </div>
+      </motion.div>
 
-      {/* Tree Content Container (Elevated Modern Canvas) */}
-      <div className="rounded-2xl border border-stone-200/80 dark:border-stone-800 bg-white dark:bg-stone-900 p-4 sm:p-5 shadow-xs">
+      {/* Tree Content Container (Matching General Journal Table Container) */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.25, delay: 0.05 }}
+        className="rounded-2xl border border-[#E0D9CB] dark:border-[#243628] bg-[#FBF9F5] dark:bg-[#121B14] p-4 sm:p-5 shadow-xs overflow-hidden"
+      >
         {isLoading ? (
           <div className="p-12 text-center flex flex-col items-center justify-center space-y-3">
-            <div className="w-10 h-10 border-3 border-amber-600 dark:border-amber-400 border-t-transparent rounded-full animate-spin" />
-            <span className="text-xs font-semibold text-stone-800 dark:text-stone-200">
+            <div className="w-10 h-10 border-3 border-[#059669] border-t-transparent rounded-full animate-spin" />
+            <span className="text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6]">
               {t('جارِ تحميل شجرة الحسابات المحاسبية...', 'Loading Chart of Accounts...')}
             </span>
           </div>
         ) : filteredAccounts.length === 0 ? (
           <div className="p-12 text-center flex flex-col items-center justify-center space-y-3">
-            <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+            <div className="w-12 h-12 rounded-2xl bg-[#059669]/15 text-[#059669] dark:text-[#34D399] flex items-center justify-center">
               <Search className="w-6 h-6" />
             </div>
-            <h3 className="text-sm font-bold text-stone-900 dark:text-stone-100">
+            <h3 className="text-sm font-bold text-[#1A241C] dark:text-[#F3EFE6]">
               {t('لم يتم العثور على حسابات مطابقة', 'No matching accounts found')}
             </h3>
-            <p className="text-xs text-stone-500 dark:text-stone-400 max-w-sm">
+            <p className="text-xs text-[#5C665E] dark:text-[#8FA392] max-w-sm">
               {t(
                 'جرّب تعديل كلمة البحث أو إعادة تعيين فلاتر طبيعة الحساب أو القائمة المالية.',
                 'Try adjusting search keywords or clearing active filters.'
@@ -567,7 +592,7 @@ export const ChartOfAccountsTree: React.FC = () => {
             ))}
           </div>
         )}
-      </div>
+      </motion.div>
 
       {/* Detail Drawer Modal */}
       <AccountDetailDrawer

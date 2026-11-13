@@ -1058,25 +1058,23 @@
       - تبويبات تفاعلية سداسية: سندات الصرف، سندات الإضافة، تحويل المستودعات، التسوية الجردية، دليل الأصناف وتكلفة WAC، ودليل المستودعات.
       - تنقل فائق السرعة عبر لوحة المفاتيح (`Enter`, `Insert`, `Ctrl+Del`) مع شريط HUD ملخص للتكاليف وتفقيط عربي فوري.
 
-17. **معايير التصميم المالي عالي الكثافة المتناغم مع موديول الاستقبال (Warm Amber & Gold ERP Design Language):**
-    - **التخلص القطعي من الصناديق والأزرار السوداء الصماء:**
-      - حظر `bg-black`, `bg-gray-900`, `bg-slate-900` للأزرار النشطة والأرصدة.
-      - الزر النشط في التصفية والتحكم:
-        `bg-amber-600 hover:bg-amber-700 text-white font-medium shadow-xs border border-amber-700/30 px-3.5 py-1.5 rounded-lg text-xs transition-all`.
-      - الزر غير النشط:
-        `bg-[#FAF8F5] dark:bg-stone-800 hover:bg-[#F2ECE4] dark:hover:bg-stone-700 text-stone-700 dark:text-stone-200 border border-stone-200/80 dark:border-stone-700 px-3.5 py-1.5 rounded-lg text-xs font-normal transition-colors`.
-    - **عرض الأرصدة المالية بنقاء فائق (Clean Financial Badge):**
-      - `font-mono font-semibold text-stone-800 dark:text-stone-200 px-2 py-0.5 rounded bg-stone-100 dark:bg-stone-800 border border-stone-200/70 dark:border-stone-700/50 text-xs tabular-nums`.
-    - **كروت المؤشرات المالية الستة الحديثة (Warm Amber KPI Tiles):**
-      - أسطح ناصعة ورمادية ناعمة (`bg-white dark:bg-stone-900 border border-stone-200/80 dark:border-stone-800 rounded-xl p-3.5 shadow-xs`).
-      - حواف علوية تمييزية كهرمانية دافئة موحدة (`border-t-2 border-t-amber-500`) مع أيقونات كهرمانية فخمة (`bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30`).
-      - أرقام كبرى بخط Monospace وأرقام جدولية تمنع الاهتزاز الرقمي (`font-mono text-xl font-bold text-stone-900 dark:text-stone-100 tabular-nums`).
-    - **شارات المستويات الهيكلية الخمسة المتسقة (Semantic Hierarchy Badges L1 to L5):**
-      - **L1 (رئيسي):** `bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 border border-amber-300/70 font-bold text-[10px] px-1.5 py-0.5 rounded`.
-      - **L2 (مساعد):** `bg-stone-200 dark:bg-stone-800 text-stone-800 dark:text-stone-200 border border-stone-300 dark:border-stone-700 text-[10px] px-1.5 py-0.5 rounded font-semibold`.
-      - **L3-L4:** شارات حجرية رمادية هادئة بدون فوضى لونية.
-      - **L5 (أستاذ نهائي):** `bg-amber-50/80 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 border border-amber-200/60 font-bold text-[10px] px-1.5 py-0.5 rounded`.
-      - خطوط إرشاد رأسية دقيقة للأبناء: `border-r border-stone-200 dark:border-stone-800 pr-3 mr-1`.
-    - **شارة الحالة الفاخرة للاتصال المحلي/السحابي:**
-      - كبسولة كهرمانية ناعمة: `inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 text-xs font-medium`.
-      - نقطة نبض كهرمانية دقيقة: `<span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>`.
+17. **المعيار الذهبي الأصيل للتصميم المالي المتطابق مع شاشة قيود اليومية العامة (General Journal Master Brand Language):**
+    - **الالتزام المطلق ببالتة الزيتوني الليلي الملكي (Deep Nocturnal Olive & Obsidian Forest):**
+      - حظر تام لكافة درجات الرمادي الحجري والبني الطيني (`stone-900`, `stone-800`, `stone-850`) التي تشوه الهوية البصرية للمنظومة.
+      - خلفيات الحاويات والبطاقات الرئيسية: في الداكن `dark:bg-[#141E16]` و `dark:bg-[#121B14]`، وفي الفاتح `bg-[#FBF9F5]` و `bg-white`.
+      - تدرج البانر العلوي: `bg-gradient-to-r from-[#FBF9F5] via-[#F3EFE6] to-[#EAE4D7]/70 dark:from-[#17231A] dark:via-[#131E15] dark:to-[#0E1610]`.
+      - حدود النظام المعتمدة: `border-[#E0D9CB] dark:border-[#243628]`.
+    - **اللون الزمردي الرسمي للعمليات النشطة والتصفية (Emerald #059669 Active State):**
+      - الزر النشط في التصفية والتحكم: `bg-[#059669] hover:bg-[#047857] text-white font-bold shadow-xs border border-[#059669] px-3.5 py-1.5 rounded-xl text-xs transition-all`.
+      - الأزرار غير النشطة: `bg-white dark:bg-[#1A241C] hover:bg-[#F3EFE6] dark:hover:bg-[#1F2E23] text-[#5C665E] dark:text-[#8FA392] hover:text-[#1A241C] dark:hover:text-[#F3EFE6] border border-[#E0D9CB] dark:border-[#243628] px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-colors`.
+    - **النصوص والتباين العالي:**
+      - النصوص الرئيسية والأرقام: `text-[#1A241C] dark:text-[#F3EFE6]`.
+      - النصوص الثانوية والشروح: `text-[#5C665E] dark:text-[#8FA392]`.
+    - **شارات الطبيعة والأرصدة المحاسبية (Accounting Nature & Balances):**
+      - مدين (Debit): `bg-[#EAF3EB] dark:bg-[#2A3F30] text-[#245E33] dark:text-[#A3CFAC] border-[#B8D8BC] dark:border-[#3D5A45]`.
+      - دائن (Credit): `bg-[#F8EBEB] dark:bg-[#3F2A2A] text-[#7A2828] dark:text-[#EFA3A3] border-[#E3B8B8] dark:border-[#5A3D3D]`.
+      - كبسولة الرصيد: `font-mono font-bold text-xs text-[#1A241C] dark:text-[#F3EFE6] px-2.5 py-1 rounded-lg bg-white dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] tabular-nums`.
+    - **الحركة والأنيميشن الاحترافي (Framer Motion Fluid Interactions):**
+      - تفاعل الأزرار بالتحويم والنقر: `whileHover={{ scale: 1.02 }}` و `whileTap={{ scale: 0.96 }}`.
+      - فتح وإغلاق تفرعات الشجرة بسلاسة عبر `AnimatePresence` وانتقال نابض `transition={{ duration: 0.22, ease: 'easeInOut' }}`.
+      - دوران سهم التوسيع تلقائياً بنسبة 180 درجة عند الفتح: `animate={{ rotate: isExpanded ? 180 : 0 }}`.
