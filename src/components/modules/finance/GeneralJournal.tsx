@@ -177,10 +177,10 @@ export const GeneralJournal: React.FC = () => {
           <div className="flex flex-wrap items-center gap-2.5 self-start lg:self-auto">
             <button
               onClick={() => setIsHighDensityOpen(true)}
-              className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold bg-[#1e293b] text-amber-300 dark:bg-amber-500/15 dark:text-amber-300 border border-slate-700 dark:border-amber-500/30 hover:bg-slate-800 transition-all cursor-pointer shadow-xs"
+              className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] hover:bg-[#FDE68A]/70 dark:bg-[#EBB34D]/15 dark:text-[#EBB34D] dark:border-[#EBB34D]/30 dark:hover:bg-[#EBB34D]/25 transition-all cursor-pointer shadow-2xs"
               title={t('شاشة الإدخال السريع لسطور القيود بلوحة المفاتيح (Telerik Desktop)', 'High-Density Desktop Grid')}
             >
-              <Sparkles className="w-4 h-4 text-amber-400" />
+              <Sparkles className="w-4 h-4 text-[#D99B26] dark:text-[#EBB34D]" />
               <span>{t('الإدخال السريع (Telerik Desktop)', 'Fast Desktop Entry')}</span>
             </button>
 

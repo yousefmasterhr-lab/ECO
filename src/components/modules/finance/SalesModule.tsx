@@ -443,7 +443,7 @@ export const SalesModule: React.FC = () => {
       {/* ---------------------------------------------------- */}
       {/* TOP COMMAND BAR & METRICS HUD                        */}
       {/* ---------------------------------------------------- */}
-      <div className="p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-stone-800 bg-white dark:bg-[#111A15] shadow-xs">
+      <div className="p-4 sm:p-5 rounded-2xl border border-[#E0D9CB] dark:border-[#243628] bg-[#FBF9F5] dark:bg-[#141E16] shadow-xs">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
@@ -451,28 +451,28 @@ export const SalesModule: React.FC = () => {
                 <Sparkles className="w-3 h-3" />
                 المبيعات والعملاء والفوترة (Phase 05)
               </span>
-              <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-700 dark:text-cyan-400 border border-cyan-500/30">
+              <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30">
                 Telerik Desktop UX
               </span>
-              <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-stone-400 font-mono">
+              <div className="flex items-center gap-1.5 text-xs text-[#5C665E] dark:text-[#8FA392] font-mono">
                 <Database className="w-3.5 h-3.5 text-emerald-500" />
                 <select
                   value={activeDb}
                   onChange={(e) => setActiveDb(e.target.value)}
-                  className="bg-transparent border-b border-dotted border-slate-300 dark:border-stone-700 text-xs font-mono font-semibold text-slate-700 dark:text-stone-300 outline-none cursor-pointer"
+                  className="bg-transparent border-b border-dotted border-[#E0D9CB] dark:border-[#243628] text-xs font-mono font-semibold text-[#1A241C] dark:text-[#F3EFE6] outline-none cursor-pointer"
                 >
-                  <option value="MK_Khalil_Db_2026">MK_Khalil_Db_2026 (الرئيسية)</option>
-                  <option value="Tarabot_Data_2026">Tarabot_Data_2026</option>
-                  <option value="acc">acc</option>
-                  <option value="newhope">newhope</option>
+                  <option value="MK_Khalil_Db_2026" className="bg-white dark:bg-[#141E16] text-[#1A241C] dark:text-[#F3EFE6]">MK_Khalil_Db_2026 (الرئيسية)</option>
+                  <option value="Tarabot_Data_2026" className="bg-white dark:bg-[#141E16] text-[#1A241C] dark:text-[#F3EFE6]">Tarabot_Data_2026</option>
+                  <option value="acc" className="bg-white dark:bg-[#141E16] text-[#1A241C] dark:text-[#F3EFE6]">acc</option>
+                  <option value="newhope" className="bg-white dark:bg-[#141E16] text-[#1A241C] dark:text-[#F3EFE6]">newhope</option>
                 </select>
               </div>
             </div>
-            <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-stone-100 tracking-tight flex items-center gap-2">
+            <h1 className="text-xl sm:text-2xl font-black text-[#1A241C] dark:text-[#F3EFE6] tracking-tight flex items-center gap-2">
               <TrendingUp className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
               منظومة المبيعات، مستحقات العملاء والفوترة الضريبية
             </h1>
-            <p className="text-xs sm:text-sm text-slate-500 dark:text-stone-400">
+            <p className="text-xs sm:text-sm text-[#5C665E] dark:text-[#8FA392]">
               إدخال جدولى عالي السرعة (Keyboard-Driven)، احتساب ضريبة القيمة المضافة 14% وخصم المنبع 1%، وترحيل آلي لقيود اليومية المزدوجة المتوازنة.
             </p>
           </div>
@@ -482,7 +482,7 @@ export const SalesModule: React.FC = () => {
             <button
               onClick={loadModuleData}
               disabled={isLoading}
-              className="p-2.5 rounded-xl border border-slate-200 dark:border-stone-800 text-slate-700 dark:text-stone-300 hover:bg-slate-100 dark:hover:bg-stone-900 transition-colors flex items-center gap-2 text-xs font-bold"
+              className="p-2.5 rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#121B14] text-[#1A241C] dark:text-[#F3EFE6] hover:bg-[#F3EFE6] dark:hover:bg-[#1F2E23] transition-colors flex items-center gap-2 text-xs font-bold cursor-pointer shadow-2xs"
               title="تحديث البيانات"
             >
               <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-emerald-500' : ''}`} />
@@ -490,7 +490,7 @@ export const SalesModule: React.FC = () => {
             </button>
             <button
               onClick={() => setIsAddClientModalOpen(true)}
-              className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm shadow-emerald-600/30 transition-all"
+              className="px-4 py-2.5 rounded-xl bg-[#059669] hover:bg-[#047857] text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               عميل جديد
@@ -500,79 +500,79 @@ export const SalesModule: React.FC = () => {
 
         {/* Global Alert Messages */}
         {errorMsg && (
-          <div className="mt-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-400 text-xs flex items-center justify-between">
+          <div className="mt-4 p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 dark:bg-[#3F2A2A] dark:border-[#5C3E3E] dark:text-[#EFA3A3] text-xs font-bold flex items-center justify-between">
             <div className="flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 shrink-0" />
               <span>{errorMsg}</span>
             </div>
-            <button onClick={() => setErrorMsg(null)} className="font-bold text-xs px-2 hover:opacity-75">
+            <button onClick={() => setErrorMsg(null)} className="font-bold text-xs px-2 hover:opacity-75 cursor-pointer">
               ✕
             </button>
           </div>
         )}
 
         {successMsg && (
-          <div className="mt-4 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-400 text-xs flex items-center justify-between">
+          <div className="mt-4 p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 dark:bg-[#2A3F30] dark:border-[#3E5C46] dark:text-[#A3CFAC] text-xs font-bold flex items-center justify-between">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 shrink-0" />
               <span>{successMsg}</span>
             </div>
-            <button onClick={() => setSuccessMsg(null)} className="font-bold text-xs px-2 hover:opacity-75">
+            <button onClick={() => setSuccessMsg(null)} className="font-bold text-xs px-2 hover:opacity-75 cursor-pointer">
               ✕
             </button>
           </div>
         )}
 
         {/* Tab Navigation */}
-        <div className="mt-5 flex items-center gap-1 border-b border-slate-200 dark:border-stone-800 overflow-x-auto">
+        <div className="mt-5 flex items-center gap-1 border-b border-[#E0D9CB] dark:border-[#243628] overflow-x-auto">
           <button
             onClick={() => setActiveTab('SALES_INVOICES')}
-            className={`px-4 py-2.5 text-xs font-bold border-b-2 flex items-center gap-2 transition-all ${
+            className={`px-4 py-2.5 text-xs font-bold border-b-2 flex items-center gap-2 transition-all cursor-pointer ${
               activeTab === 'SALES_INVOICES'
-                ? 'border-emerald-600 text-emerald-600 dark:text-emerald-400'
-                : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-stone-400 dark:hover:text-stone-200'
+                ? 'border-[#059669] text-[#059669] dark:text-[#34D399]'
+                : 'border-transparent text-[#5C665E] hover:text-[#1A241C] dark:text-[#8FA392] dark:hover:text-[#F3EFE6]'
             }`}
           >
             <TrendingUp className="w-4 h-4" />
             فواتير المبيعات (Sales Invoices)
-            <span className="px-1.5 py-0.5 text-[10px] rounded-full bg-slate-100 dark:bg-stone-800">
+            <span className="px-1.5 py-0.5 text-[10px] rounded-full bg-[#F3EFE6] dark:bg-[#1A241C] text-[#5C665E] dark:text-[#8FA392]">
               {invoices.length}
             </span>
           </button>
           <button
             onClick={() => setActiveTab('SALES_RETURNS')}
-            className={`px-4 py-2.5 text-xs font-bold border-b-2 flex items-center gap-2 transition-all ${
+            className={`px-4 py-2.5 text-xs font-bold border-b-2 flex items-center gap-2 transition-all cursor-pointer ${
               activeTab === 'SALES_RETURNS'
-                ? 'border-emerald-600 text-emerald-600 dark:text-emerald-400'
-                : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-stone-400 dark:hover:text-stone-200'
+                ? 'border-[#059669] text-[#059669] dark:text-[#34D399]'
+                : 'border-transparent text-[#5C665E] hover:text-[#1A241C] dark:text-[#8FA392] dark:hover:text-[#F3EFE6]'
             }`}
           >
             <RotateCcw className="w-4 h-4" />
             مردودات المبيعات (Sales Returns)
-            <span className="px-1.5 py-0.5 text-[10px] rounded-full bg-slate-100 dark:bg-stone-800">
+            <span className="px-1.5 py-0.5 text-[10px] rounded-full bg-[#F3EFE6] dark:bg-[#1A241C] text-[#5C665E] dark:text-[#8FA392]">
               {returns.length}
             </span>
           </button>
           <button
             onClick={() => setActiveTab('CLIENTS')}
-            className={`px-4 py-2.5 text-xs font-bold border-b-2 flex items-center gap-2 transition-all ${
+            className={`px-4 py-2.5 text-xs font-bold border-b-2 flex items-center gap-2 transition-all cursor-pointer ${
               activeTab === 'CLIENTS'
-                ? 'border-emerald-600 text-emerald-600 dark:text-emerald-400'
-                : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-stone-400 dark:hover:text-stone-200'
+                ? 'border-[#059669] text-[#059669] dark:text-[#34D399]'
+                : 'border-transparent text-[#5C665E] hover:text-[#1A241C] dark:text-[#8FA392] dark:hover:text-[#F3EFE6]'
             }`}
           >
             <Users className="w-4 h-4" />
             سجل العملاء والمستحقات (Clients)
-            <span className="px-1.5 py-0.5 text-[10px] rounded-full bg-slate-100 dark:bg-stone-800">
+            <span className="px-1.5 py-0.5 text-[10px] rounded-full bg-[#F3EFE6] dark:bg-[#1A241C] text-[#5C665E] dark:text-[#8FA392]">
               {clients.length}
             </span>
           </button>
           <button
             onClick={() => setActiveTab('QUOTATIONS')}
-            className={`px-4 py-2.5 text-xs font-bold border-b-2 flex items-center gap-2 transition-all ${
+            className={`px-4 py-2.5 text-xs font-bold border-b-2 flex items-center gap-2 transition-all cursor-pointer ${
               activeTab === 'QUOTATIONS'
-                ? 'border-emerald-600 text-emerald-600 dark:text-emerald-400'
-                : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-stone-400 dark:hover:text-stone-200'
+                ? 'border-[#059669] text-[#059669] dark:text-[#34D399]'
+                : 'border-transparent text-[#5C665E] hover:text-[#1A241C] dark:text-[#8FA392] dark:hover:text-[#F3EFE6]'
             }`}
           >
             <FileText className="w-4 h-4" />
@@ -587,30 +587,30 @@ export const SalesModule: React.FC = () => {
       {activeTab === 'SALES_INVOICES' && (
         <div className="space-y-4">
           {/* Header Controls Card */}
-          <div className="p-4 rounded-xl border border-slate-200 dark:border-stone-800 bg-white dark:bg-[#111A15] shadow-xs">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+          <div className="p-4 sm:p-5 rounded-2xl border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#121B14] shadow-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 text-xs">
               {/* Customer Selector */}
               <div>
-                <label className="block font-bold text-slate-700 dark:text-stone-300 mb-1">
+                <label className="block font-bold text-xs text-[#5C665E] dark:text-[#8FA392] mb-1.5">
                   العميل المستلم (Debit Account) *
                 </label>
                 <div className="flex items-center gap-1.5">
                   <select
                     value={selectedClientId}
                     onChange={(e) => setSelectedClientId(parseInt(e.target.value, 10))}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-stone-700 bg-slate-50 dark:bg-[#0D1F17] font-semibold text-slate-800 dark:text-stone-200 outline-none focus:border-emerald-500"
+                    className="w-full px-3 py-2 rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-[#FBF9F5] dark:bg-[#17231A] font-bold text-[#1A241C] dark:text-[#F3EFE6] outline-none focus:border-[#059669] focus:ring-1 focus:ring-[#059669]/20 transition-all shadow-2xs cursor-pointer"
                   >
                     {clients.map((c) => (
-                      <option key={c.Client_ID} value={c.Client_ID}>
+                      <option key={c.Client_ID} value={c.Client_ID} className="bg-white dark:bg-[#141E16] text-[#1A241C] dark:text-[#F3EFE6]">
                         {c.Client_Name_A} ({c.Client_ID})
                       </option>
                     ))}
                   </select>
                 </div>
                 {selectedClient && (
-                  <div className="mt-1 flex items-center justify-between text-[11px] text-slate-500 dark:text-stone-400">
+                  <div className="mt-1.5 flex items-center justify-between text-[11px] text-[#5C665E] dark:text-[#8FA392]">
                     <span>الرصيد المدين:</span>
-                    <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                    <span className="font-mono font-bold text-[#059669] dark:text-[#34D399]">
                       {selectedClient.Balance?.toLocaleString()} ج.م
                     </span>
                   </div>
@@ -619,113 +619,113 @@ export const SalesModule: React.FC = () => {
 
               {/* Invoice Date */}
               <div>
-                <label className="block font-bold text-slate-700 dark:text-stone-300 mb-1">تاريخ الفاتورة *</label>
+                <label className="block font-bold text-xs text-[#5C665E] dark:text-[#8FA392] mb-1.5">تاريخ الفاتورة *</label>
                 <input
                   type="date"
                   value={invoiceDate}
                   onChange={(e) => setInvoiceDate(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-stone-700 bg-slate-50 dark:bg-[#0D1F17] font-mono font-semibold text-slate-800 dark:text-stone-200 outline-none focus:border-emerald-500"
+                  className="w-full px-3 py-2 rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-[#FBF9F5] dark:bg-[#17231A] font-mono font-bold text-[#1A241C] dark:text-[#F3EFE6] outline-none focus:border-[#059669] focus:ring-1 focus:ring-[#059669]/20 transition-all shadow-2xs"
                 />
               </div>
 
               {/* Payment Type */}
               <div>
-                <label className="block font-bold text-slate-700 dark:text-stone-300 mb-1">نوع المعاملة *</label>
+                <label className="block font-bold text-xs text-[#5C665E] dark:text-[#8FA392] mb-1.5">نوع المعاملة *</label>
                 <select
                   value={invoiceType}
                   onChange={(e) => setInvoiceType(parseInt(e.target.value, 10))}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-stone-700 bg-slate-50 dark:bg-[#0D1F17] font-semibold text-slate-800 dark:text-stone-200 outline-none focus:border-emerald-500"
+                  className="w-full px-3 py-2 rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-[#FBF9F5] dark:bg-[#17231A] font-bold text-[#1A241C] dark:text-[#F3EFE6] outline-none focus:border-[#059669] focus:ring-1 focus:ring-[#059669]/20 transition-all shadow-2xs cursor-pointer"
                 >
-                  <option value={0}>آجل (حساب العميل الجاري)</option>
-                  <option value={1}>نقدي (الصندوق / الخزينة)</option>
+                  <option value={0} className="bg-white dark:bg-[#141E16] text-[#1A241C] dark:text-[#F3EFE6]">آجل (حساب العميل الجاري)</option>
+                  <option value={1} className="bg-white dark:bg-[#141E16] text-[#1A241C] dark:text-[#F3EFE6]">نقدي (الصندوق / الخزينة)</option>
                 </select>
               </div>
 
               {/* Warehouse / Inventory */}
               <div>
-                <label className="block font-bold text-slate-700 dark:text-stone-300 mb-1">المستودع المصدر *</label>
+                <label className="block font-bold text-xs text-[#5C665E] dark:text-[#8FA392] mb-1.5">المستودع المصدر *</label>
                 <select
                   value={selectedWarehouseId}
                   onChange={(e) => setSelectedWarehouseId(parseInt(e.target.value, 10))}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-stone-700 bg-slate-50 dark:bg-[#0D1F17] font-semibold text-slate-800 dark:text-stone-200 outline-none focus:border-emerald-500"
+                  className="w-full px-3 py-2 rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-[#FBF9F5] dark:bg-[#17231A] font-bold text-[#1A241C] dark:text-[#F3EFE6] outline-none focus:border-[#059669] focus:ring-1 focus:ring-[#059669]/20 transition-all shadow-2xs cursor-pointer"
                 >
-                  <option value={1}>المستودع الرئيسي - مواد البناء والحديد</option>
-                  <option value={2}>مستودع العاصمة الإدارية R5</option>
-                  <option value={3}>مستودع مشروع مدينتي B12</option>
+                  <option value={1} className="bg-white dark:bg-[#141E16] text-[#1A241C] dark:text-[#F3EFE6]">المستودع الرئيسي - مواد البناء والحديد</option>
+                  <option value={2} className="bg-white dark:bg-[#141E16] text-[#1A241C] dark:text-[#F3EFE6]">مستودع العاصمة الإدارية R5</option>
+                  <option value={3} className="bg-white dark:bg-[#141E16] text-[#1A241C] dark:text-[#F3EFE6]">مستودع مشروع مدينتي B12</option>
                 </select>
               </div>
 
               {/* Issue No / Delivery Note */}
               <div>
-                <label className="block font-bold text-slate-700 dark:text-stone-300 mb-1">إذن الصرف / الشحن</label>
+                <label className="block font-bold text-xs text-[#5C665E] dark:text-[#8FA392] mb-1.5">إذن الصرف / الشحن</label>
                 <input
                   type="text"
                   value={issueNo}
                   onChange={(e) => setIssueNo(e.target.value)}
                   placeholder="SO-2026-..."
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-stone-700 bg-slate-50 dark:bg-[#0D1F17] font-mono text-slate-800 dark:text-stone-200 outline-none focus:border-emerald-500"
+                  className="w-full px-3 py-2 rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-[#FBF9F5] dark:bg-[#17231A] font-mono font-bold text-[#1A241C] dark:text-[#F3EFE6] outline-none focus:border-[#059669] focus:ring-1 focus:ring-[#059669]/20 transition-all shadow-2xs placeholder-[#5C665E]/50 dark:placeholder-[#8FA392]/50"
                 />
               </div>
 
               {/* Sales Order / PO No */}
               <div>
-                <label className="block font-bold text-slate-700 dark:text-stone-300 mb-1">أمر شراء العميل (PO)</label>
+                <label className="block font-bold text-xs text-[#5C665E] dark:text-[#8FA392] mb-1.5">أمر شراء العميل (PO)</label>
                 <input
                   type="text"
                   value={salesOrderNo}
                   onChange={(e) => setSalesOrderNo(e.target.value)}
                   placeholder="PO-..."
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-stone-700 bg-slate-50 dark:bg-[#0D1F17] font-mono text-slate-800 dark:text-stone-200 outline-none focus:border-emerald-500"
+                  className="w-full px-3 py-2 rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-[#FBF9F5] dark:bg-[#17231A] font-mono font-bold text-[#1A241C] dark:text-[#F3EFE6] outline-none focus:border-[#059669] focus:ring-1 focus:ring-[#059669]/20 transition-all shadow-2xs placeholder-[#5C665E]/50 dark:placeholder-[#8FA392]/50"
                 />
               </div>
 
               {/* Tax Configuration */}
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block font-bold text-slate-700 dark:text-stone-300 mb-1">ض.ق.م (%)</label>
+                  <label className="block font-bold text-xs text-[#5C665E] dark:text-[#8FA392] mb-1.5">ض.ق.م (%)</label>
                   <input
                     type="number"
                     step="0.5"
                     value={vatRate}
                     onChange={(e) => setVatRate(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-stone-700 bg-slate-50 dark:bg-[#0D1F17] font-mono text-slate-800 dark:text-stone-200 outline-none focus:border-emerald-500"
+                    className="w-full px-3 py-2 rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-[#FBF9F5] dark:bg-[#17231A] font-mono font-bold text-[#1A241C] dark:text-[#F3EFE6] outline-none focus:border-[#059669] focus:ring-1 focus:ring-[#059669]/20 transition-all shadow-2xs"
                   />
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-700 dark:text-stone-300 mb-1">خصم أرباح (%)</label>
+                  <label className="block font-bold text-xs text-[#5C665E] dark:text-[#8FA392] mb-1.5">خصم أرباح (%)</label>
                   <input
                     type="number"
                     step="0.5"
                     value={whtRate}
                     onChange={(e) => setWhtRate(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-stone-700 bg-slate-50 dark:bg-[#0D1F17] font-mono text-slate-800 dark:text-stone-200 outline-none focus:border-emerald-500"
+                    className="w-full px-3 py-2 rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-[#FBF9F5] dark:bg-[#17231A] font-mono font-bold text-[#1A241C] dark:text-[#F3EFE6] outline-none focus:border-[#059669] focus:ring-1 focus:ring-[#059669]/20 transition-all shadow-2xs"
                   />
                 </div>
               </div>
 
               {/* Notice / Remarks */}
               <div>
-                <label className="block font-bold text-slate-700 dark:text-stone-300 mb-1">البيان / ملاحظات الفاتورة</label>
+                <label className="block font-bold text-xs text-[#5C665E] dark:text-[#8FA392] mb-1.5">البيان / ملاحظات الفاتورة</label>
                 <input
                   type="text"
                   value={invoiceNotice}
                   onChange={(e) => setInvoiceNotice(e.target.value)}
                   placeholder="ملاحظات التسليم وشروط التعاقد..."
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-stone-700 bg-slate-50 dark:bg-[#0D1F17] text-slate-800 dark:text-stone-200 outline-none focus:border-emerald-500"
+                  className="w-full px-3 py-2 rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-[#FBF9F5] dark:bg-[#17231A] font-bold text-[#1A241C] dark:text-[#F3EFE6] outline-none focus:border-[#059669] focus:ring-1 focus:ring-[#059669]/20 transition-all shadow-2xs placeholder-[#5C665E]/50 dark:placeholder-[#8FA392]/50"
                 />
               </div>
             </div>
           </div>
 
           {/* High-Density Keyboard Data Entry Grid (Telerik Desktop UX) */}
-          <div className="rounded-xl border border-slate-200 dark:border-stone-800 bg-white dark:bg-[#111A15] shadow-xs overflow-hidden">
-            <div className="p-3 bg-slate-50 dark:bg-[#16231D] border-b border-slate-200 dark:border-stone-800 flex items-center justify-between">
+          <div className="rounded-2xl border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#121B14] shadow-xs overflow-hidden">
+            <div className="p-3.5 bg-[#F3EFE6]/70 dark:bg-[#16231D] border-b border-[#E0D9CB] dark:border-[#243628] flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="font-bold text-xs text-slate-800 dark:text-stone-200">
+                <span className="font-bold text-xs text-[#1A241C] dark:text-[#F3EFE6]">
                   بنود وأصناف فاتورة المبيعات
                 </span>
-                <span className="text-[11px] text-slate-500 dark:text-stone-400">
-                  (التنقل السريع بـ <kbd className="px-1 py-0.5 bg-slate-200 dark:bg-stone-700 rounded text-[10px]">Enter</kbd> للإدخال والسطر التالي | <kbd className="px-1 py-0.5 bg-slate-200 dark:bg-stone-700 rounded text-[10px]">Insert</kbd> لإضافة سطر)
+                <span className="text-[11px] text-[#5C665E] dark:text-[#8FA392]">
+                  (التنقل السريع بـ <kbd className="px-1.5 py-0.5 bg-white dark:bg-[#121B14] border border-[#E0D9CB] dark:border-[#243628] rounded font-bold text-[#D99B26] dark:text-[#EBB34D] text-[10px]">Enter</kbd> للإدخال والسطر التالي | <kbd className="px-1.5 py-0.5 bg-white dark:bg-[#121B14] border border-[#E0D9CB] dark:border-[#243628] rounded font-bold text-[#D99B26] dark:text-[#EBB34D] text-[10px]">Insert</kbd> لإضافة سطر)
                 </span>
               </div>
               <button
@@ -741,7 +741,7 @@ export const SalesModule: React.FC = () => {
             <div ref={gridContainerRef} className="overflow-x-auto">
               <table className="w-full text-right border-collapse text-xs">
                 <thead>
-                  <tr className="bg-slate-100 dark:bg-[#131E18] text-slate-700 dark:text-stone-300 border-b border-slate-200 dark:border-stone-800 font-bold">
+                  <tr className="bg-[#F3EFE6] dark:bg-[#131E18] text-[#5C665E] dark:text-[#8FA392] border-b border-[#E0D9CB] dark:border-[#243628] font-black">
                     <th className="py-2.5 px-3 w-12 text-center">م</th>
                     <th className="py-2.5 px-3 w-72">كود واسم الصنف (Item)</th>
                     <th className="py-2.5 px-3 w-24 text-center">الوحدة</th>
@@ -752,7 +752,7 @@ export const SalesModule: React.FC = () => {
                     <th className="py-2.5 px-3 w-14 text-center">إجراء</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-stone-800">
+                <tbody className="divide-y divide-[#E0D9CB]/60 dark:divide-[#243628]/60 font-mono">
                   {invoiceRows.map((row, idx) => {
                     const q = parseFloat(row.qty) || 0;
                     const p = parseFloat(row.price) || 0;
@@ -762,9 +762,9 @@ export const SalesModule: React.FC = () => {
                     return (
                       <tr
                         key={idx}
-                        className="hover:bg-slate-50/75 dark:hover:bg-stone-900/50 transition-colors"
+                        className="hover:bg-[#F3EFE6]/50 dark:hover:bg-[#17231A]/40 transition-colors"
                       >
-                        <td className="py-2 px-3 text-center font-mono font-bold text-slate-400">
+                        <td className="py-2 px-3 text-center font-mono font-bold text-[#5C665E] dark:text-[#8FA392]">
                           {row.sr}
                         </td>
                         <td className="py-2 px-3">
@@ -773,17 +773,17 @@ export const SalesModule: React.FC = () => {
                             value={row.itemId}
                             onChange={(e) => handleItemSelect(idx, parseInt(e.target.value, 10))}
                             onKeyDown={(e) => handleKeyDown(e, idx, 'item')}
-                            className="w-full px-2.5 py-1.5 rounded border border-slate-200 dark:border-stone-700 bg-white dark:bg-[#0D1F17] font-semibold text-slate-800 dark:text-stone-200 outline-none focus:border-emerald-500"
+                            className="w-full px-2.5 py-1.5 rounded-lg border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#17231A] font-sans font-bold text-[#1A241C] dark:text-[#F3EFE6] outline-none focus:border-[#059669] shadow-2xs cursor-pointer"
                           >
                             {itemsCatalog.map((it) => (
-                              <option key={it.Item_ID} value={it.Item_ID}>
+                              <option key={it.Item_ID} value={it.Item_ID} className="bg-white dark:bg-[#141E16] text-[#1A241C] dark:text-[#F3EFE6]">
                                 [{it.Item_ID}] {it.Item_Name_A}
                               </option>
                             ))}
                           </select>
                         </td>
                         <td className="py-2 px-3 text-center">
-                          <span className="px-2 py-1 rounded bg-slate-100 dark:bg-stone-800 text-[11px] font-bold text-slate-600 dark:text-stone-300">
+                          <span className="px-2 py-1 rounded-md bg-[#F3EFE6] dark:bg-[#1A241C] text-[11px] font-sans font-bold text-[#5C665E] dark:text-[#8FA392] border border-[#E0D9CB] dark:border-[#243628]">
                             {row.unit}
                           </span>
                         </td>
@@ -795,7 +795,7 @@ export const SalesModule: React.FC = () => {
                             value={row.qty}
                             onChange={(e) => handleRowChange(idx, 'qty', e.target.value)}
                             onKeyDown={(e) => handleKeyDown(e, idx, 'qty')}
-                            className="w-full px-2.5 py-1.5 text-center font-mono font-bold rounded border border-slate-200 dark:border-stone-700 bg-white dark:bg-[#0D1F17] text-slate-900 dark:text-stone-100 outline-none focus:border-emerald-500"
+                            className="w-full px-2.5 py-1.5 text-center font-mono font-bold rounded-lg border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#17231A] text-[#1A241C] dark:text-[#F3EFE6] outline-none focus:border-[#059669] shadow-2xs"
                           />
                         </td>
                         <td className="py-2 px-3 text-center">
@@ -806,7 +806,7 @@ export const SalesModule: React.FC = () => {
                             value={row.price}
                             onChange={(e) => handleRowChange(idx, 'price', e.target.value)}
                             onKeyDown={(e) => handleKeyDown(e, idx, 'price')}
-                            className="w-full px-2.5 py-1.5 text-center font-mono font-bold rounded border border-slate-200 dark:border-stone-700 bg-white dark:bg-[#0D1F17] text-slate-900 dark:text-stone-100 outline-none focus:border-emerald-500"
+                            className="w-full px-2.5 py-1.5 text-center font-mono font-bold rounded-lg border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#17231A] text-[#1A241C] dark:text-[#F3EFE6] outline-none focus:border-[#059669] shadow-2xs"
                           />
                         </td>
                         <td className="py-2 px-3 text-center">
@@ -817,17 +817,17 @@ export const SalesModule: React.FC = () => {
                             value={row.discount}
                             onChange={(e) => handleRowChange(idx, 'discount', e.target.value)}
                             onKeyDown={(e) => handleKeyDown(e, idx, 'discount')}
-                            className="w-full px-2.5 py-1.5 text-center font-mono rounded border border-slate-200 dark:border-stone-700 bg-white dark:bg-[#0D1F17] text-slate-900 dark:text-stone-100 outline-none focus:border-emerald-500"
+                            className="w-full px-2.5 py-1.5 text-center font-mono font-bold rounded-lg border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#17231A] text-[#1A241C] dark:text-[#F3EFE6] outline-none focus:border-[#059669] shadow-2xs"
                           />
                         </td>
-                        <td className="py-2 px-3 text-center font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                        <td className="py-2 px-3 text-center font-mono font-black text-[#245E33] dark:text-[#A3CFAC]">
                           {lineNet.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </td>
                         <td className="py-2 px-3 text-center">
                           <button
                             type="button"
                             onClick={() => handleDeleteRow(idx)}
-                            className="p-1 rounded text-rose-500 hover:bg-rose-500/10 transition-colors"
+                            className="p-1 rounded-lg text-[#5C665E] hover:text-rose-600 dark:text-[#8FA392] dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer"
                             title="حذف السطر (Ctrl+Del)"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -844,29 +844,29 @@ export const SalesModule: React.FC = () => {
           {/* Sticky Calculation HUD & Journal Entry Bridge */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* HUD Summary Card */}
-            <div className="lg:col-span-2 p-4 rounded-xl border border-slate-200 dark:border-stone-800 bg-white dark:bg-[#111A15] shadow-xs space-y-3">
-              <div className="flex items-center justify-between border-b border-slate-200 dark:border-stone-800 pb-2">
-                <span className="font-bold text-xs text-slate-800 dark:text-stone-200 flex items-center gap-1.5">
-                  <CreditCard className="w-4 h-4 text-emerald-500" />
+            <div className="lg:col-span-2 p-5 rounded-2xl border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#121B14] shadow-xs space-y-4">
+              <div className="flex items-center justify-between border-b border-[#E0D9CB] dark:border-[#243628] pb-3">
+                <span className="font-bold text-xs text-[#1A241C] dark:text-[#F3EFE6] flex items-center gap-1.5">
+                  <CreditCard className="w-4 h-4 text-[#059669]" />
                   ملخص العمليات الحسابية والضرائب (Tax & Net Calculation HUD)
                 </span>
-                <span className="text-[11px] font-mono text-slate-500">
+                <span className="text-[11px] font-mono text-[#5C665E] dark:text-[#8FA392]">
                   إجمالي الكمية: {financials.totalQty.toLocaleString()}
                 </span>
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-[#16231D]">
-                  <span className="text-[11px] text-slate-500 dark:text-stone-400 block mb-1">
+                <div className="p-3 rounded-xl bg-[#FBF9F5] dark:bg-[#16231D] border border-[#E0D9CB] dark:border-[#243628]">
+                  <span className="text-[11px] text-[#5C665E] dark:text-[#8FA392] block mb-1">
                     إجمالي الأصناف (Gross)
                   </span>
-                  <span className="font-mono font-bold text-slate-900 dark:text-stone-100 text-sm">
+                  <span className="font-mono font-black text-[#1A241C] dark:text-[#F3EFE6] text-sm tabular-nums">
                     {financials.grossSubtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                   </span>
                 </div>
 
-                <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-[#16231D]">
-                  <span className="text-[11px] text-slate-500 dark:text-stone-400 block mb-1">
+                <div className="p-3 rounded-xl bg-[#FBF9F5] dark:bg-[#16231D] border border-[#E0D9CB] dark:border-[#243628]">
+                  <span className="text-[11px] text-[#5C665E] dark:text-[#8FA392] block mb-1">
                     خصم تجاري إضافي
                   </span>
                   <input
@@ -874,41 +874,41 @@ export const SalesModule: React.FC = () => {
                     step="100"
                     value={commercialDiscount}
                     onChange={(e) => setCommercialDiscount(e.target.value)}
-                    className="w-full px-2 py-0.5 rounded font-mono font-bold text-xs border border-slate-300 dark:border-stone-700 bg-white dark:bg-[#0D1F17] text-slate-800 dark:text-stone-200 outline-none focus:border-emerald-500"
+                    className="w-full px-2.5 py-1 rounded-lg font-mono font-bold text-xs border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#17231A] text-[#1A241C] dark:text-[#F3EFE6] outline-none focus:border-[#059669] shadow-2xs"
                   />
                 </div>
 
-                <div className="p-2.5 rounded-lg bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-500/20">
-                  <span className="text-[11px] text-emerald-700 dark:text-emerald-400 block mb-1">
+                <div className="p-3 rounded-xl bg-emerald-500/10 dark:bg-emerald-950/20 border border-emerald-500/20">
+                  <span className="text-[11px] text-emerald-700 dark:text-emerald-400 font-bold block mb-1">
                     ضريبة القيمة المضافة ({vatRate}%)
                   </span>
-                  <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400 text-sm">
+                  <span className="font-mono font-black text-[#245E33] dark:text-[#A3CFAC] text-sm tabular-nums">
                     +{financials.vatAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                   </span>
                 </div>
 
-                <div className="p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-amber-500/20">
-                  <span className="text-[11px] text-amber-700 dark:text-amber-400 block mb-1">
+                <div className="p-3 rounded-xl bg-amber-500/10 dark:bg-amber-950/20 border border-amber-500/20">
+                  <span className="text-[11px] text-amber-700 dark:text-amber-400 font-bold block mb-1">
                     خصم أرباح تجارية ({whtRate}%)
                   </span>
-                  <span className="font-mono font-bold text-amber-700 dark:text-amber-400 text-sm">
+                  <span className="font-mono font-black text-[#92400E] dark:text-[#EBB34D] text-sm tabular-nums">
                     -{financials.whtAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                   </span>
                 </div>
               </div>
 
               {/* Net Receivable Banner */}
-              <div className="p-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-md shadow-emerald-600/20">
+              <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-600 via-emerald-700 to-teal-800 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md shadow-emerald-900/20">
                 <div>
-                  <span className="text-xs text-emerald-100 font-semibold block">
+                  <span className="text-xs text-emerald-100 font-bold block">
                     صافي الفاتورة المستحق على العميل (Net Receivable)
                   </span>
-                  <span className="text-xl sm:text-2xl font-black font-mono tracking-tight">
+                  <span className="text-xl sm:text-2xl font-black font-mono tracking-tight tabular-nums">
                     {financials.netDue.toLocaleString(undefined, { minimumFractionDigits: 2 })} ج.م
                   </span>
                 </div>
                 <div className="text-left max-w-sm sm:max-w-md">
-                  <span className="text-[11px] text-emerald-100 block">فقط وقدره:</span>
+                  <span className="text-[11px] text-emerald-100 block font-medium">فقط وقدره:</span>
                   <span className="text-xs font-bold leading-tight line-clamp-2">
                     {financials.netText}
                   </span>
@@ -917,52 +917,52 @@ export const SalesModule: React.FC = () => {
             </div>
 
             {/* Automated GL Double-Entry Preview Card */}
-            <div className="p-4 rounded-xl border border-slate-200 dark:border-stone-800 bg-white dark:bg-[#111A15] shadow-xs flex flex-col justify-between space-y-3">
+            <div className="p-5 rounded-2xl border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#121B14] shadow-xs flex flex-col justify-between space-y-4">
               <div>
-                <div className="flex items-center justify-between border-b border-slate-200 dark:border-stone-800 pb-2">
-                  <span className="font-bold text-xs text-slate-800 dark:text-stone-200 flex items-center gap-1.5">
-                    <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                <div className="flex items-center justify-between border-b border-[#E0D9CB] dark:border-[#243628] pb-3">
+                  <span className="font-bold text-xs text-[#1A241C] dark:text-[#F3EFE6] flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-[#059669]" />
                     القيد المحاسبي المزدوج التلقائي
                   </span>
-                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
                     متزن 100%
                   </span>
                 </div>
 
-                <div className="mt-2 space-y-1.5 text-xs font-mono">
-                  <div className="flex justify-between items-center text-emerald-700 dark:text-emerald-400">
+                <div className="mt-3 space-y-2 text-xs font-mono">
+                  <div className="flex justify-between items-center text-[#245E33] dark:text-[#A3CFAC]">
                     <span>من حـ/ العملاء ({selectedClient?.Client_Name_A.slice(0, 15)}...):</span>
-                    <span className="font-bold">
+                    <span className="font-bold tabular-nums">
                       {financials.netDue.toLocaleString(undefined, { minimumFractionDigits: 2 })} مدين
                     </span>
                   </div>
-                  <div className="flex justify-between items-center text-amber-700 dark:text-amber-400">
+                  <div className="flex justify-between items-center text-[#92400E] dark:text-[#EBB34D]">
                     <span>من حـ/ مصلحة الضرائب (خصم وتحصيل):</span>
-                    <span className="font-bold">
+                    <span className="font-bold tabular-nums">
                       {financials.whtAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })} مدين
                     </span>
                   </div>
-                  <div className="flex justify-between items-center text-slate-600 dark:text-stone-300">
+                  <div className="flex justify-between items-center text-[#5C665E] dark:text-[#8FA392]">
                     <span>إلى حـ/ إيرادات المبيعات (4101001):</span>
-                    <span className="font-bold">
+                    <span className="font-bold text-[#1A241C] dark:text-[#F3EFE6] tabular-nums">
                       {financials.taxableSubtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })} دائن
                     </span>
                   </div>
-                  <div className="flex justify-between items-center text-slate-600 dark:text-stone-300">
+                  <div className="flex justify-between items-center text-[#5C665E] dark:text-[#8FA392]">
                     <span>إلى حـ/ ضريبة القيمة المضافة (2105002):</span>
-                    <span className="font-bold">
+                    <span className="font-bold text-[#1A241C] dark:text-[#F3EFE6] tabular-nums">
                       {financials.vatAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })} دائن
                     </span>
                   </div>
                 </div>
               </div>
 
-              <div className="pt-2 border-t border-slate-200 dark:border-stone-800 flex items-center gap-2">
+              <div className="pt-3 border-t border-[#E0D9CB] dark:border-[#243628] flex items-center gap-2">
                 <button
                   type="button"
                   onClick={handleSaveInvoice}
                   disabled={isLoading}
-                  className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-emerald-600/30 transition-all disabled:opacity-50"
+                  className="w-full py-3 rounded-xl bg-[#059669] hover:bg-[#047857] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition-all disabled:opacity-50 cursor-pointer"
                 >
                   <Save className="w-4 h-4" />
                   {isLoading ? 'جاري الترحيل...' : 'حفظ الفاتورة وترحيل القيد آلياً'}
@@ -972,20 +972,20 @@ export const SalesModule: React.FC = () => {
           </div>
 
           {/* Invoices History Table */}
-          <div className="p-4 rounded-xl border border-slate-200 dark:border-stone-800 bg-white dark:bg-[#111A15] shadow-xs space-y-3">
+          <div className="p-4 rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#141E16] shadow-xs space-y-3">
             <div className="flex items-center justify-between">
-              <h2 className="text-xs font-bold text-slate-800 dark:text-stone-200 flex items-center gap-1.5">
-                <FileText className="w-4 h-4 text-emerald-500" />
+              <h2 className="text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6] flex items-center gap-1.5">
+                <FileText className="w-4 h-4 text-[#059669] dark:text-[#34D399]" />
                 سجل فواتير المبيعات الصادرة ({invoices.length})
               </h2>
               <div className="relative w-64">
-                <Search className="w-3.5 h-3.5 absolute right-2.5 top-2.5 text-slate-400" />
+                <Search className="w-3.5 h-3.5 absolute right-2.5 top-2.5 text-[#5C665E] dark:text-[#8FA392]" />
                 <input
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="بحث برقم الفاتورة أو العميل..."
-                  className="w-full pr-8 pl-3 py-1.5 rounded-lg border border-slate-200 dark:border-stone-800 bg-slate-50 dark:bg-[#0D1F17] text-xs outline-none focus:border-emerald-500"
+                  className="w-full pr-8 pl-3 py-1.5 rounded-lg border border-[#E0D9CB] dark:border-[#243628] bg-[#F3EFE6]/50 dark:bg-[#17231A] text-xs text-[#1A241C] dark:text-[#F3EFE6] outline-none focus:border-[#059669]"
                 />
               </div>
             </div>
@@ -993,7 +993,7 @@ export const SalesModule: React.FC = () => {
             <div className="overflow-x-auto">
               <table className="w-full text-right border-collapse text-xs">
                 <thead>
-                  <tr className="bg-slate-50 dark:bg-[#16231D] text-slate-700 dark:text-stone-300 border-b border-slate-200 dark:border-stone-800 font-bold">
+                  <tr className="bg-[#F3EFE6] dark:bg-[#131E18] text-[#3D4A3E] dark:text-[#C5D2C7] border-b border-[#E0D9CB] dark:border-[#243628] font-bold">
                     <th className="py-2 px-3">رقم الفاتورة</th>
                     <th className="py-2 px-3">التاريخ</th>
                     <th className="py-2 px-3">اسم العميل</th>
@@ -1004,29 +1004,29 @@ export const SalesModule: React.FC = () => {
                     <th className="py-2 px-3 text-center">رقم القيد</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-stone-800">
+                <tbody className="divide-y divide-[#E0D9CB]/60 dark:divide-[#243628]/80">
                   {filteredInvoices.map((inv) => (
-                    <tr key={inv.Note_No} className="hover:bg-slate-50 dark:hover:bg-stone-900/40">
-                      <td className="py-2 px-3 font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                    <tr key={inv.Note_No} className="hover:bg-[#F3EFE6]/50 dark:hover:bg-[#17231A]/40 transition-colors">
+                      <td className="py-2 px-3 font-mono font-bold text-[#059669] dark:text-[#34D399]">
                         #{inv.Note_No}
                       </td>
                       <td className="py-2 px-3 font-mono">{inv.Note_Date?.slice(0, 10)}</td>
-                      <td className="py-2 px-3 font-semibold">{inv.Client_Name_A}</td>
+                      <td className="py-2 px-3 font-semibold text-[#1A241C] dark:text-[#F3EFE6]">{inv.Client_Name_A}</td>
                       <td className="py-2 px-3">
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 dark:bg-stone-800 text-slate-700 dark:text-stone-300">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#EAE6DC] dark:bg-[#202E24] text-[#3D4A3E] dark:text-[#C5D2C7]">
                           {inv.Note_Type === 0 ? 'آجل' : 'نقدي'}
                         </span>
                       </td>
                       <td className="py-2 px-3 text-center font-mono">
                         {inv.Note_Net?.toLocaleString()} ج.م
                       </td>
-                      <td className="py-2 px-3 text-center font-mono text-emerald-600 dark:text-emerald-400">
+                      <td className="py-2 px-3 text-center font-mono text-[#059669] dark:text-[#34D399]">
                         {inv.Vat_Tax_Amount?.toLocaleString()} ج.م
                       </td>
-                      <td className="py-2 px-3 text-center font-mono font-bold text-slate-900 dark:text-stone-100">
+                      <td className="py-2 px-3 text-center font-mono font-bold text-[#1A241C] dark:text-[#F3EFE6]">
                         {inv.Note_Net_With_Tax?.toLocaleString()} ج.م
                       </td>
-                      <td className="py-2 px-3 text-center font-mono text-slate-500">
+                      <td className="py-2 px-3 text-center font-mono text-[#5C665E] dark:text-[#8FA392]">
                         {inv.Journal_No ? `#${inv.Journal_No}` : '-'}
                       </td>
                     </tr>
@@ -1042,14 +1042,14 @@ export const SalesModule: React.FC = () => {
       {/* TAB 2: SALES RETURNS                                 */}
       {/* ---------------------------------------------------- */}
       {activeTab === 'SALES_RETURNS' && (
-        <div className="p-4 rounded-xl border border-slate-200 dark:border-stone-800 bg-white dark:bg-[#111A15] shadow-xs space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-200 dark:border-stone-800 pb-3">
+        <div className="p-4 rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#141E16] shadow-xs space-y-4">
+          <div className="flex items-center justify-between border-b border-[#E0D9CB] dark:border-[#243628] pb-3">
             <div>
-              <h2 className="text-sm font-bold text-slate-900 dark:text-stone-100 flex items-center gap-2">
+              <h2 className="text-sm font-bold text-[#1A241C] dark:text-[#F3EFE6] flex items-center gap-2">
                 <RotateCcw className="w-5 h-5 text-rose-500" />
                 سجل مردودات وإشعارات دائنة للمبيعات (Sales Returns)
               </h2>
-              <p className="text-xs text-slate-500 dark:text-stone-400">
+              <p className="text-xs text-[#5C665E] dark:text-[#8FA392]">
                 تسجيل البضائع المرتجعة من العملاء وعكس القيود المحاسبية وضريبة المخرجات تلقائياً.
               </p>
             </div>
@@ -1058,7 +1058,7 @@ export const SalesModule: React.FC = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-right border-collapse text-xs">
               <thead>
-                <tr className="bg-slate-50 dark:bg-[#16231D] text-slate-700 dark:text-stone-300 border-b border-slate-200 dark:border-stone-800 font-bold">
+                <tr className="bg-[#F3EFE6] dark:bg-[#131E18] text-[#3D4A3E] dark:text-[#C5D2C7] border-b border-[#E0D9CB] dark:border-[#243628] font-bold">
                   <th className="py-2.5 px-3">رقم المردود</th>
                   <th className="py-2.5 px-3">التاريخ</th>
                   <th className="py-2.5 px-3">العميل</th>
@@ -1069,14 +1069,14 @@ export const SalesModule: React.FC = () => {
                   <th className="py-2.5 px-3 text-center">القيد العكسي</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-stone-800">
+              <tbody className="divide-y divide-[#E0D9CB]/60 dark:divide-[#243628]/80">
                 {returns.map((ret) => (
-                  <tr key={ret.Note_No} className="hover:bg-slate-50 dark:hover:bg-stone-900/40">
+                  <tr key={ret.Note_No} className="hover:bg-[#F3EFE6]/50 dark:hover:bg-[#17231A]/40 transition-colors">
                     <td className="py-2.5 px-3 font-mono font-bold text-rose-600 dark:text-rose-400">
                       #{ret.Note_No}
                     </td>
                     <td className="py-2.5 px-3 font-mono">{ret.Note_Date?.slice(0, 10)}</td>
-                    <td className="py-2.5 px-3 font-semibold">{ret.Client_Name_A}</td>
+                    <td className="py-2.5 px-3 font-semibold text-[#1A241C] dark:text-[#F3EFE6]">{ret.Client_Name_A}</td>
                     <td className="py-2.5 px-3 font-mono">{ret.Issue_No || '-'}</td>
                     <td className="py-2.5 px-3 text-center font-mono">
                       {ret.Note_Net?.toLocaleString()} ج.م
@@ -1084,10 +1084,10 @@ export const SalesModule: React.FC = () => {
                     <td className="py-2.5 px-3 text-center font-mono text-rose-600 dark:text-rose-400">
                       {ret.Vat_Tax_Amount?.toLocaleString()} ج.م
                     </td>
-                    <td className="py-2.5 px-3 text-center font-mono font-bold text-slate-900 dark:text-stone-100">
+                    <td className="py-2.5 px-3 text-center font-mono font-bold text-[#1A241C] dark:text-[#F3EFE6]">
                       {ret.Note_Net_With_Tax?.toLocaleString()} ج.م
                     </td>
-                    <td className="py-2.5 px-3 text-center font-mono text-slate-500">
+                    <td className="py-2.5 px-3 text-center font-mono text-[#5C665E] dark:text-[#8FA392]">
                       {ret.Journal_No ? `#${ret.Journal_No}` : '-'}
                     </td>
                   </tr>
@@ -1102,21 +1102,21 @@ export const SalesModule: React.FC = () => {
       {/* TAB 3: CLIENTS DIRECTORY & BALANCES                  */}
       {/* ---------------------------------------------------- */}
       {activeTab === 'CLIENTS' && (
-        <div className="p-4 rounded-xl border border-slate-200 dark:border-stone-800 bg-white dark:bg-[#111A15] shadow-xs space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-stone-800 pb-3">
+        <div className="p-4 rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#141E16] shadow-xs space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E0D9CB] dark:border-[#243628] pb-3">
             <div>
-              <h2 className="text-sm font-bold text-slate-900 dark:text-stone-100 flex items-center gap-2">
-                <Users className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              <h2 className="text-sm font-bold text-[#1A241C] dark:text-[#F3EFE6] flex items-center gap-2">
+                <Users className="w-5 h-5 text-[#059669] dark:text-[#34D399]" />
                 دليل العملاء والأرصدة المدينة الحية (Clients Master)
               </h2>
-              <p className="text-xs text-slate-500 dark:text-stone-400">
+              <p className="text-xs text-[#5C665E] dark:text-[#8FA392]">
                 ربط حسابات العملاء بشجرة الحسابات (Level 4: 1204 / Level 5) مع مراقبة حدود الائتمان وسجل التعاملات.
               </p>
             </div>
             <button
               type="button"
               onClick={() => setIsAddClientModalOpen(true)}
-              className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm"
+              className="px-4 py-2 rounded-xl bg-[#059669] hover:bg-[#047857] text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition-colors"
             >
               <Plus className="w-4 h-4" />
               إضافة عميل جديد
@@ -1126,7 +1126,7 @@ export const SalesModule: React.FC = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-right border-collapse text-xs">
               <thead>
-                <tr className="bg-slate-50 dark:bg-[#16231D] text-slate-700 dark:text-stone-300 border-b border-slate-200 dark:border-stone-800 font-bold">
+                <tr className="bg-[#F3EFE6] dark:bg-[#131E18] text-[#3D4A3E] dark:text-[#C5D2C7] border-b border-[#E0D9CB] dark:border-[#243628] font-bold">
                   <th className="py-2.5 px-3">كود العميل</th>
                   <th className="py-2.5 px-3">اسم العميل</th>
                   <th className="py-2.5 px-3">مسؤول التواصل / الهاتف</th>
@@ -1136,33 +1136,33 @@ export const SalesModule: React.FC = () => {
                   <th className="py-2.5 px-3 text-center">حالة الحساب</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-stone-800">
+              <tbody className="divide-y divide-[#E0D9CB]/60 dark:divide-[#243628]/80">
                 {filteredClients.map((c) => (
-                  <tr key={c.Client_ID} className="hover:bg-slate-50 dark:hover:bg-stone-900/40">
-                    <td className="py-2.5 px-3 font-mono font-bold text-slate-500">
+                  <tr key={c.Client_ID} className="hover:bg-[#F3EFE6]/50 dark:hover:bg-[#17231A]/40 transition-colors">
+                    <td className="py-2.5 px-3 font-mono font-bold text-[#5C665E] dark:text-[#8FA392]">
                       {c.Client_ID}
                     </td>
-                    <td className="py-2.5 px-3 font-semibold text-slate-900 dark:text-stone-100">
+                    <td className="py-2.5 px-3 font-semibold text-[#1A241C] dark:text-[#F3EFE6]">
                       {c.Client_Name_A}
                       {c.Notice && (
-                        <span className="block text-[10px] text-slate-400 font-normal">
+                        <span className="block text-[10px] text-[#5C665E] dark:text-[#8FA392] font-normal">
                           {c.Notice}
                         </span>
                       )}
                     </td>
                     <td className="py-2.5 px-3">
-                      <div>{c.Manger_Name || '-'}</div>
-                      <div className="font-mono text-slate-500 text-[11px]">{c.Mobile || c.Tel}</div>
+                      <div className="text-[#1A241C] dark:text-[#F3EFE6]">{c.Manger_Name || '-'}</div>
+                      <div className="font-mono text-[#5C665E] dark:text-[#8FA392] text-[11px]">{c.Mobile || c.Tel}</div>
                     </td>
-                    <td className="py-2.5 px-3 font-mono">{c.Vat_No || '-'}</td>
+                    <td className="py-2.5 px-3 font-mono text-[#5C665E] dark:text-[#8FA392]">{c.Vat_No || '-'}</td>
                     <td className="py-2.5 px-3 text-center font-mono">
                       {c.Limit_Amount?.toLocaleString()} ج.م
                     </td>
-                    <td className="py-2.5 px-3 text-center font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                    <td className="py-2.5 px-3 text-center font-mono font-bold text-[#059669] dark:text-[#34D399]">
                       {c.Balance?.toLocaleString()} ج.م
                     </td>
                     <td className="py-2.5 px-3 text-center">
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#EAF3EB] text-[#245E33] dark:bg-[#203325] dark:text-[#A3CFAC]">
                         نشط
                       </span>
                     </td>
@@ -1178,25 +1178,25 @@ export const SalesModule: React.FC = () => {
       {/* TAB 4: QUOTATIONS & SALES ORDERS                     */}
       {/* ---------------------------------------------------- */}
       {activeTab === 'QUOTATIONS' && (
-        <div className="p-4 rounded-xl border border-slate-200 dark:border-stone-800 bg-white dark:bg-[#111A15] shadow-xs space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-200 dark:border-stone-800 pb-3">
+        <div className="p-4 rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#141E16] shadow-xs space-y-4">
+          <div className="flex items-center justify-between border-b border-[#E0D9CB] dark:border-[#243628] pb-3">
             <div>
-              <h2 className="text-sm font-bold text-slate-900 dark:text-stone-100 flex items-center gap-2">
+              <h2 className="text-sm font-bold text-[#1A241C] dark:text-[#F3EFE6] flex items-center gap-2">
                 <FileText className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
                 عروض الأسعار المعتمدة وأوامر التوريد (Offer Prices & SO)
               </h2>
-              <p className="text-xs text-slate-500 dark:text-stone-400">
+              <p className="text-xs text-[#5C665E] dark:text-[#8FA392]">
                 تسجيل عروض الأسعار المقدمة للمشاريع والمناقصات وتحويلها بنقرة واحدة إلى فواتير مبيعات معتمدة.
               </p>
             </div>
           </div>
 
-          <div className="p-8 text-center text-slate-400 text-xs space-y-2">
-            <Building className="w-10 h-10 mx-auto text-slate-300 dark:text-stone-600" />
-            <p className="font-semibold text-slate-700 dark:text-stone-300">
+          <div className="p-8 text-center text-[#5C665E] dark:text-[#8FA392] text-xs space-y-2">
+            <Building className="w-10 h-10 mx-auto text-[#8FA392]/60 dark:text-[#5C665E]" />
+            <p className="font-semibold text-[#1A241C] dark:text-[#F3EFE6]">
               جميع عروض الأسعار المسجلة في قاعدة البيانات مفعلة وجاهزة للربط الفوري بأوامر التوريد.
             </p>
-            <p className="text-slate-400">
+            <p className="text-[#5C665E] dark:text-[#8FA392]">
               يمكنك تحويل أي عرض سعر مباشر إلى فاتورة مبيعات معتمدة عبر إدخال رقم أمر البيع (Sales Order) في شاشة الفاتورة.
             </p>
           </div>
@@ -1208,15 +1208,15 @@ export const SalesModule: React.FC = () => {
       {/* ---------------------------------------------------- */}
       {isAddClientModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-          <div className="w-full max-w-lg rounded-2xl border border-slate-200 dark:border-stone-800 bg-white dark:bg-[#111A15] shadow-2xl p-5 space-y-4 animate-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between border-b border-slate-200 dark:border-stone-800 pb-3">
-              <h3 className="font-bold text-sm text-slate-900 dark:text-stone-100 flex items-center gap-2">
-                <Users className="w-4 h-4 text-emerald-500" />
+          <div className="w-full max-w-lg rounded-2xl border border-[#E0D9CB] dark:border-[#243628] bg-[#FBF9F5] dark:bg-[#141E16] shadow-2xl p-5 space-y-4 animate-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-[#E0D9CB] dark:border-[#243628] pb-3">
+              <h3 className="font-bold text-sm text-[#1A241C] dark:text-[#F3EFE6] flex items-center gap-2">
+                <Users className="w-4 h-4 text-[#059669] dark:text-[#34D399]" />
                 إضافة عميل جديد وتكويده في دليل الحسابات
               </h3>
               <button
                 onClick={() => setIsAddClientModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-stone-200 text-sm font-bold"
+                className="text-[#5C665E] hover:text-[#1A241C] dark:hover:text-[#F3EFE6] text-sm font-bold"
               >
                 ✕
               </button>
@@ -1224,85 +1224,85 @@ export const SalesModule: React.FC = () => {
 
             <form onSubmit={handleCreateClient} className="space-y-3 text-xs">
               <div>
-                <label className="block font-semibold text-slate-700 dark:text-stone-300 mb-1">اسم العميل بالعربية *</label>
+                <label className="block font-semibold text-[#3D4A3E] dark:text-[#C5D2C7] mb-1">اسم العميل بالعربية *</label>
                 <input
                   type="text"
                   required
                   value={newClientNameA}
                   onChange={(e) => setNewClientNameA(e.target.value)}
                   placeholder="مثال: شركة إعمار مصر للتنمية"
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-stone-700 bg-white dark:bg-[#0D1F17] outline-none focus:border-emerald-500"
+                  className="w-full px-3 py-2 rounded-lg border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#17231A] text-[#1A241C] dark:text-[#F3EFE6] outline-none focus:border-[#059669]"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block font-semibold text-slate-700 dark:text-stone-300 mb-1">رقم الهاتف / الموبايل</label>
+                  <label className="block font-semibold text-[#3D4A3E] dark:text-[#C5D2C7] mb-1">رقم الهاتف / الموبايل</label>
                   <input
                     type="text"
                     value={newClientTel}
                     onChange={(e) => setNewClientTel(e.target.value)}
                     placeholder="010..."
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-stone-700 bg-white dark:bg-[#0D1F17] font-mono outline-none focus:border-emerald-500"
+                    className="w-full px-3 py-2 rounded-lg border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#17231A] text-[#1A241C] dark:text-[#F3EFE6] font-mono outline-none focus:border-[#059669]"
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold text-slate-700 dark:text-stone-300 mb-1">البطاقة الضريبية</label>
+                  <label className="block font-semibold text-[#3D4A3E] dark:text-[#C5D2C7] mb-1">البطاقة الضريبية</label>
                   <input
                     type="text"
                     value={newClientVatNo}
                     onChange={(e) => setNewClientVatNo(e.target.value)}
                     placeholder="100-234-..."
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-stone-700 bg-white dark:bg-[#0D1F17] font-mono outline-none focus:border-emerald-500"
+                    className="w-full px-3 py-2 rounded-lg border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#17231A] text-[#1A241C] dark:text-[#F3EFE6] font-mono outline-none focus:border-[#059669]"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block font-semibold text-slate-700 dark:text-stone-300 mb-1">رقم السجل التجاري</label>
+                  <label className="block font-semibold text-[#3D4A3E] dark:text-[#C5D2C7] mb-1">رقم السجل التجاري</label>
                   <input
                     type="text"
                     value={newClientCardNo}
                     onChange={(e) => setNewClientCardNo(e.target.value)}
                     placeholder="893741"
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-stone-700 bg-white dark:bg-[#0D1F17] font-mono outline-none focus:border-emerald-500"
+                    className="w-full px-3 py-2 rounded-lg border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#17231A] text-[#1A241C] dark:text-[#F3EFE6] font-mono outline-none focus:border-[#059669]"
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold text-slate-700 dark:text-stone-300 mb-1">الحد الائتماني (ج.م)</label>
+                  <label className="block font-semibold text-[#3D4A3E] dark:text-[#C5D2C7] mb-1">الحد الائتماني (ج.م)</label>
                   <input
                     type="number"
                     value={newClientLimit}
                     onChange={(e) => setNewClientLimit(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-stone-700 bg-white dark:bg-[#0D1F17] font-mono outline-none focus:border-emerald-500"
+                    className="w-full px-3 py-2 rounded-lg border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#17231A] text-[#1A241C] dark:text-[#F3EFE6] font-mono outline-none focus:border-[#059669]"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 dark:text-stone-300 mb-1">العنوان والموقع</label>
+                <label className="block font-semibold text-[#3D4A3E] dark:text-[#C5D2C7] mb-1">العنوان والموقع</label>
                 <input
                   type="text"
                   value={newClientAddress}
                   onChange={(e) => setNewClientAddress(e.target.value)}
                   placeholder="القاهرة الجديدة - التجمع الخامس..."
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-stone-700 bg-white dark:bg-[#0D1F17] outline-none focus:border-emerald-500"
+                  className="w-full px-3 py-2 rounded-lg border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#17231A] text-[#1A241C] dark:text-[#F3EFE6] outline-none focus:border-[#059669]"
                 />
               </div>
 
-              <div className="pt-3 border-t border-slate-200 dark:border-stone-800 flex items-center justify-end gap-2">
+              <div className="pt-3 border-t border-[#E0D9CB] dark:border-[#243628] flex items-center justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setIsAddClientModalOpen(false)}
-                  className="px-4 py-2 rounded-lg border border-slate-300 dark:border-stone-700 text-slate-600 dark:text-stone-400 hover:bg-slate-100 dark:hover:bg-stone-900"
+                  className="px-4 py-2 rounded-lg border border-[#E0D9CB] dark:border-[#243628] text-[#5C665E] dark:text-[#C5D2C7] hover:bg-[#F3EFE6] dark:hover:bg-[#1D2B20] transition-colors"
                 >
                   إلغاء
                 </button>
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-md shadow-emerald-600/25"
+                  className="px-5 py-2 rounded-lg bg-[#059669] hover:bg-[#047857] text-white font-bold shadow-xs transition-colors"
                 >
                   حفظ العميل
                 </button>

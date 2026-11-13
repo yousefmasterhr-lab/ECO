@@ -439,27 +439,27 @@ export const HighDensityJournalVoucherGrid: React.FC<HighDensityGridProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full w-full bg-slate-900 text-stone-100 font-sans select-none rounded-xl border border-amber-500/30 shadow-2xl overflow-hidden" dir="rtl">
+    <div className="flex flex-col h-full w-full bg-[#FBF9F5] dark:bg-[#141E16] text-[#1A241C] dark:text-[#F3EFE6] font-sans select-none rounded-2xl border border-[#E0D9CB] dark:border-[#243628] shadow-2xl overflow-hidden" dir="rtl">
       {/* 1. Executive Desktop Command Ribbon */}
-      <div className="flex flex-wrap items-center justify-between px-4 py-2.5 bg-gradient-to-l from-slate-950 via-slate-900 to-slate-950 border-b border-amber-500/20 text-xs">
+      <div className="flex flex-wrap items-center justify-between px-5 py-3 bg-white dark:bg-[#121B14] border-b border-[#E0D9CB] dark:border-[#243628] text-xs gap-3 shrink-0">
         {/* Left Side: System Title & Multi-Database Dropdown */}
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 px-2.5 py-1 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-400 font-bold">
-            <Scale className="w-4 h-4 text-amber-400" />
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-[#EAF3EB] dark:bg-[#2A3F30] border border-[#B8D8BC] dark:border-[#3D5A45] rounded-xl text-[#245E33] dark:text-[#A3CFAC] font-bold shadow-2xs">
+            <Scale className="w-4 h-4 text-[#059669] dark:text-[#34D399]" />
             <span>سند قيد اليومية العامة (General Ledger Voucher)</span>
           </div>
 
           {/* Database Switcher */}
-          <div className="flex items-center gap-2 bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-700">
-            <Database className="w-3.5 h-3.5 text-cyan-400" />
-            <span className="text-slate-400">قاعدة البيانات:</span>
+          <div className="flex items-center gap-2 bg-[#F3EFE6] dark:bg-[#1A241C] px-3 py-1.5 rounded-xl border border-[#E0D9CB] dark:border-[#243628]">
+            <Database className="w-3.5 h-3.5 text-[#D99B26] dark:text-[#EBB34D]" />
+            <span className="text-[#5C665E] dark:text-[#8FA392] font-medium">قاعدة البيانات:</span>
             <select
               value={activeDbKey}
               onChange={(e) => handleDatabaseChange(e.target.value)}
-              className="bg-transparent text-cyan-300 font-semibold text-xs border-none outline-none cursor-pointer"
+              className="bg-transparent text-[#1A241C] dark:text-[#F3EFE6] font-bold text-xs border-none outline-none cursor-pointer"
             >
               {databases.map((db) => (
-                <option key={db.name} value={db.name} className="bg-slate-900 text-slate-100">
+                <option key={db.name} value={db.name} className="bg-white dark:bg-[#141E16] text-[#1A241C] dark:text-[#F3EFE6]">
                   {db.displayNameAr} ({db.name})
                 </option>
               ))}
@@ -469,16 +469,16 @@ export const HighDensityJournalVoucherGrid: React.FC<HighDensityGridProps> = ({
 
         {/* Right Side: Keyboard Shortcuts Badge & Actions */}
         <div className="flex items-center gap-2">
-          <div className="hidden lg:flex items-center gap-2 text-[11px] text-slate-400 px-2 py-0.5 bg-slate-800/50 rounded border border-slate-700/50">
+          <div className="hidden lg:flex items-center gap-2 text-[11px] text-[#5C665E] dark:text-[#8FA392] px-3 py-1 bg-[#F3EFE6] dark:bg-[#1A241C] rounded-xl border border-[#E0D9CB] dark:border-[#243628]">
             <span>اختصارات:</span>
-            <kbd className="px-1 bg-slate-700 rounded text-amber-300">Enter</kbd> انتقال
-            <kbd className="px-1 bg-slate-700 rounded text-amber-300">Insert</kbd> سطر جديد
-            <kbd className="px-1 bg-slate-700 rounded text-amber-300">Ctrl+Del</kbd> حذف
+            <kbd className="px-1.5 py-0.5 bg-white dark:bg-[#121B14] rounded-md border border-[#E0D9CB] dark:border-[#243628] font-bold text-[#D99B26] dark:text-[#EBB34D]">Enter</kbd> انتقال
+            <kbd className="px-1.5 py-0.5 bg-white dark:bg-[#121B14] rounded-md border border-[#E0D9CB] dark:border-[#243628] font-bold text-[#D99B26] dark:text-[#EBB34D]">Insert</kbd> سطر جديد
+            <kbd className="px-1.5 py-0.5 bg-white dark:bg-[#121B14] rounded-md border border-[#E0D9CB] dark:border-[#243628] font-bold text-[#D99B26] dark:text-[#EBB34D]">Ctrl+Del</kbd> حذف
           </div>
 
           <button
             onClick={() => insertRowAt(lines.length - 1)}
-            className="flex items-center gap-1.5 px-3 py-1 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 rounded-lg font-medium transition-colors"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] hover:bg-[#FDE68A] dark:bg-[#EBB34D]/15 dark:text-[#EBB34D] dark:border-[#EBB34D]/30 dark:hover:bg-[#EBB34D]/25 rounded-xl font-bold transition-all cursor-pointer shadow-2xs"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>إضافة سطر (Insert)</span>
@@ -487,10 +487,10 @@ export const HighDensityJournalVoucherGrid: React.FC<HighDensityGridProps> = ({
           <button
             onClick={handleSaveVoucher}
             disabled={isSubmitting || !isBalanced}
-            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg font-bold shadow-md transition-all ${
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-xl font-bold shadow-xs transition-all ${
               isBalanced
-                ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-amber-500/20 cursor-pointer active:scale-95'
-                : 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed opacity-60'
+                ? 'bg-gradient-to-l from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white cursor-pointer active:scale-95'
+                : 'bg-gray-100 dark:bg-[#1A241C] text-gray-400 dark:text-gray-600 border border-[#E0D9CB] dark:border-[#243628] cursor-not-allowed opacity-60'
             }`}
           >
             <Save className="w-3.5 h-3.5" />
@@ -500,7 +500,7 @@ export const HighDensityJournalVoucherGrid: React.FC<HighDensityGridProps> = ({
           {onClose && (
             <button
               onClick={onClose}
-              className="px-2.5 py-1 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
+              className="px-3 py-1.5 text-[#5C665E] dark:text-[#8FA392] hover:text-[#1A241C] dark:hover:text-[#F3EFE6] hover:bg-[#F3EFE6] dark:hover:bg-[#1F2E23] rounded-xl font-bold transition-colors cursor-pointer"
             >
               إغلاق
             </button>
@@ -509,69 +509,69 @@ export const HighDensityJournalVoucherGrid: React.FC<HighDensityGridProps> = ({
       </div>
 
       {/* 2. Voucher Header Meta Bar */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-3 px-4 py-3 bg-slate-950/60 border-b border-slate-800 text-xs">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3.5 px-5 py-3.5 bg-[#F3EFE6]/70 dark:bg-[#121B14]/70 border-b border-[#E0D9CB] dark:border-[#243628] text-xs shrink-0">
         <div>
-          <label className="block text-slate-400 mb-1 font-medium">رقم السند (Note No):</label>
+          <label className="block text-[#5C665E] dark:text-[#8FA392] mb-1 font-bold">رقم السند (Note No):</label>
           <input
             type="number"
             value={noteNo}
             onChange={(e) => setNoteNo(parseInt(e.target.value, 10) || 0)}
-            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-amber-400 font-bold focus:border-amber-400 outline-none"
+            className="w-full bg-white dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] rounded-xl px-3 py-2 text-[#D99B26] dark:text-[#EBB34D] font-mono font-black focus:border-[#D99B26] dark:focus:border-[#EBB34D] focus:ring-1 focus:ring-[#D99B26]/30 outline-none transition-all shadow-2xs"
           />
         </div>
 
         <div>
-          <label className="block text-slate-400 mb-1 font-medium">تاريخ القيد (Voucher Date):</label>
+          <label className="block text-[#5C665E] dark:text-[#8FA392] mb-1 font-bold">تاريخ القيد (Voucher Date):</label>
           <input
             type="date"
             value={noteDate}
             onChange={(e) => setNoteDate(e.target.value)}
-            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-100 font-medium focus:border-amber-400 outline-none"
+            className="w-full bg-white dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] rounded-xl px-3 py-2 text-[#1A241C] dark:text-[#F3EFE6] font-mono font-bold focus:border-[#D99B26] dark:focus:border-[#EBB34D] focus:ring-1 focus:ring-[#D99B26]/30 outline-none transition-all shadow-2xs"
           />
         </div>
 
         <div className="md:col-span-2">
-          <label className="block text-slate-400 mb-1 font-medium">البيان والشرح العام (General Memo):</label>
+          <label className="block text-[#5C665E] dark:text-[#8FA392] mb-1 font-bold">البيان والشرح العام (General Memo):</label>
           <input
             type="text"
             value={generalDescription}
             onChange={(e) => setGeneralDescription(e.target.value)}
             placeholder="أدخل الشرح العام لسند القيد المحاسبي..."
-            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-100 font-medium focus:border-amber-400 outline-none"
+            className="w-full bg-white dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] rounded-xl px-3 py-2 text-[#1A241C] dark:text-[#F3EFE6] font-bold focus:border-[#D99B26] dark:focus:border-[#EBB34D] focus:ring-1 focus:ring-[#D99B26]/30 outline-none transition-all shadow-2xs placeholder-[#5C665E]/50 dark:placeholder-[#8FA392]/50"
           />
         </div>
       </div>
 
       {/* Alerts */}
       {errorBanner && (
-        <div className="flex items-center gap-2 px-4 py-2 bg-rose-500/20 border-b border-rose-500/40 text-rose-300 text-xs">
+        <div className="flex items-center gap-2 px-5 py-2.5 bg-rose-50 border-b border-rose-200 text-rose-700 dark:bg-[#3F2A2A] dark:border-[#5C3E3E] dark:text-[#EFA3A3] text-xs font-bold shrink-0">
           <AlertTriangle className="w-4 h-4 shrink-0" />
           <span>{errorBanner}</span>
         </div>
       )}
 
       {successBanner && (
-        <div className="flex items-center gap-2 px-4 py-2 bg-emerald-500/20 border-b border-emerald-500/40 text-emerald-300 text-xs">
+        <div className="flex items-center gap-2 px-5 py-2.5 bg-emerald-50 border-b border-emerald-200 text-emerald-700 dark:bg-[#2A3F30] dark:border-[#3E5C46] dark:text-[#A3CFAC] text-xs font-bold shrink-0">
           <CheckCircle2 className="w-4 h-4 shrink-0" />
           <span>{successBanner}</span>
         </div>
       )}
 
       {/* 3. High-Density Keyboard Data Grid Table */}
-      <div className="flex-1 overflow-auto bg-slate-950/80">
+      <div className="flex-1 overflow-auto bg-white dark:bg-[#0E1610]">
         <table className="w-full border-collapse text-xs text-right">
-          <thead className="sticky top-0 bg-slate-900/95 backdrop-blur-xs text-slate-300 border-b border-slate-800 z-10 font-bold">
+          <thead className="sticky top-0 bg-[#F3EFE6] dark:bg-[#17231A] text-[#5C665E] dark:text-[#8FA392] border-b border-[#E0D9CB] dark:border-[#243628] z-10 font-black">
             <tr>
-              <th className="py-2.5 px-3 w-12 text-center border-l border-slate-800">م</th>
-              <th className="py-2.5 px-3 w-72 border-l border-slate-800">كود واسم الحساب (Level 5 Account)</th>
-              <th className="py-2.5 px-3 border-l border-slate-800">شرح السطر (Line Memo)</th>
-              <th className="py-2.5 px-3 w-56 border-l border-slate-800">مركز التكلفة (Cost Center)</th>
-              <th className="py-2.5 px-3 w-36 text-center border-l border-slate-800 text-cyan-400">مدين (Debit)</th>
-              <th className="py-2.5 px-3 w-36 text-center border-l border-slate-800 text-amber-400">دائن (Credit)</th>
+              <th className="py-2.5 px-3 w-12 text-center border-l border-[#E0D9CB]/80 dark:border-[#243628]/80">م</th>
+              <th className="py-2.5 px-3 w-72 border-l border-[#E0D9CB]/80 dark:border-[#243628]/80">كود واسم الحساب (Level 5 Account)</th>
+              <th className="py-2.5 px-3 border-l border-[#E0D9CB]/80 dark:border-[#243628]/80">شرح السطر (Line Memo)</th>
+              <th className="py-2.5 px-3 w-56 border-l border-[#E0D9CB]/80 dark:border-[#243628]/80">مركز التكلفة (Cost Center)</th>
+              <th className="py-2.5 px-3 w-36 text-center border-l border-[#E0D9CB]/80 dark:border-[#243628]/80 text-[#245E33] dark:text-[#A3CFAC]">مدين (Debit)</th>
+              <th className="py-2.5 px-3 w-36 text-center border-l border-[#E0D9CB]/80 dark:border-[#243628]/80 text-[#92400E] dark:text-[#EBB34D]">دائن (Credit)</th>
               <th className="py-2.5 px-2 w-12 text-center">إجراء</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-800/60 font-mono">
+          <tbody className="divide-y divide-[#E0D9CB]/60 dark:divide-[#243628]/60 font-mono">
             {lines.map((line, idx) => {
               const isSelectedRow = focusedCell.row === idx;
 
@@ -579,16 +579,16 @@ export const HighDensityJournalVoucherGrid: React.FC<HighDensityGridProps> = ({
                 <tr
                   key={line.sr || idx}
                   className={`transition-colors ${
-                    isSelectedRow ? 'bg-amber-500/5' : 'hover:bg-slate-900/40'
+                    isSelectedRow ? 'bg-[#059669]/5 dark:bg-[#059669]/10' : 'hover:bg-[#F3EFE6]/50 dark:hover:bg-[#17231A]/40'
                   }`}
                 >
                   {/* Sequence Number */}
-                  <td className="py-1 px-2 text-center text-slate-500 border-l border-slate-800 select-none">
+                  <td className="py-2 px-2 text-center text-[#5C665E] dark:text-[#8FA392] border-l border-[#E0D9CB]/60 dark:border-[#243628]/60 font-bold select-none">
                     {line.sr}
                   </td>
 
                   {/* Account Code & Name (Typeahead) */}
-                  <td className="p-1 border-l border-slate-800 relative">
+                  <td className="p-1.5 border-l border-[#E0D9CB]/60 dark:border-[#243628]/60 relative">
                     <div className="flex items-center gap-1.5">
                       <input
                         ref={(el) => {
@@ -608,27 +608,27 @@ export const HighDensityJournalVoucherGrid: React.FC<HighDensityGridProps> = ({
                         }}
                         onKeyDown={(e) => handleKeyDown(e, idx, 'account')}
                         placeholder="كود أو اسم الحساب..."
-                        className="w-28 bg-slate-900/90 border border-slate-700 rounded px-2 py-1 text-slate-100 font-semibold focus:border-amber-400 focus:bg-slate-900 outline-none text-left"
+                        className="w-28 bg-white dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] rounded-lg px-2.5 py-1.5 text-[#1A241C] dark:text-[#F3EFE6] font-bold text-left focus:border-[#059669] outline-none shadow-2xs"
                       />
-                      <span className="text-[11px] text-slate-300 font-sans truncate max-w-[150px]">
+                      <span className="text-xs text-[#1A241C] dark:text-[#F3EFE6] font-sans font-bold truncate max-w-[150px]">
                         {line.level5NameAr || 'اختر الحساب...'}
                       </span>
                     </div>
 
                     {/* Typeahead Dropdown */}
                     {typeaheadQuery && typeaheadQuery.row === idx && filteredAccounts.length > 0 && (
-                      <div className="absolute top-full right-1 left-1 bg-slate-900 border border-amber-500/40 rounded-lg shadow-2xl z-50 max-h-48 overflow-auto py-1">
+                      <div className="absolute top-full right-1 left-1 bg-white dark:bg-[#141E16] border border-[#E0D9CB] dark:border-[#243628] rounded-xl shadow-2xl z-50 max-h-48 overflow-auto py-1">
                         {filteredAccounts.map((acc, aIdx) => (
                           <div
                             key={acc.code}
                             onMouseDown={() => selectAccount(idx, acc)}
-                            className={`flex items-center justify-between px-3 py-1.5 text-xs cursor-pointer ${
-                              typeaheadIndex === aIdx ? 'bg-amber-500 text-slate-950 font-bold' : 'hover:bg-slate-800 text-slate-200'
+                            className={`flex items-center justify-between px-3.5 py-2 text-xs cursor-pointer ${
+                              typeaheadIndex === aIdx ? 'bg-[#059669] text-white font-bold' : 'hover:bg-[#F3EFE6] dark:hover:bg-[#17231A] text-[#1A241C] dark:text-[#F3EFE6]'
                             }`}
                           >
-                            <span className="font-mono">{acc.code}</span>
-                            <span className="font-sans">{acc.nameAr}</span>
-                            <span className="text-[10px] opacity-75">
+                            <span className="font-mono font-bold">{acc.code}</span>
+                            <span className="font-sans font-bold">{acc.nameAr}</span>
+                            <span className="text-[10px] opacity-75 font-semibold">
                               {acc.accountNature === 0 ? 'مدين' : 'دائن'}
                             </span>
                           </div>
@@ -638,7 +638,7 @@ export const HighDensityJournalVoucherGrid: React.FC<HighDensityGridProps> = ({
                   </td>
 
                   {/* Line Memo Description */}
-                  <td className="p-1 border-l border-slate-800">
+                  <td className="p-1.5 border-l border-[#E0D9CB]/60 dark:border-[#243628]/60">
                     <input
                       ref={(el) => {
                         if (el) inputRefs.current.set(`${idx}_description`, el);
@@ -649,12 +649,12 @@ export const HighDensityJournalVoucherGrid: React.FC<HighDensityGridProps> = ({
                       onFocus={() => setFocusedCell({ row: idx, col: 'description' })}
                       onKeyDown={(e) => handleKeyDown(e, idx, 'description')}
                       placeholder="شرح السطر..."
-                      className="w-full bg-slate-900/50 border border-transparent hover:border-slate-700 focus:border-amber-400 focus:bg-slate-900 rounded px-2 py-1 text-slate-200 font-sans outline-none"
+                      className="w-full bg-transparent hover:bg-[#F3EFE6]/60 dark:hover:bg-[#17231A]/60 focus:bg-white dark:focus:bg-[#17231A] border border-transparent focus:border-[#E0D9CB] dark:focus:border-[#243628] rounded-lg px-2.5 py-1.5 text-[#1A241C] dark:text-[#F3EFE6] font-sans font-medium outline-none"
                     />
                   </td>
 
                   {/* Cost Center */}
-                  <td className="p-1 border-l border-slate-800">
+                  <td className="p-1.5 border-l border-[#E0D9CB]/60 dark:border-[#243628]/60">
                     <select
                       value={line.costcenterId}
                       onChange={(e) => {
@@ -664,10 +664,10 @@ export const HighDensityJournalVoucherGrid: React.FC<HighDensityGridProps> = ({
                         if (match) updateLine(idx, 'costcenterNameAr', match.nameAr);
                       }}
                       onFocus={() => setFocusedCell({ row: idx, col: 'costcenter' })}
-                      className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-300 font-sans outline-none focus:border-amber-400 cursor-pointer"
+                      className="w-full bg-white dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] rounded-lg px-2.5 py-1.5 text-[#1A241C] dark:text-[#F3EFE6] font-sans font-medium outline-none focus:border-[#059669] cursor-pointer shadow-2xs"
                     >
                       {costCenters.map((cc) => (
-                        <option key={cc.code} value={cc.code}>
+                        <option key={cc.code} value={cc.code} className="bg-white dark:bg-[#141E16] text-[#1A241C] dark:text-[#F3EFE6]">
                           {cc.code === '0' ? 'عام' : `${cc.code} - ${cc.nameAr}`}
                         </option>
                       ))}
@@ -675,7 +675,7 @@ export const HighDensityJournalVoucherGrid: React.FC<HighDensityGridProps> = ({
                   </td>
 
                   {/* Debit Amount */}
-                  <td className="p-1 border-l border-slate-800">
+                  <td className="p-1.5 border-l border-[#E0D9CB]/60 dark:border-[#243628]/60">
                     <input
                       ref={(el) => {
                         if (el) inputRefs.current.set(`${idx}_debit`, el);
@@ -687,12 +687,12 @@ export const HighDensityJournalVoucherGrid: React.FC<HighDensityGridProps> = ({
                       onChange={(e) => updateLine(idx, 'debit', e.target.value)}
                       onFocus={() => setFocusedCell({ row: idx, col: 'debit' })}
                       onKeyDown={(e) => handleKeyDown(e, idx, 'debit')}
-                      className="w-full bg-slate-900/80 border border-slate-700 focus:border-cyan-400 rounded px-2.5 py-1 text-cyan-300 font-bold text-center outline-none"
+                      className="w-full bg-[#EAF3EB]/70 dark:bg-[#2A3F30]/30 border border-[#B8D8BC] dark:border-[#3D5A45] focus:border-[#059669] rounded-lg px-2.5 py-1.5 text-[#245E33] dark:text-[#A3CFAC] font-black text-center outline-none tabular-nums shadow-2xs"
                     />
                   </td>
 
                   {/* Credit Amount */}
-                  <td className="p-1 border-l border-slate-800">
+                  <td className="p-1.5 border-l border-[#E0D9CB]/60 dark:border-[#243628]/60">
                     <input
                       ref={(el) => {
                         if (el) inputRefs.current.set(`${idx}_credit`, el);
@@ -704,17 +704,17 @@ export const HighDensityJournalVoucherGrid: React.FC<HighDensityGridProps> = ({
                       onChange={(e) => updateLine(idx, 'credit', e.target.value)}
                       onFocus={() => setFocusedCell({ row: idx, col: 'credit' })}
                       onKeyDown={(e) => handleKeyDown(e, idx, 'credit')}
-                      className="w-full bg-slate-900/80 border border-slate-700 focus:border-amber-400 rounded px-2.5 py-1 text-amber-300 font-bold text-center outline-none"
+                      className="w-full bg-[#FEF3C7]/70 dark:bg-[#3F2A2A]/30 border border-[#FDE68A] dark:border-[#5A3D3D] focus:border-[#D99B26] rounded-lg px-2.5 py-1.5 text-[#92400E] dark:text-[#EBB34D] font-black text-center outline-none tabular-nums shadow-2xs"
                     />
                   </td>
 
                   {/* Actions */}
-                  <td className="p-1 text-center">
+                  <td className="p-1.5 text-center">
                     <button
                       onClick={() => deleteRowAt(idx)}
                       disabled={lines.length <= 2}
                       title="حذف هذا السطر (Ctrl+Del)"
-                      className="text-slate-500 hover:text-rose-400 disabled:opacity-30 disabled:cursor-not-allowed p-1 transition-colors"
+                      className="text-[#5C665E] hover:text-rose-600 dark:text-[#8FA392] dark:hover:text-rose-400 disabled:opacity-30 disabled:cursor-not-allowed p-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -727,44 +727,44 @@ export const HighDensityJournalVoucherGrid: React.FC<HighDensityGridProps> = ({
       </div>
 
       {/* 4. Dynamic Balancing HUD (Persistent Sticky Footer) */}
-      <div className="sticky bottom-0 bg-slate-950 border-t border-amber-500/30 p-3 z-20 shadow-2xl">
+      <div className="sticky bottom-0 bg-white dark:bg-[#121B14] border-t border-[#E0D9CB] dark:border-[#243628] px-5 py-3.5 z-20 shadow-xl shrink-0">
         <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
           {/* Balancing Metrics HUD */}
           <div className="flex items-center gap-3">
             {/* Total Debit Badge */}
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-900 border border-cyan-500/40 rounded-lg">
-              <span className="text-slate-400">إجمالي المدين:</span>
-              <span className="text-cyan-400 font-mono font-bold text-sm">
+            <div className="flex items-center gap-2 px-3.5 py-1.5 bg-[#EAF3EB] text-[#245E33] border border-[#B8D8BC] dark:bg-[#2A3F30] dark:text-[#A3CFAC] dark:border-[#3D5A45] rounded-xl shadow-2xs">
+              <span className="text-[11px] font-bold">إجمالي المدين:</span>
+              <span className="font-mono font-black text-sm tabular-nums">
                 {totalDebit.toFixed(2)}
               </span>
-              <span className="text-[10px] text-slate-500">ج.م</span>
+              <span className="text-[10px] font-bold">ج.م</span>
             </div>
 
             {/* Total Credit Badge */}
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-900 border border-amber-500/40 rounded-lg">
-              <span className="text-slate-400">إجمالي الدائن:</span>
-              <span className="text-amber-400 font-mono font-bold text-sm">
+            <div className="flex items-center gap-2 px-3.5 py-1.5 bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] dark:bg-[#1F2E23] dark:text-[#EBB34D] dark:border-[#243628] rounded-xl shadow-2xs">
+              <span className="text-[11px] font-bold">إجمالي الدائن:</span>
+              <span className="font-mono font-black text-sm tabular-nums">
                 {totalCredit.toFixed(2)}
               </span>
-              <span className="text-[10px] text-slate-500">ج.م</span>
+              <span className="text-[10px] font-bold">ج.م</span>
             </div>
 
             {/* Invariant Difference Badge */}
             <div
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border font-bold ${
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl border font-bold shadow-2xs ${
                 isBalanced
-                  ? 'bg-emerald-500/15 border-emerald-500/50 text-emerald-400'
-                  : 'bg-rose-500/15 border-rose-500/50 text-rose-400 animate-pulse'
+                  ? 'bg-[#EAF3EB] text-[#245E33] border border-[#B8D8BC] dark:bg-[#2A3F30] dark:text-[#A3CFAC] dark:border-[#3D5A45]'
+                  : 'bg-rose-50 text-rose-700 border border-rose-300 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800 animate-pulse'
               }`}
             >
               {isBalanced ? (
                 <>
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <CheckCircle2 className="w-4 h-4 text-[#059669] dark:text-[#34D399]" />
                   <span>متوازن تماماً (الفارق: 0.0000)</span>
                 </>
               ) : (
                 <>
-                  <AlertTriangle className="w-4 h-4 text-rose-400" />
+                  <AlertTriangle className="w-4 h-4 text-rose-500" />
                   <span>غير متوازن (الفارق: {difference.toFixed(4)} ج.م)</span>
                 </>
               )}
@@ -774,9 +774,9 @@ export const HighDensityJournalVoucherGrid: React.FC<HighDensityGridProps> = ({
             {!isBalanced && (
               <button
                 onClick={handleAutoBalance}
-                className="flex items-center gap-1 px-2.5 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded-lg transition-all cursor-pointer font-semibold"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] hover:bg-[#FDE68A] dark:bg-[#EBB34D]/20 dark:text-[#EBB34D] dark:border-[#EBB34D]/40 rounded-xl transition-all cursor-pointer font-bold text-xs shadow-2xs"
               >
-                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                <Sparkles className="w-3.5 h-3.5 text-[#D99B26] dark:text-[#EBB34D]" />
                 <span>موازنة تلقائية</span>
               </button>
             )}
@@ -784,15 +784,15 @@ export const HighDensityJournalVoucherGrid: React.FC<HighDensityGridProps> = ({
 
           {/* Arabic Tafqeet Representation */}
           {tafqeetSentence && (
-            <div className="hidden xl:flex items-center gap-2 text-slate-300 font-sans text-[11px] bg-slate-900/90 px-3 py-1 rounded-lg border border-slate-800">
-              <span className="text-slate-500 font-bold">المبلغ تفقيطاً:</span>
-              <span className="text-amber-300 italic font-medium">{tafqeetSentence}</span>
+            <div className="hidden xl:flex items-center gap-2 text-xs bg-[#F3EFE6] dark:bg-[#17231A] px-3.5 py-1.5 rounded-xl border border-[#E0D9CB] dark:border-[#243628]">
+              <span className="text-[#5C665E] dark:text-[#8FA392] font-bold">المبلغ تفقيطاً:</span>
+              <span className="text-[#D99B26] dark:text-[#EBB34D] font-bold">{tafqeetSentence}</span>
             </div>
           )}
 
           {/* Quick Line Counter */}
-          <div className="text-slate-400 text-[11px]">
-            إجمالي السطور: <span className="text-slate-200 font-mono font-bold">{lines.length}</span> سطر
+          <div className="text-[#5C665E] dark:text-[#8FA392] text-xs font-medium">
+            إجمالي السطور: <span className="text-[#1A241C] dark:text-[#F3EFE6] font-mono font-black">{lines.length}</span> سطر
           </div>
         </div>
       </div>
