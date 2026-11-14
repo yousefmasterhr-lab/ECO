@@ -47,7 +47,7 @@ export interface IFinancialRepository {
   getCheques(): Promise<ChequeItem[]>;
   updateChequeStatus(id: string, status: string): Promise<{ success: boolean; cheque?: ChequeItem; error?: string }>;
   addCheque(data: ChequePayload): Promise<{ success: boolean; cheque?: ChequeItem; error?: string }>;
-  getJournals(): Promise<JournalEntryItem[]>;
+  getJournals(force?: boolean): Promise<JournalEntryItem[]>;
   getJournalLines?(noteNo: number): Promise<JournalLineItem[]>;
   saveJournal(data: JournalPayload): Promise<{ success: boolean; journal?: JournalEntryItem; error?: string }>;
 

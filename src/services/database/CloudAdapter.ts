@@ -367,7 +367,7 @@ export class CloudAdapter implements IFinancialRepository {
     return { success: true, cheque: newCheque };
   }
 
-  async getJournals(): Promise<JournalEntryItem[]> {
+  async getJournals(_force?: boolean): Promise<JournalEntryItem[]> {
     // Live database / in-memory journals is the sole authoritative source
     return [...this.inMemoryJournals];
   }

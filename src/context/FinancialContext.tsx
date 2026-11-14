@@ -269,7 +269,7 @@ export const FinancialProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       repo.getTreasuryBalances(),
       repo.getVouchers('ALL'),
       repo.getCheques(),
-      repo.getJournals(),
+      repo.getJournals(true),
     ]);
     setTreasuryAccounts(treasuryData);
     setVouchers(vouchersData);
@@ -331,8 +331,8 @@ export const FinancialProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const result = await repo.saveJournal(data);
     if (result.success && result.journal) {
       setJournals(prev => [result.journal!, ...prev]);
-      // Synchronize Chart of Accounts and Statement queries
-      await refreshAccounts(true);
+      // Synchronize Chart of Accounts and Statement queries in the background (non-blocking for instant UI response)
+      refreshAccounts(true).catch(err => console.warn('[FinancialContext] Background accounts refresh:', err));
       if (typeof window !== 'undefined') {
         window.dispatchEvent(
           new CustomEvent('erp:cache-invalidate', {

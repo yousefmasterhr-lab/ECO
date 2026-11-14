@@ -255,17 +255,18 @@ export const JournalEntryModal: React.FC<JournalEntryModalProps> = ({ onClose, o
     setIsSubmitting(true);
     try {
       const currentUserName = user?.nameAr || 'يوسف حجازي';
+      const cleanDescription = generalMemo.trim() || entryType;
       const payload: JournalPayload & { entryName?: string } = {
         noteNo,
         noteDate,
-        description: `${entryType}: ${generalMemo.trim()}`,
+        description: cleanDescription,
         debitTotal: Math.round(debitTotal * 100) / 100,
         creditTotal: Math.round(creditTotal * 100) / 100,
         netText: tafqeetText,
         entryName: currentUserName,
         lines: lines.map(l => ({
           ...l,
-          description: l.description.trim() || generalMemo.trim(),
+          description: l.description.trim() || cleanDescription,
         })),
       };
 

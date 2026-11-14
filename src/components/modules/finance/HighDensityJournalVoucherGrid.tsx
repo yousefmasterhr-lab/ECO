@@ -67,7 +67,7 @@ export const HighDensityJournalVoucherGrid: React.FC<HighDensityGridProps> = ({
     initialVoucher?.noteDate || new Date().toISOString().split('T')[0]
   );
   const [generalDescription, setGeneralDescription] = useState<string>(
-    initialVoucher?.description || 'قيد تسوية وإقفال عام'
+    initialVoucher?.description || ''
   );
   const [entryName] = useState<string>(user?.nameAr || 'مدير النظام / رئيس الحسابات');
 

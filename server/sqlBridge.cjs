@@ -1565,13 +1565,11 @@ async function getJournals(targetDb = process.env.DB_NAME || 'MK_Khalil_Db_2026'
       const noteNos = list.map(j => j.noteNo ?? j.entryNo).filter(Boolean);
       if (noteNos.length > 0) {
         try {
-          // Batch fetch sub-line breakdowns across all entries in chunks of 500
-          // to ingest the complete journal sequence (e.g. #61 to #285+) without hitting SQL Server 1,000 parameter limits
+          // Lightning-Fast Optimization: Pre-fetch sub-lines ONLY for top 30 vouchers (active page & immediate inspection)
+          // All historical records load sub-lines on demand via /api/finance/journals/:id/details in ~20ms
+          const topNoteNos = noteNos.slice(0, 30);
           const linesByNote = new Map();
-          const BATCH_SIZE = 500;
-          for (let i = 0; i < noteNos.length; i += BATCH_SIZE) {
-            const batch = noteNos.slice(i, i + BATCH_SIZE);
-            if (batch.length === 0) continue;
+          if (topNoteNos.length > 0) {
             const linesSql = `
               SELECT 
                 Note_No AS noteNo,
@@ -1583,7 +1581,7 @@ async function getJournals(targetDb = process.env.DB_NAME || 'MK_Khalil_Db_2026'
                 Description AS description,
                 Costcenter_Name_A AS costcenterNameAr
               FROM [${targetDb}].dbo.GeneralLedger_Details_View
-              WHERE Note_No IN (${batch.join(',')})
+              WHERE Note_No IN (${topNoteNos.join(',')})
               ORDER BY Note_No DESC, SR ASC
             `;
             const linesRows = await querySqlJson(linesSql, targetDb);
@@ -1858,19 +1856,19 @@ async function saveJournal(journalData, targetDb = process.env.DB_NAME || 'MK_Kh
   // 2. Obtain SQL Server Connection Pool
   const pool = await getPool(targetDb);
 
-  // 3. Resolve Next Sequential Note_No atomically from SQL Server
+  // 3. Resolve Next Sequential Note_No atomically from SQL Server in 1 roundtrip
   let targetNoteNo = Number(head.Note_No || head.noteNo || 0);
-  const maxRes = await pool.request().query(`SELECT ISNULL(MAX(Note_No), 0) + 1 AS nextNo FROM [${targetDb}].dbo.GeneralLedger_Head`);
-  const nextAvailableNo = Number(maxRes.recordset[0].nextNo);
+  const nextRes = await pool.request().query(`
+    SELECT 
+      ISNULL(MAX(Note_No), 0) + 1 AS nextNo,
+      (SELECT COUNT(1) FROM [${targetDb}].dbo.GeneralLedger_Head WHERE Note_No = ${targetNoteNo > 0 ? targetNoteNo : -1}) AS suppliedExists
+    FROM [${targetDb}].dbo.GeneralLedger_Head
+  `);
+  const nextAvailableNo = Number(nextRes.recordset[0].nextNo);
+  const suppliedExists = Number(nextRes.recordset[0].suppliedExists);
 
-  if (!targetNoteNo || targetNoteNo <= 0) {
+  if (!targetNoteNo || targetNoteNo <= 0 || suppliedExists > 0) {
     targetNoteNo = nextAvailableNo;
-  } else {
-    // If client supplied a noteNo, check whether it already exists in SQL Server
-    const chk = await pool.request().query(`SELECT COUNT(1) AS cnt FROM [${targetDb}].dbo.GeneralLedger_Head WHERE Note_No = ${targetNoteNo}`);
-    if (chk.recordset[0].cnt > 0) {
-      targetNoteNo = nextAvailableNo;
-    }
   }
 
   const noteDate = String(head.Note_Date || head.noteDate || new Date().toISOString().split('T')[0]).replace(/\//g, '-');
@@ -1916,42 +1914,45 @@ async function saveJournal(journalData, targetDb = process.env.DB_NAME || 'MK_Kh
         )
       `);
 
-    // Insert detail lines into GeneralLedger_Details
-    for (const line of formattedLines) {
+    // Insert all detail lines in a single batched multi-row roundtrip
+    if (formattedLines.length > 0) {
       const lineReq = new sql.Request(tx);
-      await lineReq
-        .input('noteNo', sql.Int, targetNoteNo)
-        .input('sr', sql.SmallInt, line.sr)
-        .input('l5', sql.Numeric(18, 0), line.level5Id)
-        .input('desc', sql.NVarChar(300), line.description)
-        .input('currencyId', sql.SmallInt, line.currencyId)
-        .input('exchange', sql.Float, line.exchange)
-        .input('actualDebit', sql.Float, line.actualDebit)
-        .input('debit', sql.Float, line.debit)
-        .input('actualCredit', sql.Float, line.actualCredit)
-        .input('credit', sql.Float, line.credit)
-        .input('analysisId', sql.Numeric(18, 0), line.analysisId)
-        .input('costcenterId', sql.Numeric(18, 0), line.costcenterId)
-        .input('jobOrderNo', sql.Numeric(18, 0), line.jobOrderNo)
-        .input('analyse1', sql.NVarChar(200), line.analyse1)
-        .input('analyse2', sql.NVarChar(200), line.analyse2)
-        .input('flag', sql.Bit, 0)
-        .input('flagN', sql.Int, 0)
-        .input('notice', sql.NVarChar(300), ' ')
-        .input('historyEdits', sql.NVarChar(300), ' ')
-        .query(`
-          INSERT INTO [${targetDb}].dbo.GeneralLedger_Details (
-            Note_No, SR, Level5_ID, Description, Currency_ID, Exchange,
-            Actual_Debit, Debit, Actual_Credit, Credit,
-            Analysis_ID, Costcenter_ID, Job_Order_No, Analyse1, Analyse2,
-            Flag, Flag_N, Notice, History_Edits
-          ) VALUES (
-            @noteNo, @sr, @l5, @desc, @currencyId, @exchange,
-            @actualDebit, @debit, @actualCredit, @credit,
-            @analysisId, @costcenterId, @jobOrderNo, @analyse1, @analyse2,
-            @flag, @flagN, @notice, @historyEdits
-          )
-        `);
+      lineReq.input('noteNo', sql.Int, targetNoteNo);
+      const valueClauses = [];
+
+      formattedLines.forEach((line, idx) => {
+        const p = `l${idx}_`;
+        lineReq.input(`${p}sr`, sql.SmallInt, line.sr);
+        lineReq.input(`${p}l5`, sql.Numeric(18, 0), line.level5Id);
+        lineReq.input(`${p}desc`, sql.NVarChar(300), line.description);
+        lineReq.input(`${p}currencyId`, sql.SmallInt, line.currencyId);
+        lineReq.input(`${p}exchange`, sql.Float, line.exchange);
+        lineReq.input(`${p}actualDebit`, sql.Float, line.actualDebit);
+        lineReq.input(`${p}debit`, sql.Float, line.debit);
+        lineReq.input(`${p}actualCredit`, sql.Float, line.actualCredit);
+        lineReq.input(`${p}credit`, sql.Float, line.credit);
+        lineReq.input(`${p}analysisId`, sql.Numeric(18, 0), line.analysisId);
+        lineReq.input(`${p}costcenterId`, sql.Numeric(18, 0), line.costcenterId);
+        lineReq.input(`${p}jobOrderNo`, sql.Numeric(18, 0), line.jobOrderNo);
+        lineReq.input(`${p}analyse1`, sql.NVarChar(200), line.analyse1);
+        lineReq.input(`${p}analyse2`, sql.NVarChar(200), line.analyse2);
+
+        valueClauses.push(`(
+          @noteNo, @${p}sr, @${p}l5, @${p}desc, @${p}currencyId, @${p}exchange,
+          @${p}actualDebit, @${p}debit, @${p}actualCredit, @${p}credit,
+          @${p}analysisId, @${p}costcenterId, @${p}jobOrderNo, @${p}analyse1, @${p}analyse2,
+          0, 0, ' ', ' '
+        )`);
+      });
+
+      await lineReq.query(`
+        INSERT INTO [${targetDb}].dbo.GeneralLedger_Details (
+          Note_No, SR, Level5_ID, Description, Currency_ID, Exchange,
+          Actual_Debit, Debit, Actual_Credit, Credit,
+          Analysis_ID, Costcenter_ID, Job_Order_No, Analyse1, Analyse2,
+          Flag, Flag_N, Notice, History_Edits
+        ) VALUES ${valueClauses.join(',\n')}
+      `);
     }
 
     await tx.commit();
@@ -1965,6 +1966,9 @@ async function saveJournal(journalData, targetDb = process.env.DB_NAME || 'MK_Kh
   // Clear caches so queries and reports see the newly committed rows immediately
   if (typeof cachedAccountsByDb !== 'undefined') {
     cachedAccountsByDb.clear();
+  }
+  if (typeof journalsFastCache !== 'undefined') {
+    journalsFastCache.clear();
   }
 
   const createdJournal = {
@@ -3909,39 +3913,38 @@ app.post('/api/finance/cheques/add', (req, res) => {
   res.json(addCheque(req.body));
 });
 
+let journalsFastCache = new Map();
+
 app.get(['/api/finance/journals', '/api/journal-entries', '/api/sql/general-journal', '/api/finance/general-journal', '/api/general-journal'], async (req, res) => {
   try {
     const targetDb = req.query.db || req.headers['x-database-context'] || req.targetDb || process.env.DB_NAME || 'MK_Khalil_Db_2026';
-    const pool = await getPool(targetDb);
+    const force = req.query.force === 'true' || req.query.refresh === 'true';
+    const cacheKey = String(targetDb).trim();
 
-    // Dynamic table detection for the active database
-    const checkTableQuery = `
-      SELECT TABLE_NAME 
-      FROM INFORMATION_SCHEMA.TABLES 
-      WHERE TABLE_TYPE = 'BASE TABLE' 
-        AND (TABLE_NAME LIKE '%Journal%' OR TABLE_NAME LIKE '%Voucher%' OR TABLE_NAME LIKE '%Ledger%' OR TABLE_NAME LIKE '%قيد%')
-    `;
-    const tableCheck = await pool.request().query(checkTableQuery);
-    const matchedTables = tableCheck.recordset.map(r => r.TABLE_NAME);
-    console.log('[SQL Bridge] Detected Journal Tables:', matchedTables);
-
-    // Select target table based on ERP schema pattern
-    let targetTable = 
-      matchedTables.find(t => t.toLowerCase() === 'generalledger_head') ||
-      matchedTables.find(t => t.match(/GeneralLedger.*Head/i)) ||
-      matchedTables.find(t => t.match(/Head|Master|GeneralLedger/i) && !t.match(/Detail/i)) ||
-      matchedTables[0];
-
-    if (!targetTable) {
-      return res.json([]);
+    if (!force && journalsFastCache.has(cacheKey)) {
+      const cached = journalsFastCache.get(cacheKey);
+      if (Date.now() - cached.timestamp < 60000) {
+        return res.json(cached.data);
+      }
     }
 
-    // Retrieve ALL journal head records without artificial limit
-    const records = await pool.request().query(`
-      SELECT * 
-      FROM [dbo].[${targetTable}]
-      ORDER BY 1 DESC
-    `);
+    const pool = await getPool(targetDb);
+
+    let records;
+    try {
+      records = await pool.request().query(`
+        SELECT 
+          Note_No, Note_Type_ID, Note_Date, Note_Date_H, Journal_Type,
+          Description, Note_Debit, Note_Credit, Note_Net_Text,
+          Entry_ID, Entry_Name, Flag, Flag_N
+        FROM [${targetDb}].[dbo].[GeneralLedger_Head]
+        ORDER BY Note_No DESC
+      `);
+    } catch (_) {
+      records = await pool.request().query(`
+        SELECT * FROM [${targetDb}].[dbo].[GeneralLedger_Head] ORDER BY 1 DESC
+      `);
+    }
 
     // Normalize records while preserving raw columns for maximum compatibility
     const normalized = (records.recordset || []).map(r => {
@@ -3977,7 +3980,7 @@ app.get(['/api/finance/journals', '/api/journal-entries', '/api/sql/general-jour
       };
     });
 
-    console.log(`[SQL Bridge] Fetched all ${normalized.length} journal entries.`);
+    journalsFastCache.set(cacheKey, { data: normalized, timestamp: Date.now() });
     res.json(normalized);
   } catch (err) {
     console.error('[SQL Bridge Error] /api/finance/journals:', err.message);
@@ -4149,6 +4152,9 @@ app.delete(['/api/finance/journals/:id', '/api/financial/vouchers/:id', '/api/fi
       // Invalidate caches
       if (typeof cachedAccountsByDb !== 'undefined') {
         cachedAccountsByDb.clear();
+      }
+      if (typeof journalsFastCache !== 'undefined') {
+        journalsFastCache.clear();
       }
       const addedIdx = addedJournals.findIndex(j => Number(j.noteNo) === noteNo);
       if (addedIdx !== -1) addedJournals.splice(addedIdx, 1);

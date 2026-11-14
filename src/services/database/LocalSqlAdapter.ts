@@ -224,7 +224,9 @@ export class LocalSqlAdapter implements IFinancialRepository {
 
   async getTreasuryBalances(): Promise<TreasuryAccountItem[]> {
     try {
-      const res = await fetch('/api/finance/treasury/balances');
+      const res = await fetch(this.getTargetUrl('/api/finance/treasury/balances'), {
+        headers: { 'Accept': 'application/json', 'X-Database-Context': this.getActiveDb() }
+      });
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) return data;
@@ -328,7 +330,9 @@ export class LocalSqlAdapter implements IFinancialRepository {
   async getVouchers(type: 'RECEIPT' | 'PAYMENT' | 'ALL' = 'ALL'): Promise<VoucherHeaderItem[]> {
     try {
       const param = type === 'RECEIPT' ? 'receivable' : type === 'PAYMENT' ? 'payable' : 'all';
-      const res = await fetch(`/api/finance/vouchers?type=${param}`);
+      const res = await fetch(this.getTargetUrl(`/api/finance/vouchers?type=${param}`), {
+        headers: { 'Accept': 'application/json', 'X-Database-Context': this.getActiveDb() }
+      });
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) return data;
@@ -341,9 +345,13 @@ export class LocalSqlAdapter implements IFinancialRepository {
 
   async saveVoucher(data: VoucherPayload): Promise<{ success: boolean; voucher?: VoucherHeaderItem; error?: string }> {
     try {
-      const res = await fetch('/api/finance/vouchers/save', {
+      const res = await fetch(this.getTargetUrl('/api/finance/vouchers/save'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'X-Database-Context': this.getActiveDb()
+        },
         body: JSON.stringify(data)
       });
       return await res.json();
@@ -354,7 +362,9 @@ export class LocalSqlAdapter implements IFinancialRepository {
 
   async getCheques(): Promise<ChequeItem[]> {
     try {
-      const res = await fetch('/api/finance/cheques');
+      const res = await fetch(this.getTargetUrl('/api/finance/cheques'), {
+        headers: { 'Accept': 'application/json', 'X-Database-Context': this.getActiveDb() }
+      });
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) return data;
@@ -391,8 +401,8 @@ export class LocalSqlAdapter implements IFinancialRepository {
     }
   }
 
-  async getJournals(): Promise<JournalEntryItem[]> {
-    const targetUrl = this.getTargetUrl('/api/finance/journals');
+  async getJournals(force: boolean = false): Promise<JournalEntryItem[]> {
+    const targetUrl = this.getTargetUrl(`/api/finance/journals${force ? '?force=true' : ''}`);
     let backendJournals: JournalEntryItem[] = [];
     try {
       const res = await fetch(targetUrl, {
