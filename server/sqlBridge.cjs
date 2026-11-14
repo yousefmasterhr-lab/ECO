@@ -4123,6 +4123,47 @@ app.post(['/api/finance/journals/save', '/api/financial/vouchers', '/api/finance
   }
 });
 
+app.delete(['/api/finance/journals/:id', '/api/financial/vouchers/:id', '/api/finance/vouchers/:id'], async (req, res) => {
+  try {
+    const rawId = req.params.id;
+    const noteNo = parseInt(String(rawId).replace(/^JV-/, '').trim(), 10);
+    if (!noteNo || isNaN(noteNo)) {
+      return res.status(400).json({ success: false, error: 'رقم السند غير صالح للحذف' });
+    }
+    const targetDb = req.query.db || req.headers['x-database-context'] || req.headers['x-database-key'] || req.targetDb || process.env.DB_NAME || 'MK_Khalil_Db_2026';
+    const pool = await getPool(targetDb);
+    const tx = new sql.Transaction(pool);
+    await tx.begin();
+    try {
+      const delDetails = new sql.Request(tx);
+      delDetails.input('Note_No', sql.Int, noteNo);
+      await delDetails.query(`DELETE FROM [${targetDb}].dbo.GeneralLedger_Details WHERE Note_No = @Note_No`);
+
+      const delHead = new sql.Request(tx);
+      delHead.input('Note_No', sql.Int, noteNo);
+      await delHead.query(`DELETE FROM [${targetDb}].dbo.GeneralLedger_Head WHERE Note_No = @Note_No`);
+
+      await tx.commit();
+      console.log(`[SQL Bridge] Deleted Journal Voucher #${noteNo} from [${targetDb}]`);
+
+      // Invalidate caches
+      if (typeof cachedAccountsByDb !== 'undefined') {
+        cachedAccountsByDb.clear();
+      }
+      const addedIdx = addedJournals.findIndex(j => Number(j.noteNo) === noteNo);
+      if (addedIdx !== -1) addedJournals.splice(addedIdx, 1);
+
+      res.json({ success: true, message: `تم حذف القيد رقم ${noteNo} بنجاح من قاعدة البيانات المركزية` });
+    } catch (txErr) {
+      try { await tx.rollback(); } catch (_) {}
+      throw txErr;
+    }
+  } catch (err) {
+    console.error('[SQL Bridge Error] deleteJournal:', err.message);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 app.get(['/api/financial/databases', '/api/finance/databases'], async (req, res) => {
   try {
     const fleet = [

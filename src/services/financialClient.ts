@@ -250,19 +250,11 @@ export class FinancialClient {
         return await res.json();
       }
       const errData = await res.json().catch(() => ({}));
-      if (errData.error) throw new Error(errData.error);
+      throw new Error(errData.error || `فشل تسجيل وترحيل القيد في قاعدة البيانات المركزية (رمز الخطأ: ${res.status}).`);
     } catch (e: any) {
-      if (e.message && !e.message.includes('fetch')) {
-        throw e;
-      }
+      console.error('[financialClient] saveAndPostVoucher error:', e);
+      throw new Error(e.message || 'فشل الاتصال بقاعدة البيانات المركزية لترحيل القيد المحاسبي.');
     }
-
-    // Offline / Local Simulation Success
-    return {
-      success: true,
-      noteNo: payload.noteNo,
-      message: `تم حفظ وترحيل سند قيد اليومية رقم [#${payload.noteNo}] محلياً في قاعدة [${this.activeDatabaseKey}]. القيد متوازن ومطابق بنسبة 100%.`,
-    };
   }
 
   private buildTreeFromFlatAccounts(accounts: any[]): any[] {

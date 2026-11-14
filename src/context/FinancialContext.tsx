@@ -138,6 +138,12 @@ export const FinancialProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   // Listen to Factory mode changes
   useEffect(() => {
+    // Purge legacy local ghost journal cache to guarantee 100% database source of truth
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem('eco_local_posted_journals');
+      } catch {}
+    }
     return FinancialRepositoryFactory.subscribe(newMode => {
       setMode(newMode);
     });

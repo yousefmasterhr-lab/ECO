@@ -446,50 +446,7 @@ export const HighDensityJournalVoucherGrid: React.FC<HighDensityGridProps> = ({
         lines,
       });
 
-      // Synchronize to persistent local storage for instant reactive UI display without manual refresh
-      try {
-        const localSaved = typeof window !== 'undefined' ? localStorage.getItem('eco_local_posted_journals') : null;
-        const parsed = localSaved ? JSON.parse(localSaved) : [];
-        const newVoucherEntry = {
-          id: `JV-${result.noteNo}`,
-          noteNo: result.noteNo,
-          entryNo: result.noteNo,
-          noteDate,
-          entryDate: noteDate,
-          description: generalDescription,
-          generalDescription,
-          debitTotal: totalDebit.toNumber(),
-          totalDebit: totalDebit.toNumber(),
-          creditTotal: totalCredit.toNumber(),
-          totalCredit: totalCredit.toNumber(),
-          netText: tafqeetSentence,
-          entryName: creatorName,
-          status: 'POSTED',
-          postedStatus: 'POSTED',
-          lines: lines.map((l) => ({
-            id: `line-${result.noteNo}-${l.sr}`,
-            lineNo: l.sr,
-            sr: l.sr,
-            accountCode: l.level5Id,
-            level5Id: l.level5Id,
-            accountName: l.level5NameAr,
-            level5NameAr: l.level5NameAr,
-            debit: Number(l.debit) || 0,
-            credit: Number(l.credit) || 0,
-            costCenterCode: l.costcenterId,
-            costCenterName: l.costcenterNameAr,
-            costcenterId: l.costcenterId,
-            costcenterNameAr: l.costcenterNameAr,
-            description: l.description,
-            lineNotes: l.description,
-          })),
-          timestamp: new Date().toISOString(),
-        };
-        const updatedJournals = [newVoucherEntry, ...parsed.filter((j: any) => Number(j.noteNo) !== Number(result.noteNo))];
-        localStorage.setItem('eco_local_posted_journals', JSON.stringify(updatedJournals));
-      } catch (cacheErr) {
-        console.warn('[HighDensityGrid] Local cache sync error:', cacheErr);
-      }
+
 
       setSuccessBanner(result.message);
 

@@ -410,42 +410,18 @@ export class LocalSqlAdapter implements IFinancialRepository {
       console.warn('[LocalSqlAdapter] جاري إعادة الاتصال بجسر البيانات المالي... (/api/finance/journals:', err?.message || 'Failed to fetch', ')');
     }
 
-    // Merge persistent local user-posted journals
-    try {
-      const localSaved = typeof window !== 'undefined' ? localStorage.getItem('eco_local_posted_journals') : null;
-      if (localSaved) {
-        const parsed: JournalEntryItem[] = JSON.parse(localSaved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          const existingNos = new Set(backendJournals.map(j => Number(j.noteNo || (j as any).entryNo)));
-          const uniqueLocal = parsed.filter(j => !existingNos.has(Number(j.noteNo || (j as any).entryNo)));
-          return [...uniqueLocal, ...backendJournals];
-        }
-      }
-    } catch {}
-
+    // Database is the sole source of truth - no local ghost injections
     return backendJournals;
   }
 
   async getJournalLines(noteNo: number): Promise<JournalLineItem[]> {
-    // 1. Check local saved journals first
-    try {
-      const localSaved = typeof window !== 'undefined' ? localStorage.getItem('eco_local_posted_journals') : null;
-      if (localSaved) {
-        const parsed: JournalEntryItem[] = JSON.parse(localSaved);
-        const match = parsed.find(j => Number(j.noteNo) === Number(noteNo));
-        if (match && match.lines && match.lines.length > 0) {
-          return match.lines;
-        }
-      }
-    } catch {}
-
     try {
       const cleanId = String(noteNo).replace(/^JV-/, '').trim();
-      let res = await fetch(`/api/finance/journals/${cleanId}/details`, {
+      let res = await fetch(this.getTargetUrl(`/api/finance/journals/${cleanId}/details`), {
         headers: { 'X-Database-Context': this.getActiveDb() }
       });
       if (!res.ok) {
-        res = await fetch(`/api/finance/journals/${cleanId}/lines`, {
+        res = await fetch(this.getTargetUrl(`/api/finance/journals/${cleanId}/lines`), {
           headers: { 'X-Database-Context': this.getActiveDb() }
         });
       }
@@ -502,38 +478,11 @@ export class LocalSqlAdapter implements IFinancialRepository {
     }
 
     if (!savedJournal) {
-      let currentUserName = 'يوسف حجازي';
-      try {
-        const session = localStorage.getItem('eco_auth_session');
-        if (session) {
-          const u = JSON.parse(session);
-          if (u.nameAr) currentUserName = u.nameAr;
-        }
-      } catch {}
-
-      const noteNo = data.noteNo || Math.floor(537 + Math.random() * 500);
-      savedJournal = {
-        id: `JV-${noteNo}`,
-        noteNo,
-        noteDate: data.noteDate || new Date().toISOString().split('T')[0],
-        description: data.description,
-        debitTotal: debitSum,
-        creditTotal: creditSum,
-        netText: data.netText || '',
-        entryName: (data as any).entryName || currentUserName,
-        lines: data.lines,
-        status: 'POSTED',
-        timestamp: new Date().toISOString()
+      return {
+        success: false,
+        error: 'فشل حفظ وترحيل القيد إلى قاعدة البيانات المركزية. يرجى التحقق من اتصال السيرفر.'
       };
     }
-
-    // Persist in localStorage so it appears instantly and survives page reloads
-    try {
-      const localSaved = localStorage.getItem('eco_local_posted_journals');
-      const list: JournalEntryItem[] = localSaved ? JSON.parse(localSaved) : [];
-      const updatedList = [savedJournal, ...list.filter(j => Number(j.noteNo) !== Number(savedJournal!.noteNo))];
-      localStorage.setItem('eco_local_posted_journals', JSON.stringify(updatedList));
-    } catch {}
 
     return { success: true, journal: savedJournal };
   }
