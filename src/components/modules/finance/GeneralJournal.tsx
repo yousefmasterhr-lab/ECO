@@ -25,7 +25,8 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Layers,
-  Sparkles
+  Sparkles,
+  User
 } from 'lucide-react';
 
 /**
@@ -401,6 +402,7 @@ export const GeneralJournal: React.FC = () => {
                 <th className="py-3 px-3.5 text-start w-10"></th>
                 <th className="py-3 px-3.5 text-start font-bold">{t('رقم القيد', 'Voucher No.')}</th>
                 <th className="py-3 px-3.5 text-start font-bold">{t('تاريخ الترحيل', 'Date')}</th>
+                <th className="py-3 px-3.5 text-start font-bold">{t('مدخل القيد', 'Entered By')}</th>
                 <th className="py-3 px-3.5 text-start font-bold">{t('البيان العام للقيد', 'General Memo')}</th>
                 <th className="py-3 px-3.5 text-end font-bold">{t('إجمالي المدين', 'Total Debit')}</th>
                 <th className="py-3 px-3.5 text-end font-bold">{t('إجمالي الدائن', 'Total Credit')}</th>
@@ -411,7 +413,7 @@ export const GeneralJournal: React.FC = () => {
             <tbody className="divide-y divide-[#E0D9CB]/50 dark:divide-[#243628]/50">
               {filteredJournals.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-8 text-center text-[#5C665E] dark:text-[#8FA392]">
+                  <td colSpan={9} className="py-8 text-center text-[#5C665E] dark:text-[#8FA392]">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <Scale className="w-8 h-8 opacity-30 text-[#059669]" />
                       <p>{t('لا توجد قيود يومية مسجلة تطابق معايير البحث.', 'No journal entries match criteria.')}</p>
@@ -444,6 +446,17 @@ export const GeneralJournal: React.FC = () => {
 
                         <td className="py-3 px-3.5 font-mono text-[#5C665E] dark:text-[#8FA392] whitespace-nowrap">
                           {journal.noteDate}
+                        </td>
+
+                        <td className="py-3 px-3.5 whitespace-nowrap">
+                          <div className="flex items-center gap-1.5">
+                            <span className="p-1 rounded-md bg-[#059669]/10 text-[#059669] dark:text-[#34D399]">
+                              <User className="w-3.5 h-3.5" />
+                            </span>
+                            <span className="font-semibold text-xs text-[#1A241C] dark:text-[#F3EFE6]">
+                              {journal.entryName || (journal as any).Entry_Name || t('النظام المالي', 'System')}
+                            </span>
+                          </div>
                         </td>
 
                         <td className="py-3 px-3.5 font-semibold text-[#1A241C] dark:text-[#F3EFE6] max-w-sm truncate">
@@ -486,7 +499,7 @@ export const GeneralJournal: React.FC = () => {
                         return (
                           <tr>
                             <td
-                              colSpan={8}
+                              colSpan={9}
                               className="p-4 bg-[#F3EFE6]/40 dark:bg-[#0E1610]/40 border-b border-[#E0D9CB] dark:border-[#243628]"
                             >
                               <motion.div
@@ -504,10 +517,20 @@ export const GeneralJournal: React.FC = () => {
                                     </p>
                                   </div>
 
-                                  <div className="text-[11px] text-[#5C665E] dark:text-[#8FA392]">
-                                    <span className="font-inter tabular-nums font-bold text-[#D99B26] dark:text-[#EBB34D]">
-                                      {formatNumber(activeLines.length || (isLoading ? 0 : 2))}
-                                    </span> {t('أسطر محاسبية متزنة', 'balanced lines')}
+                                  <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white dark:bg-[#1A241C] border border-[#E0D9CB] dark:border-[#243628] text-xs">
+                                      <User className="w-3.5 h-3.5 text-[#059669] dark:text-[#34D399]" />
+                                      <span className="text-[11px] text-[#5C665E] dark:text-[#8FA392]">{t('مدخل الحركة:', 'Creator:')}</span>
+                                      <span className="font-bold text-[#1A241C] dark:text-[#F3EFE6]">
+                                        {journal.entryName || (journal as any).Entry_Name || t('النظام المالي', 'System')}
+                                      </span>
+                                    </div>
+
+                                    <div className="text-[11px] text-[#5C665E] dark:text-[#8FA392]">
+                                      <span className="font-inter tabular-nums font-bold text-[#D99B26] dark:text-[#EBB34D]">
+                                        {formatNumber(activeLines.length || (isLoading ? 0 : 2))}
+                                      </span> {t('أسطر محاسبية متزنة', 'balanced lines')}
+                                    </div>
                                   </div>
                                 </div>
 

@@ -1,9 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import { useLanguage } from '../../../context/LanguageContext';
 import { useFinancial } from '../../../context/FinancialContext';
+import { useAuth } from '../../../context/AuthContext';
 import { JournalLineItem, JournalPayload } from '../../../services/database/types';
 import { tafqeet } from '../../../utils/tafqeet';
 import { Modal, formatCurrency, toWesternDigits } from '@erp/ui-system';
+import { LuxurySelect, LuxurySelectOption } from '../../common/LuxurySelect';
+import { toast } from '../../common/Toast';
 import {
   FileSpreadsheet,
   Plus,
@@ -22,6 +25,7 @@ interface JournalEntryModalProps {
 
 export const JournalEntryModal: React.FC<JournalEntryModalProps> = ({ onClose, onSuccess }) => {
   const { t } = useLanguage();
+  const { user } = useAuth();
   const { accounts, costCenters, saveJournal, journals } = useFinancial();
 
   // Extract flat Level 5 leaf accounts
@@ -54,6 +58,35 @@ export const JournalEntryModal: React.FC<JournalEntryModalProps> = ({ onClose, o
   const [entryType, setEntryType] = useState('قيد يومية عام');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Form options mapped for LuxurySelect
+  const entryTypeOptions: LuxurySelectOption[] = useMemo(() => [
+    { value: 'قيد يومية عام', label: 'قيد يومية عام (General Journal)' },
+    { value: 'قيد تسوية وإقفال', label: 'قيد تسوية وإقفال (Adjustment)' },
+    { value: 'قيد إثبات استحقاق', label: 'قيد إثبات استحقاق (Accrual)' },
+    { value: 'قيد افتتاح دورة مالية', label: 'قيد افتتاح دورة مالية (Opening)' },
+  ], []);
+
+  const accountOptions: LuxurySelectOption[] = useMemo(() => {
+    return leafAccounts.map(acc => ({
+      value: acc.code,
+      code: acc.code,
+      label: acc.nameAr,
+      subLabel: `كود الحساب: ${acc.code}`,
+    }));
+  }, [leafAccounts]);
+
+  const costCenterOptions: LuxurySelectOption[] = useMemo(() => {
+    return costCenters.map(cc => {
+      const code = cc.code || cc.Costcenter_ID || cc.id || '';
+      const name = cc.nameAr || cc.Costcenter_Name_A || '';
+      return {
+        value: String(cc.id || cc.Costcenter_ID || code),
+        code: code === '0' || !code ? undefined : code,
+        label: code === '0' || !code ? 'عام / غير مخصص' : name,
+      };
+    });
+  }, [costCenters]);
 
   // Initial balanced 2-line template
   const [lines, setLines] = useState<JournalLineItem[]>([
@@ -221,13 +254,15 @@ export const JournalEntryModal: React.FC<JournalEntryModalProps> = ({ onClose, o
 
     setIsSubmitting(true);
     try {
-      const payload: JournalPayload = {
+      const currentUserName = user?.nameAr || 'يوسف حجازي';
+      const payload: JournalPayload & { entryName?: string } = {
         noteNo,
         noteDate,
         description: `${entryType}: ${generalMemo.trim()}`,
         debitTotal: Math.round(debitTotal * 100) / 100,
         creditTotal: Math.round(creditTotal * 100) / 100,
         netText: tafqeetText,
+        entryName: currentUserName,
         lines: lines.map(l => ({
           ...l,
           description: l.description.trim() || generalMemo.trim(),
@@ -236,6 +271,11 @@ export const JournalEntryModal: React.FC<JournalEntryModalProps> = ({ onClose, o
 
       const result = await saveJournal(payload);
       if (result.success) {
+        toast.success(
+          t('تم تسجيل وترحيل القيد بنجاح', 'Voucher Posted Successfully'),
+          t(`سند قيد اليومية رقم [#${noteNo}] تم ترحيله وحفظه في الأستاذ العام بنجاح.`, `Voucher #${noteNo} posted to GL.`),
+          5000
+        );
         onSuccess?.();
         onClose();
       } else {
@@ -315,16 +355,12 @@ export const JournalEntryModal: React.FC<JournalEntryModalProps> = ({ onClose, o
             <label className="block text-xs font-bold text-[#5C665E] dark:text-[#8FA392] mb-1.5">
               {t('نوع القيد المحاسبي', 'Voucher Type')}
             </label>
-            <select
+            <LuxurySelect
               value={entryType}
-              onChange={e => setEntryType(e.target.value)}
-              className="w-full px-3 py-2 text-xs font-semibold rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#17231A] text-[#1A241C] dark:text-[#F3EFE6] focus:outline-hidden focus:border-[#EBB34D]"
-            >
-              <option value="قيد يومية عام">قيد يومية عام (General Journal)</option>
-              <option value="قيد تسوية وإقفال">قيد تسوية وإقفال (Adjustment)</option>
-              <option value="قيد إثبات استحقاق">قيد إثبات استحقاق (Accrual)</option>
-              <option value="قيد افتتاح دورة مالية">قيد افتتاح دورة مالية (Opening)</option>
-            </select>
+              onChange={val => setEntryType(val)}
+              options={entryTypeOptions}
+              searchable={false}
+            />
           </div>
 
           <div>
@@ -378,18 +414,18 @@ export const JournalEntryModal: React.FC<JournalEntryModalProps> = ({ onClose, o
             </button>
           </div>
 
-          <div className="rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#121B14] overflow-hidden">
-            <div className="overflow-x-auto">
+          <div className="rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#121B14] overflow-visible">
+            <div className="overflow-x-visible">
               <table className="w-full text-start text-xs">
                 <thead>
                   <tr className="border-b border-[#E0D9CB] dark:border-[#243628] bg-[#F3EFE6] dark:bg-[#17231A] text-[#5C665E] dark:text-[#8FA392]">
                     <th className="py-2.5 px-3 text-start w-10">#</th>
-                    <th className="py-2.5 px-3 text-start min-w-[220px]">
+                    <th className="py-2.5 px-3 text-start min-w-[260px]">
                       {t('الحساب المحاسبي (المستوى 5)', 'Level 5 Account')} *
                     </th>
                     <th className="py-2.5 px-3 text-end w-32">{t('مدين (Debit)', 'Debit')}</th>
                     <th className="py-2.5 px-3 text-end w-32">{t('دائن (Credit)', 'Credit')}</th>
-                    <th className="py-2.5 px-3 text-start min-w-[170px]">{t('مركز التكلفة', 'Cost Center')}</th>
+                    <th className="py-2.5 px-3 text-start min-w-[190px]">{t('مركز التكلفة', 'Cost Center')}</th>
                     <th className="py-2.5 px-3 text-start min-w-[180px]">{t('البيان السطري', 'Line Memo')}</th>
                     <th className="py-2.5 px-2 text-center w-20">{t('إجراء', 'Action')}</th>
                   </tr>
@@ -406,17 +442,14 @@ export const JournalEntryModal: React.FC<JournalEntryModalProps> = ({ onClose, o
 
                       {/* Account Selector */}
                       <td className="py-2 px-2">
-                        <select
+                        <LuxurySelect
                           value={line.level5Id}
-                          onChange={e => handleLineChange(index, 'level5Id', e.target.value)}
-                          className="w-full px-2.5 py-1.5 text-xs font-semibold rounded-lg border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#17231A] text-[#1A241C] dark:text-[#F3EFE6] focus:outline-hidden focus:border-[#EBB34D]"
-                        >
-                          {leafAccounts.map(acc => (
-                            <option key={acc.code} value={acc.code}>
-                              {acc.code} - {acc.nameAr}
-                            </option>
-                          ))}
-                        </select>
+                          onChange={val => handleLineChange(index, 'level5Id', val)}
+                          options={accountOptions}
+                          placeholder={t('اختر الحساب...', 'Select account...')}
+                          searchPlaceholder={t('ابحث بالكود أو اسم الحساب...', 'Search by code or name...')}
+                          compact
+                        />
                       </td>
 
                       {/* Debit */}
@@ -451,17 +484,14 @@ export const JournalEntryModal: React.FC<JournalEntryModalProps> = ({ onClose, o
 
                       {/* Cost Center */}
                       <td className="py-2 px-2">
-                        <select
-                          value={line.costcenterId}
-                          onChange={e => handleLineChange(index, 'costcenterId', e.target.value)}
-                          className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-[#E0D9CB] dark:border-[#243628] bg-white dark:bg-[#17231A] text-[#1A241C] dark:text-[#F3EFE6] focus:outline-hidden focus:border-[#EBB34D]"
-                        >
-                          {costCenters.map(cc => (
-                            <option key={cc.id || cc.Costcenter_ID} value={cc.id || cc.Costcenter_ID}>
-                              {cc.nameAr || cc.Costcenter_Name_A}
-                            </option>
-                          ))}
-                        </select>
+                        <LuxurySelect
+                          value={line.costcenterId || ''}
+                          onChange={val => handleLineChange(index, 'costcenterId', val)}
+                          options={costCenterOptions}
+                          placeholder={t('مركز التكلفة...', 'Cost center...')}
+                          searchPlaceholder={t('بحث عن مركز تكلفة...', 'Search cost center...')}
+                          compact
+                        />
                       </td>
 
                       {/* Line Memo */}

@@ -22,6 +22,9 @@ import {
 } from 'lucide-react';
 import { FinancialClient, ClientVoucherLine, DatabaseFleetItem } from '../../../services/financialClient';
 import { tafqeet } from '../../../utils/tafqeet';
+import { LuxurySelect, LuxurySelectOption } from '../../common/LuxurySelect';
+import { toast } from '../../common/Toast';
+import { useAuth } from '../../../context/AuthContext';
 
 interface HighDensityGridProps {
   onSaved?: (noteNo: number) => void;
@@ -52,6 +55,7 @@ export const HighDensityJournalVoucherGrid: React.FC<HighDensityGridProps> = ({
   initialVoucher,
 }) => {
   const financialClient = FinancialClient.getInstance();
+  const { user } = useAuth();
 
   // Multi-database fleet state
   const [databases, setDatabases] = useState<DatabaseFleetItem[]>([]);
@@ -65,11 +69,27 @@ export const HighDensityJournalVoucherGrid: React.FC<HighDensityGridProps> = ({
   const [generalDescription, setGeneralDescription] = useState<string>(
     initialVoucher?.description || 'قيد تسوية وإقفال عام'
   );
-  const [entryName] = useState<string>('مدير النظام / رئيس الحسابات');
+  const [entryName] = useState<string>(user?.nameAr || 'مدير النظام / رئيس الحسابات');
 
   // Accounts & Lookups
   const [accounts, setAccounts] = useState<AccountOption[]>([]);
   const [costCenters, setCostCenters] = useState<CostCenterOption[]>([]);
+
+  // Luxury Select Options
+  const costCenterOptions: LuxurySelectOption[] = useMemo(() => {
+    return costCenters.map((cc) => ({
+      value: cc.code,
+      label: cc.code === '0' ? 'عام / غير مخصص' : `${cc.code} - ${cc.nameAr}`,
+      code: cc.code !== '0' ? cc.code : undefined,
+    }));
+  }, [costCenters]);
+
+  const databaseOptions: LuxurySelectOption[] = useMemo(() => {
+    return databases.map((db) => ({
+      value: db.name,
+      label: `${db.displayNameAr} (${db.name})`,
+    }));
+  }, [databases]);
 
   // Grid Lines State
   const [lines, setLines] = useState<ClientVoucherLine[]>(() => {
@@ -416,16 +436,70 @@ export const HighDensityJournalVoucherGrid: React.FC<HighDensityGridProps> = ({
 
     setIsSubmitting(true);
     try {
+      const creatorName = user?.nameAr || entryName;
       const result = await financialClient.saveAndPostVoucher({
         noteNo,
         noteDate,
         description: generalDescription,
-        entryName,
+        entryName: creatorName,
         noteNetText: tafqeetSentence,
         lines,
       });
 
+      // Synchronize to persistent local storage for instant reactive UI display without manual refresh
+      try {
+        const localSaved = typeof window !== 'undefined' ? localStorage.getItem('eco_local_posted_journals') : null;
+        const parsed = localSaved ? JSON.parse(localSaved) : [];
+        const newVoucherEntry = {
+          id: `JV-${result.noteNo}`,
+          noteNo: result.noteNo,
+          entryNo: result.noteNo,
+          noteDate,
+          entryDate: noteDate,
+          description: generalDescription,
+          generalDescription,
+          debitTotal: totalDebit.toNumber(),
+          totalDebit: totalDebit.toNumber(),
+          creditTotal: totalCredit.toNumber(),
+          totalCredit: totalCredit.toNumber(),
+          netText: tafqeetSentence,
+          entryName: creatorName,
+          status: 'POSTED',
+          postedStatus: 'POSTED',
+          lines: lines.map((l) => ({
+            id: `line-${result.noteNo}-${l.sr}`,
+            lineNo: l.sr,
+            sr: l.sr,
+            accountCode: l.level5Id,
+            level5Id: l.level5Id,
+            accountName: l.level5NameAr,
+            level5NameAr: l.level5NameAr,
+            debit: Number(l.debit) || 0,
+            credit: Number(l.credit) || 0,
+            costCenterCode: l.costcenterId,
+            costCenterName: l.costcenterNameAr,
+            costcenterId: l.costcenterId,
+            costcenterNameAr: l.costcenterNameAr,
+            description: l.description,
+            lineNotes: l.description,
+          })),
+          timestamp: new Date().toISOString(),
+        };
+        const updatedJournals = [newVoucherEntry, ...parsed.filter((j: any) => Number(j.noteNo) !== Number(result.noteNo))];
+        localStorage.setItem('eco_local_posted_journals', JSON.stringify(updatedJournals));
+      } catch (cacheErr) {
+        console.warn('[HighDensityGrid] Local cache sync error:', cacheErr);
+      }
+
       setSuccessBanner(result.message);
+
+      // Bottom-left toast notification on posting
+      toast.success(
+        'تم تسجيل وترحيل القيد بنجاح',
+        `تم ترحيل سند قيد اليومية رقم [#${result.noteNo}] بواسطة (${creatorName}) بنجاح إلى الأستاذ العام وتحديث شجرة الحسابات فورياً.`,
+        5000
+      );
+
       if (onSaved) onSaved(result.noteNo);
 
       // Auto-advance next Note No
@@ -452,18 +526,15 @@ export const HighDensityJournalVoucherGrid: React.FC<HighDensityGridProps> = ({
           {/* Database Switcher */}
           <div className="flex items-center gap-2 bg-[#F3EFE6] dark:bg-[#1A241C] px-3 py-1.5 rounded-xl border border-[#E0D9CB] dark:border-[#243628]">
             <Database className="w-3.5 h-3.5 text-[#D99B26] dark:text-[#EBB34D]" />
-            <span className="text-[#5C665E] dark:text-[#8FA392] font-medium">قاعدة البيانات:</span>
-            <select
+            <span className="text-[#5C665E] dark:text-[#8FA392] font-medium whitespace-nowrap">قاعدة البيانات:</span>
+            <LuxurySelect
               value={activeDbKey}
-              onChange={(e) => handleDatabaseChange(e.target.value)}
-              className="bg-transparent text-[#1A241C] dark:text-[#F3EFE6] font-bold text-xs border-none outline-none cursor-pointer"
-            >
-              {databases.map((db) => (
-                <option key={db.name} value={db.name} className="bg-white dark:bg-[#141E16] text-[#1A241C] dark:text-[#F3EFE6]">
-                  {db.displayNameAr} ({db.name})
-                </option>
-              ))}
-            </select>
+              onChange={(val) => handleDatabaseChange(val)}
+              options={databaseOptions}
+              compact
+              searchable={false}
+              className="w-52"
+            />
           </div>
         </div>
 
@@ -654,24 +725,19 @@ export const HighDensityJournalVoucherGrid: React.FC<HighDensityGridProps> = ({
                   </td>
 
                   {/* Cost Center */}
-                  <td className="p-1.5 border-l border-[#E0D9CB]/60 dark:border-[#243628]/60">
-                    <select
+                  <td className="p-1.5 border-l border-[#E0D9CB]/60 dark:border-[#243628]/60 min-w-[150px]">
+                    <LuxurySelect
                       value={line.costcenterId}
-                      onChange={(e) => {
-                        const val = e.target.value;
+                      onChange={(val) => {
                         const match = costCenters.find((c) => c.code === val);
                         updateLine(idx, 'costcenterId', val);
                         if (match) updateLine(idx, 'costcenterNameAr', match.nameAr);
                       }}
-                      onFocus={() => setFocusedCell({ row: idx, col: 'costcenter' })}
-                      className="w-full bg-white dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] rounded-lg px-2.5 py-1.5 text-[#1A241C] dark:text-[#F3EFE6] font-sans font-medium outline-none focus:border-[#059669] cursor-pointer shadow-2xs"
-                    >
-                      {costCenters.map((cc) => (
-                        <option key={cc.code} value={cc.code} className="bg-white dark:bg-[#141E16] text-[#1A241C] dark:text-[#F3EFE6]">
-                          {cc.code === '0' ? 'عام' : `${cc.code} - ${cc.nameAr}`}
-                        </option>
-                      ))}
-                    </select>
+                      options={costCenterOptions}
+                      placeholder="مركز التكلفة..."
+                      searchPlaceholder="بحث في مراكز التكلفة..."
+                      compact
+                    />
                   </td>
 
                   {/* Debit Amount */}

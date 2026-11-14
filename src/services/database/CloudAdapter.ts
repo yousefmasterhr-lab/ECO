@@ -367,10 +367,33 @@ export class CloudAdapter implements IFinancialRepository {
   }
 
   async getJournals(): Promise<JournalEntryItem[]> {
-    return this.inMemoryJournals;
+    let combined = [...this.inMemoryJournals];
+    try {
+      const localSaved = typeof window !== 'undefined' ? localStorage.getItem('eco_local_posted_journals') : null;
+      if (localSaved) {
+        const parsed: JournalEntryItem[] = JSON.parse(localSaved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const existingNos = new Set(combined.map(j => Number(j.noteNo || (j as any).entryNo)));
+          const uniqueLocal = parsed.filter(j => !existingNos.has(Number(j.noteNo || (j as any).entryNo)));
+          combined = [...uniqueLocal, ...combined];
+        }
+      }
+    } catch {}
+    return combined;
   }
 
   async getJournalLines(noteNo: number): Promise<JournalLineItem[]> {
+    try {
+      const localSaved = typeof window !== 'undefined' ? localStorage.getItem('eco_local_posted_journals') : null;
+      if (localSaved) {
+        const parsed: JournalEntryItem[] = JSON.parse(localSaved);
+        const match = parsed.find(j => Number(j.noteNo) === Number(noteNo));
+        if (match && match.lines && match.lines.length > 0) {
+          return match.lines;
+        }
+      }
+    } catch {}
+
     const match = this.inMemoryJournals.find(j => Number(j.noteNo) === Number(noteNo));
     if (match && match.lines && match.lines.length > 0) {
       return match.lines;
@@ -389,21 +412,40 @@ export class CloudAdapter implements IFinancialRepository {
       };
     }
 
+    let currentUserName = 'يوسف حجازي';
+    try {
+      const session = localStorage.getItem('eco_auth_session');
+      if (session) {
+        const u = JSON.parse(session);
+        if (u.nameAr) currentUserName = u.nameAr;
+      }
+    } catch {}
+
+    const noteNo = data.noteNo || Math.floor(537 + Math.random() * 500);
+
     const newJournal: JournalEntryItem = {
-      id: `JV-${Date.now()}`,
-      noteNo: data.noteNo || Math.floor(5000 + Math.random() * 5000),
-      noteDate: data.noteDate,
+      id: `JV-${noteNo}`,
+      noteNo,
+      noteDate: data.noteDate || new Date().toISOString().split('T')[0],
       description: data.description,
       debitTotal: debitSum,
       creditTotal: creditSum,
       netText: data.netText,
-      entryName: 'م. أحمد مصطفى',
+      entryName: (data as any).entryName || currentUserName,
       lines: data.lines,
       status: 'POSTED',
       timestamp: new Date().toISOString()
     };
 
     this.inMemoryJournals.unshift(newJournal);
+
+    try {
+      const localSaved = localStorage.getItem('eco_local_posted_journals');
+      const list: JournalEntryItem[] = localSaved ? JSON.parse(localSaved) : [];
+      const updatedList = [newJournal, ...list.filter(j => Number(j.noteNo) !== Number(newJournal.noteNo))];
+      localStorage.setItem('eco_local_posted_journals', JSON.stringify(updatedList));
+    } catch {}
+
     return { success: true, journal: newJournal };
   }
 
