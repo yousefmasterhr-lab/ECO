@@ -1,4 +1,5 @@
 import { IFinancialRepository } from './FinancialRepository';
+import { getApiBaseUrl } from '../apiClient';
 import {
   AccountNode,
   CostCenterItem,
@@ -412,41 +413,72 @@ export class CloudAdapter implements IFinancialRepository {
       };
     }
 
-    let currentUserName = 'يوسف حجازي';
+    const targetUrl = `${getApiBaseUrl()}/api/finance/journals/save`;
+    let savedJournal: JournalEntryItem | null = null;
+
     try {
-      const session = localStorage.getItem('eco_auth_session');
-      if (session) {
-        const u = JSON.parse(session);
-        if (u.nameAr) currentUserName = u.nameAr;
+      const res = await fetch(targetUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'X-Database-Context': 'MK_Khalil_Db_2026'
+        },
+        body: JSON.stringify(data)
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.journal) {
+          savedJournal = json.journal;
+        } else if (json.error) {
+          return { success: false, error: json.error };
+        }
+      } else {
+        const errJson = await res.json().catch(() => ({}));
+        if (errJson.error) {
+          return { success: false, error: errJson.error };
+        }
       }
-    } catch {}
+    } catch (err: any) {
+      console.warn('[CloudAdapter] saveJournal remote fetch failed:', err?.message);
+    }
 
-    const noteNo = data.noteNo || Math.floor(537 + Math.random() * 500);
+    if (!savedJournal) {
+      let currentUserName = 'يوسف حجازي';
+      try {
+        const session = localStorage.getItem('eco_auth_session');
+        if (session) {
+          const u = JSON.parse(session);
+          if (u.nameAr) currentUserName = u.nameAr;
+        }
+      } catch {}
 
-    const newJournal: JournalEntryItem = {
-      id: `JV-${noteNo}`,
-      noteNo,
-      noteDate: data.noteDate || new Date().toISOString().split('T')[0],
-      description: data.description,
-      debitTotal: debitSum,
-      creditTotal: creditSum,
-      netText: data.netText,
-      entryName: (data as any).entryName || currentUserName,
-      lines: data.lines,
-      status: 'POSTED',
-      timestamp: new Date().toISOString()
-    };
+      const noteNo = data.noteNo || Math.floor(537 + Math.random() * 500);
+      savedJournal = {
+        id: `JV-${noteNo}`,
+        noteNo,
+        noteDate: data.noteDate || new Date().toISOString().split('T')[0],
+        description: data.description,
+        debitTotal: debitSum,
+        creditTotal: creditSum,
+        netText: data.netText,
+        entryName: (data as any).entryName || currentUserName,
+        lines: data.lines,
+        status: 'POSTED',
+        timestamp: new Date().toISOString()
+      };
+    }
 
-    this.inMemoryJournals.unshift(newJournal);
+    this.inMemoryJournals.unshift(savedJournal);
 
     try {
       const localSaved = localStorage.getItem('eco_local_posted_journals');
       const list: JournalEntryItem[] = localSaved ? JSON.parse(localSaved) : [];
-      const updatedList = [newJournal, ...list.filter(j => Number(j.noteNo) !== Number(newJournal.noteNo))];
+      const updatedList = [savedJournal, ...list.filter(j => Number(j.noteNo) !== Number(savedJournal.noteNo))];
       localStorage.setItem('eco_local_posted_journals', JSON.stringify(updatedList));
     } catch {}
 
-    return { success: true, journal: newJournal };
+    return { success: true, journal: savedJournal };
   }
 
   // ==========================================

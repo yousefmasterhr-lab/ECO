@@ -488,10 +488,17 @@ export class LocalSqlAdapter implements IFinancialRepository {
         const json = await res.json();
         if (json.success && json.journal) {
           savedJournal = json.journal;
+        } else if (json.error) {
+          return { success: false, error: json.error };
+        }
+      } else {
+        const errJson = await res.json().catch(() => ({}));
+        if (errJson.error) {
+          return { success: false, error: errJson.error };
         }
       }
     } catch (err: any) {
-      console.warn('[LocalSqlAdapter] saveJournal remote fetch failed, saving to local ledger buffer:', err?.message);
+      console.warn('[LocalSqlAdapter] saveJournal remote fetch failed:', err?.message);
     }
 
     if (!savedJournal) {

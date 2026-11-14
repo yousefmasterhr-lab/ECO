@@ -1810,41 +1810,184 @@ async function getJournalLines(noteNo, targetDb = process.env.DB_NAME || 'MK_Kha
   return [];
 }
 
-function saveJournal(journalData) {
-  const debitSum = Number(journalData.debitTotal) || 0;
-  const creditSum = Number(journalData.creditTotal) || 0;
+async function saveJournal(journalData, targetDb = process.env.DB_NAME || 'MK_Khalil_Db_2026') {
+  targetDb = sanitizeDatabaseName(targetDb);
 
-  if (Math.abs(debitSum - creditSum) > 0.001) {
-    return {
-      success: false,
-      error: `القيد غير متزن محاسبياً! إجمالي المدين (${debitSum}) لا يتطابق مع إجمالي الدائن (${creditSum}).`
-    };
+  // 1. Normalize Payload (Supports both flat JournalPayload and nested { head, details })
+  const head = journalData.head || journalData;
+  const rawLines = journalData.details || journalData.lines || [];
+
+  let debitSum = 0;
+  let creditSum = 0;
+  const formattedLines = [];
+
+  for (let i = 0; i < rawLines.length; i++) {
+    const l = rawLines[i];
+    const d = Number(l.Debit ?? l.debit ?? 0);
+    const c = Number(l.Credit ?? l.credit ?? 0);
+    const acctCode = String(l.Level5_ID ?? l.accountId ?? l.accountCode ?? l.level5Id ?? '').trim().replace(/[^0-9]/g, '');
+
+    debitSum += d;
+    creditSum += c;
+
+    formattedLines.push({
+      sr: i + 1,
+      level5Id: acctCode ? Number(acctCode) : 1201001,
+      description: l.Description || l.description || l.lineNotes || head.Description || head.description || 'بند قيد محاسبي',
+      currencyId: Number(l.Currency_ID ?? l.currencyId ?? 1),
+      exchange: Number(l.Exchange ?? l.exchange ?? 1),
+      debit: d,
+      credit: c,
+      actualDebit: Number(l.Actual_Debit ?? l.actualDebit ?? d),
+      actualCredit: Number(l.Actual_Credit ?? l.actualCredit ?? c),
+      costcenterId: Number(l.Costcenter_ID ?? l.costcenterId ?? l.costCenterCode ?? 0),
+      analysisId: Number(l.Analysis_ID ?? l.analysisId ?? 0),
+      jobOrderNo: Number(l.Job_Order_No ?? l.jobOrderNo ?? 0),
+      analyse1: String(l.Analyse1 ?? l.analyse1 ?? '-'),
+      analyse2: String(l.Analyse2 ?? l.analyse2 ?? '-')
+    });
   }
 
-  const newJournal = {
-    id: `JV-${Date.now()}`,
-    noteNo: Number(journalData.noteNo) || Math.floor(5000 + Math.random() * 5000),
-    noteDate: journalData.noteDate || new Date().toISOString().split('T')[0],
-    description: journalData.description || 'سند قيد عام يدوي',
+  debitSum = Math.round(debitSum * 10000) / 10000;
+  creditSum = Math.round(creditSum * 10000) / 10000;
+
+  if (Math.abs(debitSum - creditSum) > 0.001) {
+    throw new Error(`القيد غير متزن محاسبياً! إجمالي المدين (${debitSum}) لا يتطابق مع إجمالي الدائن (${creditSum}).`);
+  }
+
+  // 2. Obtain SQL Server Connection Pool
+  const pool = await getPool(targetDb);
+
+  // 3. Resolve Next Sequential Note_No atomically from SQL Server
+  let targetNoteNo = Number(head.Note_No || head.noteNo || 0);
+  const maxRes = await pool.request().query(`SELECT ISNULL(MAX(Note_No), 0) + 1 AS nextNo FROM [${targetDb}].dbo.GeneralLedger_Head`);
+  const nextAvailableNo = Number(maxRes.recordset[0].nextNo);
+
+  if (!targetNoteNo || targetNoteNo <= 0) {
+    targetNoteNo = nextAvailableNo;
+  } else {
+    // If client supplied a noteNo, check whether it already exists in SQL Server
+    const chk = await pool.request().query(`SELECT COUNT(1) AS cnt FROM [${targetDb}].dbo.GeneralLedger_Head WHERE Note_No = ${targetNoteNo}`);
+    if (chk.recordset[0].cnt > 0) {
+      targetNoteNo = nextAvailableNo;
+    }
+  }
+
+  const noteDate = String(head.Note_Date || head.noteDate || new Date().toISOString().split('T')[0]).replace(/\//g, '-');
+  const description = String(head.Description || head.description || head.generalMemo || 'قيد يومية عام').trim();
+  const netText = String(head.Note_Net_Text || head.netText || head.tafqeet || '').trim();
+  const entryName = String(head.Entry_Name || head.entryName || 'يوسف حجازي').trim();
+  const entryId = Number(head.Entry_ID || head.entryId || 1);
+  const noteTypeId = Number(head.Note_Type_ID || head.noteTypeId || 201);
+  const journalType = Number(head.Journal_Type || head.journalType || 0);
+
+  // 4. Atomic Transaction on SQL Server
+  const tx = new sql.Transaction(pool);
+  await tx.begin();
+
+  try {
+    // Insert into GeneralLedger_Head
+    const headReq = new sql.Request(tx);
+    await headReq
+      .input('noteNo', sql.Int, targetNoteNo)
+      .input('noteTypeId', sql.Int, noteTypeId)
+      .input('noteDate', sql.NVarChar(10), noteDate)
+      .input('noteDateH', sql.NVarChar(50), ' ')
+      .input('journalType', sql.Int, journalType)
+      .input('desc', sql.NVarChar(300), description)
+      .input('debit', sql.Float, debitSum)
+      .input('credit', sql.Float, creditSum)
+      .input('netText', sql.NVarChar(300), netText)
+      .input('entryId', sql.SmallInt, entryId)
+      .input('entryName', sql.NVarChar(50), entryName)
+      .input('flag', sql.Bit, 0)
+      .input('flagN', sql.Int, 0)
+      .input('notice', sql.NVarChar(300), ' ')
+      .input('historyEdits', sql.NVarChar(300), ' ')
+      .query(`
+        INSERT INTO [${targetDb}].dbo.GeneralLedger_Head (
+          Note_No, Note_Type_ID, Note_Date, Note_Date_H, Journal_Type,
+          Description, Note_Debit, Note_Credit, Note_Net_Text,
+          Entry_ID, Entry_Name, Flag, Flag_N, Notice, History_Edits
+        ) VALUES (
+          @noteNo, @noteTypeId, @noteDate, @noteDateH, @journalType,
+          @desc, @debit, @credit, @netText,
+          @entryId, @entryName, @flag, @flagN, @notice, @historyEdits
+        )
+      `);
+
+    // Insert detail lines into GeneralLedger_Details
+    for (const line of formattedLines) {
+      const lineReq = new sql.Request(tx);
+      await lineReq
+        .input('noteNo', sql.Int, targetNoteNo)
+        .input('sr', sql.SmallInt, line.sr)
+        .input('l5', sql.Numeric(18, 0), line.level5Id)
+        .input('desc', sql.NVarChar(300), line.description)
+        .input('currencyId', sql.SmallInt, line.currencyId)
+        .input('exchange', sql.Float, line.exchange)
+        .input('actualDebit', sql.Float, line.actualDebit)
+        .input('debit', sql.Float, line.debit)
+        .input('actualCredit', sql.Float, line.actualCredit)
+        .input('credit', sql.Float, line.credit)
+        .input('analysisId', sql.Numeric(18, 0), line.analysisId)
+        .input('costcenterId', sql.Numeric(18, 0), line.costcenterId)
+        .input('jobOrderNo', sql.Numeric(18, 0), line.jobOrderNo)
+        .input('analyse1', sql.NVarChar(200), line.analyse1)
+        .input('analyse2', sql.NVarChar(200), line.analyse2)
+        .input('flag', sql.Bit, 0)
+        .input('flagN', sql.Int, 0)
+        .input('notice', sql.NVarChar(300), ' ')
+        .input('historyEdits', sql.NVarChar(300), ' ')
+        .query(`
+          INSERT INTO [${targetDb}].dbo.GeneralLedger_Details (
+            Note_No, SR, Level5_ID, Description, Currency_ID, Exchange,
+            Actual_Debit, Debit, Actual_Credit, Credit,
+            Analysis_ID, Costcenter_ID, Job_Order_No, Analyse1, Analyse2,
+            Flag, Flag_N, Notice, History_Edits
+          ) VALUES (
+            @noteNo, @sr, @l5, @desc, @currencyId, @exchange,
+            @actualDebit, @debit, @actualCredit, @credit,
+            @analysisId, @costcenterId, @jobOrderNo, @analyse1, @analyse2,
+            @flag, @flagN, @notice, @historyEdits
+          )
+        `);
+    }
+
+    await tx.commit();
+    console.log(`[SQL Bridge] Transaction COMMITTED: Journal Voucher #${targetNoteNo} (${debitSum} EGP) by [${entryName}] in [${targetDb}].dbo.GeneralLedger_Head.`);
+  } catch (txErr) {
+    try { await tx.rollback(); } catch (_) {}
+    console.error(`[SQL Bridge Transaction Error] Failed to commit Journal Voucher #${targetNoteNo}:`, txErr.message);
+    throw txErr;
+  }
+
+  // Clear caches so queries and reports see the newly committed rows immediately
+  if (typeof cachedAccountsByDb !== 'undefined') {
+    cachedAccountsByDb.clear();
+  }
+
+  const createdJournal = {
+    id: `JV-${targetNoteNo}`,
+    noteNo: targetNoteNo,
+    entryNo: targetNoteNo,
+    noteDate,
+    description,
     debitTotal: debitSum,
     creditTotal: creditSum,
-    netText: journalData.netText || '',
-    entryName: journalData.entryName || 'م. أحمد مصطفى',
-    lines: (journalData.lines || []).map(l => ({
-      ...l,
-      accountId: String(l.accountId || l.accountNumber || '').trim().replace(/[^0-9]/g, ''),
-      debit: Number(l.debit) || 0,
-      credit: Number(l.credit) || 0
-    })),
+    netText,
+    entryName,
     status: 'POSTED',
-    isPosted: 1,
-    Is_Posted: 1,
+    lines: formattedLines,
     timestamp: new Date().toISOString()
   };
 
-  addedJournals.unshift(newJournal);
-  cachedAccountsByDb.clear();
-  return { success: true, journal: newJournal };
+  return {
+    success: true,
+    noteNo: targetNoteNo,
+    message: `تم حفظ وترحيل سند قيد اليومية رقم [#${targetNoteNo}] بنجاح في قاعدة البيانات [${targetDb}]. القيد متوازن ومطابق لمعايير الحوكمة المالية.`,
+    journal: createdJournal
+  };
 }
 
 // ==========================================
@@ -3969,12 +4112,71 @@ app.get(['/api/finance/journals/:noteNo/lines', '/api/journal-entries/:noteNo/li
   }
 });
 
-app.post('/api/finance/journals/save', (req, res) => {
+app.post(['/api/finance/journals/save', '/api/financial/vouchers', '/api/finance/vouchers/save', '/api/journal-entries/save'], async (req, res) => {
   try {
-    const result = saveJournal(req.body);
+    const targetDb = req.query.db || req.headers['x-database-context'] || req.headers['x-database-key'] || req.targetDb || process.env.DB_NAME || 'MK_Khalil_Db_2026';
+    const result = await saveJournal(req.body, targetDb);
     res.json(result);
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    console.error('[SQL Bridge Error] saveJournal:', err.message);
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.get(['/api/financial/databases', '/api/finance/databases'], async (req, res) => {
+  try {
+    const fleet = [
+      {
+        name: 'MK_Khalil_Db_2026',
+        displayNameAr: 'مؤسسة محمد خليل للمقاولات العامة (2026)',
+        displayNameEn: 'MK Khalil General Contracting (2026)',
+        category: 'partners',
+        categoryNameAr: 'شركات الشركاء والفروع',
+        categoryNameEn: 'Partners & Affiliates',
+        categoryIcon: 'Building2',
+        isPrimary: true,
+        descriptionAr: 'قاعدة البيانات التشغيلية الرئيسية لمؤسسة محمد خليل',
+        isHealthy: true,
+      },
+      {
+        name: 'Tarabot_Data_2026',
+        displayNameAr: 'شركة ترابط - المنظومة المالية النشطة (2026)',
+        displayNameEn: 'Tarabot Co. - Active Fiscal Year (2026)',
+        category: 'primary',
+        categoryNameAr: 'المنظومة المالية النشطة',
+        categoryNameEn: 'Active Financial System',
+        categoryIcon: 'Activity',
+        isPrimary: false,
+        descriptionAr: 'قاعدة البيانات التشغيلية للعام المالي 2026',
+        isHealthy: true,
+      },
+      {
+        name: 'acc',
+        displayNameAr: 'قاعدة الحسابات الميدانية (ACC)',
+        displayNameEn: 'Field Accounts Database (ACC)',
+        category: 'archive',
+        categoryNameAr: 'أرشيف وحسابات تشغيلية',
+        categoryNameEn: 'Field Archive',
+        categoryIcon: 'Database',
+        isPrimary: false,
+        descriptionAr: 'قاعدة الحسابات والعمليات الميدانية',
+        isHealthy: true,
+      }
+    ];
+    res.json({ success: true, databases: fleet });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get(['/api/financial/vouchers/next-number', '/api/finance/journals/next-number', '/api/finance/vouchers/next-number'], async (req, res) => {
+  try {
+    const targetDb = req.query.db || req.headers['x-database-context'] || req.headers['x-database-key'] || req.targetDb || process.env.DB_NAME || 'MK_Khalil_Db_2026';
+    const pool = await getPool(targetDb);
+    const maxRes = await pool.request().query(`SELECT ISNULL(MAX(Note_No), 0) + 1 AS nextNo FROM [${targetDb}].dbo.GeneralLedger_Head`);
+    res.json({ success: true, nextNo: Number(maxRes.recordset[0].nextNo) });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message, nextNo: 1001 });
   }
 });
 

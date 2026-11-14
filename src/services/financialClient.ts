@@ -4,6 +4,7 @@
  */
 
 import { Decimal } from 'decimal.js';
+import { getApiBaseUrl } from './apiClient';
 
 export interface DatabaseFleetItem {
   name: string;
@@ -46,7 +47,12 @@ export interface ClientVoucherPayload {
 export class FinancialClient {
   private static instance: FinancialClient;
   private activeDatabaseKey: string = 'MK_Khalil_Db_2026';
-  private baseUrl: string = (import.meta as any).env?.VITE_FINANCIAL_API_URL || 'http://localhost:3001/api/financial';
+
+  private get baseUrl(): string {
+    const envUrl = (import.meta as any).env?.VITE_FINANCIAL_API_URL;
+    if (envUrl && envUrl.trim()) return envUrl.trim().replace(/\/+$/, '');
+    return `${getApiBaseUrl()}/api/financial`;
+  }
 
   private constructor() {
     const saved = localStorage.getItem('eco_active_database_key');
@@ -74,6 +80,7 @@ export class FinancialClient {
     return {
       'Content-Type': 'application/json',
       'X-Database-Key': this.activeDatabaseKey,
+      'X-Database-Context': this.activeDatabaseKey,
     };
   }
 
