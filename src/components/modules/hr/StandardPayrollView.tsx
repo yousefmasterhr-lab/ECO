@@ -3,6 +3,7 @@ import { useHR, PayrollItem } from '../../../context/HRContext';
 import { useTenant } from '../../../context/TenantContext';
 import { useLanguage } from '../../../context/LanguageContext';
 import { Modal } from '../../common/Modal';
+import { calculateFullEgyptianPayrollSlip } from '../../../utils/egyptianLaborAlgorithms';
 import {
   Download,
   CheckCircle2,
@@ -14,18 +15,21 @@ import {
   Printer,
   Calendar,
   Landmark,
-  Search
+  Search,
+  Calculator
 } from 'lucide-react';
 
 export const StandardPayrollView: React.FC = () => {
   const { t } = useLanguage();
   const {
     employees,
+    advances,
     payrollItems,
     currentPayrollPeriod,
     setCurrentPayrollPeriod,
     markPayrollItemPaid,
     batchApprovePayroll,
+    showToast,
   } = useHR();
   const { companies } = useTenant();
 
@@ -36,35 +40,82 @@ export const StandardPayrollView: React.FC = () => {
   // Modals
   const [selectedSlip, setSelectedSlip] = useState<PayrollItem | null>(null);
   const [isBankExportOpen, setIsBankExportOpen] = useState(false);
+  const [isSimulatorOpen, setIsSimulatorOpen] = useState(false);
 
-  // Compute live payroll from active employees if no explicit payroll run saved yet
+  // Interactive Egyptian Payroll & Tax Simulator State
+  const [simInput, setSimInput] = useState({
+    basicSalary: 15000,
+    insurableWage: 14500,
+    housingAllowance: 2500,
+    transportAllowance: 1500,
+    dayOvertimeHours: 6,
+    nightOvertimeHours: 2,
+    holidayOvertimeHours: 0,
+    advanceInstallment: 0,
+  });
+
+  const simResult = useMemo(
+    () =>
+      calculateFullEgyptianPayrollSlip({
+        basicSalary: simInput.basicSalary,
+        insurableWage: simInput.insurableWage,
+        housingAllowance: simInput.housingAllowance,
+        transportAllowance: simInput.transportAllowance,
+        daytimeOvertimeHours: simInput.dayOvertimeHours,
+        nighttimeOvertimeHours: simInput.nightOvertimeHours,
+        holidayOvertimeHours: simInput.holidayOvertimeHours,
+        advanceInstallment: simInput.advanceInstallment,
+        isInsured: true,
+      }),
+    [simInput]
+  );
+
+  // Compute live payroll using authentic Egyptian Labor & Tax Algorithms
   const effectivePayroll = useMemo(() => {
     if (payrollItems.length > 0) return payrollItems;
     return employees
       .filter(e => e.status === 'active' && e.lifecycleStatus === 'active')
-      .map(e => ({
-        id: `pay_${e.id}`,
-        employeeId: e.id,
-        employeeCode: e.employeeCode,
-        employeeName: e.nameAr,
-        jobTitle: e.jobTitleAr,
-        department: e.departmentAr,
-        companyId: e.companyId,
-        basicSalary: e.salary?.basic || 0,
-        housingAllowance: Math.round((e.salary?.allowances || 0) * 0.5),
-        transportAllowance: Math.round((e.salary?.allowances || 0) * 0.5),
-        siteBonus: 0,
-        grossSalary: (e.salary?.basic || 0) + (e.salary?.allowances || 0),
-        insuranceDeduction: Math.round((e.salary?.deductions || 0) * 0.6),
-        loanDeduction: 0,
-        taxDeduction: Math.round((e.salary?.deductions || 0) * 0.4),
-        totalDeductions: e.salary?.deductions || 0,
-        netSalary: (e.salary?.basic || 0) + (e.salary?.allowances || 0) - (e.salary?.deductions || 0),
-        bankName: e.bankName || 'تحويل بنكي',
-        bankAccount: e.bankAccount || '—',
-        status: 'pending' as const,
-      }));
-  }, [payrollItems, employees]);
+      .map(e => {
+        const activeAdv = advances
+          .filter(a => a.employeeId === e.id && a.status === 'active')
+          .reduce((sum, a) => sum + (a.monthlyDeduction || 0), 0);
+        const bonusesTotal = (e.bonuses || []).reduce((sum, b) => sum + (b.amount || 0), 0);
+        const rawPenalties = (e.deductions || []).reduce((sum, d) => sum + (d.amount || 0), 0);
+        const slip = calculateFullEgyptianPayrollSlip({
+          basicSalary: e.salary?.basic || 0,
+          insurableWage: e.insurableWage || e.salary?.basic || 0,
+          housingAllowance: Math.round((e.salary?.allowances || 0) * 0.5),
+          transportAllowance: Math.round((e.salary?.allowances || 0) * 0.5),
+          bonuses: bonusesTotal,
+          penaltyDeductionRaw: rawPenalties,
+          advanceInstallment: activeAdv,
+          isInsured: e.workSchedule?.hasSocialInsurance ?? true,
+        });
+
+        return {
+          id: `pay_${e.id}`,
+          employeeId: e.id,
+          employeeCode: e.employeeCode,
+          employeeName: e.nameAr,
+          jobTitle: e.jobTitleAr,
+          department: e.departmentAr,
+          companyId: e.companyId,
+          basicSalary: slip.basicSalary,
+          housingAllowance: Math.round((e.salary?.allowances || 0) * 0.5),
+          transportAllowance: Math.round((e.salary?.allowances || 0) * 0.5),
+          siteBonus: slip.bonusesAndOvertime,
+          grossSalary: slip.grossSalary,
+          insuranceDeduction: slip.insurance.employeeShare,
+          loanDeduction: slip.advanceInstallment,
+          taxDeduction: slip.tax.monthlyTax + slip.tax.martyrsFundMonthly,
+          totalDeductions: slip.totalStatutoryAndCustomDeductions,
+          netSalary: slip.netSalary,
+          bankName: e.bankName || 'البنك الأهلي المصري (NBE)',
+          bankAccount: e.bankAccount || '—',
+          status: 'pending' as const,
+        };
+      });
+  }, [payrollItems, employees, advances]);
 
   // Filtered Items
   const filteredPayroll = effectivePayroll.filter((item: PayrollItem) => {
@@ -155,9 +206,10 @@ export const StandardPayrollView: React.FC = () => {
               onChange={e => setCurrentPayrollPeriod(e.target.value)}
               className="bg-transparent border-none text-xs font-black text-[#D99B26] dark:text-[#EBB34D] focus:outline-hidden cursor-pointer"
             >
-              <option value="2026-10" className="bg-[#FBF9F5] dark:bg-[#0E1610]">مسير رواتب أكتوبر 2026</option>
-              <option value="2026-09" className="bg-[#FBF9F5] dark:bg-[#0E1610]">مسير رواتب سبتمبر 2026</option>
-              <option value="2026-08" className="bg-[#FBF9F5] dark:bg-[#0E1610]">مسير رواتب أغسطس 2026</option>
+              <option value="2026-11" className="bg-[#FBF9F5] dark:bg-[#0E1610] text-[#1A241C] dark:text-[#F3EFE6]">مسير رواتب نوفمبر 2026</option>
+              <option value="2026-10" className="bg-[#FBF9F5] dark:bg-[#0E1610] text-[#1A241C] dark:text-[#F3EFE6]">مسير رواتب أكتوبر 2026</option>
+              <option value="2026-09" className="bg-[#FBF9F5] dark:bg-[#0E1610] text-[#1A241C] dark:text-[#F3EFE6]">مسير رواتب سبتمبر 2026</option>
+              <option value="2026-08" className="bg-[#FBF9F5] dark:bg-[#0E1610] text-[#1A241C] dark:text-[#F3EFE6]">مسير رواتب أغسطس 2026</option>
             </select>
           </div>
 
@@ -187,7 +239,15 @@ export const StandardPayrollView: React.FC = () => {
         </div>
 
         {/* Export & Batch Actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={() => setIsSimulatorOpen(true)}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#D99B26]/15 hover:bg-[#D99B26]/25 border border-[#D99B26]/35 text-[#D99B26] dark:text-[#EBB34D] text-xs font-bold transition-all cursor-pointer"
+          >
+            <Calculator className="w-3.5 h-3.5" />
+            <span>{t('حاسبة الضرائب والتأمينات المصرية', 'Egypt Payroll Calculator')}</span>
+          </button>
+
           <button
             onClick={() => setIsBankExportOpen(true)}
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#EAE4D7] dark:bg-[#1F2E23] hover:bg-[#D99B26]/20 text-[#1A241C] dark:text-[#F3EFE6] text-xs font-bold transition-all cursor-pointer"
@@ -198,7 +258,7 @@ export const StandardPayrollView: React.FC = () => {
 
           <button
             onClick={batchApprovePayroll}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-l from-amber-600 to-amber-500 hover:from-amber-700 hover:to-amber-600 text-white text-xs font-bold shadow-md shadow-amber-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer whitespace-nowrap"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold shadow-md shadow-emerald-900/20 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer whitespace-nowrap"
           >
             <CheckCircle2 className="w-3.5 h-3.5" />
             <span>{t('اعتماد وصرف المسير بالكامل', 'Approve All')}</span>
@@ -207,19 +267,19 @@ export const StandardPayrollView: React.FC = () => {
       </div>
 
       {/* Cross-Module Accounting Impact Badge (Linking to Finance) */}
-      <div className="p-3.5 rounded-xl bg-[#1F2E23]/60 border border-[#243628] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+      <div className="p-3.5 rounded-xl bg-[#EAE4D7]/70 dark:bg-[#1F2E23]/70 border border-[#E0D9CB] dark:border-[#243628] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
         <div className="flex items-center gap-2">
           <Landmark className="w-4 h-4 text-[#D99B26] dark:text-[#EBB34D] shrink-0" />
           <div>
-            <span className="font-bold text-[#F3EFE6]">
+            <span className="font-bold text-[#1A241C] dark:text-[#F3EFE6]">
               {t('الأثر المحاسبي والسيولة في الشؤون المالية (حساب 230101):', 'Financial GL Impact (Account 230101):')}
             </span>
-            <span className="text-[#8FA392] ms-1.5">
-              قيد استحقاق الأجور والرواتب ينعكس كالتزام فوري في الخزينة والسيولة النقدية.
+            <span className="text-[#5C665E] dark:text-[#8FA392] ms-1.5">
+              قيد استحقاق الأجور والتأمينات (148/2019) وضريبة كسب العمل (7/2024) ينعكس فوراً في الأستاذ العام.
             </span>
           </div>
         </div>
-        <span className="font-mono text-xs font-bold text-[#EBB34D] bg-[#0E1610] px-2.5 py-1 rounded-lg border border-[#243628] shrink-0">
+        <span className="font-mono text-xs font-bold text-[#D99B26] dark:text-[#EBB34D] bg-white dark:bg-[#0E1610] px-2.5 py-1 rounded-lg border border-[#E0D9CB] dark:border-[#243628] shrink-0">
           دائن: {totalNet.toLocaleString('en-US')} ج.م
         </span>
       </div>
@@ -430,7 +490,7 @@ export const StandardPayrollView: React.FC = () => {
             </button>
             <button
               onClick={() => {
-                alert('تم تصدير ملف كشف الرواتب البنكي بصيغة Excel / CSV بنجاح');
+                showToast('تم تصدير ملف كشف الرواتب البنكي بصيغة Excel / CSV بنجاح');
                 setIsBankExportOpen(false);
               }}
               className="flex items-center gap-1.5 px-5 py-2 rounded-xl bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold shadow-md transition-all cursor-pointer"
@@ -438,6 +498,147 @@ export const StandardPayrollView: React.FC = () => {
               <Download className="w-3.5 h-3.5" />
               <span>تحميل كشف البنك (.xlsx / .csv)</span>
             </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Interactive Egyptian Payroll, Insurance (148/2019) & Tax (7/2024) Calculator Simulator */}
+      <Modal
+        isOpen={isSimulatorOpen}
+        onClose={() => setIsSimulatorOpen(false)}
+        title="محاكي وخوارزمية الرواتب المصرية (Law 148/2019 & Law 7/2024)"
+        subtitle="اختبر احتساب التأمينات الاجتماعية، الإضافي النهاري والليلي، وشرائح ضريبة كسب العمل التصاعدية لحظياً"
+        icon={Calculator}
+        maxWidth="max-w-3xl"
+      >
+        <div className="space-y-4 text-xs">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div>
+              <label className="block text-[11px] font-bold text-[#5C665E] dark:text-[#8FA392] mb-1">الراتب الأساسي (ج.م)</label>
+              <input
+                type="number"
+                value={simInput.basicSalary}
+                onChange={e => setSimInput({ ...simInput, basicSalary: Number(e.target.value) })}
+                className="w-full p-2 rounded-xl bg-white dark:bg-[#0E1610] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6] font-mono font-bold"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-bold text-[#5C665E] dark:text-[#8FA392] mb-1">الأجر التأميني (2,300 - 14,500)</label>
+              <input
+                type="number"
+                value={simInput.insurableWage}
+                onChange={e => setSimInput({ ...simInput, insurableWage: Number(e.target.value) })}
+                className="w-full p-2 rounded-xl bg-white dark:bg-[#0E1610] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6] font-mono font-bold"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-bold text-[#5C665E] dark:text-[#8FA392] mb-1">بدل سكن / اغتراب</label>
+              <input
+                type="number"
+                value={simInput.housingAllowance}
+                onChange={e => setSimInput({ ...simInput, housingAllowance: Number(e.target.value) })}
+                className="w-full p-2 rounded-xl bg-white dark:bg-[#0E1610] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6] font-mono font-bold"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-bold text-[#5C665E] dark:text-[#8FA392] mb-1">بدل انتقال ووجبة</label>
+              <input
+                type="number"
+                value={simInput.transportAllowance}
+                onChange={e => setSimInput({ ...simInput, transportAllowance: Number(e.target.value) })}
+                className="w-full p-2 rounded-xl bg-white dark:bg-[#0E1610] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6] font-mono font-bold"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-bold text-[#5C665E] dark:text-[#8FA392] mb-1">إضافي نهاري (1.35x س)</label>
+              <input
+                type="number"
+                value={simInput.dayOvertimeHours}
+                onChange={e => setSimInput({ ...simInput, dayOvertimeHours: Number(e.target.value) })}
+                className="w-full p-2 rounded-xl bg-white dark:bg-[#0E1610] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6] font-mono font-bold"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-bold text-[#5C665E] dark:text-[#8FA392] mb-1">إضافي ليلي (1.70x س)</label>
+              <input
+                type="number"
+                value={simInput.nightOvertimeHours}
+                onChange={e => setSimInput({ ...simInput, nightOvertimeHours: Number(e.target.value) })}
+                className="w-full p-2 rounded-xl bg-white dark:bg-[#0E1610] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6] font-mono font-bold"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-bold text-[#5C665E] dark:text-[#8FA392] mb-1">إضافي عطلات (2.00x س)</label>
+              <input
+                type="number"
+                value={simInput.holidayOvertimeHours}
+                onChange={e => setSimInput({ ...simInput, holidayOvertimeHours: Number(e.target.value) })}
+                className="w-full p-2 rounded-xl bg-white dark:bg-[#0E1610] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6] font-mono font-bold"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-bold text-[#5C665E] dark:text-[#8FA392] mb-1">قسط سلفة (ج.م)</label>
+              <input
+                type="number"
+                value={simInput.advanceInstallment}
+                onChange={e => setSimInput({ ...simInput, advanceInstallment: Number(e.target.value) })}
+                className="w-full p-2 rounded-xl bg-white dark:bg-[#0E1610] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6] font-mono font-bold"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Summary Breakdown */}
+            <div className="p-4 rounded-xl bg-[#F3EFE6] dark:bg-[#0E1610] border border-[#E0D9CB] dark:border-[#243628] space-y-2">
+              <h4 className="font-bold text-[#1A241C] dark:text-[#F3EFE6] pb-1.5 border-b border-[#E0D9CB] dark:border-[#243628]">
+                ملخص الاستحقاق والاستقطاع الشهري
+              </h4>
+              <div className="flex justify-between">
+                <span className="text-[#5C665E] dark:text-[#8FA392]">إجمالي الأجر الشامل (شامل الإضافي +{simResult.overtimeAndPenalties.totalOvertimePay.toLocaleString('en-US')}):</span>
+                <strong className="font-mono text-[#1A241C] dark:text-[#F3EFE6]">{simResult.grossSalary.toLocaleString('en-US')} ج.م</strong>
+              </div>
+              <div className="flex justify-between text-rose-500">
+                <span>حصة العامل التأمينية (11% من {simResult.insurance.clampedInsurableWage.toLocaleString('en-US')}):</span>
+                <strong className="font-mono">-{simResult.insurance.employeeShare.toLocaleString('en-US')} ج.م</strong>
+              </div>
+              <div className="flex justify-between text-rose-500">
+                <span>ضريبة كسب العمل الشهرية (معدل فعلي {simResult.tax.effectiveTaxRatePercent}%):</span>
+                <strong className="font-mono">-{simResult.tax.monthlyTax.toLocaleString('en-US')} ج.م</strong>
+              </div>
+              <div className="flex justify-between text-rose-500">
+                <span>صندوق تكريم الشهداء (0.05%):</span>
+                <strong className="font-mono">-{simResult.tax.martyrsFundMonthly.toLocaleString('en-US')} ج.م</strong>
+              </div>
+              <div className="flex justify-between pt-2 border-t border-[#E0D9CB] dark:border-[#243628] text-sm font-black">
+                <span className="text-[#059669] dark:text-[#34D399]">صافي الراتب المحول للموظف:</span>
+                <span className="font-mono text-[#059669] dark:text-[#EBB34D]">{simResult.netSalary.toLocaleString('en-US')} ج.م</span>
+              </div>
+              <div className="flex justify-between pt-1.5 text-[11px] text-[#5C665E] dark:text-[#8FA392]">
+                <span>تحمل الشركة (تأمينات 18.75% + 1% طوارئ):</span>
+                <strong className="font-mono">+{(simResult.insurance.employerShare + simResult.insurance.emergencyFund).toLocaleString('en-US')} ج.م</strong>
+              </div>
+            </div>
+
+            {/* Progressive Brackets Table */}
+            <div className="p-4 rounded-xl bg-[#F3EFE6] dark:bg-[#0E1610] border border-[#E0D9CB] dark:border-[#243628] space-y-2">
+              <h4 className="font-bold text-[#1A241C] dark:text-[#F3EFE6] pb-1.5 border-b border-[#E0D9CB] dark:border-[#243628]">
+                تفصيل الشرائح الضريبية السنوية (قانون 7 لسنة 2024)
+              </h4>
+              <div className="text-[11px] text-[#5C665E] dark:text-[#8FA392] flex justify-between">
+                <span>الوعاء السنوي الخاضع بعد الإعفاء الشخصي (20,000):</span>
+                <strong className="font-mono text-[#D99B26] dark:text-[#EBB34D]">
+                  {simResult.tax.annualTaxableIncome.toLocaleString('en-US')} ج.م
+                </strong>
+              </div>
+              <div className="space-y-1.5 max-h-40 overflow-y-auto pt-1">
+                {simResult.tax.bracketsBreakdown.map((b, i) => (
+                  <div key={i} className="p-2 rounded-lg bg-white dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] flex justify-between text-[10.5px]">
+                    <span className="text-[#1A241C] dark:text-[#F3EFE6] font-bold">{b.labelAr} ({b.ratePercent}%)</span>
+                    <span className="font-mono text-rose-500 font-bold">{b.taxAnnual.toLocaleString('en-US')} ج.م/سنة</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </Modal>

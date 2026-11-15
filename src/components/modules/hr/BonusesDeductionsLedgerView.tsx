@@ -1,16 +1,29 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useHR } from '../../../context/HRContext';
+import { companyStorage } from '../companies/companyStorage';
+import { CompanyEntity } from '../companies/types';
 import {
   Sparkles,
   AlertTriangle,
   Coins,
-  Search
+  Search,
+  Inbox
 } from 'lucide-react';
 import { AddBonusModal } from './AddBonusModal';
 import { AddDeductionModal } from './AddDeductionModal';
 
 export const BonusesDeductionsLedgerView: React.FC = () => {
-  const { employees } = useHR();
+  const { employees, showToast } = useHR();
+  const [companies, setCompanies] = useState<CompanyEntity[]>(() => companyStorage.getCompaniesSync());
+
+  useEffect(() => {
+    companyStorage.getCompanies().then((list) => {
+      if (list && list.length > 0) setCompanies(list);
+    });
+    const onUpdate = () => setCompanies(companyStorage.getCompaniesSync());
+    window.addEventListener('eco_companies_updated', onUpdate);
+    return () => window.removeEventListener('eco_companies_updated', onUpdate);
+  }, []);
 
   const [activeFilterType, setActiveFilterType] = useState<'all' | 'bonus' | 'deduction'>('all');
   const [selectedEntity, setSelectedEntity] = useState<string>('all');
@@ -83,8 +96,14 @@ export const BonusesDeductionsLedgerView: React.FC = () => {
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => setIsBonusModalOpen(true)}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold shadow-md hover:bg-emerald-500 transition-all cursor-pointer"
+            onClick={() => {
+              if (!targetEmployee) {
+                showToast('أضف موظفاً أولاً من السجل العام للموظفين لصرف مكافأة أو حافز له');
+                return;
+              }
+              setIsBonusModalOpen(true);
+            }}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold shadow-xs transition-all cursor-pointer"
           >
             <Sparkles className="w-4 h-4" />
             <span>+ صرف مكافأة جديدة</span>
@@ -92,8 +111,14 @@ export const BonusesDeductionsLedgerView: React.FC = () => {
 
           <button
             type="button"
-            onClick={() => setIsDeductionModalOpen(true)}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-rose-600 text-white text-xs font-bold shadow-md hover:bg-rose-500 transition-all cursor-pointer"
+            onClick={() => {
+              if (!targetEmployee) {
+                showToast('أضف موظفاً أولاً من السجل العام للموظفين لتسجيل جزاء إداري (حد أقصى 5 أيام شهرياً م61)');
+                return;
+              }
+              setIsDeductionModalOpen(true);
+            }}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-rose-600 text-white text-xs font-bold shadow-xs hover:bg-rose-500 transition-all cursor-pointer"
           >
             <AlertTriangle className="w-4 h-4" />
             <span>+ تسجيل جزاء إداري</span>
@@ -105,26 +130,26 @@ export const BonusesDeductionsLedgerView: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="p-4 rounded-2xl bg-white dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] shadow-xs">
           <span className="text-xs text-[#5C665E] dark:text-[#8FA392] block font-bold">إجمالي الحوافز والمكافآت المصروفة</span>
-          <div className="text-xl font-black text-emerald-400 mt-1">
+          <div className="text-xl font-black text-[#059669] dark:text-emerald-400 mt-1">
             +{totalBonuses.toLocaleString('en-US')} <span className="text-xs">ج.م</span>
           </div>
-          <span className="text-[10px] text-emerald-400/80 mt-1 block">حوافز إنتاج وتسليم مراحل مواقع</span>
+          <span className="text-[10px] text-[#059669]/80 dark:text-emerald-400/80 mt-1 block">حوافز إنتاج وتسليم مراحل مواقع</span>
         </div>
 
         <div className="p-4 rounded-2xl bg-white dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] shadow-xs">
           <span className="text-xs text-[#5C665E] dark:text-[#8FA392] block font-bold">إجمالي الجزاءات والخصومات المحسومة</span>
-          <div className="text-xl font-black text-rose-400 mt-1">
+          <div className="text-xl font-black text-rose-600 dark:text-rose-400 mt-1">
             -{totalDeductions.toLocaleString('en-US')} <span className="text-xs">ج.م</span>
           </div>
-          <span className="text-[10px] text-rose-400/80 mt-1 block">خصومات تأخير ومخالفات سلامة وصحة مهنية</span>
+          <span className="text-[10px] text-rose-600/80 dark:text-rose-400/80 mt-1 block">خصومات تأخير ومخالفات (بحد أقصى 5 أيام م61)</span>
         </div>
 
         <div className="p-4 rounded-2xl bg-white dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] shadow-xs">
           <span className="text-xs text-[#5C665E] dark:text-[#8FA392] block font-bold">صافي الأثر على مسير الرواتب</span>
-          <div className="text-xl font-black text-[#EBB34D] mt-1">
+          <div className="text-xl font-black text-[#D99B26] dark:text-[#EBB34D] mt-1">
             {(totalBonuses - totalDeductions).toLocaleString('en-US')} <span className="text-xs">ج.م</span>
           </div>
-          <span className="text-[10px] text-[#8FA392] mt-1 block">تنعكس تلقائياً في قسيمة الراتب الشهرية</span>
+          <span className="text-[10px] text-[#5C665E] dark:text-[#8FA392] mt-1 block">تنعكس تلقائياً في قسيمة الراتب الشهرية</span>
         </div>
       </div>
 
@@ -147,8 +172,8 @@ export const BonusesDeductionsLedgerView: React.FC = () => {
             onClick={() => setActiveFilterType('bonus')}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               activeFilterType === 'bonus'
-                ? 'bg-emerald-600 text-white'
-                : 'text-[#8FA392] hover:text-[#F3EFE6]'
+                ? 'bg-[#059669] text-white'
+                : 'text-[#5C665E] dark:text-[#8FA392] hover:text-[#1A241C] dark:hover:text-[#F3EFE6]'
             }`}
           >
             المكافآت والحوافز
@@ -159,7 +184,7 @@ export const BonusesDeductionsLedgerView: React.FC = () => {
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               activeFilterType === 'deduction'
                 ? 'bg-rose-600 text-white'
-                : 'text-[#8FA392] hover:text-[#F3EFE6]'
+                : 'text-[#5C665E] dark:text-[#8FA392] hover:text-[#1A241C] dark:hover:text-[#F3EFE6]'
             }`}
           >
             الجزاءات والخصومات
@@ -171,13 +196,14 @@ export const BonusesDeductionsLedgerView: React.FC = () => {
             value={selectedEntity}
             onChange={e => setSelectedEntity(e.target.value)}
             aria-label="تصفية حسب الشركة"
-            className="px-3 py-2 rounded-xl bg-[#FBF9F5] dark:bg-[#0E1610] border border-[#E0D9CB] dark:border-[#243628] text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6] outline-hidden focus:border-[#EBB34D]"
+            className="px-3 py-2 rounded-xl bg-[#FBF9F5] dark:bg-[#0E1610] border border-[#E0D9CB] dark:border-[#243628] text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6] outline-hidden focus:border-[#D99B26] dark:focus:border-[#EBB34D]"
           >
-            <option value="all">كافة الشركات</option>
-            <option value="ترابط للمقاولات">ترابط للمقاولات</option>
-            <option value="ماستر جروب">ماستر جروب</option>
-            <option value="ماستر ترافل">ماستر ترافل</option>
-            <option value="إيمبرو للتجارة والتوريدات">إيمبرو للتجارة والتوريدات</option>
+            <option value="all" className="bg-white dark:bg-[#141E16] text-[#1A241C] dark:text-[#F3EFE6]">كافة الشركات</option>
+            {companies.map(c => (
+              <option key={c.id} value={c.nameAr} className="bg-white dark:bg-[#141E16] text-[#1A241C] dark:text-[#F3EFE6]">
+                {c.nameAr}
+              </option>
+            ))}
           </select>
 
           <div className="relative w-64">
@@ -214,10 +240,10 @@ export const BonusesDeductionsLedgerView: React.FC = () => {
                 return (
                   <tr key={rec.id} className="hover:bg-[#F3EFE6]/50 dark:hover:bg-[#1F2E23]/50 transition-colors">
                     <td className="py-3 px-4 text-start">
-                      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
                         isBonus
-                          ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-600/40'
-                          : 'bg-rose-950/80 text-rose-300 border border-rose-600/40'
+                          ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
+                          : 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30'
                       }`}>
                         {isBonus ? <Sparkles className="w-3 h-3" /> : <AlertTriangle className="w-3 h-3" />}
                         <span>{isBonus ? 'مكافأة' : 'جزاء'}</span>
@@ -244,13 +270,29 @@ export const BonusesDeductionsLedgerView: React.FC = () => {
                       {rec.date}
                     </td>
                     <td className="py-3 px-4 font-mono font-bold">
-                      <span className={isBonus ? 'text-emerald-400' : 'text-rose-400'}>
+                      <span className={isBonus ? 'text-[#059669] dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}>
                         {isBonus ? '+' : '-'}{rec.amount.toLocaleString('en-US')} ج.م
                       </span>
                     </td>
                   </tr>
                 );
               })}
+
+              {filteredRecords.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="py-12 text-center">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <Inbox className="w-8 h-8 text-[#D99B26]/60 dark:text-[#EBB34D]/60" />
+                      <p className="text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6]">
+                        لا توجد حوافز أو جزاءات مسجلة حالياً
+                      </p>
+                      <p className="text-[11px] text-[#5C665E] dark:text-[#8FA392]">
+                        يتم ربط كافة المكافآت والجزاءات الإدارية آلياً بمسير الرواتب وفق ضوابط مادة 61 من قانون العمل المصري.
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

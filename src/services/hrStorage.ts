@@ -1,29 +1,87 @@
 /**
- * ECO ERP - Human Resources (HRMS) Cloudflare D1 Storage & Reactive Synchronization Service
- * 
+ * ECO ERP - Human Resources (HRMS - Egypt Edition) Storage & Sync Service
+ *
  * Provides:
- * - Zero mock data initial state (100% real D1 persistence).
- * - Instant in-memory optimistic updates for zero UI latency.
- * - Non-blocking background sync with Cloudflare D1 via /api/hr.
- * - Automatic custom event broadcasting (`eco-hr-updated`) for reactive UI updates across all tabs.
+ * - Automatic complete purge of legacy/mock v1 HR data across localStorage and backend D1.
+ * - Zero mock data initial state (100% clean slate ready for Egyptian enterprise records).
+ * - Non-blocking sync with Cloudflare D1 / local bridge via /api/hr.
+ * - Custom event broadcasting (`eco-hr-updated`) for reactive UI updates across tabs.
  */
 
-import {
+import type {
   Employee,
   AttendanceRecord,
   LeaveRequest,
   EmployeeAdvance,
   EmployeeContractDoc,
+  HRCandidate,
+  AssetCustody,
 } from '../context/HRContext';
 
+const LEGACY_V1_KEYS = [
+  'eco_hr_employees_v1',
+  'eco_hr_contracts_v1',
+  'eco_hr_attendance_v1',
+  'eco_hr_leaves_v1',
+  'eco_hr_loans_v1',
+  'eco_hr_rewards_v1',
+  'eco_hr_payroll_v1',
+];
+
 const STORAGE_KEYS = {
-  EMPLOYEES: 'eco_hr_employees_v1',
-  CONTRACTS: 'eco_hr_contracts_v1',
-  ATTENDANCE: 'eco_hr_attendance_v1',
-  LEAVES: 'eco_hr_leaves_v1',
-  LOANS: 'eco_hr_loans_v1',
-  REWARDS: 'eco_hr_rewards_v1',
-  PAYROLL: 'eco_hr_payroll_v1',
+  EMPLOYEES: 'eco_hr_egypt_employees_v2',
+  CONTRACTS: 'eco_hr_egypt_contracts_v2',
+  ATTENDANCE: 'eco_hr_egypt_attendance_v2',
+  LEAVES: 'eco_hr_egypt_leaves_v2',
+  LOANS: 'eco_hr_egypt_loans_v2',
+  CANDIDATES: 'eco_hr_egypt_candidates_v2',
+  CUSTODY: 'eco_hr_egypt_custody_v2',
+  SETTINGS: 'eco_hr_egypt_settings_v2',
+  PURGE_FLAG: 'eco_hr_egypt_v2_purged',
+};
+
+export interface EgyptianHRRegulationsConfig {
+  headquartersHours: number;
+  siteHours: number;
+  overtimeDayRate: number;
+  overtimeNightRate: number;
+  overtimeHolidayRate: number;
+  socialMinInsuranceWage: number;
+  socialMaxInsuranceWage: number;
+  employerInsurancePercent: number;
+  employeeInsurancePercent: number;
+  emergencyFundPercent: number;
+  martyrsFundPercent: number;
+  personalTaxExemptionAnnual: number;
+  zeroTaxBracketAnnual: number;
+  annualLeaveStandardDays: number;
+  annualLeaveSeniorDays: number;
+  casualLeaveMaxDays: number;
+  monthlyLeaveAccrualRate: number;
+  allowAdvanceWithoutGuarantor: boolean;
+  maxAdvancePercentOfSalary: number;
+}
+
+export const DEFAULT_EGYPTIAN_HR_SETTINGS: EgyptianHRRegulationsConfig = {
+  headquartersHours: 8,
+  siteHours: 10,
+  overtimeDayRate: 1.35,
+  overtimeNightRate: 1.7,
+  overtimeHolidayRate: 2.0,
+  socialMinInsuranceWage: 2300,
+  socialMaxInsuranceWage: 14500,
+  employerInsurancePercent: 18.75,
+  employeeInsurancePercent: 11.0,
+  emergencyFundPercent: 1.0,
+  martyrsFundPercent: 0.05,
+  personalTaxExemptionAnnual: 20000,
+  zeroTaxBracketAnnual: 40000,
+  annualLeaveStandardDays: 21,
+  annualLeaveSeniorDays: 30,
+  casualLeaveMaxDays: 6,
+  monthlyLeaveAccrualRate: 1.75,
+  allowAdvanceWithoutGuarantor: true,
+  maxAdvancePercentOfSalary: 60,
 };
 
 class HRStorageService {
@@ -32,13 +90,38 @@ class HRStorageService {
   private attendance: AttendanceRecord[] = [];
   private leaves: LeaveRequest[] = [];
   private advances: EmployeeAdvance[] = [];
+  private candidates: HRCandidate[] = [];
+  private custodyItems: AssetCustody[] = [];
+  private settings: EgyptianHRRegulationsConfig = { ...DEFAULT_EGYPTIAN_HR_SETTINGS };
   private isSyncing = false;
 
   constructor() {
+    this.ensureInitialCleanPurge();
     this.loadFromLocalStorage();
     if (typeof window !== 'undefined') {
-      setTimeout(() => this.syncFromCloud(), 200);
+      setTimeout(() => this.syncFromCloud(), 350);
     }
+  }
+
+  /**
+   * Ensures any legacy v1 or pre-overhaul cached HR data is completely wiped once
+   * so the re-architected Egyptian HR module starts cleanly with 0 placeholder records.
+   */
+  private ensureInitialCleanPurge() {
+    if (typeof window === 'undefined') return;
+    try {
+      LEGACY_V1_KEYS.forEach((key) => localStorage.removeItem(key));
+
+      if (!localStorage.getItem(STORAGE_KEYS.PURGE_FLAG)) {
+        Object.values(STORAGE_KEYS).forEach((key) => {
+          if (key !== STORAGE_KEYS.PURGE_FLAG && key !== STORAGE_KEYS.SETTINGS) {
+            localStorage.removeItem(key);
+          }
+        });
+        localStorage.setItem(STORAGE_KEYS.PURGE_FLAG, 'true');
+        fetch('/api/hr/purge', { method: 'POST' }).catch(() => {});
+      }
+    } catch {}
   }
 
   private loadFromLocalStorage() {
@@ -58,6 +141,17 @@ class HRStorageService {
 
       const lnRaw = localStorage.getItem(STORAGE_KEYS.LOANS);
       this.advances = lnRaw ? JSON.parse(lnRaw) : [];
+
+      const candRaw = localStorage.getItem(STORAGE_KEYS.CANDIDATES);
+      this.candidates = candRaw ? JSON.parse(candRaw) : [];
+
+      const cstRaw = localStorage.getItem(STORAGE_KEYS.CUSTODY);
+      this.custodyItems = cstRaw ? JSON.parse(cstRaw) : [];
+
+      const cfgRaw = localStorage.getItem(STORAGE_KEYS.SETTINGS);
+      if (cfgRaw) {
+        this.settings = { ...DEFAULT_EGYPTIAN_HR_SETTINGS, ...JSON.parse(cfgRaw) };
+      }
     } catch (e) {
       console.warn('[HRStorage] Failed to load local cache:', e);
     }
@@ -71,6 +165,9 @@ class HRStorageService {
       localStorage.setItem(STORAGE_KEYS.ATTENDANCE, JSON.stringify(this.attendance));
       localStorage.setItem(STORAGE_KEYS.LEAVES, JSON.stringify(this.leaves));
       localStorage.setItem(STORAGE_KEYS.LOANS, JSON.stringify(this.advances));
+      localStorage.setItem(STORAGE_KEYS.CANDIDATES, JSON.stringify(this.candidates));
+      localStorage.setItem(STORAGE_KEYS.CUSTODY, JSON.stringify(this.custodyItems));
+      localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(this.settings));
     } catch {}
   }
 
@@ -81,7 +178,38 @@ class HRStorageService {
   }
 
   /**
-   * Synchronize all HR data from Cloudflare D1
+   * تفريغ وتصفير موديول الموارد البشرية بالكامل (ذاكرة + المتصفح + قاعدة البيانات)
+   */
+  public async purgeAllHRData(): Promise<void> {
+    this.employees = [];
+    this.contracts = [];
+    this.attendance = [];
+    this.leaves = [];
+    this.advances = [];
+    this.candidates = [];
+    this.custodyItems = [];
+
+    if (typeof window !== 'undefined') {
+      try {
+        LEGACY_V1_KEYS.forEach((key) => localStorage.removeItem(key));
+        Object.values(STORAGE_KEYS).forEach((key) => {
+          if (key !== STORAGE_KEYS.PURGE_FLAG && key !== STORAGE_KEYS.SETTINGS) {
+            localStorage.removeItem(key);
+          }
+        });
+        localStorage.setItem(STORAGE_KEYS.PURGE_FLAG, 'true');
+      } catch {}
+
+      try {
+        await fetch('/api/hr/purge', { method: 'POST' });
+      } catch {}
+    }
+
+    this.notify();
+  }
+
+  /**
+   * Synchronize all HR data from Cloudflare D1 / local bridge
    */
   public async syncFromCloud(): Promise<void> {
     if (this.isSyncing || typeof window === 'undefined') return;
@@ -99,35 +227,35 @@ class HRStorageService {
       if (empRes && empRes.ok) {
         const rows = await empRes.json();
         if (Array.isArray(rows)) {
-          this.employees = rows.map(r => this.mapRowToEmployee(r));
+          this.employees = rows.map((r) => this.mapRowToEmployee(r));
         }
       }
 
       if (ctrRes && ctrRes.ok) {
         const rows = await ctrRes.json();
         if (Array.isArray(rows)) {
-          this.contracts = rows.map(r => this.mapRowToContract(r));
+          this.contracts = rows.map((r) => this.mapRowToContract(r));
         }
       }
 
       if (attRes && attRes.ok) {
         const rows = await attRes.json();
         if (Array.isArray(rows)) {
-          this.attendance = rows.map(r => this.mapRowToAttendance(r));
+          this.attendance = rows.map((r) => this.mapRowToAttendance(r));
         }
       }
 
       if (lvRes && lvRes.ok) {
         const rows = await lvRes.json();
         if (Array.isArray(rows)) {
-          this.leaves = rows.map(r => this.mapRowToLeave(r));
+          this.leaves = rows.map((r) => this.mapRowToLeave(r));
         }
       }
 
       if (lnRes && lnRes.ok) {
         const rows = await lnRes.json();
         if (Array.isArray(rows)) {
-          this.advances = rows.map(r => this.mapRowToLoan(r));
+          this.advances = rows.map((r) => this.mapRowToLoan(r));
         }
       }
 
@@ -146,11 +274,11 @@ class HRStorageService {
   }
 
   public getEmployeeById(id: string): Employee | undefined {
-    return this.employees.find(e => e.id === id || e.uid === id);
+    return this.employees.find((e) => e.id === id || e.uid === id);
   }
 
   public async saveEmployee(emp: Employee): Promise<Employee> {
-    const idx = this.employees.findIndex(e => e.id === emp.id);
+    const idx = this.employees.findIndex((e) => e.id === emp.id);
     if (idx >= 0) {
       this.employees[idx] = emp;
     } else {
@@ -160,18 +288,17 @@ class HRStorageService {
     this.persistLocal();
     this.notify();
 
-    // Async push to D1
     fetch('/api/hr/employees', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(emp),
-    }).catch(err => console.warn('[HRStorage] Failed to push employee to D1:', err));
+    }).catch((err) => console.warn('[HRStorage] Failed to push employee to backend:', err));
 
     return emp;
   }
 
   public async deleteEmployee(id: string): Promise<boolean> {
-    this.employees = this.employees.filter(e => e.id !== id);
+    this.employees = this.employees.filter((e) => e.id !== id);
     this.persistLocal();
     this.notify();
 
@@ -185,7 +312,7 @@ class HRStorageService {
   }
 
   public async saveContract(contract: EmployeeContractDoc): Promise<EmployeeContractDoc> {
-    const idx = this.contracts.findIndex(c => c.id === contract.id);
+    const idx = this.contracts.findIndex((c) => c.id === contract.id);
     if (idx >= 0) {
       this.contracts[idx] = contract;
     } else {
@@ -209,7 +336,12 @@ class HRStorageService {
   }
 
   public async saveAttendance(record: AttendanceRecord): Promise<void> {
-    this.attendance.unshift(record);
+    const idx = this.attendance.findIndex((a) => a.id === record.id);
+    if (idx >= 0) {
+      this.attendance[idx] = record;
+    } else {
+      this.attendance.unshift(record);
+    }
     this.persistLocal();
     this.notify();
 
@@ -226,7 +358,7 @@ class HRStorageService {
   }
 
   public async saveLeave(request: LeaveRequest): Promise<void> {
-    const idx = this.leaves.findIndex(l => l.id === request.id);
+    const idx = this.leaves.findIndex((l) => l.id === request.id);
     if (idx >= 0) {
       this.leaves[idx] = request;
     } else {
@@ -248,7 +380,7 @@ class HRStorageService {
   }
 
   public async saveAdvance(adv: EmployeeAdvance): Promise<void> {
-    const idx = this.advances.findIndex(a => a.id === adv.id);
+    const idx = this.advances.findIndex((a) => a.id === adv.id);
     if (idx >= 0) {
       this.advances[idx] = adv;
     } else {
@@ -264,8 +396,55 @@ class HRStorageService {
     }).catch(() => {});
   }
 
-  // --- Row Mappers ---
+  // --- Candidates ---
+  public getCandidates(): HRCandidate[] {
+    return [...this.candidates];
+  }
+
+  public saveCandidate(cand: HRCandidate): void {
+    const idx = this.candidates.findIndex((c) => c.id === cand.id);
+    if (idx >= 0) {
+      this.candidates[idx] = cand;
+    } else {
+      this.candidates.unshift(cand);
+    }
+    this.persistLocal();
+    this.notify();
+  }
+
+  // --- Custody Items ---
+  public getCustodyItems(): AssetCustody[] {
+    return [...this.custodyItems];
+  }
+
+  public saveCustodyItem(item: AssetCustody): void {
+    const idx = this.custodyItems.findIndex((c) => c.id === item.id);
+    if (idx >= 0) {
+      this.custodyItems[idx] = item;
+    } else {
+      this.custodyItems.unshift(item);
+    }
+    this.persistLocal();
+    this.notify();
+  }
+
+  // --- Egyptian HR Regulations Settings ---
+  public getSettings(): EgyptianHRRegulationsConfig {
+    return { ...this.settings };
+  }
+
+  public saveSettings(next: EgyptianHRRegulationsConfig): void {
+    this.settings = { ...next };
+    this.persistLocal();
+    this.notify();
+  }
+
+  // --- Row Mappers (supporting both D1 snake_case and local camelCase bridge) ---
   private mapRowToEmployee(row: any): Employee {
+    if (row && typeof row.nameAr === 'string' && row.salary) {
+      return row as Employee;
+    }
+
     let docs = [];
     let assets = [];
     let allowances = [];
@@ -280,16 +459,16 @@ class HRStorageService {
 
     return {
       id: row.id,
-      uid: row.code?.replace('TRB-', '') || row.id.slice(-4),
+      uid: row.code?.replace('EMP-', '').replace('TRB-', '') || String(row.id).slice(-4),
       employeeCode: row.code || row.id,
-      nameAr: row.name_ar,
+      nameAr: row.name_ar || '',
       nameEn: row.name_en || '',
-      jobTitleAr: row.job_title,
+      jobTitleAr: row.job_title || '',
       jobTitleEn: '',
-      departmentAr: row.department_id || 'عام',
+      departmentAr: row.department_id || 'الإدارة العامة',
       departmentEn: '',
-      companyId: row.company_id,
-      companyNameAr: '',
+      companyId: row.company_id || '',
+      companyNameAr: row.company_name_ar || '',
       branchAr: row.branch_id || 'المقر الرئيسي',
       mobile: row.phone || '',
       workPhone: row.work_phone || '',
@@ -327,7 +506,7 @@ class HRStorageService {
         monthlyAccrual: 1.75,
       },
       avatarColor: '#D99B26',
-      roleLevel: row.job_title,
+      roleLevel: row.job_title || '',
       bloodType: row.blood_type || 'O+',
       socialInsuranceNo: row.insurance_no || '',
       workSchedule: {
@@ -350,13 +529,13 @@ class HRStorageService {
         isSiteShifts247: false,
         isFixedHours: true,
         hasSocialInsurance: true,
-        socialInsuranceType: 'تأمين نمطي',
+        socialInsuranceType: 'تأمين نمطي (قانون 148)',
         hasMedicalInsurance: true,
         medicalInsuranceMonthlyDeduction: 0,
         ...schedule,
       },
       documents: docs,
-      assets: assets,
+      assets,
       allowancesList: allowances,
       bonuses: [],
       deductions: [],
@@ -372,13 +551,16 @@ class HRStorageService {
   }
 
   private mapRowToContract(row: any): EmployeeContractDoc {
+    if (row && typeof row.employeeName === 'string' && row.startDate) {
+      return row as EmployeeContractDoc;
+    }
     return {
       id: row.id,
       employeeId: row.employee_id,
       employeeName: '',
       jobTitle: '',
       companyId: row.company_id,
-      contractType: row.contract_type || 'محدد المدة',
+      contractType: row.contract_type || 'limited',
       startDate: row.start_date || '',
       endDate: row.end_date || '',
       daysUntilContractExpiry: 180,
@@ -386,13 +568,16 @@ class HRStorageService {
       daysUntilIdExpiry: 365,
       workLicenseExpiry: '',
       daysUntilLicenseExpiry: 365,
-      medicalGrade: 'الفئة A+',
+      medicalGrade: 'كشف طبي س111',
       status: row.status || 'valid',
       documentRef: row.file_name || row.id,
     };
   }
 
   private mapRowToAttendance(row: any): AttendanceRecord {
+    if (row && typeof row.employeeName === 'string' && row.checkIn !== undefined) {
+      return row as AttendanceRecord;
+    }
     return {
       id: row.id,
       employeeId: row.employee_id,
@@ -400,13 +585,16 @@ class HRStorageService {
       date: row.date,
       checkIn: row.check_in || '',
       checkOut: row.check_out || '',
-      status: row.status || 'حاضر',
+      status: row.status || 'present',
       workLocation: '',
       note: row.notes || '',
     };
   }
 
   private mapRowToLeave(row: any): LeaveRequest {
+    if (row && typeof row.employeeName === 'string' && row.startDate) {
+      return row as LeaveRequest;
+    }
     return {
       id: row.id,
       employeeId: row.employee_id,
@@ -417,13 +605,16 @@ class HRStorageService {
       endDate: row.end_date,
       daysCount: Number(row.days_count || 1),
       reason: row.reason || '',
-      status: row.status || 'approved',
+      status: row.status || 'pending',
       requestDate: row.created_at?.slice(0, 10) || '',
       approvedBy: row.approved_by || '',
     };
   }
 
   private mapRowToLoan(row: any): EmployeeAdvance {
+    if (row && typeof row.advanceCode === 'string') {
+      return row as EmployeeAdvance;
+    }
     return {
       id: row.id,
       advanceCode: row.id,
@@ -436,7 +627,9 @@ class HRStorageService {
       paidAmount: Number(row.paid_amount || 0),
       remainingAmount: Number(row.remaining_amount || 0),
       installmentsTotal: Number(row.installments_count || 1),
-      installmentsRemaining: Math.ceil(Number(row.remaining_amount || 0) / (Number(row.monthly_installment || 1))),
+      installmentsRemaining: Math.ceil(
+        Number(row.remaining_amount || 0) / Math.max(1, Number(row.monthly_installment || 1))
+      ),
       startDate: row.start_month || '',
       reason: row.reason || '',
       status: row.status === 'مسددة' ? 'cleared' : 'active',

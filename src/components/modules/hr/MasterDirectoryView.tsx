@@ -11,6 +11,12 @@ import { AddBonusModal } from './AddBonusModal';
 import { AddDeductionModal } from './AddDeductionModal';
 import { Modal } from '../../common/Modal';
 import {
+  parseEgyptianNationalId,
+  calculateFullEgyptianPayrollSlip,
+  EGYPTIAN_WORKFORCE_CLASSIFICATIONS,
+  EGYPTIAN_BANKS,
+} from '../../../utils/egyptianLaborAlgorithms';
+import {
   Filter,
   ChevronDown,
   ChevronUp,
@@ -110,6 +116,7 @@ export const MasterDirectoryView: React.FC = () => {
     nameEn: '',
     jobTitleAr: '',
     departmentAr: '',
+    workforceCategory: EGYPTIAN_WORKFORCE_CLASSIFICATIONS[0].labelAr as string,
     companyId: '',
     companyNameAr: '',
     branchAr: '',
@@ -118,8 +125,31 @@ export const MasterDirectoryView: React.FC = () => {
     email: '',
     nationalId: '',
     basicSalary: '',
+    allowances: '',
+    insurableWage: '',
+    bankName: EGYPTIAN_BANKS[0].nameAr,
+    bankAccount: '',
     directManager: '',
   });
+
+  // Live Egyptian National ID & Payroll Preview inside modal
+  const liveNidAnalysis = useMemo(
+    () => parseEgyptianNationalId(newEmpForm.nationalId),
+    [newEmpForm.nationalId]
+  );
+
+  const livePayrollPreview = useMemo(() => {
+    const basic = Number(newEmpForm.basicSalary) || 0;
+    const allow = Number(newEmpForm.allowances) || 0;
+    const ins = Number(newEmpForm.insurableWage) || basic;
+    if (basic <= 0) return null;
+    return calculateFullEgyptianPayrollSlip({
+      basicSalary: basic,
+      housingAllowance: allow,
+      insurableWage: ins,
+      isInsured: true,
+    });
+  }, [newEmpForm.basicSalary, newEmpForm.allowances, newEmpForm.insurableWage]);
 
   // Update newEmpForm default company when companies load
   useEffect(() => {
@@ -199,27 +229,37 @@ export const MasterDirectoryView: React.FC = () => {
     }
 
     const basic = Number(newEmpForm.basicSalary) || 0;
-    const allowances = 0;
-    const deductions = 0;
+    const allowances = Number(newEmpForm.allowances) || 0;
+    const insurable = Number(newEmpForm.insurableWage) || basic;
+    const slip = calculateFullEgyptianPayrollSlip({
+      basicSalary: basic,
+      insurableWage: insurable,
+      housingAllowance: allowances,
+      isInsured: true,
+    });
 
     const created = addEmployee({
       nameAr: newEmpForm.nameAr.trim(),
       nameEn: newEmpForm.nameEn.trim(),
       jobTitleAr: newEmpForm.jobTitleAr.trim() || 'موظف',
       departmentAr: newEmpForm.departmentAr.trim() || 'الإدارة العامة',
+      workforceCategory: newEmpForm.workforceCategory,
       companyId: newEmpForm.companyId || (companies[0]?.id || 'comp_default'),
       companyNameAr: newEmpForm.companyNameAr || (companies[0]?.nameAr || 'الشركة الرئيسية'),
       branchAr: newEmpForm.branchAr || 'المقر الرئيسي',
-      workLocation: newEmpForm.workLocation.trim() || 'المقر الرئيسي',
+      workLocation: newEmpForm.workLocation.trim() || newEmpForm.branchAr || 'المقر الرئيسي',
       mobile: newEmpForm.mobile.trim(),
       email: newEmpForm.email.trim(),
       nationalId: newEmpForm.nationalId.trim(),
+      insurableWage: slip.insurance.clampedInsurableWage,
+      bankName: newEmpForm.bankName,
+      bankAccount: newEmpForm.bankAccount.trim(),
       directManager: newEmpForm.directManager.trim() || '—',
       salary: {
         basic,
         allowances,
-        deductions,
-        net: basic + allowances - deductions,
+        deductions: slip.totalStatutoryAndCustomDeductions,
+        net: slip.netSalary,
       },
     });
 
@@ -230,6 +270,7 @@ export const MasterDirectoryView: React.FC = () => {
       nameEn: '',
       jobTitleAr: '',
       departmentAr: '',
+      workforceCategory: EGYPTIAN_WORKFORCE_CLASSIFICATIONS[0].labelAr,
       companyId: companies[0]?.id || '',
       companyNameAr: companies[0]?.nameAr || '',
       branchAr: '',
@@ -238,6 +279,10 @@ export const MasterDirectoryView: React.FC = () => {
       email: '',
       nationalId: '',
       basicSalary: '',
+      allowances: '',
+      insurableWage: '',
+      bankName: EGYPTIAN_BANKS[0].nameAr,
+      bankAccount: '',
       directManager: '',
     });
   };
@@ -433,22 +478,25 @@ export const MasterDirectoryView: React.FC = () => {
 
       {/* 4. EXECUTIVE ZERO DATA EMPTY STATE */}
       {employees.length === 0 ? (
-        <div className="flex flex-col items-center justify-center min-h-[460px] p-8 text-center rounded-3xl bg-[#F3EFE6]/70 dark:bg-[#17231A]/70 border border-[#E0D9CB] dark:border-[#243628] shadow-sm backdrop-blur-sm">
-          <div className="w-20 h-20 mb-5 rounded-3xl bg-amber-500/10 dark:bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-600 dark:text-amber-400 shadow-inner">
+        <div className="flex flex-col items-center justify-center min-h-[460px] p-8 text-center rounded-3xl bg-[#F3EFE6]/80 dark:bg-[#17231A]/85 border border-[#E0D9CB] dark:border-[#243628] shadow-sm backdrop-blur-sm">
+          <div className="w-20 h-20 mb-5 rounded-3xl bg-[#059669]/10 dark:bg-[#059669]/20 border border-[#059669]/30 flex items-center justify-center text-[#059669] dark:text-[#34D399] shadow-inner">
             <Users className="w-10 h-10" />
           </div>
+          <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-[#D99B26]/15 text-[#D99B26] dark:text-[#EBB34D] border border-[#D99B26]/30 mb-3">
+            نظام الموارد البشرية المصري — قانون العمل 12 لسنة 2003 والتأمينات 148 لسنة 2019
+          </span>
           <h3 className="text-base sm:text-lg font-black text-[#1A241C] dark:text-[#F3EFE6] mb-2">
-            لا توجد بيانات موظفين مسجلة حالياً
+            تم تفريغ وتجهيز سجل الموظفين بنجاح (0 موظفين)
           </h3>
-          <p className="max-w-md text-xs font-medium text-[#5C665E] dark:text-[#8FA392] mb-6 leading-relaxed">
-            ابدأ بإضافة أول موظف وربطه بشركته وموقعه الفعلي في الهيكل التنظيمي المعتمد
+          <p className="max-w-lg text-xs font-medium text-[#5C665E] dark:text-[#8FA392] mb-6 leading-relaxed">
+            ابدأ بإضافة أول موظف بالرقم القومي المصري (14 رقماً) ليقوم المحرك الخوارزمي باستخراج المحافظة وتاريخ الميلاد وحساب التأمينات الاجتماعية وضريبة كسب العمل وإعداد ملف مسوغات التعيين تلقائياً.
           </p>
           <button
             onClick={() => setIsAddEmployeeOpen(true)}
-            className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-l from-amber-600 to-amber-500 hover:from-amber-700 hover:to-amber-600 text-white font-bold text-xs shadow-lg shadow-amber-500/25 active:scale-95 transition-all cursor-pointer"
+            className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-[#059669] hover:bg-[#047857] text-white font-bold text-xs shadow-lg shadow-emerald-900/20 active:scale-95 transition-all cursor-pointer"
           >
             <Plus className="w-4 h-4" />
-            <span>+ إضافة موظف جديد</span>
+            <span>+ إضافة أول موظف في المنظومة</span>
           </button>
         </div>
       ) : filteredEmployees.length === 0 ? (
@@ -901,7 +949,7 @@ export const MasterDirectoryView: React.FC = () => {
                             الحقل المعدل: <span className="font-bold text-[#D99B26] dark:text-[#EBB34D]">{log.fieldChanged}</span>
                           </div>
                           <div className="mt-1 flex items-center gap-2 text-[10.5px]">
-                            <span className="text-stone-400 line-through">{log.oldValue}</span>
+                            <span className="text-[#5C665E] dark:text-[#8FA392] line-through">{log.oldValue}</span>
                             <span>←</span>
                             <span className="font-bold text-emerald-600 dark:text-emerald-400">{log.newValue}</span>
                           </div>
@@ -948,30 +996,95 @@ export const MasterDirectoryView: React.FC = () => {
         </>
       )}
 
-      {/* Add New Employee Modal with Live D1 Integration & CreatableSelect */}
+      {/* Add New Employee Modal with Egyptian National ID Parser & Payroll Engine */}
       <Modal
         isOpen={isAddEmployeeOpen}
         onClose={() => setIsAddEmployeeOpen(false)}
-        title="إضافة ملف موظف جديد للمنظومة"
-        subtitle="تسجيل البيانات الأساسية وتعيين مركز تكلفة المشروع والشركة التابعة"
-        maxWidth="max-w-xl"
+        title="إضافة ملف موظف جديد (النظام المصري الموحد)"
+        subtitle="تحليل فوري للرقم القومي وحساب التأمينات (148/2019) وضريبة كسب العمل (7/2024)"
+        maxWidth="max-w-2xl"
       >
         <form onSubmit={handleCreateEmployee} className="space-y-4">
-          <div>
-            <label className="block text-xs font-bold text-[#5C665E] dark:text-[#8FA392] mb-1">
-              اسم الموظف رباعي بالعربية *
-            </label>
-            <input
-              type="text"
-              value={newEmpForm.nameAr}
-              onChange={(e) => setNewEmpForm({ ...newEmpForm, nameAr: e.target.value })}
-              placeholder="أدخل الاسم الرباعي بالعربية كما هو مدون في بطاقة الرقم القومي..."
-              className="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-[#111A13] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6] focus:border-[#EBB34D] outline-none"
-              required
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-[#5C665E] dark:text-[#8FA392] mb-1">
+                اسم الموظف رباعي بالعربية *
+              </label>
+              <input
+                type="text"
+                value={newEmpForm.nameAr}
+                onChange={(e) => setNewEmpForm({ ...newEmpForm, nameAr: e.target.value })}
+                placeholder="كما هو مدون في بطاقة الرقم القومي..."
+                className="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-[#111A13] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6] focus:border-[#D99B26] outline-none"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-[#5C665E] dark:text-[#8FA392] mb-1">
+                الرقم القومي المصري (14 رقماً) *
+              </label>
+              <input
+                type="text"
+                maxLength={14}
+                value={newEmpForm.nationalId}
+                onChange={(e) => setNewEmpForm({ ...newEmpForm, nationalId: e.target.value })}
+                placeholder="مثال: 29205140101234"
+                className="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-[#111A13] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6] focus:border-[#D99B26] outline-none font-mono"
+              />
+            </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          {/* Live National ID Decoding Strip */}
+          {newEmpForm.nationalId.trim().length > 0 && (
+            <div
+              className={`p-3 rounded-xl border text-xs transition-all ${
+                liveNidAnalysis.isValid
+                  ? 'bg-[#059669]/10 border-[#059669]/30 text-[#1A241C] dark:text-[#F3EFE6]'
+                  : 'bg-amber-500/10 border-amber-500/30 text-[#D99B26] dark:text-[#EBB34D]'
+              }`}
+            >
+              {liveNidAnalysis.isValid ? (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
+                  <div>
+                    <span className="text-[#5C665E] dark:text-[#8FA392] block">تاريخ الميلاد / السن:</span>
+                    <strong className="font-mono">{liveNidAnalysis.birthDate} ({liveNidAnalysis.ageYears} سنة)</strong>
+                  </div>
+                  <div>
+                    <span className="text-[#5C665E] dark:text-[#8FA392] block">محافظة الميلاد:</span>
+                    <strong>{liveNidAnalysis.governorateName}</strong>
+                  </div>
+                  <div>
+                    <span className="text-[#5C665E] dark:text-[#8FA392] block">النوع:</span>
+                    <strong>{liveNidAnalysis.genderAr}</strong>
+                  </div>
+                  <div>
+                    <span className="text-[#5C665E] dark:text-[#8FA392] block">رصيد الإجازة القانوني:</span>
+                    <strong className="text-[#059669] dark:text-[#34D399]">{liveNidAnalysis.statutoryAnnualLeaveDays} يوماً/سنة</strong>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-[11px] font-bold">{liveNidAnalysis.errorMessage}</div>
+              )}
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-[#5C665E] dark:text-[#8FA392] mb-1">
+                تصنيف العمالة المصرية
+              </label>
+              <select
+                value={newEmpForm.workforceCategory}
+                onChange={(e) => setNewEmpForm({ ...newEmpForm, workforceCategory: e.target.value })}
+                className="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-[#111A13] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6] focus:border-[#D99B26] outline-none"
+              >
+                {EGYPTIAN_WORKFORCE_CLASSIFICATIONS.map((c) => (
+                  <option key={c.id} value={c.labelAr}>{c.labelAr}</option>
+                ))}
+              </select>
+            </div>
+
             <div>
               <label className="block text-xs font-bold text-[#5C665E] dark:text-[#8FA392] mb-1">
                 الشركة التابعة *
@@ -987,7 +1100,7 @@ export const MasterDirectoryView: React.FC = () => {
                     branchAr: 'المقر الرئيسي',
                   }));
                 }}
-                className="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-[#111A13] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6] focus:border-[#EBB34D] outline-none"
+                className="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-[#111A13] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6] focus:border-[#D99B26] outline-none"
                 required
               >
                 {companies.map(c => (
@@ -1003,7 +1116,7 @@ export const MasterDirectoryView: React.FC = () => {
               <select
                 value={newEmpForm.branchAr}
                 onChange={(e) => setNewEmpForm(prev => ({ ...prev, branchAr: e.target.value, workLocation: e.target.value }))}
-                className="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-[#111A13] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6] focus:border-[#EBB34D] outline-none"
+                className="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-[#111A13] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6] focus:border-[#D99B26] outline-none"
               >
                 <option value="المقر الرئيسي">المقر الرئيسي</option>
                 {companyBranches.map((b) => (
@@ -1039,23 +1152,7 @@ export const MasterDirectoryView: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-bold text-[#5C665E] dark:text-[#8FA392] mb-1">
-                المدير المباشر
-              </label>
-              <select
-                value={newEmpForm.directManager}
-                onChange={(e) => setNewEmpForm(prev => ({ ...prev, directManager: e.target.value }))}
-                className="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-[#111A13] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6] focus:border-[#EBB34D] outline-none"
-              >
-                <option value="">اختر المدير المباشر إن وجد...</option>
-                {employees.map(e => (
-                  <option key={e.id} value={e.nameAr}>{e.nameAr} - {e.jobTitleAr}</option>
-                ))}
-              </select>
-            </div>
-
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="block text-xs font-bold text-[#5C665E] dark:text-[#8FA392] mb-1">
                 الراتب الأساسي (ج.م)
@@ -1064,13 +1161,60 @@ export const MasterDirectoryView: React.FC = () => {
                 type="number"
                 value={newEmpForm.basicSalary}
                 onChange={(e) => setNewEmpForm({ ...newEmpForm, basicSalary: e.target.value })}
-                placeholder="أدخل قيمة الراتب الأساسي الشهري..."
-                className="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-[#111A13] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6] focus:border-[#EBB34D] outline-none font-mono font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                placeholder="مثال: 15000"
+                className="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-[#111A13] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6] focus:border-[#D99B26] outline-none font-mono font-bold"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-[#5C665E] dark:text-[#8FA392] mb-1">
+                البدلات الشهرية (انتقال/موقع)
+              </label>
+              <input
+                type="number"
+                value={newEmpForm.allowances}
+                onChange={(e) => setNewEmpForm({ ...newEmpForm, allowances: e.target.value })}
+                placeholder="مثال: 3000"
+                className="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-[#111A13] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6] focus:border-[#D99B26] outline-none font-mono font-bold"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-[#5C665E] dark:text-[#8FA392] mb-1">
+                الأجر التأميني (2,300 - 14,500)
+              </label>
+              <input
+                type="number"
+                value={newEmpForm.insurableWage}
+                onChange={(e) => setNewEmpForm({ ...newEmpForm, insurableWage: e.target.value })}
+                placeholder="يُحسب تلقائياً إذا تُرك فارغاً"
+                className="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-[#111A13] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6] focus:border-[#D99B26] outline-none font-mono font-bold"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          {livePayrollPreview && (
+            <div className="p-3 rounded-xl bg-[#F3EFE6] dark:bg-[#111A13] border border-[#E0D9CB] dark:border-[#243628] grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
+              <div>
+                <span className="text-[#5C665E] dark:text-[#8FA392] block">حصة التأمينات (11%):</span>
+                <strong className="font-mono text-rose-500">-{livePayrollPreview.insurance.employeeShare.toLocaleString('en-US')} ج.م</strong>
+              </div>
+              <div>
+                <span className="text-[#5C665E] dark:text-[#8FA392] block">ضريبة كسب العمل:</span>
+                <strong className="font-mono text-rose-500">-{livePayrollPreview.tax.monthlyTax.toLocaleString('en-US')} ج.م</strong>
+              </div>
+              <div>
+                <span className="text-[#5C665E] dark:text-[#8FA392] block">صندوق الشهداء (0.05%):</span>
+                <strong className="font-mono text-rose-500">-{livePayrollPreview.tax.martyrsFundMonthly.toLocaleString('en-US')} ج.م</strong>
+              </div>
+              <div>
+                <span className="text-[#5C665E] dark:text-[#8FA392] block">صافي الراتب المستحق:</span>
+                <strong className="font-mono text-[#059669] dark:text-[#EBB34D]">{livePayrollPreview.netSalary.toLocaleString('en-US')} ج.م</strong>
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="block text-xs font-bold text-[#5C665E] dark:text-[#8FA392] mb-1">
                 الهاتف المحمول
@@ -1080,20 +1224,39 @@ export const MasterDirectoryView: React.FC = () => {
                 value={newEmpForm.mobile}
                 onChange={(e) => setNewEmpForm({ ...newEmpForm, mobile: e.target.value })}
                 placeholder="01xxxxxxxxx"
-                className="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-[#111A13] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6] focus:border-[#EBB34D] outline-none font-mono"
+                className="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-[#111A13] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6] focus:border-[#D99B26] outline-none font-mono"
               />
             </div>
+
             <div>
               <label className="block text-xs font-bold text-[#5C665E] dark:text-[#8FA392] mb-1">
-                الرقم القومي (14 رقماً)
+                البنك المحول إليه
               </label>
-              <input
-                type="text"
-                value={newEmpForm.nationalId}
-                onChange={(e) => setNewEmpForm({ ...newEmpForm, nationalId: e.target.value })}
-                placeholder="أدخل الـ 14 رقماً القومية..."
-                className="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-[#111A13] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6] focus:border-[#EBB34D] outline-none font-mono"
-              />
+              <select
+                value={newEmpForm.bankName}
+                onChange={(e) => setNewEmpForm({ ...newEmpForm, bankName: e.target.value })}
+                className="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-[#111A13] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6] focus:border-[#D99B26] outline-none"
+              >
+                {EGYPTIAN_BANKS.map((bank) => (
+                  <option key={bank.code} value={bank.nameAr}>{bank.nameAr}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-[#5C665E] dark:text-[#8FA392] mb-1">
+                المدير المباشر
+              </label>
+              <select
+                value={newEmpForm.directManager}
+                onChange={(e) => setNewEmpForm(prev => ({ ...prev, directManager: e.target.value }))}
+                className="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-[#111A13] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6] focus:border-[#D99B26] outline-none"
+              >
+                <option value="">اختر المدير المباشر إن وجد...</option>
+                {employees.map(e => (
+                  <option key={e.id} value={e.nameAr}>{e.nameAr} - {e.jobTitleAr}</option>
+                ))}
+              </select>
             </div>
           </div>
 
@@ -1107,10 +1270,10 @@ export const MasterDirectoryView: React.FC = () => {
             </button>
             <button
               type="submit"
-              className="flex items-center gap-1.5 px-5 py-2 rounded-xl bg-gradient-to-l from-amber-600 to-amber-500 hover:from-amber-700 hover:to-amber-600 text-white text-xs font-bold shadow-md shadow-amber-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+              className="flex items-center gap-1.5 px-5 py-2 rounded-xl bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold shadow-md shadow-emerald-900/20 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>تسجيل الموظف والملف</span>
+              <span>تسجيل الموظف والملف المصري</span>
             </button>
           </div>
         </form>

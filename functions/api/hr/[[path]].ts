@@ -511,6 +511,19 @@ export const onRequestPost: PagesFunction = async (context) => {
         return jsonResponse({ success: true, id, message: 'تم حفظ مسير الرواتب بنجاح' });
       }
 
+      case 'purge': {
+        await env.DB.batch([
+          env.DB.prepare('DELETE FROM hr_payroll_runs'),
+          env.DB.prepare('DELETE FROM hr_rewards_penalties'),
+          env.DB.prepare('DELETE FROM hr_loans'),
+          env.DB.prepare('DELETE FROM hr_leaves'),
+          env.DB.prepare('DELETE FROM hr_attendance'),
+          env.DB.prepare('DELETE FROM hr_contracts'),
+          env.DB.prepare('DELETE FROM hr_employees'),
+        ]);
+        return jsonResponse({ success: true, purged: true, message: 'تم تفريغ وتصفير جميع جداول الموارد البشرية بنجاح' });
+      }
+
       default:
         return errorResponse(`المسار غير معروف (${resource})`, 404);
     }
@@ -530,6 +543,19 @@ export const onRequestDelete: PagesFunction = async (context) => {
 
     await ensureHrSchema(env.DB);
     const { resource, id } = parsePath(context);
+
+    if (resource === 'purge') {
+      await env.DB.batch([
+        env.DB.prepare('DELETE FROM hr_payroll_runs'),
+        env.DB.prepare('DELETE FROM hr_rewards_penalties'),
+        env.DB.prepare('DELETE FROM hr_loans'),
+        env.DB.prepare('DELETE FROM hr_leaves'),
+        env.DB.prepare('DELETE FROM hr_attendance'),
+        env.DB.prepare('DELETE FROM hr_contracts'),
+        env.DB.prepare('DELETE FROM hr_employees'),
+      ]);
+      return jsonResponse({ success: true, purged: true, message: 'تم تفريغ وتصفير جميع جداول الموارد البشرية بنجاح' });
+    }
 
     if (!id) return errorResponse('معرف السجل مطلوب للحذف', 400);
 

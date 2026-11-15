@@ -103,7 +103,7 @@ export const LeavesManagementView: React.FC = () => {
       case 'mission':
         return { label: 'مأمورية موقع خارجية', color: 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30', icon: Briefcase };
       default:
-        return { label: 'بدون أجر', color: 'bg-stone-500/15 text-stone-600 dark:text-stone-400 border-stone-500/30', icon: Clock };
+        return { label: 'بدون أجر', color: 'bg-[#EAE4D7] dark:bg-[#1F2E23] text-[#5C665E] dark:text-[#8FA392] border-[#E0D9CB] dark:border-[#243628]', icon: Clock };
     }
   };
 

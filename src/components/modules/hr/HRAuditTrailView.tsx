@@ -57,9 +57,9 @@ export const HRAuditTrailView: React.FC = () => {
         <button
           type="button"
           onClick={() => showToast('جاري تصدير سجل العمليات بصيغة Excel المعتمدة للرقابة الداخلية')}
-          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#17231A] border border-[#243628] text-[#F3EFE6] text-xs font-bold hover:border-[#EBB34D] transition-all cursor-pointer"
+          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#EAE4D7] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6] text-xs font-bold hover:border-[#D99B26] dark:hover:border-[#EBB34D] transition-all cursor-pointer"
         >
-          <Download className="w-4 h-4 text-[#EBB34D]" />
+          <Download className="w-4 h-4 text-[#D99B26] dark:text-[#EBB34D]" />
           <span>تصدير سجل العمليات</span>
         </button>
       </div>
@@ -75,7 +75,7 @@ export const HRAuditTrailView: React.FC = () => {
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                 selectedActionType === act
                   ? 'bg-gradient-to-l from-amber-600 to-amber-500 text-white shadow-sm font-black'
-                  : 'text-[#8FA392] hover:text-[#F3EFE6]'
+                  : 'text-[#5C665E] dark:text-[#8FA392] hover:text-[#1A241C] dark:hover:text-[#F3EFE6]'
               }`}
             >
               {act === 'all' ? 'كافة العمليات' : act}
@@ -106,43 +106,43 @@ export const HRAuditTrailView: React.FC = () => {
                 <th className="py-3 px-4 font-bold">الشركة التابعة</th>
                 <th className="py-3 px-4 font-bold">نوع العملية</th>
                 <th className="py-3 px-4 font-bold">الحقل المعدل</th>
-                <th className="py-3 px-4 font-bold text-rose-400">القيمة السابقة</th>
-                <th className="py-3 px-4 font-bold text-emerald-400">القيمة الجديدة</th>
+                <th className="py-3 px-4 font-bold text-rose-600 dark:text-rose-400">القيمة السابقة</th>
+                <th className="py-3 px-4 font-bold text-[#059669] dark:text-emerald-400">القيمة الجديدة</th>
                 <th className="py-3 px-4 font-bold">المستخدم المسؤول</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#E0D9CB] dark:divide-[#243628]">
               {filteredLogs.map(log => (
                 <tr key={log.id} className="hover:bg-[#F3EFE6]/50 dark:hover:bg-[#1F2E23]/50 transition-colors">
-                  <td className="py-3 px-4 text-start font-mono text-[11px] text-[#8FA392]">
+                  <td className="py-3 px-4 text-start font-mono text-[11px] text-[#5C665E] dark:text-[#8FA392]">
                     {log.timestamp}
                   </td>
                   <td className="py-3 px-4 text-start font-bold text-[#1A241C] dark:text-[#F3EFE6]">
                     <div className="flex items-center gap-1.5">
                       <span>{log.employeeName}</span>
-                      <span className="font-mono text-[10px] text-[#EBB34D]">({log.employeeUid})</span>
+                      <span className="font-mono text-[10px] text-[#D99B26] dark:text-[#EBB34D]">({log.employeeUid})</span>
                     </div>
                   </td>
                   <td className="py-3 px-4 font-medium text-[#1A241C] dark:text-[#F3EFE6]">
                     {log.companyName}
                   </td>
                   <td className="py-3 px-4">
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#17231A] text-[#EBB34D] border border-[#243628]">
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#EAE4D7] dark:bg-[#17231A] text-[#D99B26] dark:text-[#EBB34D] border border-[#E0D9CB] dark:border-[#243628]">
                       {log.actionType}
                     </span>
                   </td>
                   <td className="py-3 px-4 font-mono font-medium text-[#1A241C] dark:text-[#F3EFE6]">
                     {log.fieldChanged}
                   </td>
-                  <td className="py-3 px-4 font-mono text-rose-400 line-through">
+                  <td className="py-3 px-4 font-mono text-rose-600 dark:text-rose-400 line-through">
                     {log.oldValue || '—'}
                   </td>
-                  <td className="py-3 px-4 font-mono font-bold text-emerald-400">
+                  <td className="py-3 px-4 font-mono font-bold text-[#059669] dark:text-emerald-400">
                     {log.newValue}
                   </td>
-                  <td className="py-3 px-4 font-medium text-[#8FA392]">
+                  <td className="py-3 px-4 font-medium text-[#5C665E] dark:text-[#8FA392]">
                     <span className="flex items-center gap-1">
-                      <UserCheck className="w-3 h-3 text-[#EBB34D]" />
+                      <UserCheck className="w-3 h-3 text-[#D99B26] dark:text-[#EBB34D]" />
                       <span>{log.userName}</span>
                     </span>
                   </td>

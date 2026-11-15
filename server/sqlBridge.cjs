@@ -4471,6 +4471,70 @@ app.get('/api/system/federation/multi-year-balance', async (req, res) => {
   }
 });
 
+// ==================== HR Module Bridge & Full Purge Endpoints ====================
+const HR_BRIDGE_RESOURCES = ['employees', 'contracts', 'attendance', 'leaves', 'loans', 'rewards', 'payroll'];
+const hrLocalMemoryStore = HR_BRIDGE_RESOURCES.reduce((acc, key) => {
+  acc[key] = [];
+  return acc;
+}, {});
+
+function emptyHrMemoryStore() {
+  HR_BRIDGE_RESOURCES.forEach((key) => {
+    hrLocalMemoryStore[key] = [];
+  });
+}
+
+app.post('/api/hr/purge', (req, res) => {
+  emptyHrMemoryStore();
+  res.json({ success: true, purged: true, message: 'تم تفريغ وتصفير كافة سجلات الموارد البشرية بنجاح' });
+});
+
+app.delete('/api/hr/purge', (req, res) => {
+  emptyHrMemoryStore();
+  res.json({ success: true, purged: true, message: 'تم تفريغ وتصفير كافة سجلات الموارد البشرية بنجاح' });
+});
+
+app.get('/api/hr/:resource', (req, res) => {
+  const { resource } = req.params;
+  if (!HR_BRIDGE_RESOURCES.includes(resource)) {
+    return res.json({
+      success: true,
+      totalEmployees: hrLocalMemoryStore.employees.length,
+      totalContracts: hrLocalMemoryStore.contracts.length,
+      activeLoans: hrLocalMemoryStore.loans.length,
+      pendingLeaves: hrLocalMemoryStore.leaves.length,
+    });
+  }
+  return res.json(hrLocalMemoryStore[resource] || []);
+});
+
+app.post('/api/hr/:resource', (req, res) => {
+  const { resource } = req.params;
+  if (!HR_BRIDGE_RESOURCES.includes(resource)) {
+    return res.status(404).json({ success: false, error: `المسار غير معروف (${resource})` });
+  }
+  const item = req.body || {};
+  const id = item.id || `${resource.toUpperCase()}-${Date.now()}`;
+  const list = hrLocalMemoryStore[resource];
+  const idx = list.findIndex((row) => row.id === id);
+  const record = { ...item, id };
+  if (idx >= 0) {
+    list[idx] = record;
+  } else {
+    list.unshift(record);
+  }
+  return res.json({ success: true, id, message: 'تم الحفظ في ذاكرة الموارد البشرية المحلية بنجاح' });
+});
+
+app.delete('/api/hr/:resource/:id', (req, res) => {
+  const { resource, id } = req.params;
+  if (!HR_BRIDGE_RESOURCES.includes(resource)) {
+    return res.status(404).json({ success: false, error: `المسار غير مدعوم (${resource})` });
+  }
+  hrLocalMemoryStore[resource] = (hrLocalMemoryStore[resource] || []).filter((row) => row.id !== id);
+  return res.json({ success: true, message: `تم حذف السجل بنجاح (${id})` });
+});
+
 const PORT = process.env.PORT || 5000;
 let serverInstance = null;
 try {

@@ -1,5 +1,14 @@
 import React, { createContext, useContext, useState, useMemo, useEffect } from 'react';
-import { hrStorage } from '../services/hrStorage';
+import {
+  hrStorage,
+  EgyptianHRRegulationsConfig,
+  DEFAULT_EGYPTIAN_HR_SETTINGS,
+} from '../services/hrStorage';
+import {
+  parseEgyptianNationalId,
+  calculateFullEgyptianPayrollSlip,
+  calculateAnnualLeaveEntitlement,
+} from '../utils/egyptianLaborAlgorithms';
 
 export type EmployeeStatus = 'active' | 'on_leave' | 'terminated';
 export type AttendanceStatus = 'present' | 'absent' | 'leave' | 'mission';
@@ -132,6 +141,10 @@ export interface Employee {
   gender: 'male' | 'female';
   religion: string;
   address: string;
+  birthDate?: string;
+  governorate?: string;
+  workforceCategory?: string;
+  insurableWage?: number;
   salary: {
     basic: number;
     allowances: number;
@@ -274,6 +287,21 @@ export interface EmployeeContractDoc {
   documentRef: string;
 }
 
+export interface HRCandidate {
+  id: string;
+  nameAr: string;
+  jobPosition: string;
+  department: string;
+  companyNameAr: string;
+  mobile: string;
+  email: string;
+  yearsOfExp: number;
+  expectedSalary: number;
+  stage: 'new' | 'interview' | 'offer' | 'hired';
+  appliedDate: string;
+  notes: string;
+}
+
 interface HRContextType {
   // Employees
   employees: Employee[];
@@ -315,6 +343,16 @@ interface HRContextType {
   contracts: EmployeeContractDoc[];
   renewContract: (id: string, newEndDate: string) => void;
 
+  // Recruitment Candidates
+  candidates: HRCandidate[];
+  addCandidate: (cand: Omit<HRCandidate, 'id' | 'stage' | 'appliedDate'>) => void;
+  advanceCandidateStage: (candId: string) => void;
+
+  // Egyptian HR Regulations & Purge
+  regulations: EgyptianHRRegulationsConfig;
+  updateRegulations: (next: EgyptianHRRegulationsConfig) => void;
+  purgeAllHRModuleData: () => Promise<void>;
+
   // KPIs
   stats: {
     totalEmployees: number;
@@ -332,22 +370,25 @@ interface HRContextType {
   showToast: (msg: string) => void;
 }
 
-// 13 Standard Documents Helper for New Hires
-export const createStandardDocuments = (_empName: string, isExpiring: boolean = false): DocumentItem[] => [
-  { id: 'doc-01', type: 'photo', titleAr: 'الصورة الشخصية الرسمية (خلفية بيضاء)', status: 'missing', updatedAt: new Date().toISOString().slice(0, 10) },
-  { id: 'doc-02', type: 'national_id', titleAr: 'بطاقة الرقم القومي (سارية)', status: isExpiring ? 'expiring' : 'missing', updatedAt: new Date().toISOString().slice(0, 10) },
-  { id: 'doc-03', type: 'driving_license', titleAr: 'رخصة القيادة (مهنية / خاصة)', status: 'missing', updatedAt: new Date().toISOString().slice(0, 10) },
-  { id: 'doc-04', type: 'military_cert', titleAr: 'شهادة أداء الخدمة العسكرية / الإعفاء النهائي', status: 'missing', updatedAt: new Date().toISOString().slice(0, 10) },
-  { id: 'doc-05', type: 'education_cert', titleAr: 'المؤهل الدراسي العالي المعتمد', status: 'missing', updatedAt: new Date().toISOString().slice(0, 10) },
-  { id: 'doc-06', type: 'engineers_syndicate', titleAr: 'كارنيه النقابة المهنية والترخيص النقابي', status: 'missing', updatedAt: new Date().toISOString().slice(0, 10) },
-  { id: 'doc-07', type: 'signed_contract', titleAr: 'عقد العمل الموحد الموقع (PDF)', status: 'missing', updatedAt: new Date().toISOString().slice(0, 10) },
-  { id: 'doc-08', type: 'birth_cert', titleAr: 'شهادة الميلاد المميكنة (كمبيوتر)', status: 'missing', updatedAt: new Date().toISOString().slice(0, 10) },
-  { id: 'doc-09', type: 'criminal_record', titleAr: 'صحيفة الحالة الجنائية (فيش وتشبيه حديث)', status: 'missing', updatedAt: new Date().toISOString().slice(0, 10) },
-  { id: 'doc-10', type: 'work_permit', titleAr: 'تصريح العمل ودخول المواقع الإنشائية', status: 'missing', updatedAt: new Date().toISOString().slice(0, 10) },
-  { id: 'doc-11', type: 'social_insurance_print', titleAr: 'برنت التأمينات الاجتماعية (س1 / س2)', status: 'missing', updatedAt: new Date().toISOString().slice(0, 10) },
-  { id: 'doc-12', type: 'medical_check', titleAr: 'الكشف الطبي المهني المعتمد (نموذج س 111)', status: 'missing', updatedAt: new Date().toISOString().slice(0, 10) },
-  { id: 'doc-13', type: 'utility_bill', titleAr: 'إيصال المرافق لإثبات محل الإقامة الفعلي', status: 'missing', updatedAt: new Date().toISOString().slice(0, 10) },
-];
+// مسوغات التعيين المصرية الـ 13 المعتمدة طبقاً لقانون العمل المصري رقم 12 لسنة 2003
+export const createStandardDocuments = (_empName: string, isExpiring: boolean = false): DocumentItem[] => {
+  const today = new Date().toISOString().slice(0, 10);
+  return [
+    { id: 'doc-01', type: 'birth_cert', titleAr: 'أصل شهادة الميلاد المميكنة (كمبيوتر)', status: 'missing', updatedAt: today },
+    { id: 'doc-02', type: 'criminal_record', titleAr: 'صحيفة الحالة الجنائية (فيش وتشبيه موجه للشركة)', status: 'missing', updatedAt: today },
+    { id: 'doc-03', type: 'labor_office_stub', titleAr: 'كعب العمل (شهادة القيد بمكتب القوى العاملة - يرد خلال 30 يوماً)', status: 'missing', updatedAt: today },
+    { id: 'doc-04', type: 'social_insurance_s1', titleAr: 'استمارة س1 تأمينات اجتماعية وبرنت الرقم التأميني', status: 'missing', updatedAt: today },
+    { id: 'doc-05', type: 'social_insurance_s6', titleAr: 'استمارة س6 تأمينات (إخلاء طرف من جهة عمل سابقة)', status: 'missing', updatedAt: today },
+    { id: 'doc-06', type: 'medical_check_111', titleAr: 'نموذج الكشف الطبي الابتدائي (استمارة 111 تأمين صحي)', status: 'missing', updatedAt: today },
+    { id: 'doc-07', type: 'military_cert', titleAr: 'شهادة تأدية الخدمة العسكرية أو الإعفاء النهائي (للذكور)', status: 'missing', updatedAt: today },
+    { id: 'doc-08', type: 'education_cert', titleAr: 'أصل المؤهل الدراسي أو الشهادة المعتمدة', status: 'missing', updatedAt: today },
+    { id: 'doc-09', type: 'syndicate_card', titleAr: 'كارنيه النقابة المهنية الساري (المهندسين / التجاريين / المحامين)', status: 'missing', updatedAt: today },
+    { id: 'doc-10', type: 'national_id', titleAr: 'صورة بطاقة الرقم القومي السارية (وجهين) + 6 صور 4×6', status: isExpiring ? 'expiring' : 'missing', updatedAt: today },
+    { id: 'doc-11', type: 'signed_contract', titleAr: 'عقد العمل الفردي الموحد (3 نسخ: موظف / شركة / تأمينات)', status: 'missing', updatedAt: today },
+    { id: 'doc-12', type: 'driving_license', titleAr: 'رخصة القيادة المهنية / الخاصة السارية', status: 'missing', updatedAt: today },
+    { id: 'doc-13', type: 'custody_utility', titleAr: 'إقرار الذمة المالية واستلام العهدة وإيصال مرافق حديث', status: 'missing', updatedAt: today },
+  ];
+};
 
 // Standard Custody Assets Helper
 export const createStandardAssets = (_role: string): CustodyAssetItem[] => [];
@@ -365,15 +406,19 @@ export const HRProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>(() => hrStorage.getLeaves());
   const [payrollItems, setPayrollItems] = useState<PayrollItem[]>([]);
   const [advances, setAdvances] = useState<EmployeeAdvance[]>(() => hrStorage.getAdvances());
-  const [custodyItems, setCustodyItems] = useState<AssetCustody[]>([]);
+  const [custodyItems, setCustodyItems] = useState<AssetCustody[]>(() => hrStorage.getCustodyItems());
   const [contracts, setContracts] = useState<EmployeeContractDoc[]>(() => hrStorage.getContracts());
+  const [candidates, setCandidates] = useState<HRCandidate[]>(() => hrStorage.getCandidates());
+  const [regulations, setRegulations] = useState<EgyptianHRRegulationsConfig>(() =>
+    hrStorage.getSettings() || { ...DEFAULT_EGYPTIAN_HR_SETTINGS }
+  );
   const [currentPayrollPeriod, setCurrentPayrollPeriod] = useState<string>(() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
   });
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Reactive listener to eco-hr-updated broadcast from D1 background sync
+  // Reactive listener to eco-hr-updated broadcast from D1 / storage sync
   useEffect(() => {
     const handleUpdate = () => {
       const emps = hrStorage.getEmployees();
@@ -386,6 +431,9 @@ export const HRProvider: React.FC<{ children: React.ReactNode }> = ({ children }
       setAttendanceRecords(hrStorage.getAttendance());
       setLeaveRequests(hrStorage.getLeaves());
       setAdvances(hrStorage.getAdvances());
+      setCandidates(hrStorage.getCandidates());
+      setCustodyItems(hrStorage.getCustodyItems());
+      setRegulations(hrStorage.getSettings());
     };
 
     window.addEventListener('eco-hr-updated', handleUpdate);
@@ -397,12 +445,38 @@ export const HRProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     setTimeout(() => setToastMessage(null), 3500);
   };
 
-  // Add Employee with zero mock data and real persistence
+  // Add Employee with zero mock data + Egyptian National ID & Labor Law Calculations
   const addEmployee = (empData: Partial<Employee>): Employee => {
     const nextNum = employees.length + 1;
     const newId = empData.id || `EMP-${Date.now().toString().slice(-4)}`;
     const newUid = empData.uid || String(nextNum).padStart(4, '0');
     const newCode = empData.employeeCode || `EMP-${newUid}`;
+    const hireDate = empData.hireDate || new Date().toISOString().slice(0, 10);
+
+    const nidInfo = parseEgyptianNationalId(empData.nationalId || '');
+    const leaveEntitlement = calculateAnnualLeaveEntitlement({
+      hireDate,
+      nationalId: empData.nationalId,
+    });
+
+    const basicSalary = empData.salary?.basic ?? 0;
+    const allowancesAmount = empData.salary?.allowances ?? 0;
+    const payrollCalc = calculateFullEgyptianPayrollSlip({
+      basicSalary,
+      insurableWage: empData.insurableWage ?? basicSalary,
+      housingAllowance: allowancesAmount,
+      isInsured: empData.workSchedule?.hasSocialInsurance ?? true,
+    });
+
+    const computedSalary =
+      empData.salary && empData.salary.deductions > 0
+        ? empData.salary
+        : {
+            basic: basicSalary,
+            allowances: allowancesAmount,
+            deductions: payrollCalc.totalStatutoryAndCustomDeductions,
+            net: payrollCalc.netSalary,
+          };
 
     const newEmp: Employee = {
       id: newId,
@@ -423,39 +497,49 @@ export const HRProvider: React.FC<{ children: React.ReactNode }> = ({ children }
       workPhone: empData.workPhone || '',
       email: empData.email || '',
       nationalId: empData.nationalId || '',
-      hireDate: empData.hireDate || new Date().toISOString().slice(0, 10),
+      birthDate: empData.birthDate || nidInfo.birthDate || '',
+      governorate: empData.governorate || nidInfo.governorateName || '',
+      workforceCategory: empData.workforceCategory || 'عمالة دائمة — الإدارة المركزية',
+      insurableWage: payrollCalc.insurance.clampedInsurableWage,
+      hireDate,
       contractStatus: 'valid',
       status: empData.status || 'active',
       lifecycleStatus: 'active',
       directManager: empData.directManager || '',
       workLocation: empData.workLocation || '',
       disbursementMethod: empData.disbursementMethod || 'bank_transfer',
-      bankName: empData.bankName || '',
+      bankName: empData.bankName || 'البنك الأهلي المصري (NBE)',
       bankAccount: empData.bankAccount || '',
-      hasOvertime: !!empData.hasOvertime,
-      gender: empData.gender || 'male',
+      hasOvertime: empData.hasOvertime ?? true,
+      gender: empData.gender || nidInfo.gender || 'male',
       religion: empData.religion || 'مسلم',
-      address: empData.address || '',
-      salary: empData.salary || { basic: 0, allowances: 0, deductions: 0, net: 0 },
+      address: empData.address || (nidInfo.governorateName ? `محافظة ${nidInfo.governorateName}` : ''),
+      salary: computedSalary,
       emergencyContact: empData.emergencyContact || { name: '', relation: '', phone: '' },
-      leaveBalance: { annualTotal: 21, annualUsed: 0, sickTotal: 15, sickUsed: 0, monthlyAccrual: 1.75 },
-      avatarColor: '#D99B26',
+      leaveBalance: {
+        annualTotal: leaveEntitlement.annualTotal,
+        annualUsed: 0,
+        sickTotal: 15,
+        sickUsed: 0,
+        monthlyAccrual: leaveEntitlement.monthlyAccrual,
+      },
+      avatarColor: '#059669',
       roleLevel: empData.roleLevel || empData.jobTitleAr || '',
       bloodType: empData.bloodType || 'O+',
       socialInsuranceNo: empData.socialInsuranceNo || '',
       workSchedule: empData.workSchedule || {
-        startDate: empData.hireDate || '',
-        endDate: '',
+        startDate: hireDate,
+        endDate: `${new Date(hireDate).getFullYear() + 1}-${hireDate.slice(5)}`,
         contractDurationYears: 1,
-        hireDate: empData.hireDate || '',
+        hireDate,
         noticePeriodMonths: 2,
-        hoursPerDay: 8,
+        hoursPerDay: regulations.headquartersHours || 8,
         daysPerWeek: 5,
-        weeklyHours: 40,
+        weeklyHours: (regulations.headquartersHours || 8) * 5,
         weekendDays: ['الجمعة', 'السبت'],
-        annualTotalDays: 21,
-        remainingDays: 21,
-        monthlyAccrualDays: 1.75,
+        annualTotalDays: leaveEntitlement.annualTotal,
+        remainingDays: leaveEntitlement.annualTotal,
+        monthlyAccrualDays: leaveEntitlement.monthlyAccrual,
         isFlexibleHours: false,
         isRemote: false,
         isDriver: false,
@@ -463,7 +547,7 @@ export const HRProvider: React.FC<{ children: React.ReactNode }> = ({ children }
         isSiteShifts247: false,
         isFixedHours: true,
         hasSocialInsurance: true,
-        socialInsuranceType: 'تأمين نمطي',
+        socialInsuranceType: 'تأمين نمطي (قانون 148 لسنة 2019)',
         hasMedicalInsurance: false,
         medicalInsuranceMonthlyDeduction: 0,
       },
@@ -483,20 +567,43 @@ export const HRProvider: React.FC<{ children: React.ReactNode }> = ({ children }
         {
           id: `aud-${Date.now()}`,
           timestamp: new Date().toLocaleDateString('ar-EG'),
-          actionType: 'إنشاء ملف موظف',
-          fieldChanged: 'الحالة العامة',
+          actionType: 'إنشاء ملف موظف مصري',
+          fieldChanged: 'الهوية والراتب',
           oldValue: 'غير مسجل',
-          newValue: 'مسجل ومعتمد',
+          newValue: `${newCode} — رصيد إجازات ${leaveEntitlement.annualTotal} يوم`,
           userName: 'مدير الموارد البشرية',
         },
       ],
     };
 
+    const endYear = Number(hireDate.slice(0, 4)) + 1;
+    const contractEndDate = `${endYear}-${hireDate.slice(5)}`;
+    const initialContract: EmployeeContractDoc = {
+      id: `CTR-${Date.now()}`,
+      employeeId: newId,
+      employeeName: newEmp.nameAr,
+      jobTitle: newEmp.jobTitleAr,
+      companyId: newEmp.companyId,
+      contractType: 'limited',
+      startDate: hireDate,
+      endDate: contractEndDate,
+      daysUntilContractExpiry: 365,
+      nationalIdExpiry: '',
+      daysUntilIdExpiry: 365,
+      workLicenseExpiry: '',
+      daysUntilLicenseExpiry: 365,
+      medicalGrade: 'نموذج س111 تأمين صحي',
+      status: 'valid',
+      documentRef: `EG-CTR-${newUid}`,
+    };
+
     setEmployees(prev => [newEmp, ...prev]);
+    setContracts(prev => [initialContract, ...prev]);
     setSelectedEmployee(newEmp);
     hrStorage.saveEmployee(newEmp);
+    hrStorage.saveContract(initialContract);
 
-    showToast(`تم إضافة الموظف بنجاح: ${newEmp.nameAr || newCode}`);
+    showToast(`تم تسجيل الموظف وعقده المصري بنجاح: ${newEmp.nameAr || newCode}`);
     return newEmp;
   };
 
@@ -803,6 +910,7 @@ export const HRProvider: React.FC<{ children: React.ReactNode }> = ({ children }
       status: 'in_custody',
     };
     setCustodyItems(prev => [newItem, ...prev]);
+    hrStorage.saveCustodyItem(newItem);
     showToast(`تم تسليم العهدة: ${item.assetNameAr}`);
   };
 
@@ -813,7 +921,9 @@ export const HRProvider: React.FC<{ children: React.ReactNode }> = ({ children }
         if (c.id === id) {
           const newStatus: CustodyStatus = c.status === 'in_custody' ? 'returned_cleared' : 'in_custody';
           const nowStr = newStatus === 'returned_cleared' ? new Date().toISOString().slice(0, 10) : undefined;
-          return { ...c, status: newStatus, clearanceDate: nowStr };
+          const updated = { ...c, status: newStatus, clearanceDate: nowStr };
+          hrStorage.saveCustodyItem(updated);
+          return updated;
         }
         return c;
       })
@@ -842,12 +952,62 @@ export const HRProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     showToast('تم تجديد العقد وتحديث تاريخ الانتهاء');
   };
 
+  // Recruitment Candidates
+  const addCandidate = (cand: Omit<HRCandidate, 'id' | 'stage' | 'appliedDate'>) => {
+    const nextNum = candidates.length + 101;
+    const newCand: HRCandidate = {
+      ...cand,
+      id: `CAN-${nextNum}`,
+      stage: 'new',
+      appliedDate: new Date().toISOString().slice(0, 10),
+    };
+    setCandidates(prev => [newCand, ...prev]);
+    hrStorage.saveCandidate(newCand);
+    showToast(`تم تسجيل المرشح (${cand.nameAr}) في بوابة التوظيف`);
+  };
+
+  const advanceCandidateStage = (candId: string) => {
+    const order: HRCandidate['stage'][] = ['new', 'interview', 'offer', 'hired'];
+    setCandidates(prev =>
+      prev.map(c => {
+        if (c.id !== candId) return c;
+        const nextIdx = Math.min(order.length - 1, order.indexOf(c.stage) + 1);
+        const updated = { ...c, stage: order[nextIdx] };
+        hrStorage.saveCandidate(updated);
+        return updated;
+      })
+    );
+    showToast('تم ترقية المرشح إلى المرحلة التالية في مسار التوظيف');
+  };
+
+  // Update Egyptian HR Regulations Settings
+  const updateRegulations = (next: EgyptianHRRegulationsConfig) => {
+    setRegulations(next);
+    hrStorage.saveSettings(next);
+    showToast('تم حفظ وتطبيق لوائح العمل والتأمينات وضريبة كسب العمل المصرية بنجاح');
+  };
+
+  // Full Purge & Reset of HR Module
+  const purgeAllHRModuleData = async () => {
+    await hrStorage.purgeAllHRData();
+    setEmployees([]);
+    setSelectedEmployee(null);
+    setAttendanceRecords([]);
+    setLeaveRequests([]);
+    setPayrollItems([]);
+    setAdvances([]);
+    setCustodyItems([]);
+    setContracts([]);
+    setCandidates([]);
+    showToast('تم تفريغ وتصفير موديول الموارد البشرية بالكامل بنجاح (0 سجلات)');
+  };
+
   // Compute live stats based on real data
   const stats = useMemo(() => {
     const totalEmployees = employees.length;
     const activeCount = employees.filter(e => e.status === 'active' && e.lifecycleStatus === 'active').length;
     const onLeaveCount = employees.filter(e => e.status === 'on_leave').length;
-    const attendanceTodayRate = totalEmployees > 0 ? Math.round((activeCount / totalEmployees) * 100) : 100;
+    const attendanceTodayRate = totalEmployees > 0 ? Math.round((activeCount / totalEmployees) * 100) : 0;
     const totalPayrollNet = employees.reduce((sum, e) => sum + (e.salary?.net || 0), 0);
     const totalActiveAdvances = advances.filter(a => a.status === 'active').length;
     const expiringDocsCount = contracts.filter(c => c.status === 'expiring_soon' || c.status === 'expired').length;
@@ -898,6 +1058,12 @@ export const HRProvider: React.FC<{ children: React.ReactNode }> = ({ children }
         toggleCustodyClearance,
         contracts,
         renewContract,
+        candidates,
+        addCandidate,
+        advanceCandidateStage,
+        regulations,
+        updateRegulations,
+        purgeAllHRModuleData,
         stats,
         toastMessage,
         showToast,
