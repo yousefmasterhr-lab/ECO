@@ -1,8 +1,20 @@
 // Talent Acquisition (ATS) Storage Service & Cloudflare D1 Sync
-import { Candidate, JobRequisition, Interview, JobOffer, PipelineStageId } from '../components/modules/ats/types';
+import {
+  Candidate,
+  JobRequisition,
+  Interview,
+  JobOffer,
+  PipelineStageId,
+  TarabotApplicationForm,
+} from '../components/modules/ats/types';
 import { hrStorage } from './hrStorage';
-import { Employee } from '../context/HRContext';
+import { Employee, createStandardDocuments, DocumentItem } from '../context/HRContext';
 import { insuranceStorage, InsuredEmployeeRecord } from './insuranceStorage';
+import {
+  parseEgyptianNationalId,
+  calculateFullEgyptianPayrollSlip,
+  calculateAnnualLeaveEntitlement,
+} from '../utils/egyptianLaborAlgorithms';
 
 const STORAGE_KEYS = {
   JOBS: 'eco_ats_jobs',
@@ -495,6 +507,428 @@ class ATSStorageService {
     window.dispatchEvent(new CustomEvent('eco-ats-updated'));
 
     return { employeeCode, hrEmployee: hrEmp, insEmployee: savedInsEmp };
+  }
+
+  // ==================== TARABOT OFFICIAL JOB APPLICATION ENGINE ====================
+  private async _createEmployeeFromTarabotForm(
+    form: TarabotApplicationForm,
+    options: {
+      companyId?: string;
+      companyName?: string;
+      actorName?: string;
+    }
+  ): Promise<{ employeeCode: string; hrEmployee: Employee; insEmployee: InsuredEmployeeRecord }> {
+    const nidInfo = parseEgyptianNationalId(form.nationalId || '');
+    const nowStr = new Date().toISOString().substring(0, 10);
+    const hireDate = form.hiringStartDate || form.applicationDate || nowStr;
+    const year = new Date().getFullYear();
+    const randomSuffix = Math.floor(100 + Math.random() * 900);
+    const existingCount = hrStorage.getEmployees().length;
+    const uid = String(existingCount + 1).padStart(4, '0');
+    const employeeCode = `ECO-${year}-${uid}`;
+
+    const totalAgreed = Math.max(0, Number(form.agreedSalary || 0));
+    const basicSalary = Math.round(totalAgreed * 0.7);
+    const allowancesAmount = Math.max(0, totalAgreed - basicSalary);
+    const payrollCalc = calculateFullEgyptianPayrollSlip({
+      basicSalary,
+      insurableWage: basicSalary,
+      housingAllowance: allowancesAmount,
+      isInsured: true,
+    });
+    const leaveEntitlement = calculateAnnualLeaveEntitlement({
+      hireDate,
+      nationalId: form.nationalId,
+    });
+
+    const baseDocs = createStandardDocuments(form.fullName).map((doc): DocumentItem => {
+      if (doc.id === 'doc-10' && form.nationalId) {
+        return {
+          ...doc,
+          status: 'valid',
+          expiryDate: form.nationalIdExpiryDate || undefined,
+          updatedAt: nowStr,
+        };
+      }
+      if (doc.id === 'doc-08' && form.educationHistory?.some((e) => e.degree.trim())) {
+        return { ...doc, status: 'valid', updatedAt: nowStr };
+      }
+      if (
+        doc.id === 'doc-07' &&
+        (form.militaryStatus === 'أدى الخدمة' ||
+          form.militaryStatus === 'إعفاء نهائى' ||
+          form.militaryStatus === 'لم يصبه الدور')
+      ) {
+        return { ...doc, status: 'valid', updatedAt: nowStr };
+      }
+      if (doc.id === 'doc-04' && form.previouslyInsured && form.socialInsuranceNumber) {
+        return { ...doc, status: 'valid', updatedAt: nowStr };
+      }
+      return doc;
+    });
+
+    if (form.scannedPaperFormName) {
+      baseDocs.unshift({
+        id: `doc-tarabot-form-${Date.now()}`,
+        type: 'tarabot_application',
+        titleAr: `استمارة طلب التوظيف الرسمية لشركة ترابط (${form.registrationNumber || 'مؤرشف'})`,
+        status: 'valid',
+        updatedAt: nowStr,
+        fileName: form.scannedPaperFormName,
+        fileData: form.scannedPaperFormDataUrl,
+      });
+    }
+    if (form.cvFileName) {
+      baseDocs.unshift({
+        id: `doc-cv-${Date.now()}`,
+        type: 'cv_resume',
+        titleAr: 'السيرة الذاتية للموظف (CV)',
+        status: 'valid',
+        updatedAt: nowStr,
+        fileName: form.cvFileName,
+        fileData: form.cvFileDataUrl,
+      });
+    }
+
+    const companyId = options.companyId && options.companyId !== 'all' ? options.companyId : 'comp_01';
+    const companyNameAr =
+      options.companyName || 'شركة ترابط للاستثمارات والمشروعات (ش.م.م)';
+
+    const hrEmp: Employee = {
+      id: `emp_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      uid,
+      employeeCode,
+      nameAr: form.fullName,
+      nameEn: '',
+      jobTitleAr: form.positionAppliedFor || 'موظف',
+      jobTitleEn: '',
+      departmentAr: form.department || 'الإدارة الهندسية',
+      departmentEn: 'Operations',
+      companyId,
+      companyNameAr,
+      branchAr: 'المقر الرئيسي',
+      projectCostCenterId: '',
+      projectCostCenterName: '',
+      mobile: form.mobilePhone || '',
+      workPhone: form.landlinePhone || '',
+      email: form.email || '',
+      nationalId: form.nationalId || `2${Math.floor(1000000000000 + Math.random() * 9000000000000)}`,
+      birthDate: form.birthDate || nidInfo.birthDate || '',
+      governorate: form.governorate || nidInfo.governorateName || 'القاهرة',
+      workforceCategory: 'عمالة دائمة — الإدارة المركزية',
+      insurableWage: payrollCalc.insurance.clampedInsurableWage,
+      hireDate,
+      contractStatus: 'valid',
+      status: 'active',
+      lifecycleStatus: 'active',
+      directManager: form.deptManagerApprovalName || 'مدير الإدارة',
+      workLocation: form.residenceAddress || form.governorate || 'القاهرة',
+      disbursementMethod: 'bank_transfer',
+      bankName: 'البنك الأهلي المصري (NBE)',
+      bankAccount: '',
+      hasOvertime: false,
+      gender: form.gender || nidInfo.gender || 'male',
+      religion: 'مسلم',
+      address: form.residenceAddress || 'القاهرة',
+      salary: {
+        basic: basicSalary,
+        allowances: allowancesAmount,
+        deductions: payrollCalc.totalStatutoryAndCustomDeductions,
+        net: totalAgreed > 0 ? payrollCalc.netSalary : 0,
+      },
+      emergencyContact: { name: '', relation: '', phone: form.landlinePhone || '' },
+      leaveBalance: {
+        annualTotal: leaveEntitlement.annualTotal,
+        annualUsed: 0,
+        sickTotal: 15,
+        sickUsed: 0,
+        monthlyAccrual: leaveEntitlement.monthlyAccrual,
+      },
+      avatarColor: '#059669',
+      roleLevel: form.positionAppliedFor || 'موظف',
+      bloodType: 'O+',
+      socialInsuranceNo: form.previouslyInsured ? form.socialInsuranceNumber || '' : '',
+      workSchedule: {
+        startDate: hireDate,
+        endDate: `${Number(hireDate.slice(0, 4)) + 1}-${hireDate.slice(5)}`,
+        contractDurationYears: 1,
+        hireDate,
+        noticePeriodMonths: 2,
+        hoursPerDay: 8,
+        daysPerWeek: 5,
+        weeklyHours: 40,
+        weekendDays: ['الجمعة', 'السبت'],
+        annualTotalDays: leaveEntitlement.annualTotal,
+        remainingDays: leaveEntitlement.annualTotal,
+        monthlyAccrualDays: leaveEntitlement.monthlyAccrual,
+        isFlexibleHours: false,
+        isRemote: false,
+        isDriver: false,
+        isBoardMember: false,
+        isSiteShifts247: false,
+        isFixedHours: true,
+        hasSocialInsurance: true,
+        socialInsuranceType: 'تأمين نمطي (قانون 148 لسنة 2019)',
+        hasMedicalInsurance: false,
+        medicalInsuranceMonthlyDeduction: 0,
+      },
+      documents: baseDocs,
+      assets: [],
+      allowancesList: [],
+      bonuses: [],
+      deductions: [],
+      workedHours: {
+        actualHours: 0,
+        requiredHours: 160,
+        completedDays: 0,
+        incompleteDays: 0,
+        dailyLogs: [],
+      },
+      auditLogs: [
+        {
+          id: `aud-${Date.now()}`,
+          timestamp: new Date().toLocaleDateString('ar-EG'),
+          actionType: 'تفريغ استمارة توظيف شركة ترابط وتعيين الموظف',
+          fieldChanged: 'السجل العام للموظفين',
+          oldValue: `طلب رقم ${form.registrationNumber || '-'}`,
+          newValue: `${employeeCode} — ${form.positionAppliedFor}`,
+          userName: options.actorName || form.digitizedBy || 'إدارة الموارد البشرية',
+        },
+      ],
+    };
+
+    await hrStorage.saveEmployee(hrEmp);
+
+    const insEmp: Partial<InsuredEmployeeRecord> = {
+      id: `ins_emp_${Date.now()}_${randomSuffix}`,
+      code: employeeCode,
+      name: form.fullName,
+      national_id: hrEmp.nationalId,
+      insurance_number: form.previouslyInsured ? form.socialInsuranceNumber || '' : '',
+      company_id: companyId,
+      company_name: companyNameAr,
+      office_name: 'مكتب تأمينات مقاولات القاهرة',
+      occupation: form.positionAppliedFor || 'موظف',
+      hire_date: hireDate,
+      sub_start_date: hireDate,
+      ins_date: hireDate,
+      sub_wage: basicSalary,
+      comp_wage: totalAgreed,
+      gov: hrEmp.governorate,
+      phone: form.mobilePhone,
+      qualification: form.educationHistory?.[0]?.degree || '',
+      status: 'نشط',
+    };
+    const savedInsEmp = await insuranceStorage.saveEmployee(
+      insEmp,
+      options.actorName || 'إدارة الموارد البشرية'
+    );
+
+    return { employeeCode, hrEmployee: hrEmp, insEmployee: savedInsEmp };
+  }
+
+  public async submitTarabotApplication(
+    form: TarabotApplicationForm,
+    options: {
+      mode: 'candidate_only' | 'direct_hire_employee';
+      job?: JobRequisition | null;
+      companyId?: string;
+      companyName?: string;
+      utmSource?: string;
+      utmCampaign?: string;
+      referralName?: string;
+      actorName?: string;
+    }
+  ): Promise<{
+    refNumber: string;
+    candidate: Candidate;
+    employeeCode?: string;
+    hrEmployee?: Employee;
+  }> {
+    const nidInfo = parseEgyptianNationalId(form.nationalId || '');
+    const enrichedForm: TarabotApplicationForm = {
+      ...form,
+      birthDate: form.birthDate || nidInfo.birthDate || '',
+      governorate: form.governorate || nidInfo.governorateName || '',
+      gender: form.gender || nidInfo.gender,
+    };
+
+    const refNumber =
+      enrichedForm.registrationNumber?.trim() ||
+      `TRB-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    enrichedForm.registrationNumber = refNumber;
+
+    const latestExp = enrichedForm.workExperiences?.find((w) => w.employer.trim() || w.jobTitle.trim());
+    const latestEdu = enrichedForm.educationHistory?.find((e) => e.degree.trim());
+    const eduSummary = latestEdu
+      ? `${latestEdu.degree}${latestEdu.major ? ` - ${latestEdu.major}` : ''}${
+          latestEdu.graduationYear ? ` (${latestEdu.graduationYear})` : ''
+        }`
+      : 'مؤهل مدون بالاستمارة';
+
+    const expYearsEst = enrichedForm.workExperiences?.filter((w) => w.employer.trim()).length || 0;
+    const isDirectHire = options.mode === 'direct_hire_employee';
+    const isInternal = enrichedForm.entryChannel === 'internal_digitization';
+
+    let employeeCode: string | undefined;
+    let hrEmployee: Employee | undefined;
+
+    if (isDirectHire) {
+      const converted = await this._createEmployeeFromTarabotForm(enrichedForm, {
+        companyId: options.companyId || options.job?.companyId,
+        companyName: options.companyName || options.job?.companyName,
+        actorName: options.actorName,
+      });
+      employeeCode = converted.employeeCode;
+      hrEmployee = converted.hrEmployee;
+    }
+
+    const cand: Candidate = {
+      id: `cand_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      name: enrichedForm.fullName,
+      nameEn: enrichedForm.fullName,
+      email: enrichedForm.email || '',
+      phone: enrichedForm.mobilePhone,
+      nationalId: enrichedForm.nationalId,
+      location: enrichedForm.residenceAddress || enrichedForm.governorate || 'القاهرة، مصر',
+      currentTitle: latestExp?.jobTitle || enrichedForm.positionAppliedFor,
+      currentCompany: latestExp?.employer || 'غير مسجل بالاستمارة',
+      experienceYears: expYearsEst,
+      education: eduSummary,
+      expectedSalary: enrichedForm.agreedSalary || 0,
+      currency: options.job?.currency || 'EGP',
+      noticePeriodDays: 30,
+      source: isInternal ? 'paper_digitization' : ((options.utmSource as any) || 'careers_page'),
+      utmSource: options.utmSource || (isInternal ? 'paper_backlog' : 'careers_portal'),
+      utmCampaign: options.utmCampaign || 'tarabot_official_form',
+      referralEmployeeName: options.referralName || undefined,
+      jobId: options.job?.id || 'tarabot_general',
+      jobTitle: options.job?.title || enrichedForm.positionAppliedFor || 'طلب توظيف عام',
+      jobDepartment:
+        options.job?.department || enrichedForm.department || 'الإدارة العامة',
+      companyId: options.companyId || options.job?.companyId || 'comp_01',
+      companyName:
+        options.companyName ||
+        options.job?.companyName ||
+        'شركة ترابط للاستثمارات والمشروعات (ش.م.م)',
+      stage: isDirectHire ? 'hired' : 'applied',
+      status: isDirectHire ? 'hired' : 'active',
+      matchScore: isDirectHire ? 95 : 85,
+      rating: 4.5,
+      tags: [
+        'نموذج ترابط الرسمي',
+        isInternal ? 'تفريغ استمارة ورقية / سيرة ذاتية' : 'تقديم عبر رابط التوظيف',
+        ...(isDirectHire && employeeCode ? [`معيّن: ${employeeCode}`] : []),
+      ],
+      resumeName: enrichedForm.cvFileName || enrichedForm.scannedPaperFormName,
+      resumeUrl: enrichedForm.cvFileDataUrl || enrichedForm.scannedPaperFormDataUrl,
+      parsedResume: {
+        summary: `تقدم بطلب توظيف رسمي (${refNumber}) لوظيفة ${enrichedForm.positionAppliedFor}. موقف التجنيد: ${enrichedForm.militaryStatus}. ${
+          enrichedForm.previouslyInsured
+            ? `سبق تأمينه برقم ${enrichedForm.socialInsuranceNumber || 'مسجل'}`
+            : 'غير مؤمن عليه سابقاً'
+        }.`,
+        extractedSkills: [
+          `الإنجليزية: ${enrichedForm.acquiredSkills.englishLanguage}`,
+          `الحاسب الآلي: ${enrichedForm.acquiredSkills.computerSkills}`,
+          `التعامل مع الآخرين: ${enrichedForm.acquiredSkills.interpersonalSkills}`,
+        ],
+        matchedSkills: [],
+        missingSkills: [],
+        education: eduSummary,
+        experienceSummary: latestExp
+          ? `${latestExp.jobTitle} لدى ${latestExp.employer} (${latestExp.duration})`
+          : 'مرفق بالاستمارة',
+        yearsOfExperience: expYearsEst,
+        languages: ['العربية', `الإنجليزية (${enrichedForm.acquiredSkills.englishLanguage})`],
+        certifications: (enrichedForm.trainingCourses || [])
+          .map((t) => t.title)
+          .filter(Boolean),
+      },
+      applicationForm: enrichedForm,
+      coreHREmployeeCode: employeeCode,
+      notes: [
+        {
+          id: `note_${Date.now()}`,
+          authorId: isInternal ? 'hr_digitizer' : 'public_portal',
+          authorName: isInternal ? options.actorName || 'مسؤول إدخال الموارد البشرية' : 'بوابة التوظيف الرسمية',
+          content: isDirectHire
+            ? `تم تفريغ استمارة شركة ترابط رقم (${refNumber}) واعتماد التعيين الفوري بكود موظف ${employeeCode}.`
+            : `تم تسجيل طلب التوظيف الرسمي لشركة ترابط رقم (${refNumber}).`,
+          createdAt: new Date().toISOString(),
+          isPrivate: false,
+        },
+      ],
+      activities: [
+        {
+          id: `act_${Date.now()}`,
+          type: isDirectHire ? 'synced_hr' : 'stage_change',
+          title: isDirectHire
+            ? `تسجيل الاستمارة والتعيين المباشر (${employeeCode})`
+            : `تسجيل استمارة طلب توظيف (${refNumber})`,
+          titleEn: isDirectHire ? 'Digitized & Hired to Core HR' : 'Tarabot Application Recorded',
+          description: isDirectHire
+            ? `تم ترحيل الاستمارة إلى السجل العام للموظفين والتأمينات الاجتماعية`
+            : `الوظيفة المتقدم لها: ${enrichedForm.positionAppliedFor}`,
+          performedBy: options.actorName || (isInternal ? 'مسؤول الموارد البشرية' : 'المتقدم عبر البوابة'),
+          timestamp: new Date().toISOString().replace('T', ' ').substring(0, 16),
+        },
+      ],
+      appliedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    await this.saveCandidate(cand);
+
+    window.dispatchEvent(new CustomEvent('eco-ats-updated'));
+    if (isDirectHire) {
+      window.dispatchEvent(new CustomEvent('eco-hr-updated', { detail: hrEmployee }));
+      window.dispatchEvent(new CustomEvent('eco-insurance-updated'));
+    }
+
+    return { refNumber, candidate: cand, employeeCode, hrEmployee };
+  }
+
+  public async convertCandidateWithApplicationToEmployee(
+    candidateId: string,
+    updatedForm: TarabotApplicationForm,
+    actorName = 'مدير الموارد البشرية'
+  ): Promise<{ employeeCode: string; hrEmployee: Employee; insEmployee: InsuredEmployeeRecord }> {
+    const all = this.readLocal<Candidate[]>(STORAGE_KEYS.CANDIDATES, []);
+    const cand = all.find((c) => c.id === candidateId);
+    if (!cand) throw new Error('ملف المرشح غير موجود');
+
+    const result = await this._createEmployeeFromTarabotForm(updatedForm, {
+      companyId: cand.companyId,
+      companyName: cand.companyName,
+      actorName,
+    });
+
+    cand.applicationForm = updatedForm;
+    cand.stage = 'hired';
+    cand.status = 'hired';
+    cand.coreHREmployeeCode = result.employeeCode;
+    cand.expectedSalary = updatedForm.agreedSalary || cand.expectedSalary;
+    cand.updatedAt = new Date().toISOString();
+    cand.activities = cand.activities || [];
+    cand.activities.unshift({
+      id: `act_${Date.now()}`,
+      type: 'synced_hr',
+      title: `اعتماد الصفحة الثانية وتحويل الموظف (${result.employeeCode})`,
+      titleEn: 'Page 2 Approved & Synced to Core HR',
+      description: `تم اعتماد التعيين بدءاً من ${updatedForm.hiringStartDate || '-'} براتب ${
+        updatedForm.agreedSalary?.toLocaleString() || '-'
+      } ج.م وتوليد الكود الوظيفي ${result.employeeCode}`,
+      performedBy: actorName,
+      timestamp: new Date().toISOString().replace('T', ' ').substring(0, 16),
+    });
+
+    await this.saveCandidate(cand);
+    window.dispatchEvent(new CustomEvent('eco-hr-updated', { detail: result.hrEmployee }));
+    window.dispatchEvent(new CustomEvent('eco-insurance-updated', { detail: result.insEmployee }));
+    window.dispatchEvent(new CustomEvent('eco-ats-updated'));
+
+    return result;
   }
 }
 

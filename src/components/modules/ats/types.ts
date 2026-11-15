@@ -50,6 +50,87 @@ export interface ParsedResumeData {
   certifications: string[];
 }
 
+export type SkillLevelRating = 'جيد جداً' | 'جيد' | 'متوسط' | 'ضعيف';
+export type MaritalStatusAr = 'أعزب' | 'متزوج' | 'مطلق' | 'أرمل';
+export type MilitaryStatusAr = 'لم يصبه الدور' | 'أدى الخدمة' | 'إعفاء نهائى' | 'إعفاء مؤقت' | 'غير خاضع';
+
+export interface TarabotEducationRow {
+  id: string;
+  degree: string;
+  graduationYear: string;
+  major: string;
+  studyDuration: string;
+}
+
+export interface TarabotTrainingRow {
+  id: string;
+  courseType: string;
+  title: string;
+  date: string;
+  duration: string;
+  provider: string;
+}
+
+export interface TarabotExperienceRow {
+  id: string;
+  employer: string;
+  duration: string;
+  jobTitle: string;
+  leavingReason: string;
+}
+
+export interface TarabotApplicationForm {
+  registrationNumber: string;
+  applicationDate: string;
+  fullName: string;
+  nationality: string;
+  nationalId: string;
+  nationalIdExpiryDate: string;
+  birthDate: string;
+  governorate?: string;
+  gender?: 'male' | 'female';
+  residenceAddress: string;
+  landlinePhone: string;
+  mobilePhone: string;
+  email?: string;
+  maritalStatus: MaritalStatusAr;
+  positionAppliedFor: string;
+  department?: string;
+  militaryStatus: MilitaryStatusAr;
+  militaryExemptionReason?: string;
+  militaryTempExemptionYears?: string;
+  militaryTempExemptionEndDate?: string;
+  previouslyInsured: boolean;
+  socialInsuranceNumber?: string;
+  educationHistory: TarabotEducationRow[];
+  acquiredSkills: {
+    englishLanguage: SkillLevelRating;
+    computerSkills: SkillLevelRating;
+    interpersonalSkills: SkillLevelRating;
+  };
+  trainingCourses: TarabotTrainingRow[];
+  workExperiences: TarabotExperienceRow[];
+  declarationAccepted: boolean;
+  applicantSignature: string;
+  cvFileName?: string;
+  cvFileDataUrl?: string;
+  scannedPaperFormName?: string;
+  scannedPaperFormDataUrl?: string;
+  // الصفحة الثانية — خاص بإدارة الشركة
+  hrManagerEvaluation?: string;
+  departmentManagerEvaluation?: string;
+  hiringStartDate?: string;
+  agreedSalary?: number;
+  agreedSalaryText?: string;
+  managementNotes?: string;
+  hrApprovalName?: string;
+  deptManagerApprovalName?: string;
+  ceoApprovalName?: string;
+  ceoApprovalStatus?: 'pending' | 'approved' | 'rejected';
+  entryChannel?: 'public_portal' | 'internal_digitization';
+  digitizedBy?: string;
+}
+
 export interface Candidate {
   id: string;
   name: string;
@@ -67,7 +148,7 @@ export interface Candidate {
   expectedSalary?: number;
   currency: string;
   noticePeriodDays: number;
-  source: 'linkedin' | 'careers_page' | 'referral' | 'indeed' | 'bayt' | 'direct';
+  source: 'linkedin' | 'careers_page' | 'referral' | 'indeed' | 'bayt' | 'direct' | 'paper_digitization';
   utmSource?: string;
   utmCampaign?: string;
   referralEmployeeName?: string;
@@ -85,6 +166,8 @@ export interface Candidate {
   resumeName?: string;
   parsedResume?: ParsedResumeData;
   knockoutResults?: KnockoutResult[];
+  applicationForm?: TarabotApplicationForm;
+  coreHREmployeeCode?: string;
   notes: CandidateNote[];
   activities: CandidateActivity[];
   rejectionReason?: string;

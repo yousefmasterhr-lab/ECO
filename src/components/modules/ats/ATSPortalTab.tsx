@@ -25,14 +25,14 @@ export const ATSPortalTab: React.FC<ATSPortalTabProps> = ({ companyId }) => {
 
   const [jobs, setJobs] = useState<JobRequisition[]>([]);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
-  const [selectedJobId, setSelectedJobId] = useState<string>('');
+  const [selectedJobId, setSelectedJobId] = useState<string>('tarabot_general');
   const [copied, setCopied] = useState(false);
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'mobile'>('desktop');
 
   // UTM Generator Form
   const [source, setSource] = useState('linkedin');
   const [medium, setMedium] = useState('social_post');
-  const [campaign, setCampaign] = useState('q4_hiring_push');
+  const [campaign, setCampaign] = useState('tarabot_recruitment');
   const [referralName, setReferralName] = useState('');
 
   // Fetch jobs & candidates
@@ -42,9 +42,6 @@ export const ATSPortalTab: React.FC<ATSPortalTabProps> = ({ companyId }) => {
       const allCandidates = await atsStorage.getCandidates(companyId);
       setJobs(allJobs);
       setCandidates(allCandidates);
-      if (allJobs.length > 0 && !selectedJobId) {
-        setSelectedJobId(allJobs[0].id);
-      }
     } catch (err) {
       console.error('Failed to load ATS data for portal', err);
     }
@@ -58,7 +55,8 @@ export const ATSPortalTab: React.FC<ATSPortalTabProps> = ({ companyId }) => {
   }, [companyId]);
 
   const selectedJob = useMemo(() => {
-    return jobs.find(j => j.id === selectedJobId) || jobs[0] || null;
+    if (selectedJobId === 'tarabot_general') return null;
+    return jobs.find(j => j.id === selectedJobId) || null;
   }, [jobs, selectedJobId]);
 
   // Construct Live UTM Link
@@ -66,7 +64,11 @@ export const ATSPortalTab: React.FC<ATSPortalTabProps> = ({ companyId }) => {
     if (typeof window === 'undefined') return '';
     const base = `${window.location.origin}/careers`;
     const params = new URLSearchParams();
-    if (selectedJob?.id) params.set('jobId', selectedJob.id);
+    if (selectedJob?.id) {
+      params.set('jobId', selectedJob.id);
+    } else {
+      params.set('direct', 'true');
+    }
     if (source) params.set('utm_source', source);
     if (medium) params.set('utm_medium', medium);
     if (campaign) params.set('utm_campaign', campaign);
@@ -257,6 +259,12 @@ export const ATSPortalTab: React.FC<ATSPortalTabProps> = ({ companyId }) => {
                 onChange={e => setSelectedJobId(e.target.value)}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-amber-200/70 dark:border-stone-800 bg-amber-50/20 dark:bg-[#121F16] text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
               >
+                <option value="tarabot_general">
+                  {t(
+                    'استمارة طلب التوظيف العامة — شركة ترابط (تقديم مباشر)',
+                    'General Tarabot Application Form (Direct Apply)'
+                  )}
+                </option>
                 {jobs.map(j => (
                   <option key={j.id} value={j.id}>
                     {j.title} ({j.department}) - #{j.code}
@@ -528,8 +536,51 @@ export const ATSPortalTab: React.FC<ATSPortalTabProps> = ({ companyId }) => {
                   </div>
                 </div>
               ) : (
-                <div className="p-8 text-center text-xs text-slate-400">
-                  {t('لا توجد وظائف معتمدة للمعاينة', 'No jobs available for preview')}
+                <div className="p-5 space-y-4">
+                  <div className="space-y-1.5">
+                    <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                      {t('نموذج شركة ترابط الرسمي المعتمد', 'Official Tarabot Form')}
+                    </span>
+                    <h4 className="text-base font-black text-slate-900 dark:text-white">
+                      {t(
+                        'طلب توظيف — شركة ترابط للإستثمارات و المشروعات',
+                        'Employment Application — Tarabot Company'
+                      )}
+                    </h4>
+                    <p className="text-xs text-slate-500 dark:text-stone-400 leading-relaxed">
+                      {t(
+                        'يفتح الرابط مباشرًة على استمارة التوظيف المماثلة للنموذج الورقي (معلومات عامة، الرقم القومي، التجنيد، التأمينات، المؤهلات، المهارات، الدورات، الخبرات، والإقرار وفق قانون العمل 14 لسنة 2025).',
+                        'Direct link to the official Tarabot employment application form compliant with Egyptian Labor Law No. 14 of 2025.'
+                      )}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="p-2.5 rounded-xl bg-amber-50/50 dark:bg-stone-900 border border-amber-200/50 dark:border-stone-800">
+                      <span className="text-[10px] text-slate-400 block">{t('التحقق الآلي', 'Auto Check')}</span>
+                      <span className="font-bold text-slate-800 dark:text-stone-200">
+                        {t('الرقم القومي 14 رقم', '14-Digit National ID')}
+                      </span>
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-amber-50/50 dark:bg-stone-900 border border-amber-200/50 dark:border-stone-800">
+                      <span className="text-[10px] text-slate-400 block">{t('المرفقات', 'Attachments')}</span>
+                      <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                        {t('CV + نسخة قابلة للطباعة', 'CV + Printable PDF')}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="pt-2">
+                    <a
+                      href={generatedUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full py-2.5 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-amber-500/25 hover:bg-amber-600 transition-colors"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                      <span>{t('فتح رابط التقديم المباشر', 'Open Direct Application Link')}</span>
+                    </a>
+                  </div>
                 </div>
               )}
             </div>

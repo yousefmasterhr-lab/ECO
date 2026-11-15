@@ -577,3 +577,4 @@ export function calculateAnnualLeaveEntitlement(params: {
 function roundCurrency(value: number): number {
   return Math.round(value * 100) / 100;
 }
+
