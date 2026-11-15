@@ -1197,6 +1197,7 @@
 - **القاعدة الصارمة والحل الجذري المعتمد:**
   1. **محرك موحد ثنائي الأوضاع (`TarabotApplicationFormView` في `mode="public"` و `mode="internal"`):** نفس النموذج الرسمي المتطابق حرفياً مع `forms/طلب توظيف.pdf` يعمل على القناة العامة (صفحة 1 للمتقدمين + `/careers?direct=true`) وعلى القناة الداخلية في `ATSCandidatesTab.tsx` (صفحة 1 + صفحة 2 `خاص بإدارة الشركة`).
   2. **توجيه الحفظ الذكي (`submitTarabotApplication`):** إتاحة مسارين من محطة التفريغ الداخلية: (أ) حفظ كمرشح في ATS، أو (ب) حفظ وتعيين مباشر كموظف فعلي في Core HR والتأمينات الاجتماعية بضغطة زر واحدة مع التفقيط الفوري للراتب وتحليل الرقم القومي.
+  3. **إلزامية التمرير المستقل للمسارات خارج `ShellLayout` (Public Standalone Route Scroll Container):** نظراً لأن `index.css` يقفل `html, body, #root` على `height: 100%; overflow: hidden`، يجب على أي صفحة أو بوابة مستقلة تُعرض مباشرة داخل `#root` (مثل `PublicCareersPortal` عبر `/careers`) استخدام `h-screen max-h-screen flex-1 overflow-y-auto overflow-x-hidden` بدلاً من `min-h-screen` حتى لا ينقص المحتوى وتعمل عجلة الفأرة وشريط التمرير بسلاسة تامة.
 
 ---
 

@@ -201,6 +201,43 @@
   }
 }
 
+/* Public Careers Portal dedicated vertical scrollbar (desktop mouse/drag visibility) */
+.careers-portal-scroll::-webkit-scrollbar {
+  width: 8px !important;
+  height: 8px !important;
+}
+
+.careers-portal-scroll::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+.careers-portal-scroll::-webkit-scrollbar-thumb {
+  background: rgba(92, 102, 94, 0.38) !important;
+  border-radius: 9999px !important;
+}
+
+.careers-portal-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(217, 155, 38, 0.7) !important;
+}
+
+.dark .careers-portal-scroll::-webkit-scrollbar-thumb {
+  background: rgba(235, 179, 77, 0.35) !important;
+}
+
+.dark .careers-portal-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(235, 179, 77, 0.65) !important;
+}
+
+@supports not selector(::-webkit-scrollbar) {
+  .careers-portal-scroll {
+    scrollbar-width: auto !important;
+    scrollbar-color: rgba(92, 102, 94, 0.38) transparent !important;
+  }
+  .dark .careers-portal-scroll {
+    scrollbar-color: rgba(235, 179, 77, 0.35) transparent !important;
+  }
+}
+
 /* Glassmorphism utility */
 .glass-panel {
   background: rgba(243, 239, 230, 0.85);

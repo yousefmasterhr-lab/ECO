@@ -1458,7 +1458,7 @@ export const TarabotPrintableApplicationModal: React.FC<
     >
       <div className="w-full max-w-5xl rounded-3xl bg-[#FFFFFF] dark:bg-[#141E16] border border-[#E0D9CB] dark:border-[#243628] shadow-2xl overflow-hidden my-auto max-h-[92vh] flex flex-col print:max-h-none print:shadow-none print:border-none">
         {/* Toolbar (hidden on print) */}
-        <div className="px-6 py-4 bg-[#F3EFE6] dark:bg-[#121B14] border-b border-[#E0D9CB] dark:border-[#243628] flex flex-wrap items-center justify-between gap-3 print:hidden">
+        <div className="px-6 py-4 bg-[#F3EFE6] dark:bg-[#121B14] border-b border-[#E0D9CB] dark:border-[#243628] flex flex-wrap items-center justify-between gap-3 shrink-0 print:hidden">
           <div className="flex items-center gap-2.5">
             <FileText className="w-5 h-5 text-[#D99B26]" />
             <div>
@@ -1514,7 +1514,7 @@ export const TarabotPrintableApplicationModal: React.FC<
 
         {/* Body: Either Edit Mode or Printable Document Body */}
         {viewMode === 'edit' ? (
-          <div className="p-6 overflow-y-auto bg-[#FBF9F5] dark:bg-[#0E1610]">
+          <div className="p-6 flex-1 min-h-0 overflow-y-auto bg-[#FBF9F5] dark:bg-[#0E1610]">
             <TarabotApplicationFormView
               mode="internal"
               initialJobTitle={f.positionAppliedFor}
@@ -1526,7 +1526,7 @@ export const TarabotPrintableApplicationModal: React.FC<
             />
           </div>
         ) : (
-        <div className="p-6 sm:p-8 overflow-y-auto space-y-8 bg-[#FFFFFF] text-[#111827] print:p-4">
+        <div className="p-6 sm:p-8 flex-1 min-h-0 overflow-y-auto space-y-8 bg-[#FFFFFF] text-[#111827] print:overflow-visible print:p-4">
           {/* PAGE 1: يملاها المتقدم للوظيفة */}
           <div className="border-2 border-[#1A241C] rounded-xl p-6 space-y-5">
             {/* Header */}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Briefcase,
   MapPin,
@@ -58,6 +58,12 @@ export const PublicCareersPortal: React.FC = () => {
   const [submittedCandidate, setSubmittedCandidate] = useState<Candidate | null>(null);
   const [showPrintModal, setShowPrintModal] = useState(false);
 
+  const portalScrollRef = useRef<HTMLDivElement | null>(null);
+  const scrollToTop = () => {
+    portalScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   // Load published jobs from storage / D1
   useEffect(() => {
     let isMounted = true;
@@ -93,7 +99,7 @@ export const PublicCareersPortal: React.FC = () => {
     setIsGeneralApplication(false);
     setSubmittedRef(null);
     setSubmittedCandidate(null);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    scrollToTop();
   };
 
   const handleStartGeneralApplication = () => {
@@ -101,7 +107,7 @@ export const PublicCareersPortal: React.FC = () => {
     setIsGeneralApplication(true);
     setSubmittedRef(null);
     setSubmittedCandidate(null);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    scrollToTop();
   };
 
   const departments = useMemo(() => {
@@ -148,6 +154,7 @@ export const PublicCareersPortal: React.FC = () => {
       setSubmittedRef(result.refNumber);
       setSubmittedCandidate(result.candidate);
       fireConfetti();
+      scrollToTop();
     } catch (err) {
       console.error('Error submitting Tarabot application', err);
     } finally {
@@ -159,8 +166,9 @@ export const PublicCareersPortal: React.FC = () => {
 
   return (
     <div
+      ref={portalScrollRef}
       dir={isRtl ? 'rtl' : 'ltr'}
-      className={`min-h-screen w-full font-sans transition-colors duration-300 ${
+      className={`careers-portal-scroll h-screen max-h-screen flex-1 w-full overflow-y-auto overflow-x-hidden scroll-smooth font-sans transition-colors duration-300 pb-20 print:h-auto print:max-h-none print:overflow-visible ${
         isDark ? 'bg-[#0E1610] text-[#F3EFE6]' : 'bg-[#FBF9F5] text-[#1A241C]'
       }`}
     >
@@ -233,6 +241,7 @@ export const PublicCareersPortal: React.FC = () => {
                 setIsGeneralApplication(false);
                 setSubmittedRef(null);
                 setSubmittedCandidate(null);
+                scrollToTop();
               }}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border border-[#E0D9CB] dark:border-[#243628] bg-[#FFFFFF] dark:bg-[#141E16] text-[#1A241C] dark:text-[#F3EFE6] hover:border-[#D99B26] transition-colors cursor-pointer"
             >
@@ -285,6 +294,7 @@ export const PublicCareersPortal: React.FC = () => {
                       setIsGeneralApplication(false);
                       setSubmittedRef(null);
                       setSubmittedCandidate(null);
+                      scrollToTop();
                     }}
                     className="px-6 py-3 rounded-2xl bg-[#D99B26] hover:bg-[#EBB34D] text-[#1A241C] font-bold text-xs shadow-md transition-all cursor-pointer"
                   >

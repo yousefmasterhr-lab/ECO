@@ -494,7 +494,7 @@ export const ATSCandidatesTab: React.FC<ATSCandidatesTabProps> = ({ companyId })
           className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/65 backdrop-blur-xs overflow-y-auto"
         >
           <div className="w-full max-w-5xl rounded-3xl bg-[#FBF9F5] dark:bg-[#0E1610] border border-[#E0D9CB] dark:border-[#243628] shadow-2xl overflow-hidden my-auto max-h-[92vh] flex flex-col">
-            <div className="px-6 py-4 bg-[#F3EFE6] dark:bg-[#121B14] border-b border-[#E0D9CB] dark:border-[#243628] flex items-center justify-between gap-3">
+            <div className="px-6 py-4 bg-[#F3EFE6] dark:bg-[#121B14] border-b border-[#E0D9CB] dark:border-[#243628] flex items-center justify-between gap-3 shrink-0">
               <div className="flex items-center gap-2.5">
                 <FilePlus2 className="w-5 h-5 text-[#059669]" />
                 <div>
@@ -516,7 +516,7 @@ export const ATSCandidatesTab: React.FC<ATSCandidatesTabProps> = ({ companyId })
               </button>
             </div>
 
-            <div className="p-5 sm:p-6 overflow-y-auto">
+            <div className="p-5 sm:p-6 flex-1 min-h-0 overflow-y-auto">
               <TarabotApplicationFormView
                 mode="internal"
                 isSubmitting={isDigitizing}
