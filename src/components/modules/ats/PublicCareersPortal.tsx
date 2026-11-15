@@ -13,13 +13,12 @@ import {
   Award,
   ChevronLeft,
   ChevronRight,
-  ExternalLink,
   FileText,
   Printer,
 } from 'lucide-react';
 import { useLanguage } from '../../../context/LanguageContext';
 import { useTheme } from '../../../context/ThemeContext';
-import { atsStorage } from '../../../services/atsStorage';
+import { atsStorage, ATSPortalConfig } from '../../../services/atsStorage';
 import { JobRequisition, Candidate, TarabotApplicationForm } from './types';
 import {
   TarabotApplicationFormView,
@@ -32,23 +31,32 @@ export const PublicCareersPortal: React.FC = () => {
   const { isRtl, language, setLanguage, t } = useLanguage();
   const { isDark, toggleTheme } = useTheme();
 
-  // URL Query Parameters Parsing
+  // URL Query Parameters & Short Route Parsing (/apply or /careers)
   const searchParams = useMemo(() => {
     if (typeof window === 'undefined') return new URLSearchParams();
     return new URLSearchParams(window.location.search);
   }, []);
 
-  const paramJobId = searchParams.get('jobId') || '';
-  const paramDirect = searchParams.get('direct') === 'true' || searchParams.get('form') === 'tarabot';
-  const utmSource = searchParams.get('utm_source') || 'careers_portal';
-  const utmMedium = searchParams.get('utm_medium') || 'web_direct';
-  const utmCampaign = searchParams.get('utm_campaign') || 'talent_sourcing';
+  const isDirectApplyPath =
+    typeof window !== 'undefined' && window.location.pathname.startsWith('/apply');
+  const paramJobId = searchParams.get('jobId') || searchParams.get('j') || '';
+  const paramDirect =
+    isDirectApplyPath ||
+    searchParams.get('direct') === 'true' ||
+    searchParams.get('form') === 'tarabot';
+  const paramCompany = searchParams.get('company') || searchParams.get('c') || '';
+  const utmSource = searchParams.get('utm_source') || searchParams.get('s') || 'direct';
+  const utmMedium = searchParams.get('utm_medium') || searchParams.get('m') || 'web_direct';
+  const utmCampaign = searchParams.get('utm_campaign') || searchParams.get('cmp') || 'talent_sourcing';
   const referralName = searchParams.get('ref') || searchParams.get('referral') || '';
 
   // State
   const [jobs, setJobs] = useState<JobRequisition[]>([]);
   const [selectedJob, setSelectedJob] = useState<JobRequisition | null>(null);
   const [isGeneralApplication, setIsGeneralApplication] = useState(paramDirect && !paramJobId);
+  const [portalConfig, setPortalConfig] = useState<ATSPortalConfig>(() =>
+    atsStorage.getPortalConfigSync()
+  );
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDept, setSelectedDept] = useState<string>('all');
@@ -64,15 +72,19 @@ export const PublicCareersPortal: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Load published jobs from storage / D1
+  // Load published jobs & portal company branding config from storage / D1
   useEffect(() => {
     let isMounted = true;
-    const fetchJobs = async () => {
+    const fetchPortalData = async () => {
       try {
         setLoading(true);
-        const data = await atsStorage.getJobs();
+        const [data, cfg] = await Promise.all([
+          atsStorage.getJobs(),
+          atsStorage.getPortalConfig(),
+        ]);
         if (!isMounted) return;
         setJobs(data);
+        if (cfg) setPortalConfig(cfg);
 
         if (paramJobId) {
           const matched = data.find((j) => j.id === paramJobId || j.code === paramJobId);
@@ -88,9 +100,15 @@ export const PublicCareersPortal: React.FC = () => {
       }
     };
 
-    fetchJobs();
+    fetchPortalData();
+    const handleConfigUpdate = (e: Event) => {
+      const ce = e as CustomEvent<ATSPortalConfig>;
+      if (ce.detail) setPortalConfig(ce.detail);
+    };
+    window.addEventListener('eco-ats-portal-config-updated', handleConfigUpdate);
     return () => {
       isMounted = false;
+      window.removeEventListener('eco-ats-portal-config-updated', handleConfigUpdate);
     };
   }, [paramJobId]);
 
@@ -132,19 +150,26 @@ export const PublicCareersPortal: React.FC = () => {
     });
   }, [jobs, searchTerm, selectedDept]);
 
+  const resolvedCompanyName = useMemo(() => {
+    if (paramCompany.trim()) return paramCompany.trim();
+    if (selectedJob?.companyName) return selectedJob.companyName;
+    if (portalConfig.companyNameAr?.trim()) return portalConfig.companyNameAr.trim();
+    return t('بوابة التوظيف والتعيينات', 'Official Recruitment Portal');
+  }, [paramCompany, selectedJob, portalConfig.companyNameAr, t]);
+
   const handleTarabotPublicSubmit = async (form: TarabotApplicationForm) => {
     setIsSubmitting(true);
     try {
       const enrichedForm: TarabotApplicationForm = {
         ...form,
+        companyName: resolvedCompanyName,
         entryChannel: 'public_portal',
       };
       const result = await atsStorage.submitTarabotApplication(enrichedForm, {
         mode: 'candidate_only',
         job: selectedJob,
-        companyId: selectedJob?.companyId || 'comp_01',
-        companyName:
-          selectedJob?.companyName || 'شركة ترابط للإستثمارات و المشروعات (ش.م.م)',
+        companyId: selectedJob?.companyId || portalConfig.companyId || 'comp_01',
+        companyName: resolvedCompanyName,
         utmSource: utmSource || 'careers_portal',
         utmCampaign: utmCampaign || utmMedium,
         referralName: referralName || undefined,
@@ -180,31 +205,23 @@ export const PublicCareersPortal: React.FC = () => {
             : 'bg-[#FBF9F5]/95 border-[#E0D9CB] shadow-sm'
         }`}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-18 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3.5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 min-h-[72px] py-3.5 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5 min-w-0">
             <EcoOfficialLogo size="md" className="shrink-0" />
-            <div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-base sm:text-lg font-black text-[#1A241C] dark:text-[#F3EFE6]">
-                  {t('شركة ترابط للإستثمارات و المشروعات', 'Tarabot Investment & Projects')}
-                </span>
-                <span className="text-[11px] px-2.5 py-0.5 rounded-full font-bold bg-[#059669]/10 text-[#059669] dark:text-emerald-400 border border-[#059669]/25">
-                  {t('بوابة التوظيف الرسمية', 'Official Careers Portal')}
-                </span>
-              </div>
-              <p className="text-[11px] text-[#5C665E] dark:text-[#8FA392] font-medium">
-                {t(
-                  'طلب التوظيف الإلكتروني المعتمد وفق قانون العمل المصري رقم ١٤ لسنة ٢٠٢٥',
-                  'Official Digital Job Application Portal — Law No. 14 of 2025'
-                )}
-              </p>
+            <div className="flex items-center gap-2.5 flex-wrap min-w-0">
+              <span className="text-base sm:text-lg font-black text-[#1A241C] dark:text-[#F3EFE6] truncate sm:whitespace-normal">
+                {resolvedCompanyName}
+              </span>
+              <span className="text-[11px] px-2.5 py-0.5 rounded-full font-bold bg-[#059669]/10 text-[#059669] dark:text-emerald-400 border border-[#059669]/25 shrink-0">
+                {t('بوابة التوظيف الرسمية', 'Official Careers Portal')}
+              </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
             <button
               onClick={() => setLanguage(language === 'ar' ? 'en' : 'ar')}
-              className="px-3 py-1.5 rounded-xl text-xs font-bold border border-[#E0D9CB] dark:border-[#243628] bg-[#FFFFFF] dark:bg-[#17231A] text-[#1A241C] dark:text-[#F3EFE6] hover:border-[#D99B26] transition-colors cursor-pointer"
+              className="px-3.5 py-2 rounded-xl text-xs font-bold border border-[#E0D9CB] dark:border-[#243628] bg-[#FFFFFF] dark:bg-[#17231A] text-[#1A241C] dark:text-[#F3EFE6] hover:border-[#D99B26] transition-colors cursor-pointer"
             >
               {language === 'ar' ? 'English' : 'عربي'}
             </button>
@@ -216,14 +233,6 @@ export const PublicCareersPortal: React.FC = () => {
             >
               {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
-
-            <a
-              href="/"
-              className="hidden sm:inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-[#D99B26] hover:bg-[#EBB34D] text-[#1A241C] shadow-xs transition-all"
-            >
-              <span>{t('تسجيل الدخول للنظام', 'ERP Login')}</span>
-              <ExternalLink className="w-3.5 h-3.5" />
-            </a>
           </div>
         </div>
       </header>
@@ -232,22 +241,24 @@ export const PublicCareersPortal: React.FC = () => {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
         {isInFormView ? (
           /* ========================================================================= */
-          /* VIEW A: TARABOT OFFICIAL JOB APPLICATION FORM (VACANCY OR GENERAL)        */
+          /* VIEW A: OFFICIAL JOB APPLICATION FORM (VACANCY OR GENERAL)               */
           /* ========================================================================= */
           <div className="space-y-6 animate-in fade-in duration-300">
-            <button
-              onClick={() => {
-                setSelectedJob(null);
-                setIsGeneralApplication(false);
-                setSubmittedRef(null);
-                setSubmittedCandidate(null);
-                scrollToTop();
-              }}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border border-[#E0D9CB] dark:border-[#243628] bg-[#FFFFFF] dark:bg-[#141E16] text-[#1A241C] dark:text-[#F3EFE6] hover:border-[#D99B26] transition-colors cursor-pointer"
-            >
-              {isRtl ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-              <span>{t('العودة لبوابة الوظائف الشاغرة', 'Back to Career Opportunities')}</span>
-            </button>
+            {jobs.length > 0 && (
+              <button
+                onClick={() => {
+                  setSelectedJob(null);
+                  setIsGeneralApplication(false);
+                  setSubmittedRef(null);
+                  setSubmittedCandidate(null);
+                  scrollToTop();
+                }}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border border-[#E0D9CB] dark:border-[#243628] bg-[#FFFFFF] dark:bg-[#141E16] text-[#1A241C] dark:text-[#F3EFE6] hover:border-[#D99B26] transition-colors cursor-pointer"
+              >
+                {isRtl ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+                <span>{t('العودة للوظائف الشاغرة', 'Back to Career Opportunities')}</span>
+              </button>
+            )}
 
             {submittedRef ? (
               <div className="p-8 sm:p-12 rounded-3xl border border-[#059669]/40 bg-[#FFFFFF] dark:bg-[#141E16] text-center space-y-6 shadow-xl">
@@ -261,8 +272,8 @@ export const PublicCareersPortal: React.FC = () => {
                   </h2>
                   <p className="text-xs sm:text-sm text-[#5C665E] dark:text-[#8FA392] leading-relaxed">
                     {t(
-                      'تم قيد استمارة طلب التوظيف الرسمية الخاصة بك في منظومة الموارد البشرية لشركة ترابط للإستثمارات و المشروعات، وسيتم مراجعة مؤهلاتك وخبراتك والتواصل معك قريباً.',
-                      'Your official Tarabot job application has been registered. Our HR team will review your qualifications and reach out shortly.'
+                      `تم قيد استمارة طلب التوظيف الرسمية الخاصة بك في منظومة الموارد البشرية لدى (${resolvedCompanyName})، وسيتم مراجعة مؤهلاتك وخبراتك والتواصل معك قريباً.`,
+                      `Your official job application with ${resolvedCompanyName} has been registered. Our HR team will review your qualifications and reach out shortly.`
                     )}
                   </p>
                 </div>
@@ -403,6 +414,7 @@ export const PublicCareersPortal: React.FC = () => {
                 <div className={selectedJob ? 'lg:col-span-8' : 'lg:col-span-12'}>
                   <TarabotApplicationFormView
                     mode="public"
+                    companyName={resolvedCompanyName}
                     initialJobTitle={selectedJob?.title || ''}
                     initialDepartment={selectedJob?.department || ''}
                     isSubmitting={isSubmitting}
@@ -414,7 +426,7 @@ export const PublicCareersPortal: React.FC = () => {
           </div>
         ) : (
           /* ========================================================================= */
-          /* VIEW B: ALL OPENINGS CATALOG & DIRECT TARABOT FORM LAUNCHER               */
+          /* VIEW B: ALL OPENINGS CATALOG & DIRECT APPLICATION LAUNCHER                */
           /* ========================================================================= */
           <div className="space-y-8 animate-in fade-in duration-300">
             <div className="relative overflow-hidden rounded-3xl p-8 sm:p-12 border border-[#D99B26]/30 bg-gradient-to-l from-[#F3EFE6] via-[#FBF9F5] to-[#FFFFFF] dark:from-[#121B14] dark:via-[#141E16] dark:to-[#0E1610] text-center shadow-sm">
@@ -422,25 +434,22 @@ export const PublicCareersPortal: React.FC = () => {
                 <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#D99B26]/15 border border-[#D99B26]/30 text-[#1A241C] dark:text-[#EBB34D] text-xs font-bold">
                   <Sparkles className="w-3.5 h-3.5 text-[#D99B26]" />
                   <span>
-                    {t(
-                      'شركة ترابط للإستثمارات و المشروعات (ش.م.م) — التوظيف المباشر',
-                      'Tarabot Company Investment & Projects — Careers Hub'
-                    )}
+                    {resolvedCompanyName} — {t('التوظيف المباشر', 'Direct Careers')}
                   </span>
                 </div>
 
                 <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-[#1A241C] dark:text-[#F3EFE6] leading-tight">
-                  {t('بوابة الوظائف الشاغرة واستمارة طلب التوظيف الرسمية', 'Available Vacancies & Official Job Application')}
+                  {t('بوابة الوظائف الشاغرة وطلب التوظيف الرسمي', 'Available Vacancies & Official Job Application')}
                 </h1>
 
                 <p className="text-xs sm:text-sm text-[#5C665E] dark:text-[#8FA392] leading-relaxed">
                   {t(
-                    'يمكنك التقديم على أحد الشواغر المتاحة أدناه، أو تعبئة استمارة طلب التوظيف الرسمية لشركة ترابط مباشرة لإدراج بياناتك في قاعدة الكفاءات والموارد البشرية.',
-                    'Apply directly to any open vacancy below, or submit the official Tarabot Employment Application Form directly.'
+                    'يمكنك التقديم على أحد الشواغر المتاحة أدناه، أو تعبئة استمارة طلب التوظيف مباشرة لإدراج بياناتك في قاعدة الكفاءات والموارد البشرية.',
+                    'Apply directly to any open vacancy below, or submit the official Employment Application Form directly.'
                   )}
                 </p>
 
-                {/* Primary CTA: Direct Tarabot Application Form */}
+                {/* Primary CTA: Direct Application Form */}
                 <div className="flex flex-wrap items-center justify-center gap-3 pt-1">
                   <button
                     type="button"
@@ -448,7 +457,7 @@ export const PublicCareersPortal: React.FC = () => {
                     className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-[#D99B26] to-[#EBB34D] hover:brightness-105 text-[#1A241C] font-black text-sm shadow-lg shadow-[#D99B26]/25 transition-all cursor-pointer"
                   >
                     <FileText className="w-4 h-4" />
-                    <span>{t('ملء استمارة طلب توظيف شركة ترابط مباشرة', 'Fill Official Tarabot Job Application')}</span>
+                    <span>{t('ملء استمارة طلب التوظيف مباشرة', 'Fill Official Job Application')}</span>
                   </button>
                 </div>
 
@@ -508,10 +517,10 @@ export const PublicCareersPortal: React.FC = () => {
                   <Briefcase className="w-10 h-10 mx-auto text-[#D99B26] opacity-60" />
                   <div className="space-y-1">
                     <p className="text-sm font-bold text-[#1A241C] dark:text-[#F3EFE6]">
-                      {t('لا توجد شواغر منشورة حالياً، يمكنك التقديم عبر استمارة التوظيف العامة', 'No published vacancies — use the general Tarabot form')}
+                      {t('لا توجد شواغر منشورة حالياً، يمكنك التقديم عبر استمارة التوظيف العامة', 'No published vacancies — apply using the direct form')}
                     </p>
                     <p className="text-xs text-[#5C665E] dark:text-[#8FA392]">
-                      {t('اضغط أدناه لملء طلب توظيف شركة ترابط الرسمي وسنتواصل معك فور توفر فرصة مناسبة.', 'Click below to fill out the official Tarabot Job Application Form.')}
+                      {t('اضغط أدناه لملء طلب التوظيف الرسمي وسنتواصل معك فور توفر فرصة مناسبة.', 'Click below to fill out the official Job Application Form.')}
                     </p>
                   </div>
                   <button

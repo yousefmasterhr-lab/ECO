@@ -845,7 +845,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       } else {
         setUser(null);
-        if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+        const path = typeof window !== 'undefined' ? window.location.pathname : '/';
+        const isPublicRoute =
+          path.startsWith('/apply') ||
+          path.startsWith('/careers') ||
+          (typeof window !== 'undefined' && window.location.search.includes('portal=careers'));
+        if (typeof window !== 'undefined' && path !== '/login' && !isPublicRoute) {
           window.history.replaceState({}, '', '/login');
           setCurrentPath('/login');
         }

@@ -16,11 +16,19 @@ import {
   calculateAnnualLeaveEntitlement,
 } from '../utils/egyptianLaborAlgorithms';
 
+export interface ATSPortalConfig {
+  companyMode: 'selected' | 'manual';
+  companyId?: string;
+  companyNameAr: string;
+  updatedAt?: string;
+}
+
 const STORAGE_KEYS = {
   JOBS: 'eco_ats_jobs',
   CANDIDATES: 'eco_ats_candidates',
   INTERVIEWS: 'eco_ats_interviews',
   OFFERS: 'eco_ats_offers',
+  PORTAL_CONFIG: 'eco_ats_portal_config',
 };
 
 class ATSStorageService {
@@ -41,6 +49,66 @@ class ATSStorageService {
     } catch (e) {
       console.warn('[ATSStorage] LocalStorage write failed', e);
     }
+  }
+
+  // ==================== PORTAL BRANDING / COMPANY CONFIG ====================
+  public getPortalConfigSync(): ATSPortalConfig {
+    return this.readLocal<ATSPortalConfig>(STORAGE_KEYS.PORTAL_CONFIG, {
+      companyMode: 'selected',
+      companyId: '',
+      companyNameAr: '',
+    });
+  }
+
+  public async getPortalConfig(): Promise<ATSPortalConfig> {
+    const local = this.getPortalConfigSync();
+    try {
+      const res = await fetch('/api/ats/portal-config', {
+        headers: { Accept: 'application/json' },
+      });
+      if (res.ok) {
+        const remote = (await res.json()) as ATSPortalConfig;
+        if (remote && (remote.companyNameAr || remote.companyMode)) {
+          const merged: ATSPortalConfig = {
+            companyMode: remote.companyMode === 'manual' ? 'manual' : 'selected',
+            companyId: remote.companyId || '',
+            companyNameAr: remote.companyNameAr || local.companyNameAr || '',
+            updatedAt: remote.updatedAt,
+          };
+          localStorage.setItem(STORAGE_KEYS.PORTAL_CONFIG, JSON.stringify(merged));
+          return merged;
+        }
+      }
+    } catch {
+      // offline fallback
+    }
+    return local;
+  }
+
+  public async savePortalConfig(config: ATSPortalConfig): Promise<ATSPortalConfig> {
+    const normalized: ATSPortalConfig = {
+      companyMode: config.companyMode === 'manual' ? 'manual' : 'selected',
+      companyId: config.companyId || '',
+      companyNameAr: (config.companyNameAr || '').trim(),
+      updatedAt: new Date().toISOString(),
+    };
+    try {
+      localStorage.setItem(STORAGE_KEYS.PORTAL_CONFIG, JSON.stringify(normalized));
+      window.dispatchEvent(
+        new CustomEvent('eco-ats-portal-config-updated', { detail: normalized })
+      );
+    } catch {}
+
+    try {
+      await fetch('/api/ats/portal-config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(normalized),
+      });
+    } catch (e) {
+      console.warn('[ATSStorage] Remote savePortalConfig failed', e);
+    }
+    return normalized;
   }
 
   // ==================== JOBS / REQUISITIONS ====================
@@ -567,11 +635,18 @@ class ATSStorageService {
       return doc;
     });
 
+    const companyId = options.companyId && options.companyId !== 'all' ? options.companyId : 'comp_01';
+    const companyNameAr =
+      form.companyName?.trim() ||
+      options.companyName ||
+      this.getPortalConfigSync().companyNameAr ||
+      'الشركة المسجلة';
+
     if (form.scannedPaperFormName) {
       baseDocs.unshift({
         id: `doc-tarabot-form-${Date.now()}`,
         type: 'tarabot_application',
-        titleAr: `استمارة طلب التوظيف الرسمية لشركة ترابط (${form.registrationNumber || 'مؤرشف'})`,
+        titleAr: `استمارة طلب التوظيف الرسمية — ${companyNameAr} (${form.registrationNumber || 'مؤرشف'})`,
         status: 'valid',
         updatedAt: nowStr,
         fileName: form.scannedPaperFormName,
@@ -589,10 +664,6 @@ class ATSStorageService {
         fileData: form.cvFileDataUrl,
       });
     }
-
-    const companyId = options.companyId && options.companyId !== 'all' ? options.companyId : 'comp_01';
-    const companyNameAr =
-      options.companyName || 'شركة ترابط للاستثمارات والمشروعات (ش.م.م)';
 
     const hrEmp: Employee = {
       id: `emp_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
@@ -770,13 +841,22 @@ class ATSStorageService {
     const isDirectHire = options.mode === 'direct_hire_employee';
     const isInternal = enrichedForm.entryChannel === 'internal_digitization';
 
+    const portalConfig = this.getPortalConfigSync();
+    const resolvedCompanyName =
+      enrichedForm.companyName?.trim() ||
+      options.companyName ||
+      options.job?.companyName ||
+      portalConfig.companyNameAr ||
+      'الشركة المسجلة';
+    enrichedForm.companyName = resolvedCompanyName;
+
     let employeeCode: string | undefined;
     let hrEmployee: Employee | undefined;
 
     if (isDirectHire) {
       const converted = await this._createEmployeeFromTarabotForm(enrichedForm, {
-        companyId: options.companyId || options.job?.companyId,
-        companyName: options.companyName || options.job?.companyName,
+        companyId: options.companyId || options.job?.companyId || portalConfig.companyId,
+        companyName: resolvedCompanyName,
         actorName: options.actorName,
       });
       employeeCode = converted.employeeCode;
@@ -800,30 +880,27 @@ class ATSStorageService {
       noticePeriodDays: 30,
       source: isInternal ? 'paper_digitization' : ((options.utmSource as any) || 'careers_page'),
       utmSource: options.utmSource || (isInternal ? 'paper_backlog' : 'careers_portal'),
-      utmCampaign: options.utmCampaign || 'tarabot_official_form',
+      utmCampaign: options.utmCampaign || 'recruitment_application',
       referralEmployeeName: options.referralName || undefined,
-      jobId: options.job?.id || 'tarabot_general',
+      jobId: options.job?.id || 'general_application',
       jobTitle: options.job?.title || enrichedForm.positionAppliedFor || 'طلب توظيف عام',
       jobDepartment:
         options.job?.department || enrichedForm.department || 'الإدارة العامة',
-      companyId: options.companyId || options.job?.companyId || 'comp_01',
-      companyName:
-        options.companyName ||
-        options.job?.companyName ||
-        'شركة ترابط للاستثمارات والمشروعات (ش.م.م)',
+      companyId: options.companyId || options.job?.companyId || portalConfig.companyId || 'comp_01',
+      companyName: resolvedCompanyName,
       stage: isDirectHire ? 'hired' : 'applied',
       status: isDirectHire ? 'hired' : 'active',
       matchScore: isDirectHire ? 95 : 85,
       rating: 4.5,
       tags: [
-        'نموذج ترابط الرسمي',
+        `استمارة التوظيف — ${resolvedCompanyName}`,
         isInternal ? 'تفريغ استمارة ورقية / سيرة ذاتية' : 'تقديم عبر رابط التوظيف',
         ...(isDirectHire && employeeCode ? [`معيّن: ${employeeCode}`] : []),
       ],
       resumeName: enrichedForm.cvFileName || enrichedForm.scannedPaperFormName,
       resumeUrl: enrichedForm.cvFileDataUrl || enrichedForm.scannedPaperFormDataUrl,
       parsedResume: {
-        summary: `تقدم بطلب توظيف رسمي (${refNumber}) لوظيفة ${enrichedForm.positionAppliedFor}. موقف التجنيد: ${enrichedForm.militaryStatus}. ${
+        summary: `تقدم بطلب توظيف رسمي (${refNumber}) لدى ${resolvedCompanyName} لوظيفة ${enrichedForm.positionAppliedFor}. موقف التجنيد: ${enrichedForm.militaryStatus}. ${
           enrichedForm.previouslyInsured
             ? `سبق تأمينه برقم ${enrichedForm.socialInsuranceNumber || 'مسجل'}`
             : 'غير مؤمن عليه سابقاً'
@@ -853,8 +930,8 @@ class ATSStorageService {
           authorId: isInternal ? 'hr_digitizer' : 'public_portal',
           authorName: isInternal ? options.actorName || 'مسؤول إدخال الموارد البشرية' : 'بوابة التوظيف الرسمية',
           content: isDirectHire
-            ? `تم تفريغ استمارة شركة ترابط رقم (${refNumber}) واعتماد التعيين الفوري بكود موظف ${employeeCode}.`
-            : `تم تسجيل طلب التوظيف الرسمي لشركة ترابط رقم (${refNumber}).`,
+            ? `تم تفريغ استمارة التوظيف رقم (${refNumber}) لـ ${resolvedCompanyName} واعتماد التعيين الفوري بكود موظف ${employeeCode}.`
+            : `تم تسجيل طلب التوظيف الرسمي رقم (${refNumber}) لـ ${resolvedCompanyName}.`,
           createdAt: new Date().toISOString(),
           isPrivate: false,
         },

@@ -80,6 +80,7 @@ export const buildInitialTarabotForm = (
 ): TarabotApplicationForm => {
   const today = new Date().toISOString().slice(0, 10);
   return {
+    companyName: overrides?.companyName || '',
     registrationNumber: overrides?.registrationNumber || '',
     applicationDate: overrides?.applicationDate || today,
     fullName: overrides?.fullName || '',
@@ -144,6 +145,7 @@ export const buildInitialTarabotForm = (
 
 interface TarabotApplicationFormViewProps {
   mode: 'public' | 'internal';
+  companyName?: string;
   initialJobTitle?: string;
   initialDepartment?: string;
   initialForm?: Partial<TarabotApplicationForm>;
@@ -166,6 +168,7 @@ const SECTION_CARD_CLASS =
 
 export const TarabotApplicationFormView: React.FC<TarabotApplicationFormViewProps> = ({
   mode,
+  companyName = '',
   initialJobTitle = '',
   initialDepartment = '',
   initialForm,
@@ -174,9 +177,18 @@ export const TarabotApplicationFormView: React.FC<TarabotApplicationFormViewProp
   onCancel,
 }) => {
   const [form, setForm] = useState<TarabotApplicationForm>(() =>
-    buildInitialTarabotForm(initialJobTitle, initialDepartment, mode, initialForm)
+    buildInitialTarabotForm(initialJobTitle, initialDepartment, mode, {
+      companyName: initialForm?.companyName || companyName,
+      ...initialForm,
+    })
   );
   const [validationError, setValidationError] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (companyName && (mode === 'public' || !form.companyName)) {
+      setForm((prev) => ({ ...prev, companyName }));
+    }
+  }, [companyName, mode]);
 
   const nidAnalysis = useMemo(
     () => (form.nationalId.trim() ? parseEgyptianNationalId(form.nationalId) : null),
@@ -311,31 +323,65 @@ export const TarabotApplicationFormView: React.FC<TarabotApplicationFormViewProp
     await onSubmit(cleanedForm, saveTarget);
   };
 
+  const resolvedDisplayCompany =
+    form.companyName?.trim() || companyName?.trim() || 'الشركة المسجلة';
+
   return (
     <div dir="rtl" className="space-y-6">
-      {/* Official Tarabot Bilingual Document Header */}
-      <div className="rounded-3xl border border-[#D99B26]/40 bg-gradient-to-l from-[#F3EFE6] via-[#FBF9F5] to-[#FFFFFF] dark:from-[#121B14] dark:via-[#141E16] dark:to-[#0E1610] p-6 shadow-sm">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-5 border-b border-[#E0D9CB] dark:border-[#243628]">
-          <div className="space-y-1">
+      {/* Balanced Executive Application Document Header */}
+      <div className="rounded-3xl border border-[#D99B26]/35 bg-gradient-to-l from-[#F3EFE6]/90 via-[#FBF9F5] to-[#FFFFFF] dark:from-[#121B14] dark:via-[#141E16] dark:to-[#0E1610] px-5 sm:px-8 py-6 shadow-sm">
+        <div className="grid grid-cols-1 md:grid-cols-12 items-center gap-6">
+          {/* Right Column: Company Identity */}
+          <div className="md:col-span-4 flex flex-col items-start gap-2">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#059669]/10 text-[#059669] dark:text-emerald-400 border border-[#059669]/25 text-[11px] font-bold">
-              <Building2 className="w-3.5 h-3.5" />
+              <Building2 className="w-3.5 h-3.5 shrink-0" />
               <span>
                 {mode === 'internal'
-                  ? 'نموذج تفريغ الأرشيف الورقي وإدخال السير الذاتية (داخلي)'
-                  : 'استمارة التقديم الرسمية المعتمدة — بوابة التوظيف'}
+                  ? 'تفريغ الأرشيف الورقي — إدارة الشركة'
+                  : 'استمارة التقديم للتوظيف'}
               </span>
             </div>
-            <h2 className="text-lg sm:text-xl font-black text-[#1A241C] dark:text-[#F3EFE6]">
-              شركة ترابط للإستثمارات و المشروعات <span className="text-[#D99B26] font-extrabold">مساهمة مصرية</span>
-            </h2>
-            <p className="text-xs font-mono text-[#5C665E] dark:text-[#8FA392]">
-              Tarabot Company Investment & Projects Egyptian joint stock
+
+            {mode === 'internal' ? (
+              <div className="w-full space-y-1">
+                <label className="block text-[10.5px] font-bold text-[#5C665E] dark:text-[#8FA392]">
+                  اسم الشركة على الاستمارة:
+                </label>
+                <input
+                  type="text"
+                  value={form.companyName || ''}
+                  onChange={(e) => setForm({ ...form, companyName: e.target.value })}
+                  placeholder="أدخل اسم الشركة..."
+                  className="w-full px-3 py-2 rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-[#FFFFFF] dark:bg-[#17231A] text-sm font-black text-[#1A241C] dark:text-[#F3EFE6] focus:outline-none focus:ring-2 focus:ring-[#D99B26]"
+                />
+              </div>
+            ) : (
+              <h2 className="text-base sm:text-lg font-black text-[#1A241C] dark:text-[#F3EFE6] leading-snug">
+                {resolvedDisplayCompany}
+              </h2>
+            )}
+          </div>
+
+          {/* Center Column: Symmetrical Form Heading */}
+          <div className="md:col-span-4 flex flex-col items-center justify-center text-center py-1">
+            <div className="inline-flex items-center justify-center w-11 h-11 rounded-2xl bg-[#D99B26]/15 text-[#D99B26] border border-[#D99B26]/30 mb-2">
+              <FileText className="w-5 h-5" />
+            </div>
+            <h1 className="text-xl sm:text-2xl font-black text-[#1A241C] dark:text-[#F3EFE6] tracking-tight">
+              طلب توظيف
+            </h1>
+            <div className="w-16 h-1 rounded-full bg-[#D99B26] my-2" />
+            <p className="text-[11px] text-[#5C665E] dark:text-[#8FA392] font-medium">
+              {mode === 'internal'
+                ? 'يشمل الصفحة الأولى (بيانات المتقدم) والثانية (اعتماد الإدارة)'
+                : 'يرجى استيفاء البيانات بدقة طبقاً لبطاقة الرقم القومي'}
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
-            <div className="px-4 py-2.5 rounded-2xl bg-[#FFFFFF] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] text-center">
-              <div className="text-[10px] font-bold text-[#5C665E] dark:text-[#8FA392]">
+          {/* Left Column: Registration Number Box */}
+          <div className="md:col-span-4 flex md:justify-end">
+            <div className="w-full md:w-auto min-w-[215px] px-5 py-3 rounded-2xl bg-[#FFFFFF] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] text-center shadow-xs">
+              <div className="text-[10.5px] font-bold text-[#5C665E] dark:text-[#8FA392]">
                 سجل الطلب برقم ( / 2026 )
               </div>
               <input
@@ -343,29 +389,9 @@ export const TarabotApplicationFormView: React.FC<TarabotApplicationFormViewProp
                 value={form.registrationNumber}
                 onChange={(e) => setForm({ ...form, registrationNumber: e.target.value })}
                 placeholder={mode === 'internal' ? 'مثال: 104 / 2026' : 'يُولّد تلقائياً عند الإرسال'}
-                className="mt-1 w-full text-center text-xs font-mono font-bold bg-transparent text-[#D99B26] focus:outline-none"
+                className="mt-1.5 w-full text-center text-xs font-mono font-bold bg-transparent text-[#D99B26] placeholder-[#8FA392]/80 focus:outline-none"
               />
             </div>
-          </div>
-        </div>
-
-        <div className="pt-4 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-[#D99B26]/15 text-[#D99B26] flex items-center justify-center border border-[#D99B26]/30">
-              <FileText className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-base font-black text-[#1A241C] dark:text-[#F3EFE6]">طلب توظيف</h3>
-              <p className="text-[11px] text-[#5C665E] dark:text-[#8FA392]">
-                {mode === 'internal'
-                  ? 'يشمل الصفحة الأولى (بيانات المتقدم والمؤهلات والخبرات) والصفحة الثانية (تقييم الإدارة وقرار التعيين)'
-                  : 'يرجى استيفاء جميع البيانات بدقة طبقاً لبطاقة الرقم القومي والمستندات الرسمية'}
-              </p>
-            </div>
-          </div>
-
-          <div className="text-xs font-bold text-[#059669] dark:text-emerald-400 bg-[#059669]/10 px-3 py-1.5 rounded-xl border border-[#059669]/20">
-            قانون العمل المصري رقم 14 لسنة 2025
           </div>
         </div>
       </div>
@@ -1335,7 +1361,7 @@ export const TarabotApplicationFormView: React.FC<TarabotApplicationFormViewProp
             ) : (
               <>
                 <Send className="w-4 h-4" />
-                <span>إرسال طلب التوظيف الرسمي لشركة ترابط</span>
+                <span>إرسال طلب التوظيف</span>
               </>
             )}
           </button>
@@ -1463,7 +1489,7 @@ export const TarabotPrintableApplicationModal: React.FC<
             <FileText className="w-5 h-5 text-[#D99B26]" />
             <div>
               <h3 className="text-sm font-black text-[#1A241C] dark:text-[#F3EFE6]">
-                استمارة طلب التوظيف الرسمية — شركة ترابط للاستثمارات والمشروعات
+                استمارة طلب التوظيف الرسمية — {f.companyName || candidate.companyName || 'الشركة المسجلة'}
               </h3>
               <p className="text-[11px] text-[#5C665E] dark:text-[#8FA392]">
                 {candidate.coreHREmployeeCode
@@ -1517,6 +1543,7 @@ export const TarabotPrintableApplicationModal: React.FC<
           <div className="p-6 flex-1 min-h-0 overflow-y-auto bg-[#FBF9F5] dark:bg-[#0E1610]">
             <TarabotApplicationFormView
               mode="internal"
+              companyName={f.companyName || candidate.companyName}
               initialJobTitle={f.positionAppliedFor}
               initialDepartment={f.department}
               initialForm={f}
@@ -1531,9 +1558,9 @@ export const TarabotPrintableApplicationModal: React.FC<
           <div className="border-2 border-[#1A241C] rounded-xl p-6 space-y-5">
             {/* Header */}
             <div className="flex items-center justify-between border-b-2 border-[#1A241C] pb-3 text-xs font-bold">
-              <div>شركة ترابط للإستثمارات و المشروعات مساهمة مصرية</div>
-              <div className="font-mono text-[11px]" dir="ltr">
-                Tarabot Company Investment & Projects Egyptian joint stock
+              <div>{f.companyName || candidate.companyName || 'الشركة المسجلة'}</div>
+              <div className="font-mono text-[11px] text-[#5C665E]" dir="ltr">
+                Official Job Application Form
               </div>
             </div>
 
@@ -1745,9 +1772,9 @@ export const TarabotPrintableApplicationModal: React.FC<
           {/* PAGE 2: خاص بإدارة الشركة */}
           <div className="border-2 border-[#1A241C] rounded-xl p-6 space-y-5 break-before-page">
             <div className="flex items-center justify-between border-b-2 border-[#1A241C] pb-3 text-xs font-bold">
-              <div>شركة ترابط للإستثمارات و المشروعات مساهمة مصرية</div>
-              <div className="font-mono text-[11px]" dir="ltr">
-                Tarabot Company Investment & Projects Egyptian joint stock
+              <div>{f.companyName || candidate.companyName || 'الشركة المسجلة'}</div>
+              <div className="font-mono text-[11px] text-[#5C665E]" dir="ltr">
+                Official Job Application Form — Management Section
               </div>
             </div>
 

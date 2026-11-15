@@ -226,6 +226,21 @@ export const onRequestGet: PagesFunction = async (context) => {
         return jsonResponse(mapped);
       }
 
+      case 'portal-config': {
+        const cfg = await env.DB.prepare(
+          'SELECT id, company_mode, company_id, company_name_ar, updated_at FROM ats_portal_config WHERE id = ?'
+        )
+          .bind('default')
+          .first<any>();
+
+        return jsonResponse({
+          companyMode: cfg?.company_mode || 'selected',
+          companyId: cfg?.company_id || '',
+          companyNameAr: cfg?.company_name_ar || '',
+          updatedAt: cfg?.updated_at || '',
+        });
+      }
+
       default:
         return errorResponse(`المسار غير معروف: ${resource}`, 404);
     }
@@ -507,6 +522,30 @@ export const onRequestPost: PagesFunction = async (context) => {
         ).run();
 
         return jsonResponse({ success: true, id: offerId });
+      }
+
+      case 'portal-config': {
+        const item = body as any;
+        const companyMode = item.companyMode === 'manual' ? 'manual' : 'selected';
+        const companyId = item.companyId ? String(item.companyId) : '';
+        const companyNameAr = item.companyNameAr ? String(item.companyNameAr).trim() : '';
+
+        await env.DB.prepare(`
+          INSERT INTO ats_portal_config (id, company_mode, company_id, company_name_ar, updated_at)
+          VALUES ('default', ?, ?, ?, CURRENT_TIMESTAMP)
+          ON CONFLICT(id) DO UPDATE SET
+            company_mode = excluded.company_mode,
+            company_id = excluded.company_id,
+            company_name_ar = excluded.company_name_ar,
+            updated_at = CURRENT_TIMESTAMP
+        `).bind(companyMode, companyId, companyNameAr).run();
+
+        return jsonResponse({
+          success: true,
+          companyMode,
+          companyId,
+          companyNameAr,
+        });
       }
 
       default:

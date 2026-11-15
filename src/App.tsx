@@ -86,11 +86,13 @@ const AppContent: React.FC = () => {
     );
   }
 
-  // Public Unauthenticated Careers Portal Gate (/careers or ?portal=careers)
+  // Public Unauthenticated Careers / Direct Application Portal Gate (/apply, /careers or ?portal=careers)
   const isCareersRoute =
     typeof window !== 'undefined' &&
-    (window.location.pathname.startsWith('/careers') ||
+    (window.location.pathname.startsWith('/apply') ||
+      window.location.pathname.startsWith('/careers') ||
       window.location.search.includes('portal=careers') ||
+      currentPath.startsWith('/apply') ||
       currentPath === '/careers' ||
       currentPath.startsWith('/careers'));
 

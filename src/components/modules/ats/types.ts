@@ -80,6 +80,7 @@ export interface TarabotExperienceRow {
 }
 
 export interface TarabotApplicationForm {
+  companyName?: string;
   registrationNumber: string;
   applicationDate: string;
   fullName: string;

@@ -72,18 +72,24 @@ export const ATSCandidatesTab: React.FC<ATSCandidatesTabProps> = ({ companyId })
   ) => {
     setIsDigitizing(true);
     try {
+      const targetCompanyName =
+        form.companyName?.trim() ||
+        activeCompany?.nameAr ||
+        atsStorage.getPortalConfigSync().companyNameAr ||
+        'الشركة المسجلة';
+
       const result = await atsStorage.submitTarabotApplication(
         {
           ...form,
+          companyName: targetCompanyName,
           entryChannel: 'internal_digitization',
         },
         {
           mode: saveTarget,
           companyId: activeCompany?.id || companyId || 'comp_01',
-          companyName:
-            activeCompany?.nameAr || 'شركة ترابط للإستثمارات و المشروعات (ش.م.م)',
+          companyName: targetCompanyName,
           utmSource: 'paper_digitization',
-          utmCampaign: 'tarabot_backlog_entry',
+          utmCampaign: 'backlog_digitization',
           actorName: 'إدارة الموارد البشرية',
         }
       );
@@ -519,6 +525,7 @@ export const ATSCandidatesTab: React.FC<ATSCandidatesTabProps> = ({ companyId })
             <div className="p-5 sm:p-6 flex-1 min-h-0 overflow-y-auto">
               <TarabotApplicationFormView
                 mode="internal"
+                companyName={activeCompany?.nameAr || ''}
                 isSubmitting={isDigitizing}
                 onSubmit={handleInternalDigitizeSubmit}
                 onCancel={() => setShowDigitizeModal(false)}

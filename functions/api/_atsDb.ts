@@ -168,6 +168,17 @@ export async function ensureATSSchema(db: D1Database): Promise<void> {
           execution_time_ms INTEGER DEFAULT 0,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
+      `),
+
+      // 7. ats_portal_config (Selected or Manual Company Branding for /apply & /careers)
+      db.prepare(`
+        CREATE TABLE IF NOT EXISTS ats_portal_config (
+          id TEXT PRIMARY KEY,
+          company_mode TEXT DEFAULT 'selected',
+          company_id TEXT,
+          company_name_ar TEXT,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
       `)
     ]);
   } catch (err) {
