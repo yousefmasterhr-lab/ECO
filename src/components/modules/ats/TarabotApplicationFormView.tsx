@@ -19,6 +19,8 @@ import {
   AlertCircle,
   Sparkles,
   FileCheck2,
+  Eye,
+  Download,
 } from 'lucide-react';
 import {
   TarabotApplicationForm,
@@ -214,20 +216,26 @@ export const TarabotApplicationFormView: React.FC<TarabotApplicationFormViewProp
   ) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const setNameAndData = (dataUrl?: string) => {
+    const maxBytes = 10 * 1024 * 1024;
+    if (file.size > maxBytes) {
+      setValidationError(
+        `حجم الملف (${file.name}) يتجاوز الحد الأقصى المسموح (10 ميجابايت). يرجى اختيار ملف أصغر.`
+      );
+      e.target.value = '';
+      return;
+    }
+
+    setValidationError(null);
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = typeof reader.result === 'string' ? reader.result : '';
       setForm((prev) =>
         target === 'cv'
           ? { ...prev, cvFileName: file.name, cvFileDataUrl: dataUrl }
           : { ...prev, scannedPaperFormName: file.name, scannedPaperFormDataUrl: dataUrl }
       );
     };
-    if (file.size <= 900 * 1024) {
-      const reader = new FileReader();
-      reader.onload = () => setNameAndData(typeof reader.result === 'string' ? reader.result : '');
-      reader.readAsDataURL(file);
-    } else {
-      setNameAndData('');
-    }
+    reader.readAsDataURL(file);
   };
 
   const handleAgreedSalaryChange = (rawVal: string) => {
@@ -595,7 +603,7 @@ export const TarabotApplicationFormView: React.FC<TarabotApplicationFormViewProp
                   onClick={() => setForm({ ...form, militaryStatus: opt })}
                   className={`px-3.5 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                     active
-                      ? 'bg-[#D99B26] text-[#1A241C] border-[#D99B26] shadow-xs'
+                      ? 'bg-[#D99B26] text-white border-[#D99B26] shadow-xs'
                       : 'bg-[#FFFFFF] dark:bg-[#17231A] text-[#5C665E] dark:text-[#8FA392] border-[#E0D9CB] dark:border-[#243628] hover:border-[#D99B26]'
                   }`}
                 >
@@ -680,7 +688,7 @@ export const TarabotApplicationFormView: React.FC<TarabotApplicationFormViewProp
                 }
                 className={`px-4 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                   !form.previouslyInsured
-                    ? 'bg-[#D99B26] text-[#1A241C] border-[#D99B26]'
+                    ? 'bg-[#D99B26] text-white border-[#D99B26]'
                     : 'bg-[#FFFFFF] dark:bg-[#17231A] text-[#5C665E] dark:text-[#8FA392] border-[#E0D9CB] dark:border-[#243628]'
                 }`}
               >
@@ -1099,38 +1107,80 @@ export const TarabotApplicationFormView: React.FC<TarabotApplicationFormViewProp
         </div>
 
         <div className={`grid grid-cols-1 ${mode === 'internal' ? 'md:grid-cols-2' : ''} gap-4`}>
-          <label className="flex flex-col items-center justify-center gap-2 p-5 rounded-2xl border-2 border-dashed border-[#D99B26]/40 hover:border-[#D99B26] bg-[#FBF9F5] dark:bg-[#17231A] cursor-pointer transition-all text-center">
-            <FileCheck2 className="w-6 h-6 text-[#D99B26]" />
-            <span className="text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6]">
-              {form.cvFileName || 'اضغط لرفع السيرة الذاتية (PDF / Word / صورة)'}
-            </span>
-            <span className="text-[10.5px] text-[#5C665E] dark:text-[#8FA392]">
-              {form.cvFileName ? 'تم إرفاق الملف بنجاح — اضغط للتغيير' : 'اختياري أثناء التقديم'}
-            </span>
-            <input
-              type="file"
-              accept=".pdf,.doc,.docx,image/*"
-              onChange={(e) => handleFileUpload(e, 'cv')}
-              className="hidden"
-            />
-          </label>
-
-          {mode === 'internal' && (
-            <label className="flex flex-col items-center justify-center gap-2 p-5 rounded-2xl border-2 border-dashed border-[#059669]/40 hover:border-[#059669] bg-[#FBF9F5] dark:bg-[#17231A] cursor-pointer transition-all text-center">
-              <UploadCloud className="w-6 h-6 text-[#059669]" />
+          <div className="space-y-2">
+            <label className="flex flex-col items-center justify-center gap-2 p-5 rounded-2xl border-2 border-dashed border-[#D99B26]/40 hover:border-[#D99B26] bg-[#FBF9F5] dark:bg-[#17231A] cursor-pointer transition-all text-center">
+              <FileCheck2 className="w-6 h-6 text-[#D99B26]" />
               <span className="text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6]">
-                {form.scannedPaperFormName || 'إرفاق صورة طلب التوظيف الورقي الممسوح (Scan PDF / JPG)'}
+                {form.cvFileName || 'اضغط لرفع السيرة الذاتية (PDF / Word / صورة)'}
               </span>
               <span className="text-[10.5px] text-[#5C665E] dark:text-[#8FA392]">
-                يُحفظ تلقائياً في أرشيف الموظف / المرشح بالمنظومة
+                {form.cvFileName
+                  ? 'تم إرفاق الملف بنجاح — اضغط للتغيير (حد أقصى 10 ميجابايت)'
+                  : 'اختياري أثناء التقديم (حد أقصى 10 ميجابايت)'}
               </span>
               <input
                 type="file"
-                accept=".pdf,image/*"
-                onChange={(e) => handleFileUpload(e, 'scanned_form')}
+                accept=".pdf,.doc,.docx,image/*"
+                onChange={(e) => handleFileUpload(e, 'cv')}
                 className="hidden"
               />
             </label>
+            {form.cvFileDataUrl && (
+              <div className="flex justify-center">
+                <button
+                  type="button"
+                  onClick={() =>
+                    atsStorage.openOrDownloadAttachment(
+                      form.cvFileDataUrl,
+                      form.cvFileName || 'cv.pdf',
+                      'view'
+                    )
+                  }
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold bg-[#059669]/10 text-[#059669] dark:text-emerald-400 border border-[#059669]/25 hover:bg-[#059669]/20 cursor-pointer"
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                  <span>معاينة السيرة الذاتية المرفقة</span>
+                </button>
+              </div>
+            )}
+          </div>
+
+          {mode === 'internal' && (
+            <div className="space-y-2">
+              <label className="flex flex-col items-center justify-center gap-2 p-5 rounded-2xl border-2 border-dashed border-[#059669]/40 hover:border-[#059669] bg-[#FBF9F5] dark:bg-[#17231A] cursor-pointer transition-all text-center">
+                <UploadCloud className="w-6 h-6 text-[#059669]" />
+                <span className="text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6]">
+                  {form.scannedPaperFormName || 'إرفاق صورة طلب التوظيف الورقي الممسوح (Scan PDF / JPG)'}
+                </span>
+                <span className="text-[10.5px] text-[#5C665E] dark:text-[#8FA392]">
+                  يُحفظ تلقائياً في أرشيف الموظف / المرشح بالمنظومة (حد أقصى 10 ميجابايت)
+                </span>
+                <input
+                  type="file"
+                  accept=".pdf,image/*"
+                  onChange={(e) => handleFileUpload(e, 'scanned_form')}
+                  className="hidden"
+                />
+              </label>
+              {form.scannedPaperFormDataUrl && (
+                <div className="flex justify-center">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      atsStorage.openOrDownloadAttachment(
+                        form.scannedPaperFormDataUrl,
+                        form.scannedPaperFormName || 'scanned_form.pdf',
+                        'view'
+                      )
+                    }
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold bg-[#D99B26]/10 text-[#D99B26] border border-[#D99B26]/25 hover:bg-[#D99B26]/20 cursor-pointer"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    <span>معاينة نسخة الطلب الممسوحة</span>
+                  </button>
+                </div>
+              )}
+            </div>
           )}
         </div>
       </div>
@@ -1351,11 +1401,11 @@ export const TarabotApplicationFormView: React.FC<TarabotApplicationFormViewProp
             type="button"
             disabled={isSubmitting}
             onClick={() => handleFormAction('candidate_only')}
-            className="flex-1 sm:flex-none px-8 py-3.5 rounded-2xl bg-gradient-to-r from-[#D99B26] to-[#EBB34D] hover:brightness-105 text-[#1A241C] font-black text-sm shadow-lg shadow-[#D99B26]/25 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+            className="flex-1 sm:flex-none px-8 py-3.5 rounded-2xl bg-gradient-to-r from-[#D99B26] to-[#EBB34D] hover:brightness-105 text-white font-black text-sm shadow-lg shadow-[#D99B26]/25 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
           >
             {isSubmitting ? (
               <>
-                <div className="w-4 h-4 border-2 border-[#1A241C] border-t-transparent rounded-full animate-spin" />
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 <span>جاري حفظ طلب التوظيف...</span>
               </>
             ) : (
@@ -1500,12 +1550,45 @@ export const TarabotPrintableApplicationModal: React.FC<
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            {(candidate.resumeUrl || f.cvFileDataUrl || f.scannedPaperFormDataUrl) && (
+              <>
+                <button
+                  type="button"
+                  onClick={() =>
+                    atsStorage.openOrDownloadAttachment(
+                      candidate.resumeUrl || f.cvFileDataUrl || f.scannedPaperFormDataUrl,
+                      candidate.resumeName || f.cvFileName || f.scannedPaperFormName || 'cv.pdf',
+                      'view'
+                    )
+                  }
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#D99B26] hover:bg-[#C2881D] text-white text-xs font-bold shadow-xs cursor-pointer transition-colors"
+                >
+                  <Eye className="w-4 h-4" />
+                  <span>عرض السيرة الذاتية (CV)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    atsStorage.openOrDownloadAttachment(
+                      candidate.resumeUrl || f.cvFileDataUrl || f.scannedPaperFormDataUrl,
+                      candidate.resumeName || f.cvFileName || f.scannedPaperFormName || 'cv.pdf',
+                      'download'
+                    )
+                  }
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[#D99B26]/50 bg-[#D99B26]/10 hover:bg-[#D99B26]/20 text-[#9A6B12] dark:text-[#EBB34D] text-xs font-bold cursor-pointer transition-colors"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>تحميل CV</span>
+                </button>
+              </>
+            )}
+
             <button
               type="button"
               onClick={() => setViewMode(viewMode === 'print' ? 'edit' : 'print')}
               className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
                 viewMode === 'edit'
-                  ? 'bg-[#D99B26] text-[#1A241C] border-[#D99B26]'
+                  ? 'bg-[#D99B26] text-white border-[#D99B26]'
                   : 'bg-[#FFFFFF] dark:bg-[#17231A] text-[#1A241C] dark:text-[#F3EFE6] border-[#E0D9CB] dark:border-[#243628] hover:border-[#D99B26]'
               }`}
             >

@@ -307,7 +307,7 @@ export const PublicCareersPortal: React.FC = () => {
                       setSubmittedCandidate(null);
                       scrollToTop();
                     }}
-                    className="px-6 py-3 rounded-2xl bg-[#D99B26] hover:bg-[#EBB34D] text-[#1A241C] font-bold text-xs shadow-md transition-all cursor-pointer"
+                    className="px-6 py-3 rounded-2xl bg-[#D99B26] hover:bg-[#C2881D] text-white font-bold text-xs shadow-md transition-all cursor-pointer"
                   >
                     {t('العودة للصفحة الرئيسية للتوظيف', 'Explore More Opportunities')}
                   </button>
@@ -454,7 +454,7 @@ export const PublicCareersPortal: React.FC = () => {
                   <button
                     type="button"
                     onClick={handleStartGeneralApplication}
-                    className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-[#D99B26] to-[#EBB34D] hover:brightness-105 text-[#1A241C] font-black text-sm shadow-lg shadow-[#D99B26]/25 transition-all cursor-pointer"
+                    className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-[#D99B26] to-[#EBB34D] hover:brightness-105 text-white font-black text-sm shadow-lg shadow-[#D99B26]/25 transition-all cursor-pointer"
                   >
                     <FileText className="w-4 h-4" />
                     <span>{t('ملء استمارة طلب التوظيف مباشرة', 'Fill Official Job Application')}</span>

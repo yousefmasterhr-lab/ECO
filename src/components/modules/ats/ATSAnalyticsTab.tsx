@@ -8,13 +8,17 @@ import {
   Briefcase, 
   Award, 
   FileSpreadsheet, 
-  Check 
+  Check,
+  UserX,
+  RefreshCw,
 } from 'lucide-react';
 import { useLanguage } from '../../../context/LanguageContext';
 import { fireConfetti } from '../../../utils/confetti';
 import ExcelJS from 'exceljs';
-import { RecruitmentKPIs, Candidate, JobRequisition, JobOffer } from './types';
+import { RecruitmentKPIs, Candidate, JobRequisition, JobOffer, DEFAULT_STAGES } from './types';
 import { atsStorage } from '../../../services/atsStorage';
+import { hrStorage } from '../../../services/hrStorage';
+import type { Employee } from '../../../context/HRContext';
 
 interface ATSAnalyticsTabProps {
   companyId?: string;
@@ -30,6 +34,7 @@ export const ATSAnalyticsTab: React.FC<ATSAnalyticsTabProps> = ({ companyId }) =
   const [jobs, setJobs] = useState<JobRequisition[]>([]);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [offers, setOffers] = useState<JobOffer[]>([]);
+  const [hrEmployees, setHrEmployees] = useState<Employee[]>([]);
   const [, setLoading] = useState(true);
 
   const loadData = async () => {
@@ -43,6 +48,7 @@ export const ATSAnalyticsTab: React.FC<ATSAnalyticsTabProps> = ({ companyId }) =
       setJobs(allJobs);
       setCandidates(allCandidates);
       setOffers(allOffers);
+      setHrEmployees(hrStorage.getEmployees());
     } catch (e) {
       console.warn('Failed to load ATS analytics data', e);
     } finally {
@@ -54,71 +60,106 @@ export const ATSAnalyticsTab: React.FC<ATSAnalyticsTabProps> = ({ companyId }) =
     loadData();
     const handleUpdate = () => loadData();
     window.addEventListener('eco-ats-updated', handleUpdate);
-    return () => window.removeEventListener('eco-ats-updated', handleUpdate);
+    window.addEventListener('eco-hr-updated', handleUpdate);
+    return () => {
+      window.removeEventListener('eco-ats-updated', handleUpdate);
+      window.removeEventListener('eco-hr-updated', handleUpdate);
+    };
   }, [companyId]);
+
+  const scopedEmployees = useMemo(() => {
+    if (!companyId || companyId === 'all') return hrEmployees;
+    return hrEmployees.filter(
+      (e) => !e.companyId || e.companyId === 'all' || e.companyId === 'comp_01' || e.companyId === companyId
+    );
+  }, [hrEmployees, companyId]);
 
   // Compute live dynamic KPIs based strictly on real database records
   const kpis: RecruitmentKPIs = useMemo(() => {
     const totalJobs = jobs.filter(j => j.status === 'published' || j.status === 'approved').length;
     const activeCandidates = candidates.filter(c => c.stage !== 'hired' && c.stage !== 'rejected').length;
-    const hiredCandidates = candidates.filter(c => c.stage === 'hired').length;
+    const hiredList = candidates.filter(c => c.stage === 'hired');
+    const hiredCandidates = hiredList.length;
+    const rejectedCandidatesCount = candidates.filter(
+      c => c.stage === 'rejected' || c.status === 'rejected'
+    ).length;
+    const rejectionRate =
+      candidates.length > 0 ? Math.round((rejectedCandidatesCount / candidates.length) * 100) : 0;
+
+    const totalHeadcount = scopedEmployees.length;
+    const separatedEmployeesCount = scopedEmployees.filter(
+      e =>
+        e.status === 'terminated' ||
+        e.lifecycleStatus === 'resigned' ||
+        e.lifecycleStatus === 'archived' ||
+        e.contractStatus === 'expired'
+    ).length;
+    const turnoverRate =
+      totalHeadcount > 0 ? Math.round((separatedEmployeesCount / totalHeadcount) * 100) : 0;
+
     const signedOffers = offers.filter(o => o.status === 'accepted' || o.status === 'synced_to_core_hr').length;
     const totalOffers = offers.length;
     const acceptanceRate = totalOffers > 0 ? Math.round((signedOffers / totalOffers) * 100) : 0;
 
+    let avgDays = 0;
+    if (hiredList.length > 0) {
+      const daysSum = hiredList.reduce((acc, c) => {
+        const start = Date.parse(c.appliedAt || '');
+        const end = Date.parse(c.updatedAt || '');
+        if (!Number.isNaN(start) && !Number.isNaN(end) && end >= start) {
+          return acc + Math.max(1, Math.round((end - start) / 86_400_000));
+        }
+        return acc + 1;
+      }, 0);
+      avgDays = Math.round(daysSum / hiredList.length);
+    }
+
     return {
-      timeToHireDays: 0,
-      timeToFillDays: 0,
+      timeToHireDays: avgDays,
+      timeToFillDays: avgDays,
       costPerHire: 0,
       totalOpenRequisitions: totalJobs,
       activeCandidatesInPipeline: activeCandidates,
       totalHiresThisQuarter: hiredCandidates,
       offerAcceptanceRate: acceptanceRate,
+      rejectionRate,
+      rejectedCandidatesCount,
+      turnoverRate,
+      separatedEmployeesCount,
+      totalHeadcount,
       candidateSatisfactionScore: hiredCandidates > 0 ? 100 : 0,
       timeToHireChange: 0,
       costPerHireSavings: 0,
       offersSignedCount: signedOffers,
       offersSentTotal: totalOffers,
     };
-  }, [jobs, candidates, offers]);
+  }, [jobs, candidates, offers, scopedEmployees]);
 
-  // Compute Funnel Stages dynamically from actual candidates
+  // Compute Funnel Stages dynamically from actual candidates matching exact DEFAULT_STAGES keys
   const funnelStages = useMemo(() => {
     const total = candidates.length;
-    const stageCounts: Record<string, number> = {
-      applied: 0,
-      screening: 0,
-      tech_assessment: 0,
-      interview: 0,
-      offer: 0,
-      hired: 0,
-    };
+    const stageCounts: Record<string, number> = {};
+    DEFAULT_STAGES.forEach((s) => {
+      stageCounts[s.id] = 0;
+    });
 
     candidates.forEach(c => {
       const st = c.stage || 'applied';
       if (stageCounts[st] !== undefined) {
         stageCounts[st]++;
       } else {
-        stageCounts.applied++;
+        stageCounts.applied = (stageCounts.applied || 0) + 1;
       }
     });
 
-    const stagesConfig = [
-      { id: 'applied', nameAr: 'طلبات جديدة (مقدمة)', nameEn: 'Applied' },
-      { id: 'screening', nameAr: 'فرز وتصفية أولية', nameEn: 'Screening' },
-      { id: 'tech_assessment', nameAr: 'تقييم فني وإدارة', nameEn: 'Tech Assessment' },
-      { id: 'interview', nameAr: 'مقابلات الموارد البشرية', nameEn: 'Interviews' },
-      { id: 'offer', nameAr: 'عروض العمل الصادرة', nameEn: 'Offers Sent' },
-      { id: 'hired', nameAr: 'تم التعيين والاعتماد', nameEn: 'Hired & Synced' },
-    ];
-
-    return stagesConfig.map(s => {
+    return DEFAULT_STAGES.map(s => {
       const cnt = stageCounts[s.id] || 0;
       const rate = total > 0 ? Math.round((cnt / total) * 100) : 0;
       return {
         id: s.id,
-        nameAr: s.nameAr,
-        nameEn: s.nameEn,
+        nameAr: s.title,
+        nameEn: s.titleEn,
+        color: s.color,
         count: cnt,
         conversionRate: rate,
         days: cnt > 0 ? 1 : 0,
@@ -184,6 +225,8 @@ export const ATSAnalyticsTab: React.FC<ATSAnalyticsTabProps> = ({ companyId }) =
       sheet.addRow(['تكلفة التعيين للموظف', `${kpis.costPerHire.toLocaleString()} ج.م`, '0 مصروفات مسجلة']);
       sheet.addRow(['نسبة قبول عروض العمل', `${kpis.offerAcceptanceRate}%`, 'معدل حقيقي']);
       sheet.addRow(['إجمالي التعيينات المعتمدة', `${kpis.totalHiresThisQuarter} موظف`, 'مكتمل']);
+      sheet.addRow(['نسبة المرفوض / المستبعدين', `${kpis.rejectionRate}%`, `${kpis.rejectedCandidatesCount} من ${candidates.length} متقدم`]);
+      sheet.addRow(['معدل الدوران الوظيفي', `${kpis.turnoverRate}%`, `${kpis.separatedEmployeesCount} من ${kpis.totalHeadcount} موظف`]);
       sheet.addRow([]);
 
       sheet.addRow(['مرحلة مسار التوظيف', 'عدد المرشحين', 'نسبة التحويل (%)']);
@@ -233,7 +276,7 @@ export const ATSAnalyticsTab: React.FC<ATSAnalyticsTabProps> = ({ companyId }) =
                 onClick={() => setDateRange(period)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                   dateRange === period
-                    ? 'bg-amber-500 text-slate-950 shadow-sm'
+                    ? 'bg-amber-500 text-white shadow-sm'
                     : 'text-slate-600 dark:text-[#97A69B] hover:text-slate-950 dark:hover:text-[#E8F3EB]'
                 }`}
               >
@@ -256,8 +299,8 @@ export const ATSAnalyticsTab: React.FC<ATSAnalyticsTabProps> = ({ companyId }) =
         </div>
       </div>
 
-      {/* 6 Executive KPI Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+      {/* 8 Executive KPI Metric Cards (Including Rejection Rate & Turnover Rate) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Metric 1: Time to Hire */}
         <div className="p-4 rounded-2xl bg-white/80 dark:bg-[#0D1C13]/80 border border-amber-200/60 dark:border-[#1D3324] shadow-xs relative overflow-hidden group hover:border-amber-500/50 transition-all">
           <div className="flex items-center justify-between mb-2">
@@ -353,6 +396,42 @@ export const ATSAnalyticsTab: React.FC<ATSAnalyticsTabProps> = ({ companyId }) =
             {kpis.totalHiresThisQuarter > 0 ? t('محوّلون لمنظومة HR', 'synced to HR') : '0 تعيينات منجزة'}
           </div>
         </div>
+
+        {/* Metric 7: Rejection Rate (نسبة المرفوض) */}
+        <div className="p-4 rounded-2xl bg-white/80 dark:bg-[#0D1C13]/80 border border-amber-200/60 dark:border-[#1D3324] shadow-xs relative overflow-hidden group hover:border-rose-500/50 transition-all">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[11px] font-semibold text-slate-500 dark:text-[#97A69B]">{t('نسبة المرفوض / المستبعدين', 'Rejection Rate')}</span>
+            <div className="p-2 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400">
+              <UserX className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="text-2xl font-black text-rose-600 dark:text-rose-400 font-mono">
+            {kpis.rejectionRate}%
+          </div>
+          <div className="mt-2 text-[11px] text-slate-500 dark:text-[#97A69B]">
+            {candidates.length > 0
+              ? `${kpis.rejectedCandidatesCount} مرفوض من أصل ${candidates.length}`
+              : '0 متقدمين مستبعدين'}
+          </div>
+        </div>
+
+        {/* Metric 8: Employee Turnover Rate (معدل الدوران الوظيفي) */}
+        <div className="p-4 rounded-2xl bg-white/80 dark:bg-[#0D1C13]/80 border border-amber-200/60 dark:border-[#1D3324] shadow-xs relative overflow-hidden group hover:border-amber-500/50 transition-all">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[11px] font-semibold text-slate-500 dark:text-[#97A69B]">{t('معدل الدوران الوظيفي', 'Turnover Rate')}</span>
+            <div className="p-2 rounded-xl bg-orange-500/10 text-orange-600 dark:text-orange-400">
+              <RefreshCw className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="text-2xl font-black text-orange-600 dark:text-orange-400 font-mono">
+            {kpis.turnoverRate}%
+          </div>
+          <div className="mt-2 text-[11px] text-slate-500 dark:text-[#97A69B]">
+            {kpis.totalHeadcount > 0
+              ? `${kpis.separatedEmployeesCount} حالات ترك من ${kpis.totalHeadcount} موظف`
+              : '0 موظفين مسجلين في السجل العام'}
+          </div>
+        </div>
       </div>
 
       {/* Secondary Chart Tabs */}
@@ -363,7 +442,7 @@ export const ATSAnalyticsTab: React.FC<ATSAnalyticsTabProps> = ({ companyId }) =
               onClick={() => setSelectedChartTab('funnel')}
               className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 selectedChartTab === 'funnel'
-                  ? 'bg-amber-500 text-slate-950 shadow-xs'
+                  ? 'bg-amber-500 text-white shadow-xs'
                   : 'text-slate-600 dark:text-[#97A69B] hover:bg-amber-100/40 dark:hover:bg-[#122318]'
               }`}
             >
@@ -373,7 +452,7 @@ export const ATSAnalyticsTab: React.FC<ATSAnalyticsTabProps> = ({ companyId }) =
               onClick={() => setSelectedChartTab('sources')}
               className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 selectedChartTab === 'sources'
-                  ? 'bg-amber-500 text-slate-950 shadow-xs'
+                  ? 'bg-amber-500 text-white shadow-xs'
                   : 'text-slate-600 dark:text-[#97A69B] hover:bg-amber-100/40 dark:hover:bg-[#122318]'
               }`}
             >
@@ -383,7 +462,7 @@ export const ATSAnalyticsTab: React.FC<ATSAnalyticsTabProps> = ({ companyId }) =
               onClick={() => setSelectedChartTab('recruiters')}
               className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 selectedChartTab === 'recruiters'
-                  ? 'bg-amber-500 text-slate-950 shadow-xs'
+                  ? 'bg-amber-500 text-white shadow-xs'
                   : 'text-slate-600 dark:text-[#97A69B] hover:bg-amber-100/40 dark:hover:bg-[#122318]'
               }`}
             >
@@ -395,7 +474,7 @@ export const ATSAnalyticsTab: React.FC<ATSAnalyticsTabProps> = ({ companyId }) =
         {/* Tab 1: Funnel Chart */}
         {selectedChartTab === 'funnel' && (
           <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               {funnelStages.map((stage, idx) => (
                 <div
                   key={stage.id}
@@ -411,7 +490,7 @@ export const ATSAnalyticsTab: React.FC<ATSAnalyticsTabProps> = ({ companyId }) =
                   </div>
 
                   <div className="mt-4 pt-3 border-t border-stone-200 dark:border-[#1D3324]/60 flex items-center justify-between text-[11px]">
-                    <span className="text-emerald-600 dark:text-emerald-400 font-bold font-mono">{stage.conversionRate}% تحويل</span>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-bold font-mono">{stage.conversionRate}% من الإجمالي</span>
                     <span className="text-slate-400 font-mono">~ {stage.days} يوم</span>
                   </div>
                 </div>
@@ -428,19 +507,10 @@ export const ATSAnalyticsTab: React.FC<ATSAnalyticsTabProps> = ({ companyId }) =
                   {funnelStages.map((st) => {
                     const pct = Math.round((st.count / candidates.length) * 100);
                     if (pct <= 0) return null;
-                    const colors: Record<string, string> = {
-                      applied: 'bg-amber-600',
-                      screening: 'bg-amber-500',
-                      tech_assessment: 'bg-teal-600',
-                      interview: 'bg-blue-600',
-                      offer: 'bg-purple-600',
-                      hired: 'bg-emerald-500',
-                    };
                     return (
                       <div
                         key={st.id}
-                        style={{ width: `${pct}%` }}
-                        className={colors[st.id] || 'bg-amber-500'}
+                        style={{ width: `${pct}%`, backgroundColor: st.color }}
                         title={`${st.nameAr}: ${st.count} (${pct}%)`}
                       />
                     );

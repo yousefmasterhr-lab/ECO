@@ -123,7 +123,14 @@ export const ATSJobsTab: React.FC<ATSJobsTabProps> = ({ companyId }) => {
       job.department.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === 'all' || job.status === statusFilter;
     const matchesDept = departmentFilter === 'all' || job.department === departmentFilter;
-    const matchesComp = !companyId || companyId === 'all' || job.companyId === companyId;
+    const matchesComp =
+      !companyId ||
+      companyId === 'all' ||
+      !job.companyId ||
+      job.companyId === 'all' ||
+      job.companyId === 'comp_01' ||
+      job.companyId === 'comp_1' ||
+      job.companyId === companyId;
     return matchesSearch && matchesStatus && matchesDept && matchesComp;
   });
 
@@ -143,7 +150,7 @@ export const ATSJobsTab: React.FC<ATSJobsTabProps> = ({ companyId }) => {
 
         <button
           onClick={() => setIsCreateModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold transition-all shadow-md shadow-amber-500/25 active:scale-95 cursor-pointer"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white transition-all shadow-md shadow-amber-500/25 active:scale-95 cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           {t('إضافة شاغر وظيفي جديد', 'Post New Job Opening')}
@@ -456,7 +463,7 @@ export const ATSJobsTab: React.FC<ATSJobsTabProps> = ({ companyId }) => {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold transition-all shadow-md shadow-amber-500/25 cursor-pointer"
+                  className="px-5 py-2 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white transition-all shadow-md shadow-amber-500/25 cursor-pointer"
                 >
                   {t('نشر الشاغر فوراً', 'Publish Opening')}
                 </button>
@@ -514,7 +521,7 @@ export const ATSJobsTab: React.FC<ATSJobsTabProps> = ({ companyId }) => {
             <div className="mt-5 pt-3 border-t border-[#E0D9CB] dark:border-[#1D3324] flex justify-end">
               <button
                 onClick={() => setSelectedJob(null)}
-                className="px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold transition-all cursor-pointer"
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white transition-all cursor-pointer"
               >
                 {t('إغلاق', 'Close')}
               </button>

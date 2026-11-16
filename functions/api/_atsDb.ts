@@ -37,6 +37,7 @@ export async function ensureATSSchema(db: D1Database): Promise<void> {
           current_tier INTEGER DEFAULT 1,
           approval_chain_json TEXT,
           published_at TEXT,
+          payload_json TEXT,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
@@ -75,6 +76,7 @@ export async function ensureATSSchema(db: D1Database): Promise<void> {
           notice_period_days INTEGER DEFAULT 30,
           notes_json TEXT,
           activities_json TEXT,
+          payload_json TEXT,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
@@ -101,6 +103,7 @@ export async function ensureATSSchema(db: D1Database): Promise<void> {
           scorecard_id TEXT,
           scorecard_json TEXT,
           notes TEXT,
+          payload_json TEXT,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
@@ -128,6 +131,7 @@ export async function ensureATSSchema(db: D1Database): Promise<void> {
           core_hr_employee_id TEXT,
           notes TEXT,
           expires_at TEXT,
+          payload_json TEXT,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
@@ -179,8 +183,34 @@ export async function ensureATSSchema(db: D1Database): Promise<void> {
           company_name_ar TEXT,
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
+      `),
+
+      // 8. ats_attachments (Chunked CV / Scanned Form storage to avoid SQLITE_TOOBIG)
+      db.prepare(`
+        CREATE TABLE IF NOT EXISTS ats_attachments (
+          id TEXT PRIMARY KEY,
+          candidate_id TEXT NOT NULL,
+          file_type TEXT NOT NULL,
+          file_name TEXT NOT NULL,
+          mime_type TEXT,
+          chunk_index INTEGER DEFAULT 0,
+          total_chunks INTEGER DEFAULT 1,
+          data_chunk TEXT NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
       `)
     ]);
+
+    // Safe additive schema migrations for existing D1 deployments
+    const alterStatements = [
+      'ALTER TABLE ats_jobs ADD COLUMN payload_json TEXT',
+      'ALTER TABLE ats_candidates ADD COLUMN payload_json TEXT',
+      'ALTER TABLE ats_interviews ADD COLUMN payload_json TEXT',
+      'ALTER TABLE ats_offers ADD COLUMN payload_json TEXT',
+    ];
+    for (const stmt of alterStatements) {
+      await db.prepare(stmt).run().catch(() => {});
+    }
   } catch (err) {
     console.warn('[D1 ATS Schema Init Warning]', err);
   }

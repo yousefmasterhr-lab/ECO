@@ -10,6 +10,8 @@ import {
   FileText,
   CheckCircle2,
   UserCheck,
+  Download,
+  Paperclip,
 } from 'lucide-react';
 import { useLanguage } from '../../../context/LanguageContext';
 import { useTenant } from '../../../context/TenantContext';
@@ -131,7 +133,14 @@ export const ATSCandidatesTab: React.FC<ATSCandidatesTabProps> = ({ companyId })
             c.applicationForm?.entryChannel === 'internal_digitization'
           : c.source !== 'paper_digitization' &&
             c.applicationForm?.entryChannel !== 'internal_digitization';
-    const matchesComp = !companyId || companyId === 'all' || c.companyId === companyId;
+    const matchesComp =
+      !companyId ||
+      companyId === 'all' ||
+      !c.companyId ||
+      c.companyId === 'all' ||
+      c.companyId === 'comp_01' ||
+      c.companyId === 'comp_1' ||
+      c.companyId === companyId;
     return matchesSearch && matchesStage && matchesSource && matchesComp;
   });
 
@@ -287,6 +296,24 @@ export const ATSCandidatesTab: React.FC<ATSCandidatesTabProps> = ({ companyId })
                                   {c.coreHREmployeeCode}
                                 </span>
                               )}
+                              {(c.resumeUrl || c.applicationForm?.cvFileDataUrl) && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    atsStorage.openOrDownloadAttachment(
+                                      c.resumeUrl || c.applicationForm?.cvFileDataUrl,
+                                      c.resumeName || c.applicationForm?.cvFileName || 'cv.pdf',
+                                      'view'
+                                    );
+                                  }}
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#D99B26]/15 text-[#D99B26] hover:bg-[#D99B26] hover:text-white transition-colors cursor-pointer"
+                                  title={c.resumeName || c.applicationForm?.cvFileName || 'عرض السيرة الذاتية'}
+                                >
+                                  <Paperclip className="w-3 h-3" />
+                                  <span>CV مرفق</span>
+                                </button>
+                              )}
                             </div>
                             <div className="text-[11px] text-[#5C665E] dark:text-[#8FA392] flex items-center gap-2 mt-0.5">
                               <span className="font-mono" dir="ltr">
@@ -355,6 +382,36 @@ export const ATSCandidatesTab: React.FC<ATSCandidatesTabProps> = ({ companyId })
 
                       <td className="py-3.5 px-4 text-center">
                         <div className="inline-flex items-center gap-1">
+                          {(c.resumeUrl || c.applicationForm?.cvFileDataUrl) && (
+                            <>
+                              <button
+                                onClick={() =>
+                                  atsStorage.openOrDownloadAttachment(
+                                    c.resumeUrl || c.applicationForm?.cvFileDataUrl,
+                                    c.resumeName || c.applicationForm?.cvFileName || 'cv.pdf',
+                                    'view'
+                                  )
+                                }
+                                title={t('عرض السيرة الذاتية (CV)', 'View Attached CV')}
+                                className="p-1.5 rounded-lg text-[#D99B26] hover:bg-[#D99B26]/15 cursor-pointer"
+                              >
+                                <Paperclip className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() =>
+                                  atsStorage.openOrDownloadAttachment(
+                                    c.resumeUrl || c.applicationForm?.cvFileDataUrl,
+                                    c.resumeName || c.applicationForm?.cvFileName || 'cv.pdf',
+                                    'download'
+                                  )
+                                }
+                                title={t('تحميل السيرة الذاتية (CV)', 'Download CV')}
+                                className="p-1.5 rounded-lg text-[#059669] hover:bg-[#059669]/10 cursor-pointer"
+                              >
+                                <Download className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
                           <button
                             onClick={() => setPrintableCandidate(c)}
                             title={t(
@@ -456,6 +513,55 @@ export const ATSCandidatesTab: React.FC<ATSCandidatesTabProps> = ({ companyId })
                 )}
               </div>
 
+              {(selectedCandidate.resumeUrl || selectedCandidate.applicationForm?.cvFileDataUrl) && (
+                <div className="p-3.5 rounded-xl bg-[#D99B26]/10 border border-[#D99B26]/30 flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6]">
+                    <Paperclip className="w-4 h-4 text-[#D99B26]" />
+                    <span>
+                      {selectedCandidate.resumeName ||
+                        selectedCandidate.applicationForm?.cvFileName ||
+                        'السيرة الذاتية المرفقة'}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        atsStorage.openOrDownloadAttachment(
+                          selectedCandidate.resumeUrl ||
+                            selectedCandidate.applicationForm?.cvFileDataUrl,
+                          selectedCandidate.resumeName ||
+                            selectedCandidate.applicationForm?.cvFileName ||
+                            'cv.pdf',
+                          'view'
+                        )
+                      }
+                      className="px-3 py-1.5 rounded-lg bg-[#D99B26] hover:bg-[#C2881D] text-white font-bold text-[11px] flex items-center gap-1 cursor-pointer"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>عرض السيرة الذاتية</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        atsStorage.openOrDownloadAttachment(
+                          selectedCandidate.resumeUrl ||
+                            selectedCandidate.applicationForm?.cvFileDataUrl,
+                          selectedCandidate.resumeName ||
+                            selectedCandidate.applicationForm?.cvFileName ||
+                            'cv.pdf',
+                          'download'
+                        )
+                      }
+                      className="px-3 py-1.5 rounded-lg bg-[#059669] hover:bg-[#047857] text-white font-bold text-[11px] flex items-center gap-1 cursor-pointer"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>تحميل</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {selectedCandidate.parsedResume?.summary && (
                 <div className="p-3.5 rounded-xl bg-[#F3EFE6]/60 dark:bg-[#121B14] border border-[#E0D9CB] dark:border-[#243628]">
                   <div className="font-bold text-[#1A241C] dark:text-[#F3EFE6] mb-1">
@@ -484,7 +590,7 @@ export const ATSCandidatesTab: React.FC<ATSCandidatesTabProps> = ({ companyId })
 
               <button
                 onClick={() => setSelectedCandidate(null)}
-                className="px-4 py-2 rounded-xl text-xs font-bold bg-[#D99B26] hover:bg-[#EBB34D] text-[#1A241C] transition-all cursor-pointer"
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-[#D99B26] hover:bg-[#C2881D] text-white transition-all cursor-pointer"
               >
                 {t('إغلاق', 'Close')}
               </button>

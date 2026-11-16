@@ -29,10 +29,10 @@ const STORAGE_KEYS = {
   INTERVIEWS: 'eco_ats_interviews',
   OFFERS: 'eco_ats_offers',
   PORTAL_CONFIG: 'eco_ats_portal_config',
+  DELETED_IDS: 'eco_ats_deleted_ids',
 };
 
 class ATSStorageService {
-
   private readLocal<T>(key: string, fallback: T): T {
     try {
       const data = localStorage.getItem(key);
@@ -42,12 +42,162 @@ class ATSStorageService {
     }
   }
 
-  private writeLocal<T>(key: string, data: T): void {
+  private writeLocalSilent<T>(key: string, data: T): void {
     try {
       localStorage.setItem(key, JSON.stringify(data));
-      window.dispatchEvent(new CustomEvent('eco-ats-updated'));
     } catch (e) {
       console.warn('[ATSStorage] LocalStorage write failed', e);
+    }
+  }
+
+  private writeLocal<T>(key: string, data: T): void {
+    this.writeLocalSilent(key, data);
+    window.dispatchEvent(new CustomEvent('eco-ats-updated'));
+  }
+
+  private getDeletedIds(): Set<string> {
+    const list = this.readLocal<string[]>(STORAGE_KEYS.DELETED_IDS, []);
+    return new Set(Array.isArray(list) ? list : []);
+  }
+
+  private markDeleted(id: string): void {
+    const set = this.getDeletedIds();
+    set.add(id);
+    this.writeLocalSilent(STORAGE_KEYS.DELETED_IDS, Array.from(set).slice(-300));
+  }
+
+  private unmarkDeleted(id: string): void {
+    const set = this.getDeletedIds();
+    if (set.delete(id)) {
+      this.writeLocalSilent(STORAGE_KEYS.DELETED_IDS, Array.from(set));
+    }
+  }
+
+  private matchesCompany(itemCompanyId: string | undefined, selectedCompanyId?: string): boolean {
+    if (!selectedCompanyId || selectedCompanyId === 'all') return true;
+    if (
+      !itemCompanyId ||
+      itemCompanyId === 'all' ||
+      itemCompanyId === 'comp_01' ||
+      itemCompanyId === 'comp_1'
+    ) {
+      return true;
+    }
+    return itemCompanyId === selectedCompanyId;
+  }
+
+  private mergeCollections<T extends { id: string; updatedAt?: string }>(
+    remote: T[],
+    local: T[],
+    syncMissingEndpoint?: string
+  ): T[] {
+    const deleted = this.getDeletedIds();
+    const map = new Map<string, T>();
+
+    remote.forEach((r) => {
+      if (r && r.id && !deleted.has(r.id)) {
+        map.set(r.id, r);
+      }
+    });
+
+    const missingOnRemote: T[] = [];
+    local.forEach((l) => {
+      if (!l || !l.id || deleted.has(l.id)) return;
+      const r = map.get(l.id);
+      if (!r) {
+        map.set(l.id, l);
+        missingOnRemote.push(l);
+      } else {
+        // Merge so nested fields preserved locally are never wiped by partial remote rows
+        const localTime = Date.parse(l.updatedAt || '') || 0;
+        const remoteTime = Date.parse(r.updatedAt || '') || 0;
+        map.set(l.id, localTime > remoteTime ? { ...r, ...l } : { ...l, ...r });
+      }
+    });
+
+    if (syncMissingEndpoint && missingOnRemote.length > 0) {
+      missingOnRemote.forEach((item) => {
+        fetch(syncMissingEndpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(item),
+        }).catch(() => {});
+      });
+    }
+
+    return Array.from(map.values());
+  }
+
+  public openOrDownloadAttachment(
+    urlOrDataUrl?: string,
+    fileName = 'attachment.pdf',
+    action: 'view' | 'download' = 'view'
+  ): void {
+    if (!urlOrDataUrl) {
+      alert('لا يوجد ملف مرفق متاح للعرض حالياً.');
+      return;
+    }
+
+    const cleanName = fileName || 'cv_attachment.pdf';
+
+    // Handle server attachment URL (/api/ats/attachments/...)
+    if (!urlOrDataUrl.startsWith('data:')) {
+      const sep = urlOrDataUrl.includes('?') ? '&' : '?';
+      const targetUrl =
+        action === 'download' && urlOrDataUrl.startsWith('/api/ats/attachments')
+          ? `${urlOrDataUrl}${sep}download=1`
+          : urlOrDataUrl;
+      if (action === 'download') {
+        const a = document.createElement('a');
+        a.href = targetUrl;
+        a.download = cleanName;
+        a.target = '_blank';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      } else {
+        window.open(targetUrl, '_blank', 'noopener,noreferrer');
+      }
+      return;
+    }
+
+    // Convert DataURL -> Blob URL so browsers never block top-level data: navigation
+    try {
+      const commaIdx = urlOrDataUrl.indexOf(',');
+      const meta = commaIdx >= 0 ? urlOrDataUrl.slice(0, commaIdx) : '';
+      const base64 = commaIdx >= 0 ? urlOrDataUrl.slice(commaIdx + 1) : urlOrDataUrl;
+      const mimeMatch = meta.match(/^data:([^;]+)/i);
+      const mimeType = mimeMatch?.[1] || 'application/octet-stream';
+      const binaryStr = atob(base64);
+      const bytes = new Uint8Array(binaryStr.length);
+      for (let i = 0; i < binaryStr.length; i++) {
+        bytes[i] = binaryStr.charCodeAt(i);
+      }
+      const blob = new Blob([bytes], { type: mimeType });
+      const objectUrl = URL.createObjectURL(blob);
+
+      if (action === 'download') {
+        const a = document.createElement('a');
+        a.href = objectUrl;
+        a.download = cleanName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      } else {
+        const win = window.open(objectUrl, '_blank', 'noopener,noreferrer');
+        if (!win) {
+          const a = document.createElement('a');
+          a.href = objectUrl;
+          a.download = cleanName;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        }
+      }
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+    } catch (err) {
+      console.error('Failed to open attachment:', err);
+      alert('تعذر فتح الملف المرفق. يرجى تجربة زر التحميل.');
     }
   }
 
@@ -114,29 +264,27 @@ class ATSStorageService {
   // ==================== JOBS / REQUISITIONS ====================
   public async getJobs(companyId?: string): Promise<JobRequisition[]> {
     const local = this.readLocal<JobRequisition[]>(STORAGE_KEYS.JOBS, []);
+    let merged = local;
     try {
-      const query = companyId && companyId !== 'all' ? `?companyId=${encodeURIComponent(companyId)}` : '';
-      const res = await fetch(`/api/ats/jobs${query}`);
+      const res = await fetch('/api/ats/jobs');
       if (res.ok) {
         const remote = await res.json();
         if (Array.isArray(remote)) {
-          this.writeLocal(STORAGE_KEYS.JOBS, remote);
-          return remote;
+          merged = this.mergeCollections<JobRequisition>(remote, local, '/api/ats/jobs');
+          this.writeLocalSilent(STORAGE_KEYS.JOBS, merged);
         }
       }
     } catch {
       // offline fallback
     }
 
-    if (companyId && companyId !== 'all') {
-      return local.filter(j => !j.companyId || j.companyId === companyId);
-    }
-    return local;
+    return merged.filter((j) => this.matchesCompany(j.companyId, companyId));
   }
 
   public async saveJob(job: JobRequisition): Promise<JobRequisition> {
+    this.unmarkDeleted(job.id);
     const all = this.readLocal<JobRequisition[]>(STORAGE_KEYS.JOBS, []);
-    const idx = all.findIndex(j => j.id === job.id);
+    const idx = all.findIndex((j) => j.id === job.id);
     const updated = { ...job, updatedAt: new Date().toISOString() };
 
     if (idx >= 0) {
@@ -160,8 +308,9 @@ class ATSStorageService {
   }
 
   public async deleteJob(jobId: string): Promise<void> {
+    this.markDeleted(jobId);
     const all = this.readLocal<JobRequisition[]>(STORAGE_KEYS.JOBS, []);
-    const filtered = all.filter(j => j.id !== jobId);
+    const filtered = all.filter((j) => j.id !== jobId);
     this.writeLocal(STORAGE_KEYS.JOBS, filtered);
 
     try {
@@ -174,37 +323,31 @@ class ATSStorageService {
   // ==================== CANDIDATES ====================
   public async getCandidates(companyId?: string, requisitionId?: string): Promise<Candidate[]> {
     const local = this.readLocal<Candidate[]>(STORAGE_KEYS.CANDIDATES, []);
+    let merged = local;
     try {
-      const params = new URLSearchParams();
-      if (companyId && companyId !== 'all') params.append('companyId', companyId);
-      if (requisitionId) params.append('requisitionId', requisitionId);
-      const query = params.toString() ? `?${params.toString()}` : '';
-
-      const res = await fetch(`/api/ats/candidates${query}`);
+      const res = await fetch('/api/ats/candidates');
       if (res.ok) {
         const remote = await res.json();
         if (Array.isArray(remote)) {
-          this.writeLocal(STORAGE_KEYS.CANDIDATES, remote);
-          return remote;
+          merged = this.mergeCollections<Candidate>(remote, local, '/api/ats/candidates');
+          this.writeLocalSilent(STORAGE_KEYS.CANDIDATES, merged);
         }
       }
     } catch {
       // offline fallback
     }
 
-    let filtered = local;
-    if (companyId && companyId !== 'all') {
-      filtered = filtered.filter(c => !c.companyId || c.companyId === companyId);
-    }
+    let filtered = merged.filter((c) => this.matchesCompany(c.companyId, companyId));
     if (requisitionId) {
-      filtered = filtered.filter(c => c.jobId === requisitionId);
+      filtered = filtered.filter((c) => c.jobId === requisitionId);
     }
     return filtered;
   }
 
   public async saveCandidate(cand: Candidate): Promise<Candidate> {
+    this.unmarkDeleted(cand.id);
     const all = this.readLocal<Candidate[]>(STORAGE_KEYS.CANDIDATES, []);
-    const idx = all.findIndex(c => c.id === cand.id);
+    const idx = all.findIndex((c) => c.id === cand.id);
     const updated = { ...cand, updatedAt: new Date().toISOString() };
 
     if (idx >= 0) {
@@ -215,11 +358,23 @@ class ATSStorageService {
     this.writeLocal(STORAGE_KEYS.CANDIDATES, all);
 
     try {
-      await fetch('/api/ats/candidates', {
+      const res = await fetch('/api/ats/candidates', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updated),
       });
+      if (res.ok) {
+        const result = (await res.json().catch(() => null)) as any;
+        if (result?.resumeUrl && result.resumeUrl !== updated.resumeUrl) {
+          updated.resumeUrl = result.resumeUrl;
+          const refreshedAll = this.readLocal<Candidate[]>(STORAGE_KEYS.CANDIDATES, []);
+          const rIdx = refreshedAll.findIndex((c) => c.id === updated.id);
+          if (rIdx >= 0) {
+            refreshedAll[rIdx] = updated;
+            this.writeLocalSilent(STORAGE_KEYS.CANDIDATES, refreshedAll);
+          }
+        }
+      }
     } catch (e) {
       console.warn('[ATSStorage] Remote saveCandidate failed', e);
     }
@@ -234,10 +389,11 @@ class ATSStorageService {
     userName = 'المسؤول'
   ): Promise<void> {
     const all = this.readLocal<Candidate[]>(STORAGE_KEYS.CANDIDATES, []);
-    const cand = all.find(c => c.id === candidateId);
+    const cand = all.find((c) => c.id === candidateId);
     if (!cand) return;
 
     cand.stage = targetStage;
+    cand.status = targetStage === 'rejected' ? 'rejected' : targetStage === 'hired' ? 'hired' : 'active';
     cand.updatedAt = new Date().toISOString();
     cand.activities = cand.activities || [];
     cand.activities.unshift({
@@ -253,7 +409,7 @@ class ATSStorageService {
     this.writeLocal(STORAGE_KEYS.CANDIDATES, all);
 
     try {
-      await fetch(`/api/ats/candidates/${candidateId}/stage`, {
+      const res = await fetch(`/api/ats/candidates/${candidateId}/stage`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -262,14 +418,22 @@ class ATSStorageService {
           performedBy: userName,
         }),
       });
+      if (res.status === 404) {
+        await fetch('/api/ats/candidates', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(cand),
+        });
+      }
     } catch (e) {
       console.warn('[ATSStorage] Remote moveStage failed', e);
     }
   }
 
   public async deleteCandidate(candidateId: string): Promise<void> {
+    this.markDeleted(candidateId);
     const all = this.readLocal<Candidate[]>(STORAGE_KEYS.CANDIDATES, []);
-    const filtered = all.filter(c => c.id !== candidateId);
+    const filtered = all.filter((c) => c.id !== candidateId);
     this.writeLocal(STORAGE_KEYS.CANDIDATES, filtered);
 
     try {
@@ -287,7 +451,7 @@ class ATSStorageService {
       if (res.ok) {
         const remote = await res.json();
         if (Array.isArray(remote)) {
-          this.writeLocal(STORAGE_KEYS.INTERVIEWS, remote);
+          this.writeLocalSilent(STORAGE_KEYS.INTERVIEWS, remote);
           return remote;
         }
       }
@@ -299,7 +463,7 @@ class ATSStorageService {
 
   public async saveInterview(interview: Interview): Promise<Interview> {
     const all = this.readLocal<Interview[]>(STORAGE_KEYS.INTERVIEWS, []);
-    const idx = all.findIndex(i => i.id === interview.id);
+    const idx = all.findIndex((i) => i.id === interview.id);
 
     if (idx >= 0) {
       all[idx] = interview;
@@ -324,29 +488,27 @@ class ATSStorageService {
   // ==================== OFFERS ====================
   public async getOffers(companyId?: string): Promise<JobOffer[]> {
     const local = this.readLocal<JobOffer[]>(STORAGE_KEYS.OFFERS, []);
+    let merged = local;
     try {
-      const query = companyId && companyId !== 'all' ? `?companyId=${encodeURIComponent(companyId)}` : '';
-      const res = await fetch(`/api/ats/offers${query}`);
+      const res = await fetch('/api/ats/offers');
       if (res.ok) {
         const remote = await res.json();
         if (Array.isArray(remote)) {
-          this.writeLocal(STORAGE_KEYS.OFFERS, remote);
-          return remote;
+          merged = this.mergeCollections<JobOffer>(remote, local, '/api/ats/offers');
+          this.writeLocalSilent(STORAGE_KEYS.OFFERS, merged);
         }
       }
     } catch {
       // offline fallback
     }
 
-    if (companyId && companyId !== 'all') {
-      return local.filter(o => !o.companyId || o.companyId === companyId);
-    }
-    return local;
+    return merged.filter((o) => this.matchesCompany(o.companyId, companyId));
   }
 
   public async saveOffer(offer: JobOffer): Promise<JobOffer> {
+    this.unmarkDeleted(offer.id);
     const all = this.readLocal<JobOffer[]>(STORAGE_KEYS.OFFERS, []);
-    const idx = all.findIndex(o => o.id === offer.id);
+    const idx = all.findIndex((o) => o.id === offer.id);
     const updated = { ...offer, updatedAt: new Date().toISOString() };
 
     if (idx >= 0) {
@@ -370,8 +532,9 @@ class ATSStorageService {
   }
 
   public async deleteOffer(offerId: string): Promise<void> {
+    this.markDeleted(offerId);
     const all = this.readLocal<JobOffer[]>(STORAGE_KEYS.OFFERS, []);
-    const filtered = all.filter(o => o.id !== offerId);
+    const filtered = all.filter((o) => o.id !== offerId);
     this.writeLocal(STORAGE_KEYS.OFFERS, filtered);
 
     try {
@@ -841,7 +1004,10 @@ class ATSStorageService {
     const isDirectHire = options.mode === 'direct_hire_employee';
     const isInternal = enrichedForm.entryChannel === 'internal_digitization';
 
-    const portalConfig = this.getPortalConfigSync();
+    let portalConfig = this.getPortalConfigSync();
+    if (!portalConfig.companyNameAr || !portalConfig.companyId) {
+      portalConfig = await this.getPortalConfig();
+    }
     const resolvedCompanyName =
       enrichedForm.companyName?.trim() ||
       options.companyName ||
@@ -955,7 +1121,7 @@ class ATSStorageService {
       updatedAt: new Date().toISOString(),
     };
 
-    await this.saveCandidate(cand);
+    const savedCand = await this.saveCandidate(cand);
 
     window.dispatchEvent(new CustomEvent('eco-ats-updated'));
     if (isDirectHire) {
@@ -963,7 +1129,7 @@ class ATSStorageService {
       window.dispatchEvent(new CustomEvent('eco-insurance-updated'));
     }
 
-    return { refNumber, candidate: cand, employeeCode, hrEmployee };
+    return { refNumber, candidate: savedCand, employeeCode, hrEmployee };
   }
 
   public async convertCandidateWithApplicationToEmployee(

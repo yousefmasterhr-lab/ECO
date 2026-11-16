@@ -10,11 +10,19 @@ import {
   Phone, 
   Mail, 
   X,
-  MessageSquare
+  MessageSquare,
+  Paperclip,
+  Eye,
+  Download,
+  ChevronLeft,
+  ChevronRight,
+  CheckCircle2,
+  RotateCcw,
 } from 'lucide-react';
 import { useLanguage } from '../../../context/LanguageContext';
 import { atsStorage } from '../../../services/atsStorage';
 import { Candidate, PipelineStageId, DEFAULT_STAGES, JobRequisition } from './types';
+import { TarabotPrintableApplicationModal } from './TarabotApplicationFormView';
 import { fireConfetti } from '../../../utils/confetti';
 
 interface ATSPipelineTabProps {
@@ -38,6 +46,7 @@ export const ATSPipelineTab: React.FC<ATSPipelineTabProps> = ({ companyId }) => 
 
   // Candidate Details Drawer
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
+  const [printableCandidate, setPrintableCandidate] = useState<Candidate | null>(null);
   const [newNoteText, setNewNoteText] = useState('');
 
   const loadData = async () => {
@@ -128,15 +137,40 @@ export const ATSPipelineTab: React.FC<ATSPipelineTabProps> = ({ companyId }) => 
 
   // Filter candidates
   const filteredCandidates = candidates.filter(c => {
-    const matchesSearch = 
-      c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.jobTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (c.parsedResume?.extractedSkills || []).some(s => s.toLowerCase().includes(searchQuery.toLowerCase()));
+    const q = searchQuery.toLowerCase();
+    const matchesSearch =
+      !q ||
+      (c.name || '').toLowerCase().includes(q) ||
+      (c.jobTitle || '').toLowerCase().includes(q) ||
+      (c.parsedResume?.extractedSkills || []).some(s => s.toLowerCase().includes(q));
     const matchesJob = selectedJobId === 'all' || c.jobId === selectedJobId;
     const matchesScore = (c.matchScore || 0) >= minScoreFilter;
-    const matchesComp = !companyId || companyId === 'all' || c.companyId === companyId;
+    const matchesComp =
+      !companyId ||
+      companyId === 'all' ||
+      !c.companyId ||
+      c.companyId === 'all' ||
+      c.companyId === 'comp_01' ||
+      c.companyId === 'comp_1' ||
+      c.companyId === companyId;
     return matchesSearch && matchesJob && matchesScore && matchesComp;
   });
+
+  const activePipelineStages = DEFAULT_STAGES.filter(s => s.id !== 'rejected');
+
+  const handleStageTransition = async (
+    candidate: Candidate,
+    targetStage: PipelineStageId,
+    noteText?: string
+  ) => {
+    await atsStorage.moveCandidateStage(candidate.id, targetStage, noteText);
+    if (targetStage === 'hired') {
+      fireConfetti();
+    }
+    setSelectedCandidate((prev) =>
+      prev && prev.id === candidate.id ? { ...prev, stage: targetStage } : prev
+    );
+  };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
@@ -262,9 +296,17 @@ export const ATSPipelineTab: React.FC<ATSPipelineTabProps> = ({ companyId }) => 
                           </div>
 
                           <div className="mt-2.5 flex items-center justify-between text-[10px] text-[#5C665E] dark:text-[#97A69B] pt-2 border-t border-[#E0D9CB]/50 dark:border-[#1D3324]/50">
-                            <div className="flex items-center gap-1">
-                              <Briefcase className="w-3 h-3 text-amber-500" />
-                              <span>{c.experienceYears} سنوات خبرة</span>
+                            <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-1">
+                                <Briefcase className="w-3 h-3 text-amber-500" />
+                                <span>{c.experienceYears} سنوات خبرة</span>
+                              </div>
+                              {(c.resumeUrl || c.applicationForm?.cvFileDataUrl) && (
+                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-[#059669]/10 text-[#059669] dark:text-emerald-400 font-bold">
+                                  <Paperclip className="w-2.5 h-2.5" />
+                                  CV
+                                </span>
+                              )}
                             </div>
 
                             {c.rating && (
@@ -361,6 +403,116 @@ export const ATSPipelineTab: React.FC<ATSPipelineTabProps> = ({ companyId }) => 
                 </div>
               </div>
 
+              {/* Sequential Pipeline Stepper */}
+              <div className="p-3.5 rounded-xl bg-[#FBF9F5] dark:bg-[#122318] border border-[#E0D9CB] dark:border-[#1D3324] space-y-2.5">
+                <div className="flex items-center justify-between text-[11px] font-bold text-[#142319] dark:text-[#E8F3EB]">
+                  <span>{t('التسلسل المرحلي للفرز والاعتماد:', 'Sequential Recruitment Stage:')}</span>
+                  {selectedCandidate.stage === 'rejected' && (
+                    <span className="px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-600 text-[10px] font-bold">
+                      {t('قائمة الاحتياط / مستبعد', 'Rejected / Reserve')}
+                    </span>
+                  )}
+                </div>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {activePipelineStages.map((stg, idx) => {
+                    const currentIdx = activePipelineStages.findIndex(
+                      (s) => s.id === selectedCandidate.stage
+                    );
+                    const isCurrent = stg.id === selectedCandidate.stage;
+                    const isPassed = currentIdx >= 0 && idx < currentIdx;
+
+                    return (
+                      <button
+                        key={stg.id}
+                        type="button"
+                        onClick={() => handleStageTransition(selectedCandidate, stg.id)}
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10.5px] font-bold border transition-all cursor-pointer ${
+                          isCurrent
+                            ? 'bg-[#D99B26] border-[#D99B26] text-white shadow-xs'
+                            : isPassed
+                              ? 'bg-[#059669]/12 border-[#059669]/30 text-[#059669] dark:text-emerald-400'
+                              : 'bg-white dark:bg-[#0D1C13] border-[#E0D9CB] dark:border-[#1D3324] text-[#5C665E] dark:text-[#97A69B] hover:border-[#D99B26]'
+                        }`}
+                      >
+                        {isPassed ? (
+                          <CheckCircle2 className="w-3 h-3 shrink-0" />
+                        ) : (
+                          <span className="font-mono">{idx + 1}.</span>
+                        )}
+                        <span>{stg.title}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Attached CV & Official Form Controls */}
+              <div className="p-3.5 rounded-xl bg-[#D99B26]/10 border border-[#D99B26]/30 flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2 text-xs font-bold text-[#142319] dark:text-[#E8F3EB]">
+                  <Paperclip className="w-4 h-4 text-[#D99B26]" />
+                  <span>
+                    {selectedCandidate.resumeUrl || selectedCandidate.applicationForm?.cvFileDataUrl
+                      ? selectedCandidate.resumeName ||
+                        selectedCandidate.applicationForm?.cvFileName ||
+                        'السيرة الذاتية المرفقة (CV)'
+                      : 'لم يرفق المتقدم ملف سيرة ذاتية إضافي'}
+                  </span>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  {(selectedCandidate.resumeUrl || selectedCandidate.applicationForm?.cvFileDataUrl) && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          atsStorage.openOrDownloadAttachment(
+                            selectedCandidate.resumeUrl ||
+                              selectedCandidate.applicationForm?.cvFileDataUrl,
+                            selectedCandidate.resumeName ||
+                              selectedCandidate.applicationForm?.cvFileName ||
+                              'cv.pdf',
+                            'view'
+                          )
+                        }
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#D99B26] hover:bg-[#C2881D] text-white text-[11px] font-bold cursor-pointer transition-colors"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        <span>{t('عرض السيرة الذاتية', 'View CV')}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          atsStorage.openOrDownloadAttachment(
+                            selectedCandidate.resumeUrl ||
+                              selectedCandidate.applicationForm?.cvFileDataUrl,
+                            selectedCandidate.resumeName ||
+                              selectedCandidate.applicationForm?.cvFileName ||
+                              'cv.pdf',
+                            'download'
+                          )
+                        }
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#059669] hover:bg-[#047857] text-white text-[11px] font-bold cursor-pointer transition-colors"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>{t('تحميل CV', 'Download')}</span>
+                      </button>
+                    </>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const target = selectedCandidate;
+                      setSelectedCandidate(null);
+                      setPrintableCandidate(target);
+                    }}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-[#059669]/40 bg-[#059669]/10 hover:bg-[#059669]/20 text-[#059669] dark:text-emerald-400 text-[11px] font-bold cursor-pointer transition-colors"
+                  >
+                    <FileText className="w-3.5 h-3.5" />
+                    <span>{t('استمارة التوظيف (ص1+ص2)', 'Official Form')}</span>
+                  </button>
+                </div>
+              </div>
+
               {/* Resume Summary */}
               {selectedCandidate.parsedResume?.summary && (
                 <div className="p-3.5 rounded-xl bg-[#F0ECE1]/50 dark:bg-[#07130E]/50 border border-[#E0D9CB] dark:border-[#1D3324]">
@@ -417,7 +569,7 @@ export const ATSPipelineTab: React.FC<ATSPipelineTabProps> = ({ companyId }) => 
                   />
                   <button
                     onClick={() => handleAddNote(selectedCandidate.id)}
-                    className="px-4 py-1.5 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold transition-all cursor-pointer"
+                    className="px-4 py-1.5 rounded-xl text-xs font-bold bg-[#D99B26] hover:bg-[#C2881D] text-white transition-all cursor-pointer"
                   >
                     {t('إضافة', 'Add')}
                   </button>
@@ -425,38 +577,88 @@ export const ATSPipelineTab: React.FC<ATSPipelineTabProps> = ({ companyId }) => 
               </div>
             </div>
 
-            {/* Bottom Actions */}
-            <div className="mt-5 pt-3 border-t border-[#E0D9CB] dark:border-[#1D3324] flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={async () => {
-                    await atsStorage.moveCandidateStage(selectedCandidate.id, 'job_offer');
-                    setSelectedCandidate(null);
-                  }}
-                  className="px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700"
-                >
-                  {t('نقل إلى مرحلة عرض العمل', 'Move to Job Offer')}
-                </button>
-                <button
-                  onClick={async () => {
-                    await atsStorage.moveCandidateStage(selectedCandidate.id, 'rejected', 'استبعاد بعد المقابلة');
-                    setSelectedCandidate(null);
-                  }}
-                  className="px-3 py-1.5 rounded-xl text-xs font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
-                >
-                  {t('استبعاد', 'Reject')}
-                </button>
-              </div>
+            {/* Bottom Actions — Sequential Stage Progression */}
+            {(() => {
+              const currentIdx = activePipelineStages.findIndex(
+                (s) => s.id === selectedCandidate.stage
+              );
+              const prevStage = currentIdx > 0 ? activePipelineStages[currentIdx - 1] : null;
+              const nextStage =
+                currentIdx >= 0 && currentIdx < activePipelineStages.length - 1
+                  ? activePipelineStages[currentIdx + 1]
+                  : null;
 
-              <button
-                onClick={() => setSelectedCandidate(null)}
-                className="px-4 py-1.5 rounded-xl text-xs font-semibold text-[#5C665E] hover:bg-[#F0ECE1] dark:hover:bg-[#122318]"
-              >
-                {t('إغلاق', 'Close')}
-              </button>
-            </div>
+              return (
+                <div className="mt-5 pt-3 border-t border-[#E0D9CB] dark:border-[#1D3324] flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    {selectedCandidate.stage === 'rejected' ? (
+                      <button
+                        type="button"
+                        onClick={() => handleStageTransition(selectedCandidate, 'screening', 'إعادة للمسار من قائمة الاحتياط')}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-[#059669] hover:bg-[#047857] cursor-pointer transition-colors"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        <span>{t('إعادة للمسار (فرز وتصفية أولية)', 'Restore to Screening')}</span>
+                      </button>
+                    ) : (
+                      <>
+                        {nextStage && (
+                          <button
+                            type="button"
+                            onClick={() => handleStageTransition(selectedCandidate, nextStage.id)}
+                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#059669] hover:bg-[#047857] shadow-xs cursor-pointer transition-colors"
+                          >
+                            <span>{t(`نقل للمرحلة التالية: ${nextStage.title}`, `Next: ${nextStage.titleEn}`)}</span>
+                            <ChevronLeft className="w-4 h-4" />
+                          </button>
+                        )}
+                        {prevStage && (
+                          <button
+                            type="button"
+                            onClick={() => handleStageTransition(selectedCandidate, prevStage.id, `إرجاع إلى مرحله: ${prevStage.title}`)}
+                            className="inline-flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-bold border border-[#E0D9CB] dark:border-[#1D3324] text-[#142319] dark:text-[#E8F3EB] hover:border-[#D99B26] cursor-pointer transition-colors"
+                          >
+                            <ChevronRight className="w-3.5 h-3.5" />
+                            <span>{t(`رجوع: ${prevStage.title}`, `Back: ${prevStage.titleEn}`)}</span>
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            await atsStorage.moveCandidateStage(
+                              selectedCandidate.id,
+                              'rejected',
+                              'استبعاد بعد الفرز والمقابلة'
+                            );
+                            setSelectedCandidate(null);
+                          }}
+                          className="px-3 py-2 rounded-xl text-xs font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 cursor-pointer"
+                        >
+                          {t('استبعاد', 'Reject')}
+                        </button>
+                      </>
+                    )}
+                  </div>
+
+                  <button
+                    onClick={() => setSelectedCandidate(null)}
+                    className="px-4 py-2 rounded-xl text-xs font-bold bg-[#D99B26] hover:bg-[#C2881D] text-white cursor-pointer transition-colors"
+                  >
+                    {t('إغلاق', 'Close')}
+                  </button>
+                </div>
+              );
+            })()}
           </div>
         </div>
+      )}
+
+      {printableCandidate && (
+        <TarabotPrintableApplicationModal
+          candidate={printableCandidate}
+          onClose={() => setPrintableCandidate(null)}
+          onUpdated={loadData}
+        />
       )}
     </div>
   );

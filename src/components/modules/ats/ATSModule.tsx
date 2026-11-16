@@ -27,7 +27,14 @@ export type ATSSubTab = 'ats_analytics' | 'ats_jobs' | 'ats_pipeline' | 'ats_can
 
 export const ATSModule: React.FC<ATSModuleProps> = ({ activeSubItemId }) => {
   const { t } = useLanguage();
-  const { activeCompany, selectedCompanies, setActiveCompany } = useTenant();
+  const { companies, activeCompany, selectedCompanies, setActiveCompany } = useTenant();
+  const [selectedCompanyFilter, setSelectedCompanyFilter] = useState<string>(
+    activeCompany?.id || 'all'
+  );
+
+  useEffect(() => {
+    setSelectedCompanyFilter(activeCompany?.id || 'all');
+  }, [activeCompany?.id]);
 
   const [activeTab, setActiveTab] = useState<ATSSubTab>(() => {
     if (activeSubItemId && [
@@ -104,15 +111,21 @@ export const ATSModule: React.FC<ATSModuleProps> = ({ activeSubItemId }) => {
             </div>
 
             <select
-              value={activeCompany?.id || 'all'}
+              value={selectedCompanyFilter}
               onChange={(e) => {
-                const target = selectedCompanies.find(c => c.id === e.target.value);
-                if (target) setActiveCompany(target);
+                const val = e.target.value;
+                setSelectedCompanyFilter(val);
+                if (val !== 'all') {
+                  const target = (selectedCompanies.length > 0 ? selectedCompanies : companies).find(
+                    c => c.id === val
+                  );
+                  if (target) setActiveCompany(target);
+                }
               }}
               className="px-3 py-1.5 rounded-xl text-xs font-bold bg-[#FBF9F5] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6] focus:outline-none focus:ring-1 focus:ring-[#D99B26] cursor-pointer"
             >
               <option value="all">{t('كافة شركات المجموعة المعتمدة', 'All Group Companies')}</option>
-              {selectedCompanies.map(c => (
+              {(selectedCompanies.length > 0 ? selectedCompanies : companies).map(c => (
                 <option key={c.id} value={c.id}>{c.nameAr}</option>
               ))}
             </select>
@@ -130,11 +143,11 @@ export const ATSModule: React.FC<ATSModuleProps> = ({ activeSubItemId }) => {
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 select-none cursor-pointer ${
                   isActive
-                    ? 'bg-[#D99B26] text-[#1A241C] font-black shadow-md shadow-[#D99B26]/20 ring-1 ring-[#EBB34D]'
+                    ? 'bg-[#D99B26] text-white font-black shadow-md shadow-[#D99B26]/20 ring-1 ring-[#EBB34D]'
                     : 'bg-[#FFFFFF] dark:bg-[#17231A] text-[#5C665E] dark:text-[#8FA392] hover:text-[#1A241C] dark:hover:text-[#F3EFE6] border border-[#E0D9CB] dark:border-[#243628]'
                 }`}
               >
-                <Icon className={`w-4 h-4 ${isActive ? 'text-[#1A241C]' : 'text-[#D99B26]'}`} />
+                <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-[#D99B26]'}`} />
                 <span>{t(tab.labelAr, tab.labelEn)}</span>
               </button>
             );
@@ -144,12 +157,12 @@ export const ATSModule: React.FC<ATSModuleProps> = ({ activeSubItemId }) => {
 
       {/* Render Active Tab */}
       <div className="w-full">
-        {activeTab === 'ats_analytics' && <ATSAnalyticsTab companyId={activeCompany?.id} />}
-        {activeTab === 'ats_jobs' && <ATSJobsTab companyId={activeCompany?.id} />}
-        {activeTab === 'ats_pipeline' && <ATSPipelineTab companyId={activeCompany?.id} />}
-        {activeTab === 'ats_candidates' && <ATSCandidatesTab companyId={activeCompany?.id} />}
-        {activeTab === 'ats_offers' && <ATSOffersTab companyId={activeCompany?.id} />}
-        {activeTab === 'ats_portal' && <ATSPortalTab companyId={activeCompany?.id} />}
+        {activeTab === 'ats_analytics' && <ATSAnalyticsTab companyId={selectedCompanyFilter} />}
+        {activeTab === 'ats_jobs' && <ATSJobsTab companyId={selectedCompanyFilter} />}
+        {activeTab === 'ats_pipeline' && <ATSPipelineTab companyId={selectedCompanyFilter} />}
+        {activeTab === 'ats_candidates' && <ATSCandidatesTab companyId={selectedCompanyFilter} />}
+        {activeTab === 'ats_offers' && <ATSOffersTab companyId={selectedCompanyFilter} />}
+        {activeTab === 'ats_portal' && <ATSPortalTab companyId={selectedCompanyFilter} />}
       </div>
     </div>
   );

@@ -289,7 +289,7 @@ export const ATSPortalTab: React.FC<ATSPortalTabProps> = ({ companyId }) => {
               href={generatedUrl || '/apply'}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-[#D99B26] hover:bg-[#C2881D] text-[#0E1610] font-bold text-xs shadow-md shadow-[#D99B26]/20 active:scale-[0.98] transition-all shrink-0 cursor-pointer"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-[#D99B26] hover:bg-[#C2881D] text-white font-bold text-xs shadow-md shadow-[#D99B26]/20 active:scale-[0.98] transition-all shrink-0 cursor-pointer"
             >
               <span>{t('فتح البوابة العامة مباشرة', 'Open Public Portal')}</span>
               <ExternalLink className="w-3.5 h-3.5" />
@@ -427,7 +427,7 @@ export const ATSPortalTab: React.FC<ATSPortalTabProps> = ({ companyId }) => {
                   onClick={() => handleSwitchCompanyMode('manual')}
                   className={`py-2 px-2.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                     portalConfig.companyMode === 'manual'
-                      ? 'bg-[#D99B26] text-[#0E1610] shadow-xs'
+                      ? 'bg-[#D99B26] text-white shadow-xs'
                       : 'text-[#5C665E] dark:text-[#8FA392] hover:text-[#1A241C] dark:hover:text-[#F3EFE6]'
                   }`}
                 >
@@ -478,7 +478,7 @@ export const ATSPortalTab: React.FC<ATSPortalTabProps> = ({ companyId }) => {
                       type="button"
                       disabled={isSavingCompany || !manualCompanyName.trim()}
                       onClick={() => handleSaveManualCompany()}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#D99B26] hover:bg-[#C2881D] disabled:opacity-50 text-[#0E1610] font-bold text-xs shadow-xs cursor-pointer shrink-0 transition-colors"
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#D99B26] hover:bg-[#C2881D] disabled:opacity-50 text-white font-bold text-xs shadow-xs cursor-pointer shrink-0 transition-colors"
                     >
                       <Save className="w-3.5 h-3.5" />
                       <span>{isSavingCompany ? t('حفظ...', 'Saving...') : t('حفظ', 'Save')}</span>
@@ -555,7 +555,7 @@ export const ATSPortalTab: React.FC<ATSPortalTabProps> = ({ companyId }) => {
                 <button
                   type="button"
                   onClick={handleCopy}
-                  className="flex-1 py-2.5 px-4 rounded-xl bg-[#D99B26] hover:bg-[#C2881D] text-[#0E1610] font-bold text-xs shadow-md shadow-[#D99B26]/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  className="flex-1 py-2.5 px-4 rounded-xl bg-[#D99B26] hover:bg-[#C2881D] text-white font-bold text-xs shadow-md shadow-[#D99B26]/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
                   {copied ? (
                     <>
@@ -596,7 +596,7 @@ export const ATSPortalTab: React.FC<ATSPortalTabProps> = ({ companyId }) => {
                 <span
                   className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                     includeUtm
-                      ? 'bg-[#D99B26] text-[#0E1610]'
+                      ? 'bg-[#D99B26] text-white'
                       : 'bg-[#F3EFE6] dark:bg-[#17231A] text-[#5C665E] dark:text-[#8FA392]'
                   }`}
                 >
@@ -620,13 +620,13 @@ export const ATSPortalTab: React.FC<ATSPortalTabProps> = ({ companyId }) => {
                             onClick={() => setSource(item.id)}
                             className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all text-start flex items-center gap-2 cursor-pointer ${
                               isSelected
-                                ? 'bg-[#D99B26] text-[#0E1610] font-bold border-[#D99B26] shadow-sm'
+                                ? 'bg-[#D99B26] text-white font-bold border-[#D99B26] shadow-sm'
                                 : 'bg-[#FFFFFF] dark:bg-[#17231A] border-[#E0D9CB] dark:border-[#243628] text-[#1A241C] dark:text-[#F3EFE6] hover:border-[#D99B26]'
                             }`}
                           >
                             <span
                               className="w-2.5 h-2.5 rounded-full shrink-0"
-                              style={{ backgroundColor: isSelected ? '#0E1610' : item.color }}
+                              style={{ backgroundColor: isSelected ? '#FFFFFF' : item.color }}
                             />
                             <span className="truncate">{t(item.labelAr, item.labelEn)}</span>
                           </button>
@@ -831,7 +831,7 @@ export const ATSPortalTab: React.FC<ATSPortalTabProps> = ({ companyId }) => {
                       href={generatedUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="w-full py-2.5 rounded-xl bg-[#D99B26] text-[#0E1610] font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-[#D99B26]/20 hover:bg-[#C2881D] transition-colors"
+                      className="w-full py-2.5 rounded-xl bg-[#D99B26] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-[#D99B26]/20 hover:bg-[#C2881D] transition-colors"
                     >
                       <Send className="w-3.5 h-3.5" />
                       <span>{t('التقديم الآن على الوظيفة', 'Apply Now')}</span>
@@ -879,7 +879,7 @@ export const ATSPortalTab: React.FC<ATSPortalTabProps> = ({ companyId }) => {
                       href={generatedUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="w-full py-2.5 rounded-xl bg-[#D99B26] text-[#0E1610] font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-[#D99B26]/20 hover:bg-[#C2881D] transition-colors"
+                      className="w-full py-2.5 rounded-xl bg-[#D99B26] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-[#D99B26]/20 hover:bg-[#C2881D] transition-colors"
                     >
                       <Send className="w-3.5 h-3.5" />
                       <span>{t('فتح رابط التقديم المباشر', 'Open Direct Application Link')}</span>

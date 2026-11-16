@@ -201,7 +201,7 @@ export const ATSOffersTab: React.FC<ATSOffersTabProps> = ({ companyId }) => {
 
         <button
           onClick={() => setIsCreateModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold transition-all shadow-md shadow-amber-500/25 active:scale-95 cursor-pointer"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white transition-all shadow-md shadow-amber-500/25 active:scale-95 cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           {t('إصدار عرض وظيفي جديد', 'Issue New Job Offer')}
@@ -410,7 +410,7 @@ export const ATSOffersTab: React.FC<ATSOffersTabProps> = ({ companyId }) => {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold shadow-md shadow-amber-500/25 transition-all cursor-pointer"
+                  className="px-5 py-2 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white shadow-md shadow-amber-500/25 transition-all cursor-pointer"
                 >
                   {t('إرسال العرض الوظيفي', 'Send Offer')}
                 </button>
@@ -548,7 +548,7 @@ export const ATSOffersTab: React.FC<ATSOffersTabProps> = ({ companyId }) => {
               </button>
               <button
                 onClick={saveSignature}
-                className="px-5 py-2 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold shadow-md shadow-amber-500/25 transition-all cursor-pointer"
+                className="px-5 py-2 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white shadow-md shadow-amber-500/25 transition-all cursor-pointer"
               >
                 {t('اعتماد التوقيع وقبول العرض', 'Save Signature & Accept')}
               </button>

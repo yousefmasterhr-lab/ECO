@@ -507,6 +507,11 @@ export interface RecruitmentKPIs {
   activeCandidatesInPipeline: number;
   totalHiresThisQuarter: number;
   offerAcceptanceRate: number;
+  rejectionRate: number;
+  rejectedCandidatesCount: number;
+  turnoverRate: number;
+  separatedEmployeesCount: number;
+  totalHeadcount: number;
   candidateSatisfactionScore: number;
   timeToHireChange: number;
   costPerHireSavings: number;
