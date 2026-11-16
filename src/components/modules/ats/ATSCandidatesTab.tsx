@@ -12,6 +12,9 @@ import {
   UserCheck,
   Download,
   Paperclip,
+  MessageCircle,
+  Mail,
+  Link2,
 } from 'lucide-react';
 import { useLanguage } from '../../../context/LanguageContext';
 import { useTenant } from '../../../context/TenantContext';
@@ -99,9 +102,9 @@ export const ATSCandidatesTab: React.FC<ATSCandidatesTabProps> = ({ companyId })
       setShowDigitizeModal(false);
       await loadCandidates();
 
-      if (saveTarget === 'direct_hire_employee' && result.employeeCode) {
+      if (saveTarget === 'direct_hire_employee' && result.offer) {
         setStatusBanner(
-          `تم تفريغ استمارة (${form.fullName}) وتعيينه مباشرة بالسجل العام للموظفين والتأمينات بكود وظيفي ${result.employeeCode}.`
+          `تم تفريغ استمارة (${form.fullName}) وتحويله إلى مرحلة العرض الوظيفي وإصدار العرض رقم ${result.offer.id} بنجاح.`
         );
       } else {
         setStatusBanner(
@@ -340,19 +343,43 @@ export const ATSCandidatesTab: React.FC<ATSCandidatesTabProps> = ({ companyId })
                       </td>
 
                       <td className="py-3.5 px-4 space-y-1">
-                        <span
-                          className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold"
-                          style={{
-                            backgroundColor: `${stageObj?.color || '#D99B26'}18`,
-                            color: stageObj?.color || '#D99B26',
-                          }}
-                        >
-                          <span
-                            className="w-1.5 h-1.5 rounded-full"
-                            style={{ backgroundColor: stageObj?.color }}
-                          />
-                          {stageObj?.title || c.stage}
-                        </span>
+                        {(() => {
+                          const badgeMap: Record<string, string> = {
+                            applied:
+                              'bg-emerald-500/15 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/35 dark:border-emerald-400/50 shadow-[0_0_12px_rgba(16,185,129,0.2)]',
+                            screening:
+                              'bg-teal-500/15 dark:bg-teal-500/20 text-teal-700 dark:text-teal-300 border border-teal-500/35 dark:border-teal-400/45',
+                            tech_assessment:
+                              'bg-blue-500/15 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 border border-blue-500/35 dark:border-blue-400/45',
+                            first_interview:
+                              'bg-amber-500/15 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/35 dark:border-amber-400/45',
+                            final_interview:
+                              'bg-purple-500/15 dark:bg-purple-500/20 text-purple-700 dark:text-purple-300 border border-purple-500/35 dark:border-purple-400/45',
+                            job_offer:
+                              'bg-[#D99B26]/18 dark:bg-[#D99B26]/25 text-[#9A6B12] dark:text-[#FCD34D] border border-[#D99B26]/40',
+                            hired:
+                              'bg-emerald-600/15 dark:bg-emerald-500/25 text-emerald-800 dark:text-emerald-300 border border-emerald-500/45',
+                            rejected:
+                              'bg-rose-500/15 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-500/35 dark:border-rose-400/45',
+                          };
+                          return (
+                            <span
+                              className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
+                                badgeMap[c.stage] ||
+                                'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/35'
+                              }`}
+                            >
+                              <span
+                                className="w-2 h-2 rounded-full animate-pulse"
+                                style={{
+                                  backgroundColor: stageObj?.color || '#10B981',
+                                  boxShadow: `0 0 8px ${stageObj?.color || '#10B981'}`,
+                                }}
+                              />
+                              {stageObj?.title || c.stage}
+                            </span>
+                          );
+                        })()}
                         <div className="text-[10px] font-bold text-[#5C665E] dark:text-[#8FA392]">
                           {isDigitized ? 'تفريغ استمارة ورقية / أرشيف' : 'بوابة التوظيف الإلكترونية'}
                         </div>
@@ -572,6 +599,50 @@ export const ATSCandidatesTab: React.FC<ATSCandidatesTabProps> = ({ companyId })
                   </p>
                 </div>
               )}
+
+              {/* Candidate Notification & Tracking Channels */}
+              {(() => {
+                const notif = atsStorage.buildCandidateNotification(selectedCandidate);
+                return (
+                  <div className="p-3.5 rounded-xl bg-[#059669]/8 dark:bg-[#059669]/12 border border-[#059669]/25 space-y-2.5">
+                    <div className="font-bold text-[#1A241C] dark:text-[#F3EFE6] flex items-center justify-between gap-2">
+                      <span>إشعار المتقدم ومتابعة حالة الطلب (واتساب / إيميل / رابط مباشر):</span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {notif.hasPhone && (
+                        <a
+                          href={notif.whatsappUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#25D366] hover:bg-[#1EBE5D] text-white text-[11px] font-bold shadow-xs transition-colors"
+                        >
+                          <MessageCircle className="w-3.5 h-3.5" />
+                          <span>إرسال عبر واتساب</span>
+                        </a>
+                      )}
+                      <a
+                        href={notif.mailtoUrl}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[11px] font-bold shadow-xs transition-colors"
+                      >
+                        <Mail className="w-3.5 h-3.5" />
+                        <span>إرسال بالبريد الإلكتروني</span>
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(notif.trackingUrl);
+                          setStatusBanner(`تم نسخ رابط متابعة طلب (${selectedCandidate.name}) للمشاركة المباشرة.`);
+                          setTimeout(() => setStatusBanner(null), 3000);
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-[#FFFFFF] dark:bg-[#17231A] hover:border-[#D99B26] text-[#1A241C] dark:text-[#F3EFE6] text-[11px] font-bold cursor-pointer transition-colors"
+                      >
+                        <Link2 className="w-3.5 h-3.5 text-[#D99B26]" />
+                        <span>نسخ رابط المتابعة المباشر</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
             <div className="mt-5 pt-3 border-t border-[#E0D9CB] dark:border-[#243628] flex flex-wrap items-center justify-between gap-2">

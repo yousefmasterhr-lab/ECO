@@ -6,12 +6,20 @@ import {
   Clock, 
   Sparkles, 
   X, 
-  Eye
+  Eye,
+  Printer,
+  UploadCloud,
+  MessageCircle,
+  Mail,
+  Link2,
+  Download,
+  Paperclip,
 } from 'lucide-react';
 import { useLanguage } from '../../../context/LanguageContext';
 import { useTenant } from '../../../context/TenantContext';
 import { atsStorage } from '../../../services/atsStorage';
 import { JobOffer, Candidate, JobRequisition } from './types';
+import { PrintableJobOfferModal } from './ATSAttachmentAndOfferModals';
 import { fireConfetti } from '../../../utils/confetti';
 
 interface ATSOffersTabProps {
@@ -28,6 +36,8 @@ export const ATSOffersTab: React.FC<ATSOffersTabProps> = ({ companyId }) => {
   const [loading, setLoading] = useState(true);
 
   const [selectedOffer, setSelectedOffer] = useState<JobOffer | null>(null);
+  const [printableOffer, setPrintableOffer] = useState<JobOffer | null>(null);
+  const [offerBanner, setOfferBanner] = useState<string | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isSignModalOpen, setIsSignModalOpen] = useState(false);
   const [isSyncSuccessModalOpen, setIsSyncSuccessModalOpen] = useState(false);
@@ -141,6 +151,29 @@ export const ATSOffersTab: React.FC<ATSOffersTabProps> = ({ companyId }) => {
     }
   };
 
+  const handleCardSignedOfferUpload = (
+    offer: JobOffer,
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      alert('حجم الملف يتجاوز 10 ميجابايت. يرجى اختيار ملف أصغر.');
+      e.target.value = '';
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const dataUrl = typeof reader.result === 'string' ? reader.result : '';
+      if (!dataUrl) return;
+      await atsStorage.uploadSignedOffer(offer.id, file.name, dataUrl, 'إدارة الموارد البشرية');
+      setOfferBanner(`تم إرفاق العرض الوظيفي الموقع يدوياً لـ (${offer.candidateName}) بنجاح!`);
+      setTimeout(() => setOfferBanner(null), 4500);
+      await loadData();
+    };
+    reader.readAsDataURL(file);
+  };
+
   // E-Signature
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
     setIsDrawing(true);
@@ -208,6 +241,22 @@ export const ATSOffersTab: React.FC<ATSOffersTabProps> = ({ companyId }) => {
         </button>
       </div>
 
+      {offerBanner && (
+        <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-bold flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 shrink-0" />
+            <span>{offerBanner}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setOfferBanner(null)}
+            className="p-1 rounded-lg hover:bg-emerald-500/15 cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* Offers List */}
       {loading ? (
         <div className="py-12 text-center text-xs text-[#5C665E] dark:text-[#97A69B]">
@@ -271,27 +320,142 @@ export const ATSOffersTab: React.FC<ATSOffersTabProps> = ({ companyId }) => {
                 </div>
 
                 {/* Bottom Actions */}
-                <div className="mt-5 pt-3 border-t border-[#E0D9CB]/60 dark:border-[#1D3324]/60 space-y-2">
-                  <div className="flex items-center justify-between">
+                <div className="mt-5 pt-3 border-t border-[#E0D9CB]/60 dark:border-[#1D3324]/60 space-y-2.5">
+                  {offer.signedOfferDataUrl && (
+                    <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-between gap-2 text-[11px]">
+                      <span className="font-bold text-emerald-700 dark:text-emerald-300 flex items-center gap-1.5 truncate">
+                        <Paperclip className="w-3.5 h-3.5 shrink-0" />
+                        <span className="truncate">{offer.signedOfferFileName || 'العرض الموقع يدوياً'}</span>
+                      </span>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            atsStorage.openOrDownloadAttachment(
+                              offer.signedOfferDataUrl,
+                              offer.signedOfferFileName || 'signed_offer.pdf',
+                              'view'
+                            )
+                          }
+                          className="px-2 py-1 rounded-lg bg-[#D99B26] hover:bg-[#C2881D] text-white font-bold cursor-pointer"
+                        >
+                          عرض
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            atsStorage.openOrDownloadAttachment(
+                              offer.signedOfferDataUrl,
+                              offer.signedOfferFileName || 'signed_offer.pdf',
+                              'download'
+                            )
+                          }
+                          className="p-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
+                          title="تحميل"
+                        >
+                          <Download className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                     <button
+                      type="button"
+                      onClick={() => setPrintableOffer(offer)}
+                      className="inline-flex items-center gap-1.5 text-xs font-bold text-[#D99B26] hover:text-[#C2881D] cursor-pointer"
+                    >
+                      <Printer className="w-3.5 h-3.5" />
+                      <span>{t('طباعة نموذج العرض للتوقيع (A4)', 'Print A4 Offer')}</span>
+                    </button>
+
+                    <button
+                      type="button"
                       onClick={() => setSelectedOffer(offer)}
-                      className="flex items-center gap-1.5 text-xs font-bold text-amber-500 hover:text-amber-600"
+                      className="inline-flex items-center gap-1 text-xs font-bold text-[#5C665E] dark:text-[#97A69B] hover:text-[#142319] dark:hover:text-white cursor-pointer"
                     >
                       <Eye className="w-3.5 h-3.5" />
-                      {t('عرض الخطاب والمستندات', 'View Offer')}
+                      <span>{t('المستندات', 'Details')}</span>
                     </button>
 
                     {!isAccepted && !isSynced && (
                       <button
+                        type="button"
                         onClick={() => {
                           setSelectedOffer(offer);
                           setIsSignModalOpen(true);
                         }}
-                        className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline"
+                        className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
                       >
-                        {t('محاكاة توقيع المرشح', 'Sign Offer')}
+                        {t('توقيع إلكتروني', 'E-Sign')}
                       </button>
                     )}
+                  </div>
+
+                  {/* Handwritten Signed Offer Upload + Applicant Notification Row */}
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {!isSynced && (
+                      <label className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#D99B26] hover:bg-[#C2881D] text-white text-[11px] font-bold cursor-pointer transition-colors">
+                        <UploadCloud className="w-3.5 h-3.5" />
+                        <span>{offer.signedOfferDataUrl ? 'استبدال الموقع' : 'رفع العرض الموقع يدوياً'}</span>
+                        <input
+                          type="file"
+                          accept=".pdf,image/*"
+                          onChange={(e) => handleCardSignedOfferUpload(offer, e)}
+                          className="hidden"
+                        />
+                      </label>
+                    )}
+
+                    {(() => {
+                      const matchedCand = candidates.find(c => c.id === offer.candidateId) || ({
+                        id: offer.candidateId,
+                        name: offer.candidateName,
+                        email: offer.candidateEmail,
+                        phone: offer.candidatePhone || '',
+                        nationalId: offer.candidateNationalId || '',
+                        companyName: offer.companyName,
+                        jobTitle: offer.jobTitle,
+                        stage: 'job_offer',
+                      } as Candidate);
+                      const notif = atsStorage.buildCandidateNotification(matchedCand, offer);
+                      return (
+                        <>
+                          {notif.hasPhone && (
+                            <a
+                              href={notif.whatsappUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#25D366] hover:bg-[#1EBE5D] text-white text-[11px] font-bold transition-colors"
+                              title="إرسال العرض ورابط المتابعة عبر واتساب"
+                            >
+                              <MessageCircle className="w-3.5 h-3.5" />
+                              <span>واتساب</span>
+                            </a>
+                          )}
+                          <a
+                            href={notif.mailtoUrl}
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[11px] font-bold transition-colors"
+                            title="إرسال العرض الرسمي عبر البريد الإلكتروني"
+                          >
+                            <Mail className="w-3.5 h-3.5" />
+                            <span>إيميل</span>
+                          </a>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(notif.trackingUrl);
+                              setOfferBanner(`تم نسخ رابط متابعة وعرض (${offer.candidateName})`);
+                              setTimeout(() => setOfferBanner(null), 3000);
+                            }}
+                            className="p-1.5 rounded-lg border border-[#E0D9CB] dark:border-[#1D3324] text-[#5C665E] dark:text-[#97A69B] hover:border-[#D99B26] hover:text-[#D99B26] cursor-pointer"
+                            title="نسخ رابط متابعة العرض للمرشح"
+                          >
+                            <Link2 className="w-3.5 h-3.5" />
+                          </button>
+                        </>
+                      );
+                    })()}
                   </div>
 
                   {/* 1-Click Conversion Golden Button */}
@@ -299,9 +463,9 @@ export const ATSOffersTab: React.FC<ATSOffersTabProps> = ({ companyId }) => {
                     <button
                       onClick={() => handleSyncToCoreHR(offer)}
                       disabled={isSyncing}
-                      className="w-full mt-2 py-2.5 px-3 rounded-xl text-xs font-extrabold text-white bg-gradient-to-r from-amber-500 via-amber-600 to-emerald-600 hover:from-amber-600 hover:to-emerald-700 shadow-md hover:shadow-lg active:scale-98 transition-all flex items-center justify-center gap-2 group"
+                      className="w-full mt-1 py-2.5 px-3 rounded-xl text-xs font-extrabold text-white bg-gradient-to-r from-[#D99B26] to-[#059669] hover:brightness-105 shadow-md hover:shadow-lg active:scale-98 transition-all flex items-center justify-center gap-2 group cursor-pointer"
                     >
-                      <Sparkles className="w-4 h-4 text-amber-200 animate-pulse" />
+                      <Sparkles className="w-4 h-4 text-white animate-pulse" />
                       <span>{t('⚡ اعتماد ونقل الموظف إلى منظومة الموارد البشرية والتأمينات', '⚡ Convert & Sync to Core HR & Insurance')}</span>
                     </button>
                   )}
@@ -586,6 +750,17 @@ export const ATSOffersTab: React.FC<ATSOffersTabProps> = ({ companyId }) => {
             </button>
           </div>
         </div>
+      )}
+
+      {printableOffer && (
+        <PrintableJobOfferModal
+          offer={printableOffer}
+          candidate={candidates.find(c => c.id === printableOffer.candidateId) || null}
+          canUploadSigned={true}
+          actorName="إدارة الموارد البشرية"
+          onClose={() => setPrintableOffer(null)}
+          onUpdated={() => loadData()}
+        />
       )}
     </div>
   );

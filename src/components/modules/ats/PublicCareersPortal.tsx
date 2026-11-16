@@ -15,15 +15,25 @@ import {
   ChevronRight,
   FileText,
   Printer,
+  UploadCloud,
+  Eye,
+  Download,
+  AlertCircle,
+  Loader2,
+  ClipboardList,
 } from 'lucide-react';
 import { useLanguage } from '../../../context/LanguageContext';
 import { useTheme } from '../../../context/ThemeContext';
 import { atsStorage, ATSPortalConfig } from '../../../services/atsStorage';
-import { JobRequisition, Candidate, TarabotApplicationForm } from './types';
+import { JobRequisition, Candidate, JobOffer, TarabotApplicationForm, DEFAULT_STAGES } from './types';
 import {
   TarabotApplicationFormView,
   TarabotPrintableApplicationModal,
 } from './TarabotApplicationFormView';
+import {
+  ATSAttachmentPreviewHost,
+  PrintableJobOfferModal,
+} from './ATSAttachmentAndOfferModals';
 import { EcoOfficialLogo } from '../../common/EcoOfficialLogo';
 import { fireConfetti } from '../../../utils/confetti';
 
@@ -49,8 +59,10 @@ export const PublicCareersPortal: React.FC = () => {
   const utmMedium = searchParams.get('utm_medium') || searchParams.get('m') || 'web_direct';
   const utmCampaign = searchParams.get('utm_campaign') || searchParams.get('cmp') || 'talent_sourcing';
   const referralName = searchParams.get('ref') || searchParams.get('referral') || '';
+  const paramTrack = searchParams.get('track') || '';
 
   // State
+  const [portalView, setPortalView] = useState<'apply' | 'track'>(paramTrack ? 'track' : 'apply');
   const [jobs, setJobs] = useState<JobRequisition[]>([]);
   const [selectedJob, setSelectedJob] = useState<JobRequisition | null>(null);
   const [isGeneralApplication, setIsGeneralApplication] = useState(paramDirect && !paramJobId);
@@ -65,6 +77,18 @@ export const PublicCareersPortal: React.FC = () => {
   const [submittedRef, setSubmittedRef] = useState<string | null>(null);
   const [submittedCandidate, setSubmittedCandidate] = useState<Candidate | null>(null);
   const [showPrintModal, setShowPrintModal] = useState(false);
+
+  // Live Applicant Status & Offer Tracker State
+  const [trackQuery, setTrackQuery] = useState(paramTrack);
+  const [trackSearching, setTrackSearching] = useState(false);
+  const [trackError, setTrackError] = useState<string | null>(null);
+  const [trackedResult, setTrackedResult] = useState<{
+    candidate: Candidate;
+    offer: JobOffer | null;
+  } | null>(null);
+  const [showOfferModal, setShowOfferModal] = useState(false);
+  const [uploadingSignedOffer, setUploadingSignedOffer] = useState(false);
+  const [signedOfferSuccessMsg, setSignedOfferSuccessMsg] = useState<string | null>(null);
 
   const portalScrollRef = useRef<HTMLDivElement | null>(null);
   const scrollToTop = () => {
@@ -111,6 +135,81 @@ export const PublicCareersPortal: React.FC = () => {
       window.removeEventListener('eco-ats-portal-config-updated', handleConfigUpdate);
     };
   }, [paramJobId]);
+
+  const handleTrackLookup = async (overrideQuery?: string) => {
+    const q = (overrideQuery !== undefined ? overrideQuery : trackQuery).trim();
+    if (!q) {
+      setTrackError(t('يرجى إدخال الرقم القومي أو رقم الموبايل أو رقم القيد', 'Please enter National ID, phone, or registration number'));
+      return;
+    }
+    setTrackError(null);
+    setTrackSearching(true);
+    try {
+      const found = await atsStorage.findCandidateForTracking(q);
+      if (!found) {
+        setTrackedResult(null);
+        setTrackError(
+          t(
+            'لم يتم العثور على طلب مطابق لهذه البيانات. تأكد من إدخال الرقم القومي (14 رقم) أو رقم الموبايل أو رقم القيد المرجعي بشكل صحيح.',
+            'No matching application found. Verify your 14-digit National ID, phone, or reference number.'
+          )
+        );
+      } else {
+        setTrackedResult(found);
+      }
+    } finally {
+      setTrackSearching(false);
+    }
+  };
+
+  // Auto-run tracking lookup when opened via ?track=...
+  useEffect(() => {
+    if (paramTrack) {
+      setPortalView('track');
+      handleTrackLookup(paramTrack);
+    }
+  }, [paramTrack]);
+
+  const handlePublicSignedOfferUpload = (
+    offer: JobOffer,
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      setTrackError('حجم الملف يتجاوز 10 ميجابايت. يرجى اختيار ملف أصغر.');
+      e.target.value = '';
+      return;
+    }
+    setTrackError(null);
+    setUploadingSignedOffer(true);
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const dataUrl = typeof reader.result === 'string' ? reader.result : '';
+        if (!dataUrl) throw new Error('تعذر قراءة الملف المرفق');
+        const updatedOffer = await atsStorage.uploadSignedOffer(
+          offer.id,
+          file.name,
+          dataUrl,
+          trackedResult?.candidate.name || 'المتقدم'
+        );
+        setTrackedResult((prev) => (prev ? { ...prev, offer: updatedOffer } : null));
+        setSignedOfferSuccessMsg(
+          t(
+            'تم رفع نسخة العرض الوظيفي الموقّعة بنجاح وإرسال إشعار لإدارة الموارد البشرية لاعتماد إجراءات التعيين!',
+            'Signed job offer uploaded successfully!'
+          )
+        );
+        fireConfetti();
+      } catch (err: any) {
+        setTrackError(err?.message || 'حدث خطأ أثناء رفع العرض الموقع');
+      } finally {
+        setUploadingSignedOffer(false);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleSelectJob = (job: JobRequisition) => {
     setSelectedJob(job);
@@ -218,7 +317,39 @@ export const PublicCareersPortal: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0 flex-wrap">
+            <div className="inline-flex p-1 rounded-xl border border-[#E0D9CB] dark:border-[#243628] bg-[#FFFFFF] dark:bg-[#17231A]">
+              <button
+                type="button"
+                onClick={() => {
+                  setPortalView('apply');
+                  scrollToTop();
+                }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                  portalView === 'apply'
+                    ? 'bg-[#D99B26] text-white shadow-xs'
+                    : 'text-[#5C665E] dark:text-[#8FA392] hover:text-[#1A241C] dark:hover:text-[#F3EFE6]'
+                }`}
+              >
+                {t('تقديم طلب توظيف', 'Apply Now')}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setPortalView('track');
+                  scrollToTop();
+                }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 ${
+                  portalView === 'track'
+                    ? 'bg-[#059669] text-white shadow-xs'
+                    : 'text-[#5C665E] dark:text-[#8FA392] hover:text-[#1A241C] dark:hover:text-[#F3EFE6]'
+                }`}
+              >
+                <ClipboardList className="w-3.5 h-3.5" />
+                <span>{t('متابعة حالة الطلب', 'Track Status')}</span>
+              </button>
+            </div>
+
             <button
               onClick={() => setLanguage(language === 'ar' ? 'en' : 'ar')}
               className="px-3.5 py-2 rounded-xl text-xs font-bold border border-[#E0D9CB] dark:border-[#243628] bg-[#FFFFFF] dark:bg-[#17231A] text-[#1A241C] dark:text-[#F3EFE6] hover:border-[#D99B26] transition-colors cursor-pointer"
@@ -239,7 +370,303 @@ export const PublicCareersPortal: React.FC = () => {
 
       {/* 2. Main Content Container */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
-        {isInFormView ? (
+        {portalView === 'track' ? (
+          /* ========================================================================= */
+          /* VIEW C: APPLICANT SELF-SERVICE STATUS & OFFER TRACKER                     */
+          /* ========================================================================= */
+          <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in duration-300">
+            <div className="rounded-3xl p-6 sm:p-8 border border-[#D99B26]/35 bg-gradient-to-l from-[#F3EFE6]/90 via-[#FBF9F5] to-[#FFFFFF] dark:from-[#121B14] dark:via-[#141E16] dark:to-[#0E1610] shadow-sm space-y-5">
+              <div className="text-center space-y-2 max-w-2xl mx-auto">
+                <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#059669]/12 border border-[#059669]/30 text-[#059669] dark:text-emerald-400 text-xs font-bold">
+                  <ClipboardList className="w-3.5 h-3.5" />
+                  <span>{t('خدمة الاستعلام اللحظي للمتقدمين', 'Applicant Live Status Portal')}</span>
+                </div>
+                <h1 className="text-2xl sm:text-3xl font-black text-[#1A241C] dark:text-[#F3EFE6]">
+                  {t('متابعة حالة طلب التوظيف والعرض الوظيفي', 'Track Application & Job Offer')}
+                </h1>
+                <p className="text-xs sm:text-sm text-[#5C665E] dark:text-[#8FA392]">
+                  {t(
+                    'أدخل الرقم القومي (14 رقم) أو رقم الموبايل أو رقم القيد المرجعي لمتابعة مراحل الفرز والمقابلات أو طباعة العرض الوظيفي ورفعه بعد التوقيع.',
+                    'Enter your National ID, phone number, or reference number to track your stage or sign your Job Offer.'
+                  )}
+                </p>
+              </div>
+
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleTrackLookup();
+                }}
+                className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 max-w-2xl mx-auto"
+              >
+                <div className="relative flex-1">
+                  <Search className="w-4 h-4 text-[#5C665E] dark:text-[#8FA392] absolute start-3.5 top-3.5 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={trackQuery}
+                    onChange={(e) => setTrackQuery(e.target.value)}
+                    placeholder={t(
+                      'الرقم القومي (14 رقم) أو الموبايل أو رقم الطلب TRB-2026-...',
+                      'National ID / Mobile / Reference TRB-...'
+                    )}
+                    className="w-full ps-10 pe-4 py-3 rounded-2xl border border-[#E0D9CB] dark:border-[#243628] bg-[#FFFFFF] dark:bg-[#17231A] text-xs sm:text-sm font-bold text-[#1A241C] dark:text-[#F3EFE6] focus:outline-none focus:ring-2 focus:ring-[#D99B26]"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={trackSearching}
+                  className="px-6 py-3 rounded-2xl bg-[#D99B26] hover:bg-[#C2881D] text-white font-black text-xs sm:text-sm shadow-md transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {trackSearching ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Search className="w-4 h-4" />
+                  )}
+                  <span>{t('استعلام الآن', 'Check Status')}</span>
+                </button>
+              </form>
+
+              {trackError && (
+                <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 text-xs font-bold flex items-center gap-2 max-w-2xl mx-auto">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{trackError}</span>
+                </div>
+              )}
+
+              {signedOfferSuccessMsg && (
+                <div className="p-3.5 rounded-2xl bg-[#059669]/12 border border-[#059669]/30 text-[#059669] dark:text-emerald-400 text-xs font-bold flex items-center gap-2 max-w-2xl mx-auto">
+                  <CheckCircle2 className="w-4 h-4 shrink-0" />
+                  <span>{signedOfferSuccessMsg}</span>
+                </div>
+              )}
+            </div>
+
+            {trackedResult && (
+              <div className="rounded-3xl p-6 sm:p-8 border border-[#E0D9CB] dark:border-[#243628] bg-[#FFFFFF] dark:bg-[#141E16] shadow-lg space-y-6">
+                {(() => {
+                  const cand = trackedResult.candidate;
+                  const offer = trackedResult.offer;
+                  const orderedStages = DEFAULT_STAGES.filter((s) => s.id !== 'rejected');
+                  const currentStageObj = DEFAULT_STAGES.find((s) => s.id === cand.stage);
+                  const currentIdx = orderedStages.findIndex((s) => s.id === cand.stage);
+                  const isRejected = cand.stage === 'rejected' || cand.status === 'rejected';
+
+                  return (
+                    <>
+                      {/* Candidate Summary Header */}
+                      <div className="flex flex-wrap items-center justify-between gap-4 pb-5 border-b border-[#E0D9CB] dark:border-[#243628]">
+                        <div className="space-y-1">
+                          <div className="text-[11px] font-bold text-[#059669] dark:text-emerald-400">
+                            {cand.companyName || resolvedCompanyName}
+                          </div>
+                          <h2 className="text-xl font-black text-[#1A241C] dark:text-[#F3EFE6]">
+                            {cand.name}
+                          </h2>
+                          <p className="text-xs text-[#5C665E] dark:text-[#8FA392]">
+                            الوظيفة المتقدم لها: <strong>{cand.jobTitle}</strong> • رقم القيد:{' '}
+                            <span className="font-mono font-bold">
+                              {cand.applicationForm?.registrationNumber || cand.id}
+                            </span>
+                          </p>
+                        </div>
+
+                        <div
+                          className={`px-4 py-2 rounded-2xl text-xs font-black border ${
+                            isRejected
+                              ? 'bg-rose-500/12 text-rose-600 dark:text-rose-400 border-rose-500/30'
+                              : 'bg-[#059669]/12 text-[#059669] dark:text-emerald-400 border-[#059669]/30'
+                          }`}
+                        >
+                          الحالة الحالية: {currentStageObj?.title || cand.stage}
+                        </div>
+                      </div>
+
+                      {/* Stage Timeline or Polite Apology */}
+                      {isRejected ? (
+                        <div className="p-6 rounded-2xl bg-rose-500/8 border border-rose-500/25 space-y-2 text-center">
+                          <h3 className="text-base font-black text-rose-600 dark:text-rose-400">
+                            نعتذر عن عدم التوفيق في الترشح لهذه المرحلة حالياً
+                          </h3>
+                          <p className="text-xs text-[#5C665E] dark:text-[#8FA392] max-w-xl mx-auto leading-relaxed">
+                            نشكركم على اهتمامكم وتقدمكم للعمل لدى {cand.companyName || resolvedCompanyName}.
+                            تم الاحتفاظ ببياناتكم وسيرتكم الذاتية في قاعدة الكفاءات للتواصل معكم فور توفر شاغر مناسب.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          <div className="text-xs font-black text-[#1A241C] dark:text-[#F3EFE6]">
+                            التسلسل الزمني لمراحل التوظيف:
+                          </div>
+                          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5">
+                            {orderedStages.map((stg, idx) => {
+                              const isCurrent = idx === currentIdx;
+                              const isCompleted = currentIdx > idx;
+                              return (
+                                <div
+                                  key={stg.id}
+                                  className={`p-3 rounded-2xl border text-center space-y-1.5 transition-all ${
+                                    isCurrent
+                                      ? 'bg-[#D99B26]/15 border-[#D99B26] ring-2 ring-[#D99B26]/25'
+                                      : isCompleted
+                                        ? 'bg-[#059669]/12 border-[#059669]/40'
+                                        : 'bg-[#FBF9F5] dark:bg-[#17231A] border-[#E0D9CB] dark:border-[#243628] opacity-65'
+                                  }`}
+                                >
+                                  <div
+                                    className={`w-6 h-6 mx-auto rounded-full flex items-center justify-center text-[11px] font-black ${
+                                      isCurrent
+                                        ? 'bg-[#D99B26] text-white'
+                                        : isCompleted
+                                          ? 'bg-[#059669] text-white'
+                                          : 'bg-[#E0D9CB] dark:bg-[#243628] text-[#5C665E] dark:text-[#8FA392]'
+                                    }`}
+                                  >
+                                    {isCompleted ? '✓' : idx + 1}
+                                  </div>
+                                  <div className="text-[11px] font-bold text-[#1A241C] dark:text-[#F3EFE6]">
+                                    {stg.title}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Official Job Offer Card when Offer Exists or stage === 'job_offer' */}
+                      {offer && (
+                        <div className="p-5 sm:p-6 rounded-2xl bg-gradient-to-l from-[#D99B26]/10 via-[#059669]/8 to-transparent border-2 border-[#D99B26]/40 space-y-4">
+                          <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                              <span className="text-[10.5px] font-black px-2.5 py-0.5 rounded-full bg-[#059669] text-white">
+                                عرض وظيفي رسمي صادر لك
+                              </span>
+                              <h3 className="text-base sm:text-lg font-black text-[#1A241C] dark:text-[#F3EFE6] mt-1.5">
+                                {offer.jobTitle} — {offer.companyName}
+                              </h3>
+                              <p className="text-xs text-[#5C665E] dark:text-[#8FA392]">
+                                الراتب الشهري الشامل:{' '}
+                                <strong className="text-[#059669] dark:text-emerald-400">
+                                  {(offer.compensation?.totalMonthly || 0).toLocaleString()}{' '}
+                                  {offer.compensation?.currency || 'EGP'}
+                                </strong>{' '}
+                                • تاريخ الاستلام المقترح:{' '}
+                                <span className="font-mono font-bold">{offer.joiningDate || '-'}</span>
+                              </p>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => setShowOfferModal(true)}
+                              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#059669] hover:bg-[#047857] text-white text-xs font-black shadow-md cursor-pointer transition-colors"
+                            >
+                              <Printer className="w-4 h-4" />
+                              <span>عرض وطباعة العرض للتوقيع اليدوي (A4)</span>
+                            </button>
+                          </div>
+
+                          {/* Upload Signed Copy Right Here */}
+                          <div className="p-4 rounded-2xl bg-[#FFFFFF] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] space-y-3">
+                            <div className="text-xs font-bold text-[#1A241C] dark:text-[#F3EFE6]">
+                              الخطوة التالية للمرشح: اطبع نموذج العرض أعلاه ثم وقّع عليه يدوياً وأعد رفعه هنا لاعتماد قبولك:
+                            </div>
+                            <div className="flex flex-wrap items-center gap-3">
+                              {!offer.isSyncedToCoreHR && (
+                                <label className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#D99B26] hover:bg-[#C2881D] text-white text-xs font-bold cursor-pointer transition-colors shadow-xs">
+                                  {uploadingSignedOffer ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                  ) : (
+                                    <UploadCloud className="w-4 h-4" />
+                                  )}
+                                  <span>
+                                    {uploadingSignedOffer
+                                      ? 'جاري رفع العرض الموقّع...'
+                                      : offer.signedOfferDataUrl
+                                        ? 'استبدال العرض الموقّع يدوياً'
+                                        : 'رفع نسخة العرض الموقّع يدوياً (PDF / صورة)'}
+                                  </span>
+                                  <input
+                                    type="file"
+                                    accept=".pdf,image/*"
+                                    onChange={(e) => handlePublicSignedOfferUpload(offer, e)}
+                                    className="hidden"
+                                  />
+                                </label>
+                              )}
+
+                              {offer.signedOfferDataUrl && (
+                                <div className="inline-flex items-center gap-2">
+                                  <span className="inline-flex items-center gap-1 text-xs font-bold text-[#059669] dark:text-emerald-400">
+                                    <CheckCircle2 className="w-4 h-4" />
+                                    <span>تم رفع العرض الموقّع: {offer.signedOfferFileName}</span>
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      atsStorage.openOrDownloadAttachment(
+                                        offer.signedOfferDataUrl,
+                                        offer.signedOfferFileName || 'signed_offer.pdf',
+                                        'view'
+                                      )
+                                    }
+                                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#D99B26] hover:bg-[#C2881D] text-white text-[11px] font-bold cursor-pointer"
+                                  >
+                                    <Eye className="w-3.5 h-3.5" />
+                                    <span>عرض</span>
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Attached CV Preview if Present */}
+                      {(cand.resumeUrl || cand.applicationForm?.cvFileDataUrl) && (
+                        <div className="p-3.5 rounded-2xl bg-[#FBF9F5] dark:bg-[#17231A] border border-[#E0D9CB] dark:border-[#243628] flex flex-wrap items-center justify-between gap-3 text-xs">
+                          <span className="font-bold text-[#1A241C] dark:text-[#F3EFE6]">
+                            السيرة الذاتية المرفقة بالطلب:{' '}
+                            {cand.resumeName || cand.applicationForm?.cvFileName || 'CV'}
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                atsStorage.openOrDownloadAttachment(
+                                  cand.resumeUrl || cand.applicationForm?.cvFileDataUrl,
+                                  cand.resumeName || cand.applicationForm?.cvFileName || 'cv.pdf',
+                                  'view'
+                                )
+                              }
+                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#D99B26] hover:bg-[#C2881D] text-white font-bold cursor-pointer"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                              <span>عرض السيرة الذاتية</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                atsStorage.openOrDownloadAttachment(
+                                  cand.resumeUrl || cand.applicationForm?.cvFileDataUrl,
+                                  cand.resumeName || cand.applicationForm?.cvFileName || 'cv.pdf',
+                                  'download'
+                                )
+                              }
+                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#059669] hover:bg-[#047857] text-white font-bold cursor-pointer"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                              <span>تحميل</span>
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
+              </div>
+            )}
+          </div>
+        ) : isInFormView ? (
           /* ========================================================================= */
           /* VIEW A: OFFICIAL JOB APPLICATION FORM (VACANCY OR GENERAL)               */
           /* ========================================================================= */
@@ -288,6 +715,25 @@ export const PublicCareersPortal: React.FC = () => {
                 </div>
 
                 <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const lookup =
+                        submittedCandidate?.nationalId ||
+                        submittedRef ||
+                        submittedCandidate?.phone ||
+                        '';
+                      setTrackQuery(lookup);
+                      setPortalView('track');
+                      if (lookup) handleTrackLookup(lookup);
+                      scrollToTop();
+                    }}
+                    className="px-5 py-3 rounded-2xl bg-[#059669] hover:bg-[#047857] text-white font-bold text-xs flex items-center gap-2 cursor-pointer shadow-md transition-all"
+                  >
+                    <ClipboardList className="w-4 h-4" />
+                    <span>{t('متابعة حالة الطلب والعرض الوظيفي', 'Track Application Status')}</span>
+                  </button>
+
                   {submittedCandidate && (
                     <button
                       type="button"
@@ -622,6 +1068,21 @@ export const PublicCareersPortal: React.FC = () => {
           onClose={() => setShowPrintModal(false)}
         />
       )}
+
+      {showOfferModal && trackedResult?.offer && (
+        <PrintableJobOfferModal
+          offer={trackedResult.offer}
+          candidate={trackedResult.candidate}
+          canUploadSigned={true}
+          actorName={trackedResult.candidate.name}
+          onClose={() => setShowOfferModal(false)}
+          onUpdated={(updatedOffer) =>
+            setTrackedResult((prev) => (prev ? { ...prev, offer: updatedOffer } : null))
+          }
+        />
+      )}
+
+      <ATSAttachmentPreviewHost />
     </div>
   );
 };

@@ -186,13 +186,13 @@ export interface PipelineStageConfig {
 }
 
 export const DEFAULT_STAGES: PipelineStageConfig[] = [
-  { id: 'applied', title: 'طلبات جديدة', titleEn: 'Applied', color: '#1B4938', description: 'طلبات التقديم الجديدة غير المفروزة', order: 1 },
-  { id: 'screening', title: 'فرز وتصفية أولية', titleEn: 'Screening', color: '#38A37F', description: 'مطابقة المعايير والخبرات الأساسية', order: 2 },
-  { id: 'tech_assessment', title: 'تقييم فني وإدارة', titleEn: 'Assessment', color: '#1E588F', description: 'اختبارات تقنية ولغوية وتخصصية', order: 3 },
-  { id: 'first_interview', title: 'مقابلات الموارد البشرية', titleEn: 'HR Interview', color: '#8F5B1E', description: 'مقابلة استقطاب الكفاءات والمدير المباشر', order: 4 },
-  { id: 'final_interview', title: 'مقابلة نهائية', titleEn: 'Final Interview', color: '#6A2A82', description: 'المقابلة مع الإدارة التنفيذية', order: 5 },
-  { id: 'job_offer', title: 'عروض العمل', titleEn: 'Job Offer', color: '#D97706', description: 'إصدار وتوقيع العرض الوظيفي', order: 6 },
-  { id: 'hired', title: 'تم التعيين', titleEn: 'Hired', color: '#10B981', description: 'إتمام مسوغات التعيين والتحويل للمنظومة', order: 7 },
+  { id: 'applied', title: 'طلبات جديدة', titleEn: 'Applied', color: '#10B981', description: 'طلبات التقديم الجديدة غير المفروزة', order: 1 },
+  { id: 'screening', title: 'فرز وتصفية أولية', titleEn: 'Screening', color: '#14B8A6', description: 'مطابقة المعايير والخبرات الأساسية', order: 2 },
+  { id: 'tech_assessment', title: 'تقييم فني وإدارة', titleEn: 'Assessment', color: '#3B82F6', description: 'اختبارات تقنية ولغوية وتخصصية', order: 3 },
+  { id: 'first_interview', title: 'مقابلات الموارد البشرية', titleEn: 'HR Interview', color: '#F59E0B', description: 'مقابلة استقطاب الكفاءات والمدير المباشر', order: 4 },
+  { id: 'final_interview', title: 'مقابلة نهائية', titleEn: 'Final Interview', color: '#A855F7', description: 'المقابلة مع الإدارة التنفيذية', order: 5 },
+  { id: 'job_offer', title: 'عروض العمل', titleEn: 'Job Offer', color: '#D99B26', description: 'إصدار وتوقيع العرض الوظيفي', order: 6 },
+  { id: 'hired', title: 'تم التعيين', titleEn: 'Hired', color: '#059669', description: 'إتمام مسوغات التعيين والتحويل للمنظومة', order: 7 },
   { id: 'rejected', title: 'قائمة الاحتياط / مرفوض', titleEn: 'Rejected', color: '#EF4444', description: 'استبعاد أو حفظ في قائمة المواهب', order: 8 },
 ];
 
@@ -403,6 +403,7 @@ export interface JobOffer {
   id: string;
   candidateId: string;
   candidateName: string;
+  candidateNationalId?: string;
   candidateEmail: string;
   candidatePhone?: string;
   jobId: string;
@@ -414,10 +415,17 @@ export interface JobOffer {
   joiningDate: string;
   expiryDate: string;
   compensation: OfferCompensation;
+  agreedSalaryText?: string;
   termsAndConditions: string;
   status: OfferStatus;
   hrSignerName: string;
   hrSignedAt?: string;
+  hrApprovalName?: string;
+  deptManagerApprovalName?: string;
+  ceoApprovalName?: string;
+  signedOfferFileName?: string;
+  signedOfferDataUrl?: string;
+  signedOfferUploadedAt?: string;
   candidateSignature?: {
     signatureDataUrl: string;
     signedAt: string;
@@ -427,6 +435,7 @@ export interface JobOffer {
   preboardingDocuments: PreboardingDocument[];
   isSyncedToCoreHR: boolean;
   coreHREmployeeId?: string;
+  notes?: string;
   createdAt: string;
   updatedAt: string;
 }

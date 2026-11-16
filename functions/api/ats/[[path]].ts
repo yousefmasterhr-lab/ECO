@@ -22,6 +22,24 @@ function parseJsonSafe<T>(raw: any, fallback: T): T {
   }
 }
 
+function inferMimeType(fileName?: string, rawMime?: string): string {
+  const cleaned = (rawMime || '').trim().toLowerCase();
+  if (cleaned && cleaned !== 'application/octet-stream') {
+    return cleaned;
+  }
+  const lower = (fileName || '').toLowerCase();
+  if (lower.endsWith('.pdf')) return 'application/pdf';
+  if (lower.endsWith('.png')) return 'image/png';
+  if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'image/jpeg';
+  if (lower.endsWith('.webp')) return 'image/webp';
+  if (lower.endsWith('.gif')) return 'image/gif';
+  if (lower.endsWith('.doc')) return 'application/msword';
+  if (lower.endsWith('.docx')) {
+    return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+  }
+  return 'application/pdf';
+}
+
 async function saveAttachmentChunks(
   db: any,
   candidateId: string,
@@ -30,7 +48,7 @@ async function saveAttachmentChunks(
   dataUrl: string
 ): Promise<string> {
   const match = dataUrl.match(/^data:([^;,]+)?(?:;[^,]*)?,/i);
-  const mimeType = match?.[1] || 'application/octet-stream';
+  const mimeType = inferMimeType(fileName, match?.[1]);
   const totalChunks = Math.max(1, Math.ceil(dataUrl.length / ATTACHMENT_CHUNK_SIZE));
 
   await db
@@ -264,14 +282,19 @@ export const onRequestGet: PagesFunction = async (context) => {
           bytes[i] = binaryStr.charCodeAt(i);
         }
         const isDownload = url.searchParams.get('download') === '1';
-        const disposition = isDownload ? 'attachment' : 'inline';
+        const resolvedMime = inferMimeType(att.fileName, att.mimeType);
+        const headers: Record<string, string> = {
+          'Content-Type': resolvedMime,
+          'Cache-Control': 'public, max-age=3600',
+        };
+        if (isDownload) {
+          headers['Content-Disposition'] = `attachment; filename*=UTF-8''${encodeURIComponent(att.fileName)}`;
+        } else {
+          headers['Content-Disposition'] = 'inline';
+        }
         return new Response(bytes, {
           status: 200,
-          headers: {
-            'Content-Type': att.mimeType || 'application/octet-stream',
-            'Content-Disposition': `${disposition}; filename*=UTF-8''${encodeURIComponent(att.fileName)}`,
-            'Cache-Control': 'public, max-age=3600',
-          },
+          headers,
         });
       }
 
@@ -713,6 +736,24 @@ export const onRequestPost: PagesFunction = async (context) => {
       case 'offers': {
         const item = body as any;
         const offerId = item.id || id || `off_${Date.now()}`;
+        let finalSignedUrl = item.signedOfferDataUrl || '';
+        const ownerKey = item.candidateId || item.candidate_id || offerId;
+
+        if (finalSignedUrl && finalSignedUrl.startsWith('data:')) {
+          finalSignedUrl = await saveAttachmentChunks(
+            env.DB,
+            ownerKey,
+            'signed_offer',
+            item.signedOfferFileName || 'signed_job_offer.pdf',
+            finalSignedUrl
+          );
+        }
+
+        const cleanOffer = {
+          ...item,
+          id: offerId,
+          ...(finalSignedUrl ? { signedOfferDataUrl: finalSignedUrl } : {}),
+        };
 
         await env.DB.prepare(`
           INSERT INTO ats_offers (
@@ -763,10 +804,10 @@ export const onRequestPost: PagesFunction = async (context) => {
           item.coreHREmployeeId || item.core_hr_employee_id || '',
           item.notes || item.termsAndConditions || '',
           item.expiryDate || item.expiresAt || item.expires_at || '',
-          JSON.stringify(item)
+          JSON.stringify(cleanOffer)
         ).run();
 
-        return jsonResponse({ success: true, id: offerId });
+        return jsonResponse({ success: true, id: offerId, signedOfferDataUrl: finalSignedUrl });
       }
 
       case 'portal-config': {

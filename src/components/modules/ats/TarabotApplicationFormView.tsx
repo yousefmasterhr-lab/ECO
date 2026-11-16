@@ -1434,7 +1434,7 @@ export const TarabotApplicationFormView: React.FC<TarabotApplicationFormViewProp
               className="px-6 py-3 rounded-2xl bg-[#059669] hover:bg-[#047857] text-white font-black text-xs shadow-lg shadow-[#059669]/25 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
             >
               <UserPlus className="w-4 h-4" />
-              <span>حفظ وتعيين مباشر كموظف فعلي (HR + التأمينات)</span>
+              <span>حفظ وتحويل إلى العرض الوظيفي (إصدار عرض عمل)</span>
             </button>
           </>
         )}
@@ -1596,7 +1596,7 @@ export const TarabotPrintableApplicationModal: React.FC<
               <span>
                 {viewMode === 'edit'
                   ? 'عرض وطباعة الاستمارة'
-                  : 'تعديل / استكمال تقييم الإدارة (ص2) والتحويل لموظف'}
+                  : 'تعديل / استكمال تقييم الإدارة (ص2) وإصدار العرض الوظيفي'}
               </span>
             </button>
 

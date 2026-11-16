@@ -18,6 +18,7 @@ import { ATSPipelineTab } from './ATSPipelineTab';
 import { ATSCandidatesTab } from './ATSCandidatesTab';
 import { ATSOffersTab } from './ATSOffersTab';
 import { ATSPortalTab } from './ATSPortalTab';
+import { ATSAttachmentPreviewHost } from './ATSAttachmentAndOfferModals';
 
 interface ATSModuleProps {
   activeSubItemId?: string | null;
@@ -164,6 +165,9 @@ export const ATSModule: React.FC<ATSModuleProps> = ({ activeSubItemId }) => {
         {activeTab === 'ats_offers' && <ATSOffersTab companyId={selectedCompanyFilter} />}
         {activeTab === 'ats_portal' && <ATSPortalTab companyId={selectedCompanyFilter} />}
       </div>
+
+      {/* Inline Attachment (CV / Signed Offer) Preview Host */}
+      <ATSAttachmentPreviewHost />
     </div>
   );
 };

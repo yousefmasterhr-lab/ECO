@@ -10,11 +10,8 @@ import {
 import { hrStorage } from './hrStorage';
 import { Employee, createStandardDocuments, DocumentItem } from '../context/HRContext';
 import { insuranceStorage, InsuredEmployeeRecord } from './insuranceStorage';
-import {
-  parseEgyptianNationalId,
-  calculateFullEgyptianPayrollSlip,
-  calculateAnnualLeaveEntitlement,
-} from '../utils/egyptianLaborAlgorithms';
+import { parseEgyptianNationalId } from '../utils/egyptianLaborAlgorithms';
+import { tafqeet } from '../utils/tafqeet';
 
 export interface ATSPortalConfig {
   companyMode: 'selected' | 'manual';
@@ -140,28 +137,31 @@ class ATSStorageService {
 
     const cleanName = fileName || 'cv_attachment.pdf';
 
-    // Handle server attachment URL (/api/ats/attachments/...)
-    if (!urlOrDataUrl.startsWith('data:')) {
-      const sep = urlOrDataUrl.includes('?') ? '&' : '?';
-      const targetUrl =
-        action === 'download' && urlOrDataUrl.startsWith('/api/ats/attachments')
-          ? `${urlOrDataUrl}${sep}download=1`
-          : urlOrDataUrl;
-      if (action === 'download') {
-        const a = document.createElement('a');
-        a.href = targetUrl;
-        a.download = cleanName;
-        a.target = '_blank';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-      } else {
-        window.open(targetUrl, '_blank', 'noopener,noreferrer');
-      }
+    if (action === 'view') {
+      window.dispatchEvent(
+        new CustomEvent('eco-ats-preview-attachment', {
+          detail: { url: urlOrDataUrl, fileName: cleanName },
+        })
+      );
       return;
     }
 
-    // Convert DataURL -> Blob URL so browsers never block top-level data: navigation
+    // Download path
+    if (!urlOrDataUrl.startsWith('data:')) {
+      const sep = urlOrDataUrl.includes('?') ? '&' : '?';
+      const targetUrl = urlOrDataUrl.startsWith('/api/ats/attachments')
+        ? `${urlOrDataUrl}${sep}download=1`
+        : urlOrDataUrl;
+      const a = document.createElement('a');
+      a.href = targetUrl;
+      a.download = cleanName;
+      a.target = '_blank';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      return;
+    }
+
     try {
       const commaIdx = urlOrDataUrl.indexOf(',');
       const meta = commaIdx >= 0 ? urlOrDataUrl.slice(0, commaIdx) : '';
@@ -175,29 +175,16 @@ class ATSStorageService {
       }
       const blob = new Blob([bytes], { type: mimeType });
       const objectUrl = URL.createObjectURL(blob);
-
-      if (action === 'download') {
-        const a = document.createElement('a');
-        a.href = objectUrl;
-        a.download = cleanName;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-      } else {
-        const win = window.open(objectUrl, '_blank', 'noopener,noreferrer');
-        if (!win) {
-          const a = document.createElement('a');
-          a.href = objectUrl;
-          a.download = cleanName;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-        }
-      }
+      const a = document.createElement('a');
+      a.href = objectUrl;
+      a.download = cleanName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
     } catch (err) {
-      console.error('Failed to open attachment:', err);
-      alert('تعذر فتح الملف المرفق. يرجى تجربة زر التحميل.');
+      console.error('Failed to download attachment:', err);
+      alert('تعذر تحميل الملف المرفق.');
     }
   }
 
@@ -519,11 +506,23 @@ class ATSStorageService {
     this.writeLocal(STORAGE_KEYS.OFFERS, all);
 
     try {
-      await fetch('/api/ats/offers', {
+      const res = await fetch('/api/ats/offers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updated),
       });
+      if (res.ok) {
+        const result = (await res.json().catch(() => null)) as any;
+        if (result?.signedOfferDataUrl && result.signedOfferDataUrl !== updated.signedOfferDataUrl) {
+          updated.signedOfferDataUrl = result.signedOfferDataUrl;
+          const refreshedAll = this.readLocal<JobOffer[]>(STORAGE_KEYS.OFFERS, []);
+          const rIdx = refreshedAll.findIndex((o) => o.id === updated.id);
+          if (rIdx >= 0) {
+            refreshedAll[rIdx] = updated;
+            this.writeLocalSilent(STORAGE_KEYS.OFFERS, refreshedAll);
+          }
+        }
+      }
     } catch (e) {
       console.warn('[ATSStorage] Remote saveOffer failed', e);
     }
@@ -662,7 +661,48 @@ class ATSStorageService {
         hasMedicalInsurance: false,
         medicalInsuranceMonthlyDeduction: 0,
       },
-      documents: [],
+      documents: (() => {
+        const docs = createStandardDocuments(offer.candidateName).map((doc): DocumentItem => {
+          if (doc.id === 'doc-10' && (candidate?.nationalId || offer.candidateNationalId)) {
+            return { ...doc, status: 'valid', updatedAt: nowStr };
+          }
+          return doc;
+        });
+        if (offer.signedOfferDataUrl) {
+          docs.unshift({
+            id: `doc-signed-offer-${Date.now()}`,
+            type: 'signed_job_offer',
+            titleAr: `عرض العمل الموقع يدوياً (${offer.id})`,
+            status: 'valid',
+            updatedAt: nowStr,
+            fileName: offer.signedOfferFileName || 'signed_job_offer.pdf',
+            fileData: offer.signedOfferDataUrl,
+          });
+        }
+        if (candidate?.resumeUrl || candidate?.applicationForm?.cvFileDataUrl) {
+          docs.unshift({
+            id: `doc-cv-${Date.now()}`,
+            type: 'cv_resume',
+            titleAr: 'السيرة الذاتية للموظف (CV)',
+            status: 'valid',
+            updatedAt: nowStr,
+            fileName: candidate.resumeName || candidate.applicationForm?.cvFileName || 'cv.pdf',
+            fileData: candidate.resumeUrl || candidate.applicationForm?.cvFileDataUrl,
+          });
+        }
+        if (candidate?.applicationForm?.scannedPaperFormDataUrl) {
+          docs.unshift({
+            id: `doc-app-${Date.now()}`,
+            type: 'tarabot_application',
+            titleAr: `استمارة طلب التوظيف الممسوحة — ${offer.companyName || ''}`,
+            status: 'valid',
+            updatedAt: nowStr,
+            fileName: candidate.applicationForm.scannedPaperFormName || 'application.pdf',
+            fileData: candidate.applicationForm.scannedPaperFormDataUrl,
+          });
+        }
+        return docs;
+      })(),
       assets: [],
       allowancesList: [],
       bonuses: [],
@@ -740,231 +780,306 @@ class ATSStorageService {
     return { employeeCode, hrEmployee: hrEmp, insEmployee: savedInsEmp };
   }
 
-  // ==================== TARABOT OFFICIAL JOB APPLICATION ENGINE ====================
-  private async _createEmployeeFromTarabotForm(
-    form: TarabotApplicationForm,
-    options: {
-      companyId?: string;
-      companyName?: string;
-      actorName?: string;
+  // ==================== JOB OFFER WORKFLOW, TRACKING & NOTIFICATIONS ====================
+  public normalizeSearchToken(raw: string): string {
+    if (!raw) return '';
+    const arabicDigits = '٠١٢٣٤٥٦٧٨٩';
+    const persianDigits = '۰۱۲۳۴۵۶۷۸۹';
+    let out = '';
+    for (const ch of raw.trim()) {
+      const aIdx = arabicDigits.indexOf(ch);
+      const pIdx = persianDigits.indexOf(ch);
+      if (aIdx >= 0) out += String(aIdx);
+      else if (pIdx >= 0) out += String(pIdx);
+      else out += ch;
     }
-  ): Promise<{ employeeCode: string; hrEmployee: Employee; insEmployee: InsuredEmployeeRecord }> {
-    const nidInfo = parseEgyptianNationalId(form.nationalId || '');
-    const nowStr = new Date().toISOString().substring(0, 10);
-    const hireDate = form.hiringStartDate || form.applicationDate || nowStr;
-    const year = new Date().getFullYear();
-    const randomSuffix = Math.floor(100 + Math.random() * 900);
-    const existingCount = hrStorage.getEmployees().length;
-    const uid = String(existingCount + 1).padStart(4, '0');
-    const employeeCode = `ECO-${year}-${uid}`;
+    return out.replace(/[\s\-()]/g, '');
+  }
 
-    const totalAgreed = Math.max(0, Number(form.agreedSalary || 0));
-    const basicSalary = Math.round(totalAgreed * 0.7);
-    const allowancesAmount = Math.max(0, totalAgreed - basicSalary);
-    const payrollCalc = calculateFullEgyptianPayrollSlip({
-      basicSalary,
-      insurableWage: basicSalary,
-      housingAllowance: allowancesAmount,
-      isInsured: true,
-    });
-    const leaveEntitlement = calculateAnnualLeaveEntitlement({
-      hireDate,
-      nationalId: form.nationalId,
-    });
+  public normalizeEgyptPhone(phone: string): string {
+    const digits = this.normalizeSearchToken(phone).replace(/\D/g, '');
+    if (digits.startsWith('0020')) return digits.slice(2);
+    if (digits.startsWith('20') && digits.length >= 12) return digits;
+    if (digits.startsWith('01') && digits.length === 11) return `2${digits}`;
+    if (digits.length === 10 && digits.startsWith('1')) return `20${digits}`;
+    return digits;
+  }
 
-    const baseDocs = createStandardDocuments(form.fullName).map((doc): DocumentItem => {
-      if (doc.id === 'doc-10' && form.nationalId) {
-        return {
-          ...doc,
-          status: 'valid',
-          expiryDate: form.nationalIdExpiryDate || undefined,
-          updatedAt: nowStr,
-        };
-      }
-      if (doc.id === 'doc-08' && form.educationHistory?.some((e) => e.degree.trim())) {
-        return { ...doc, status: 'valid', updatedAt: nowStr };
-      }
-      if (
-        doc.id === 'doc-07' &&
-        (form.militaryStatus === 'أدى الخدمة' ||
-          form.militaryStatus === 'إعفاء نهائى' ||
-          form.militaryStatus === 'لم يصبه الدور')
-      ) {
-        return { ...doc, status: 'valid', updatedAt: nowStr };
-      }
-      if (doc.id === 'doc-04' && form.previouslyInsured && form.socialInsuranceNumber) {
-        return { ...doc, status: 'valid', updatedAt: nowStr };
-      }
-      return doc;
-    });
+  public async createOrUpdateOfferFromCandidate(
+    cand: Candidate,
+    form?: TarabotApplicationForm
+  ): Promise<JobOffer> {
+    const existingOffers = await this.getOffers('all');
+    const existing = existingOffers.find((o) => o.candidateId === cand.id);
 
-    const companyId = options.companyId && options.companyId !== 'all' ? options.companyId : 'comp_01';
-    const companyNameAr =
-      form.companyName?.trim() ||
-      options.companyName ||
-      this.getPortalConfigSync().companyNameAr ||
-      'الشركة المسجلة';
+    const totalMonthly = Math.max(
+      0,
+      Number(form?.agreedSalary ?? cand.expectedSalary ?? existing?.compensation?.totalMonthly ?? 0)
+    );
+    const basicSalary = Math.round(totalMonthly * 0.7);
+    const housingAllowance = Math.round(totalMonthly * 0.2);
+    const transportAllowance = Math.max(0, totalMonthly - basicSalary - housingAllowance);
+    const nowDate = new Date().toISOString().substring(0, 10);
+    const joiningDate = form?.hiringStartDate || existing?.joiningDate || nowDate;
 
-    if (form.scannedPaperFormName) {
-      baseDocs.unshift({
-        id: `doc-tarabot-form-${Date.now()}`,
-        type: 'tarabot_application',
-        titleAr: `استمارة طلب التوظيف الرسمية — ${companyNameAr} (${form.registrationNumber || 'مؤرشف'})`,
-        status: 'valid',
-        updatedAt: nowStr,
-        fileName: form.scannedPaperFormName,
-        fileData: form.scannedPaperFormDataUrl,
-      });
-    }
-    if (form.cvFileName) {
-      baseDocs.unshift({
-        id: `doc-cv-${Date.now()}`,
-        type: 'cv_resume',
-        titleAr: 'السيرة الذاتية للموظف (CV)',
-        status: 'valid',
-        updatedAt: nowStr,
-        fileName: form.cvFileName,
-        fileData: form.cvFileDataUrl,
-      });
-    }
-
-    const hrEmp: Employee = {
-      id: `emp_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-      uid,
-      employeeCode,
-      nameAr: form.fullName,
-      nameEn: '',
-      jobTitleAr: form.positionAppliedFor || 'موظف',
-      jobTitleEn: '',
-      departmentAr: form.department || 'الإدارة الهندسية',
-      departmentEn: 'Operations',
-      companyId,
-      companyNameAr,
-      branchAr: 'المقر الرئيسي',
-      projectCostCenterId: '',
-      projectCostCenterName: '',
-      mobile: form.mobilePhone || '',
-      workPhone: form.landlinePhone || '',
-      email: form.email || '',
-      nationalId: form.nationalId || `2${Math.floor(1000000000000 + Math.random() * 9000000000000)}`,
-      birthDate: form.birthDate || nidInfo.birthDate || '',
-      governorate: form.governorate || nidInfo.governorateName || 'القاهرة',
-      workforceCategory: 'عمالة دائمة — الإدارة المركزية',
-      insurableWage: payrollCalc.insurance.clampedInsurableWage,
-      hireDate,
-      contractStatus: 'valid',
-      status: 'active',
-      lifecycleStatus: 'active',
-      directManager: form.deptManagerApprovalName || 'مدير الإدارة',
-      workLocation: form.residenceAddress || form.governorate || 'القاهرة',
-      disbursementMethod: 'bank_transfer',
-      bankName: 'البنك الأهلي المصري (NBE)',
-      bankAccount: '',
-      hasOvertime: false,
-      gender: form.gender || nidInfo.gender || 'male',
-      religion: 'مسلم',
-      address: form.residenceAddress || 'القاهرة',
-      salary: {
-        basic: basicSalary,
-        allowances: allowancesAmount,
-        deductions: payrollCalc.totalStatutoryAndCustomDeductions,
-        net: totalAgreed > 0 ? payrollCalc.netSalary : 0,
+    const offer: JobOffer = {
+      id: existing?.id || `off_${Date.now()}`,
+      candidateId: cand.id,
+      candidateName: form?.fullName || cand.name,
+      candidateNationalId: form?.nationalId || cand.nationalId || existing?.candidateNationalId,
+      candidateEmail: form?.email || cand.email || '',
+      candidatePhone: form?.mobilePhone || cand.phone || '',
+      jobId: cand.jobId || 'general_application',
+      jobTitle: form?.positionAppliedFor || cand.jobTitle || 'موظف',
+      department: form?.department || cand.jobDepartment || 'الإدارة العامة',
+      companyId: cand.companyId || 'comp_01',
+      companyName: form?.companyName || cand.companyName || 'الشركة المسجلة',
+      reportingTo: 'مدير الإدارة المختص',
+      joiningDate,
+      expiryDate:
+        existing?.expiryDate ||
+        new Date(Date.now() + 14 * 86400000).toISOString().substring(0, 10),
+      compensation: {
+        basicSalary,
+        housingAllowance,
+        transportAllowance,
+        otherAllowance: 0,
+        totalMonthly,
+        totalAnnual: totalMonthly * 12,
+        currency: cand.currency || 'EGP',
+        probationMonths: 3,
+        annualLeaveDays: 21,
+        medicalInsuranceTier: 'Class A',
       },
-      emergencyContact: { name: '', relation: '', phone: form.landlinePhone || '' },
-      leaveBalance: {
-        annualTotal: leaveEntitlement.annualTotal,
-        annualUsed: 0,
-        sickTotal: 15,
-        sickUsed: 0,
-        monthlyAccrual: leaveEntitlement.monthlyAccrual,
-      },
-      avatarColor: '#059669',
-      roleLevel: form.positionAppliedFor || 'موظف',
-      bloodType: 'O+',
-      socialInsuranceNo: form.previouslyInsured ? form.socialInsuranceNumber || '' : '',
-      workSchedule: {
-        startDate: hireDate,
-        endDate: `${Number(hireDate.slice(0, 4)) + 1}-${hireDate.slice(5)}`,
-        contractDurationYears: 1,
-        hireDate,
-        noticePeriodMonths: 2,
-        hoursPerDay: 8,
-        daysPerWeek: 5,
-        weeklyHours: 40,
-        weekendDays: ['الجمعة', 'السبت'],
-        annualTotalDays: leaveEntitlement.annualTotal,
-        remainingDays: leaveEntitlement.annualTotal,
-        monthlyAccrualDays: leaveEntitlement.monthlyAccrual,
-        isFlexibleHours: false,
-        isRemote: false,
-        isDriver: false,
-        isBoardMember: false,
-        isSiteShifts247: false,
-        isFixedHours: true,
-        hasSocialInsurance: true,
-        socialInsuranceType: 'تأمين نمطي (قانون 148 لسنة 2019)',
-        hasMedicalInsurance: false,
-        medicalInsuranceMonthlyDeduction: 0,
-      },
-      documents: baseDocs,
-      assets: [],
-      allowancesList: [],
-      bonuses: [],
-      deductions: [],
-      workedHours: {
-        actualHours: 0,
-        requiredHours: 160,
-        completedDays: 0,
-        incompleteDays: 0,
-        dailyLogs: [],
-      },
-      auditLogs: [
+      agreedSalaryText:
+        form?.agreedSalaryText ||
+        (totalMonthly > 0 ? tafqeet(totalMonthly, 'EGP') : existing?.agreedSalaryText || ''),
+      termsAndConditions:
+        existing?.termsAndConditions ||
+        'عرض عمل رسمي خاضع لأحكام قانون العمل المصري رقم ١٤ لسنة ٢٠٢٥ واللوائح الداخلية للشركة.',
+      status: existing?.signedOfferDataUrl ? 'accepted' : 'sent_to_candidate',
+      hrSignerName: form?.hrApprovalName || 'إدارة الموارد البشرية',
+      hrSignedAt: nowDate,
+      hrApprovalName: form?.hrApprovalName || existing?.hrApprovalName || '',
+      deptManagerApprovalName:
+        form?.deptManagerApprovalName || existing?.deptManagerApprovalName || '',
+      ceoApprovalName: form?.ceoApprovalName || existing?.ceoApprovalName || '',
+      signedOfferFileName: existing?.signedOfferFileName,
+      signedOfferDataUrl: existing?.signedOfferDataUrl,
+      signedOfferUploadedAt: existing?.signedOfferUploadedAt,
+      candidateSignature: existing?.candidateSignature,
+      preboardingDocuments: existing?.preboardingDocuments || [
         {
-          id: `aud-${Date.now()}`,
-          timestamp: new Date().toLocaleDateString('ar-EG'),
-          actionType: 'تفريغ استمارة توظيف شركة ترابط وتعيين الموظف',
-          fieldChanged: 'السجل العام للموظفين',
-          oldValue: `طلب رقم ${form.registrationNumber || '-'}`,
-          newValue: `${employeeCode} — ${form.positionAppliedFor}`,
-          userName: options.actorName || form.digitizedBy || 'إدارة الموارد البشرية',
+          id: 'doc_1',
+          type: 'national_id',
+          title: 'صورة بطاقة الرقم القومي',
+          titleEn: 'National ID',
+          isRequired: true,
+          isUploaded: Boolean(form?.nationalId || cand.nationalId),
+          verificationStatus: form?.nationalId || cand.nationalId ? 'verified' : 'pending',
+        },
+        {
+          id: 'doc_2',
+          type: 'degree_certificate',
+          title: 'شهادة المؤهل الدراسي المعتمدة',
+          titleEn: 'Degree Certificate',
+          isRequired: true,
+          isUploaded: Boolean(form?.educationHistory?.some((e) => e.degree?.trim())),
+          verificationStatus: form?.educationHistory?.some((e) => e.degree?.trim())
+            ? 'verified'
+            : 'pending',
+        },
+        {
+          id: 'doc_3',
+          type: 'criminal_clearance',
+          title: 'صحيفة الحالة الجنائية (فيش وتشبيه)',
+          titleEn: 'Criminal Record',
+          isRequired: true,
+          isUploaded: false,
+          verificationStatus: 'pending',
         },
       ],
+      isSyncedToCoreHR: existing?.isSyncedToCoreHR || false,
+      coreHREmployeeId: existing?.coreHREmployeeId,
+      notes: form?.managementNotes || existing?.notes || '',
+      createdAt: existing?.createdAt || nowDate,
+      updatedAt: new Date().toISOString(),
     };
 
-    await hrStorage.saveEmployee(hrEmp);
+    const saved = await this.saveOffer(offer);
+    return saved;
+  }
 
-    const insEmp: Partial<InsuredEmployeeRecord> = {
-      id: `ins_emp_${Date.now()}_${randomSuffix}`,
-      code: employeeCode,
-      name: form.fullName,
-      national_id: hrEmp.nationalId,
-      insurance_number: form.previouslyInsured ? form.socialInsuranceNumber || '' : '',
-      company_id: companyId,
-      company_name: companyNameAr,
-      office_name: 'مكتب تأمينات مقاولات القاهرة',
-      occupation: form.positionAppliedFor || 'موظف',
-      hire_date: hireDate,
-      sub_start_date: hireDate,
-      ins_date: hireDate,
-      sub_wage: basicSalary,
-      comp_wage: totalAgreed,
-      gov: hrEmp.governorate,
-      phone: form.mobilePhone,
-      qualification: form.educationHistory?.[0]?.degree || '',
-      status: 'نشط',
+  public async uploadSignedOffer(
+    offerId: string,
+    fileName: string,
+    dataUrl: string,
+    actorName = 'المرشح'
+  ): Promise<JobOffer> {
+    const offers = await this.getOffers('all');
+    const offer = offers.find((o) => o.id === offerId);
+    if (!offer) throw new Error('العرض الوظيفي غير موجود');
+
+    const updatedOffer: JobOffer = {
+      ...offer,
+      signedOfferFileName: fileName,
+      signedOfferDataUrl: dataUrl,
+      signedOfferUploadedAt: new Date().toISOString(),
+      status: 'accepted',
+      updatedAt: new Date().toISOString(),
     };
-    const savedInsEmp = await insuranceStorage.saveEmployee(
-      insEmp,
-      options.actorName || 'إدارة الموارد البشرية'
-    );
 
-    return { employeeCode, hrEmployee: hrEmp, insEmployee: savedInsEmp };
+    const savedOffer = await this.saveOffer(updatedOffer);
+
+    // Log activity on candidate
+    const candidates = await this.getCandidates('all');
+    const cand = candidates.find((c) => c.id === offer.candidateId);
+    if (cand) {
+      cand.stage = cand.stage === 'hired' ? 'hired' : 'job_offer';
+      cand.activities = cand.activities || [];
+      cand.activities.unshift({
+        id: `act_${Date.now()}`,
+        type: 'offer_signed',
+        title: 'تم رفع العرض الوظيفي الموقع يدوياً',
+        titleEn: 'Hand-Signed Job Offer Uploaded',
+        description: `قام ${actorName} بإرفاق النسخة الموقعة من العرض الوظيفي (${fileName})`,
+        performedBy: actorName,
+        timestamp: new Date().toISOString().replace('T', ' ').substring(0, 16),
+      });
+      await this.saveCandidate(cand);
+    }
+
+    return savedOffer;
+  }
+
+  public async findCandidateForTracking(
+    rawQuery: string
+  ): Promise<{ candidate: Candidate; offer: JobOffer | null } | null> {
+    const qClean = this.normalizeSearchToken(rawQuery);
+    if (!qClean) return null;
+    const qLower = rawQuery.trim().toLowerCase();
+    const qPhone = this.normalizeEgyptPhone(rawQuery);
+
+    const [candidates, offers] = await Promise.all([
+      this.getCandidates('all'),
+      this.getOffers('all'),
+    ]);
+
+    const match = candidates.find((c) => {
+      const nid = this.normalizeSearchToken(c.nationalId || '');
+      const refNum = (c.applicationForm?.registrationNumber || '').trim().toLowerCase();
+      const phoneDigits = this.normalizeEgyptPhone(c.phone || '');
+      const rawPhoneClean = this.normalizeSearchToken(c.phone || '').replace(/\D/g, '');
+      const qDigits = qClean.replace(/\D/g, '');
+
+      if (nid && nid === qClean) return true;
+      if (refNum && refNum === qLower) return true;
+      if (c.id.toLowerCase() === qLower) return true;
+      if (qPhone && phoneDigits && phoneDigits === qPhone) return true;
+      if (qDigits.length >= 9 && rawPhoneClean.endsWith(qDigits.slice(-9))) return true;
+      return false;
+    });
+
+    if (!match) return null;
+    const matchedOffer = offers.find((o) => o.candidateId === match.id) || null;
+    return { candidate: match, offer: matchedOffer };
+  }
+
+  public buildCandidateNotification(
+    candidate: Candidate,
+    offer?: JobOffer | null
+  ): {
+    trackingUrl: string;
+    whatsappUrl: string;
+    mailtoUrl: string;
+    subject: string;
+    messageText: string;
+    hasPhone: boolean;
+    hasEmail: boolean;
+  } {
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    const token =
+      candidate.nationalId ||
+      candidate.applicationForm?.registrationNumber ||
+      candidate.phone ||
+      candidate.id;
+    const trackingUrl = `${origin}/apply?track=${encodeURIComponent(token)}`;
+    const companyName = candidate.companyName || offer?.companyName || 'إدارة الموارد البشرية';
+    const jobTitle = offer?.jobTitle || candidate.jobTitle || 'الوظيفة المتقدم لها';
+
+    let subject = '';
+    let messageText = '';
+
+    if (candidate.stage === 'job_offer' || offer) {
+      const salaryLine =
+        offer && offer.compensation?.totalMonthly > 0
+          ? `\n• الراتب الشهري الشامل: ${offer.compensation.totalMonthly.toLocaleString()} ج.م`
+          : '';
+      const startLine = offer?.joiningDate
+        ? `\n• تاريخ بدء العمل المقترح: ${offer.joiningDate}`
+        : '';
+      subject = `تهنئة بالقبول وإصدار العرض الوظيفي الرسمي — ${companyName}`;
+      messageText =
+        `السلام عليكم أ/ ${candidate.name}،\n` +
+        `يسعدنا في ${companyName} إبلاغك بالموافقة المبدئية على طلب التوظيف الخاص بك لوظيفة (${jobTitle}) وإصدار العرض الوظيفي الرسمي لك.${salaryLine}${startLine}\n\n` +
+        `يرجى الدخول على الرابط التالي للاطلاع على حالة طلبك، وطباعة نموذج العرض الوظيفي لتوقيعه يدوياً وإعادة رفعه:\n${trackingUrl}\n\n` +
+        `مع أطيب التمنيات بالتوفيق،\nإدارة الموارد البشرية — ${companyName}`;
+    } else if (candidate.stage === 'hired') {
+      subject = `تم اعتماد تعيينك رسمياً — ${companyName}`;
+      messageText =
+        `السلام عليكم أ/ ${candidate.name}،\n` +
+        `نبارك لك في ${companyName} اعتماد إجراءات التعيين النهائية لوظيفة (${jobTitle}). يمكنك متابعة تفاصيل ملفك عبر الرابط:\n${trackingUrl}\n\n` +
+        `إدارة الموارد البشرية — ${companyName}`;
+    } else if (candidate.stage === 'rejected') {
+      subject = `تحديث بخصوص طلب التوظيف — ${companyName}`;
+      messageText =
+        `السلام عليكم أ/ ${candidate.name}،\n` +
+        `نشكركم على اهتمامكم بالانضمام إلى ${companyName} وتقدمكم لوظيفة (${jobTitle}). نعتذر عن عدم التوفيق في الترشح لهذه المرحلة حالياً، وقد تم حفظ ملفكم في قاعدة الكفاءات للفرص المستقبلية المناسبة.\n\n` +
+        `يمكنك متابعة حالة الطلب عبر:\n${trackingUrl}\n\n` +
+        `مع خالص التقدير،\nإدارة الموارد البشرية — ${companyName}`;
+    } else {
+      const stageMap: Record<string, string> = {
+        applied: 'تم استلام الطلب بنجاح (طلبات جديدة)',
+        screening: 'الطلب قيد الفرز والتصفية الأولية',
+        tech_assessment: 'تقييم فني وإداري',
+        first_interview: 'مرحلة مقابلات الموارد البشرية',
+        final_interview: 'مرحلة المقابلة النهائية',
+      };
+      const stageLabel = stageMap[candidate.stage] || candidate.stage;
+      subject = `تحديث حالة طلب التوظيف — ${companyName}`;
+      messageText =
+        `السلام عليكم أ/ ${candidate.name}،\n` +
+        `تحديث بخصوص طلب التوظيف المقدم لدى ${companyName} لوظيفة (${jobTitle}):\n` +
+        `• الحالة الحالية: ${stageLabel}\n\n` +
+        `لمتابعة مراحل الطلب لحظياً عبر بوابة المتقدمين:\n${trackingUrl}\n\n` +
+        `إدارة الموارد البشرية — ${companyName}`;
+    }
+
+    const intlPhone = this.normalizeEgyptPhone(candidate.phone || offer?.candidatePhone || '');
+    const hasPhone = intlPhone.length >= 10;
+    const whatsappUrl = hasPhone
+      ? `https://wa.me/${intlPhone}?text=${encodeURIComponent(messageText)}`
+      : '';
+
+    const email = (candidate.email || offer?.candidateEmail || '').trim();
+    const hasEmail = Boolean(email);
+    const mailtoUrl = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(messageText)}`;
+
+    return {
+      trackingUrl,
+      whatsappUrl,
+      mailtoUrl,
+      subject,
+      messageText,
+      hasPhone,
+      hasEmail,
+    };
   }
 
   public async submitTarabotApplication(
     form: TarabotApplicationForm,
     options: {
-      mode: 'candidate_only' | 'direct_hire_employee';
+      mode: 'candidate_only' | 'convert_to_offer' | 'direct_hire_employee';
       job?: JobRequisition | null;
       companyId?: string;
       companyName?: string;
@@ -976,6 +1091,7 @@ class ATSStorageService {
   ): Promise<{
     refNumber: string;
     candidate: Candidate;
+    offer?: JobOffer;
     employeeCode?: string;
     hrEmployee?: Employee;
   }> {
@@ -1001,7 +1117,8 @@ class ATSStorageService {
       : 'مؤهل مدون بالاستمارة';
 
     const expYearsEst = enrichedForm.workExperiences?.filter((w) => w.employer.trim()).length || 0;
-    const isDirectHire = options.mode === 'direct_hire_employee';
+    const isConvertToOffer =
+      options.mode === 'convert_to_offer' || options.mode === 'direct_hire_employee';
     const isInternal = enrichedForm.entryChannel === 'internal_digitization';
 
     let portalConfig = this.getPortalConfigSync();
@@ -1015,19 +1132,6 @@ class ATSStorageService {
       portalConfig.companyNameAr ||
       'الشركة المسجلة';
     enrichedForm.companyName = resolvedCompanyName;
-
-    let employeeCode: string | undefined;
-    let hrEmployee: Employee | undefined;
-
-    if (isDirectHire) {
-      const converted = await this._createEmployeeFromTarabotForm(enrichedForm, {
-        companyId: options.companyId || options.job?.companyId || portalConfig.companyId,
-        companyName: resolvedCompanyName,
-        actorName: options.actorName,
-      });
-      employeeCode = converted.employeeCode;
-      hrEmployee = converted.hrEmployee;
-    }
 
     const cand: Candidate = {
       id: `cand_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
@@ -1054,14 +1158,14 @@ class ATSStorageService {
         options.job?.department || enrichedForm.department || 'الإدارة العامة',
       companyId: options.companyId || options.job?.companyId || portalConfig.companyId || 'comp_01',
       companyName: resolvedCompanyName,
-      stage: isDirectHire ? 'hired' : 'applied',
-      status: isDirectHire ? 'hired' : 'active',
-      matchScore: isDirectHire ? 95 : 85,
+      stage: isConvertToOffer ? 'job_offer' : 'applied',
+      status: 'active',
+      matchScore: isConvertToOffer ? 95 : 85,
       rating: 4.5,
       tags: [
         `استمارة التوظيف — ${resolvedCompanyName}`,
         isInternal ? 'تفريغ استمارة ورقية / سيرة ذاتية' : 'تقديم عبر رابط التوظيف',
-        ...(isDirectHire && employeeCode ? [`معيّن: ${employeeCode}`] : []),
+        ...(isConvertToOffer ? ['محوّل للعرض الوظيفي'] : []),
       ],
       resumeName: enrichedForm.cvFileName || enrichedForm.scannedPaperFormName,
       resumeUrl: enrichedForm.cvFileDataUrl || enrichedForm.scannedPaperFormDataUrl,
@@ -1089,14 +1193,13 @@ class ATSStorageService {
           .filter(Boolean),
       },
       applicationForm: enrichedForm,
-      coreHREmployeeCode: employeeCode,
       notes: [
         {
           id: `note_${Date.now()}`,
           authorId: isInternal ? 'hr_digitizer' : 'public_portal',
           authorName: isInternal ? options.actorName || 'مسؤول إدخال الموارد البشرية' : 'بوابة التوظيف الرسمية',
-          content: isDirectHire
-            ? `تم تفريغ استمارة التوظيف رقم (${refNumber}) لـ ${resolvedCompanyName} واعتماد التعيين الفوري بكود موظف ${employeeCode}.`
+          content: isConvertToOffer
+            ? `تم تسجيل استمارة التوظيف رقم (${refNumber}) وتحويل المرشح لمرحلة العرض الوظيفي لإصدار ومراجعة العرض.`
             : `تم تسجيل طلب التوظيف الرسمي رقم (${refNumber}) لـ ${resolvedCompanyName}.`,
           createdAt: new Date().toISOString(),
           isPrivate: false,
@@ -1105,13 +1208,13 @@ class ATSStorageService {
       activities: [
         {
           id: `act_${Date.now()}`,
-          type: isDirectHire ? 'synced_hr' : 'stage_change',
-          title: isDirectHire
-            ? `تسجيل الاستمارة والتعيين المباشر (${employeeCode})`
+          type: isConvertToOffer ? 'offer_created' : 'stage_change',
+          title: isConvertToOffer
+            ? `تحويل الاستمارة وإصدار العرض الوظيفي (${refNumber})`
             : `تسجيل استمارة طلب توظيف (${refNumber})`,
-          titleEn: isDirectHire ? 'Digitized & Hired to Core HR' : 'Tarabot Application Recorded',
-          description: isDirectHire
-            ? `تم ترحيل الاستمارة إلى السجل العام للموظفين والتأمينات الاجتماعية`
+          titleEn: isConvertToOffer ? 'Converted to Job Offer Stage' : 'Application Recorded',
+          description: isConvertToOffer
+            ? `تم نقل المرشح إلى مرحلة العرض الوظيفي وتجهيز نموذج العرض القابل للطباعة`
             : `الوظيفة المتقدم لها: ${enrichedForm.positionAppliedFor}`,
           performedBy: options.actorName || (isInternal ? 'مسؤول الموارد البشرية' : 'المتقدم عبر البوابة'),
           timestamp: new Date().toISOString().replace('T', ' ').substring(0, 16),
@@ -1122,56 +1225,64 @@ class ATSStorageService {
     };
 
     const savedCand = await this.saveCandidate(cand);
+    let createdOffer: JobOffer | undefined;
 
-    window.dispatchEvent(new CustomEvent('eco-ats-updated'));
-    if (isDirectHire) {
-      window.dispatchEvent(new CustomEvent('eco-hr-updated', { detail: hrEmployee }));
-      window.dispatchEvent(new CustomEvent('eco-insurance-updated'));
+    if (isConvertToOffer) {
+      createdOffer = await this.createOrUpdateOfferFromCandidate(savedCand, enrichedForm);
     }
 
-    return { refNumber, candidate: savedCand, employeeCode, hrEmployee };
+    window.dispatchEvent(new CustomEvent('eco-ats-updated'));
+
+    return { refNumber, candidate: savedCand, offer: createdOffer };
+  }
+
+  public async convertCandidateWithApplicationToOffer(
+    candidateId: string,
+    updatedForm: TarabotApplicationForm,
+    actorName = 'مدير الموارد البشرية'
+  ): Promise<{ candidate: Candidate; offer: JobOffer }> {
+    const all = await this.getCandidates('all');
+    const cand = all.find((c) => c.id === candidateId);
+    if (!cand) throw new Error('ملف المرشح غير موجود');
+
+    cand.applicationForm = updatedForm;
+    cand.name = updatedForm.fullName || cand.name;
+    cand.phone = updatedForm.mobilePhone || cand.phone;
+    cand.nationalId = updatedForm.nationalId || cand.nationalId;
+    cand.location = updatedForm.residenceAddress || cand.location;
+    cand.jobTitle = updatedForm.positionAppliedFor || cand.jobTitle;
+    cand.jobDepartment = updatedForm.department || cand.jobDepartment;
+    cand.companyName = updatedForm.companyName || cand.companyName;
+    cand.stage = 'job_offer';
+    cand.status = 'active';
+    cand.expectedSalary = updatedForm.agreedSalary || cand.expectedSalary;
+    cand.updatedAt = new Date().toISOString();
+    cand.activities = cand.activities || [];
+    cand.activities.unshift({
+      id: `act_${Date.now()}`,
+      type: 'offer_created',
+      title: 'تحويل إلى مرحلة العرض الوظيفي (ص2)',
+      titleEn: 'Converted to Job Offer',
+      description: `تم إعداد العرض الوظيفي لبدء العمل من ${updatedForm.hiringStartDate || '-'} براتب ${
+        updatedForm.agreedSalary?.toLocaleString() || '-'
+      } ج.م بانتظار توقيع المرشح`,
+      performedBy: actorName,
+      timestamp: new Date().toISOString().replace('T', ' ').substring(0, 16),
+    });
+
+    const savedCand = await this.saveCandidate(cand);
+    const offer = await this.createOrUpdateOfferFromCandidate(savedCand, updatedForm);
+    window.dispatchEvent(new CustomEvent('eco-ats-updated'));
+
+    return { candidate: savedCand, offer };
   }
 
   public async convertCandidateWithApplicationToEmployee(
     candidateId: string,
     updatedForm: TarabotApplicationForm,
     actorName = 'مدير الموارد البشرية'
-  ): Promise<{ employeeCode: string; hrEmployee: Employee; insEmployee: InsuredEmployeeRecord }> {
-    const all = this.readLocal<Candidate[]>(STORAGE_KEYS.CANDIDATES, []);
-    const cand = all.find((c) => c.id === candidateId);
-    if (!cand) throw new Error('ملف المرشح غير موجود');
-
-    const result = await this._createEmployeeFromTarabotForm(updatedForm, {
-      companyId: cand.companyId,
-      companyName: cand.companyName,
-      actorName,
-    });
-
-    cand.applicationForm = updatedForm;
-    cand.stage = 'hired';
-    cand.status = 'hired';
-    cand.coreHREmployeeCode = result.employeeCode;
-    cand.expectedSalary = updatedForm.agreedSalary || cand.expectedSalary;
-    cand.updatedAt = new Date().toISOString();
-    cand.activities = cand.activities || [];
-    cand.activities.unshift({
-      id: `act_${Date.now()}`,
-      type: 'synced_hr',
-      title: `اعتماد الصفحة الثانية وتحويل الموظف (${result.employeeCode})`,
-      titleEn: 'Page 2 Approved & Synced to Core HR',
-      description: `تم اعتماد التعيين بدءاً من ${updatedForm.hiringStartDate || '-'} براتب ${
-        updatedForm.agreedSalary?.toLocaleString() || '-'
-      } ج.م وتوليد الكود الوظيفي ${result.employeeCode}`,
-      performedBy: actorName,
-      timestamp: new Date().toISOString().replace('T', ' ').substring(0, 16),
-    });
-
-    await this.saveCandidate(cand);
-    window.dispatchEvent(new CustomEvent('eco-hr-updated', { detail: result.hrEmployee }));
-    window.dispatchEvent(new CustomEvent('eco-insurance-updated', { detail: result.insEmployee }));
-    window.dispatchEvent(new CustomEvent('eco-ats-updated'));
-
-    return result;
+  ): Promise<{ candidate: Candidate; offer: JobOffer }> {
+    return this.convertCandidateWithApplicationToOffer(candidateId, updatedForm, actorName);
   }
 }
 

@@ -18,6 +18,8 @@ import {
   ChevronRight,
   CheckCircle2,
   RotateCcw,
+  MessageCircle,
+  Link2,
 } from 'lucide-react';
 import { useLanguage } from '../../../context/LanguageContext';
 import { atsStorage } from '../../../services/atsStorage';
@@ -251,13 +253,16 @@ export const ATSPipelineTab: React.FC<ATSPipelineTabProps> = ({ companyId }) => 
                     <div className="flex items-center gap-2">
                       <span
                         className="w-2.5 h-2.5 rounded-full"
-                        style={{ backgroundColor: stage.color }}
+                        style={{
+                          backgroundColor: stage.color,
+                          boxShadow: `0 0 8px ${stage.color}`,
+                        }}
                       />
-                      <span className="text-xs font-bold text-[#142319] dark:text-[#E8F3EB]">
+                      <span className="text-xs font-bold text-[#142319] dark:text-[#F3EFE6]">
                         {stage.title}
                       </span>
                     </div>
-                    <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-white dark:bg-[#122318] border border-[#E0D9CB] dark:border-[#1D3324] text-[#5C665E] dark:text-[#97A69B]">
+                    <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-white dark:bg-[#122318] border border-[#E0D9CB] dark:border-[#1D3324] text-[#1A241C] dark:text-[#F3EFE6]">
                       {stageCandidates.length}
                     </span>
                   </div>
@@ -512,6 +517,46 @@ export const ATSPipelineTab: React.FC<ATSPipelineTabProps> = ({ companyId }) => 
                   </button>
                 </div>
               </div>
+
+              {/* Notify Candidate Bar (WhatsApp / Email / Tracking URL) */}
+              {(() => {
+                const notif = atsStorage.buildCandidateNotification(selectedCandidate);
+                return (
+                  <div className="p-3 rounded-xl bg-[#059669]/8 dark:bg-[#059669]/12 border border-[#059669]/25 flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-[11px] font-bold text-[#142319] dark:text-[#E8F3EB]">
+                      إخطار المتقدم بنتيجة المرحلة الحالية / رابط المتابعة:
+                    </span>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {notif.hasPhone && (
+                        <a
+                          href={notif.whatsappUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#25D366] hover:bg-[#1EBE5D] text-white text-[11px] font-bold transition-colors"
+                        >
+                          <MessageCircle className="w-3.5 h-3.5" />
+                          <span>واتساب</span>
+                        </a>
+                      )}
+                      <a
+                        href={notif.mailtoUrl}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[11px] font-bold transition-colors"
+                      >
+                        <Mail className="w-3.5 h-3.5" />
+                        <span>إيميل</span>
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => navigator.clipboard.writeText(notif.trackingUrl)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-[#E0D9CB] dark:border-[#1D3324] bg-white dark:bg-[#122318] hover:border-[#D99B26] text-[#142319] dark:text-[#E8F3EB] text-[11px] font-bold cursor-pointer"
+                      >
+                        <Link2 className="w-3.5 h-3.5 text-[#D99B26]" />
+                        <span>نسخ الرابط</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Resume Summary */}
               {selectedCandidate.parsedResume?.summary && (
