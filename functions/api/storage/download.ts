@@ -57,8 +57,8 @@ export const onRequestGet: PagesFunction = async (context) => {
     const asAttachment = url.searchParams.get('attachment') === 'true';
     const dispositionType = asAttachment ? 'attachment' : 'inline';
     headers.set('Content-Disposition', `${dispositionType}; filename*=UTF-8''${encodeURIComponent(fileName)}`);
-    headers.set('Cache-Control', 'public, max-age=86400');
-    headers.set('Access-Control-Allow-Origin', '*');
+    headers.set('Cache-Control', 'private, no-store');
+    headers.set('X-Content-Type-Options', 'nosniff');
 
     return new Response(object.body, {
       status: 200,

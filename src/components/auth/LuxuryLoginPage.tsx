@@ -205,12 +205,18 @@ export const LuxuryLoginPage: React.FC<LuxuryLoginPageProps> = ({ onSuccess }) =
         return;
       }
 
-      // Retrieve stored biometric credentials or fallback to active root admin
+      // Require real stored biometric credentials (zero hardcoded admin credential fallback)
       const stored = NativeBridge.getStoredBiometricCredentials();
-      const targetUser = stored?.username || emailOrUsername.trim() || 'admin@hrsup.com';
-      const targetPass = stored?.tokenOrPassword || 'MasterHR@2026';
+      if (!stored?.username || !stored?.tokenOrPassword) {
+        const msg = 'لا توجد بيانات بصمة محفوظة لهذا الجهاز. يرجى تسجيل الدخول يدوياً أولاً ثم تفعيل الدخول بالبصمة.';
+        setErrorMessage(msg);
+        toast.error(t('البصمة غير مفعّلة', 'Biometrics Not Enrolled'), msg);
+        NativeBridge.hapticNotification('error');
+        setIsVerifying(false);
+        return;
+      }
 
-      const result = await login(targetUser, targetPass, true);
+      const result = await login(stored.username, stored.tokenOrPassword, true);
       if (!result.success || !result.user) {
         const msg = 'خطأ في التحقق من بيانات البصمة المسجلة، يرجى إدخال كلمة المرور يدوياً.';
         setErrorMessage(msg);

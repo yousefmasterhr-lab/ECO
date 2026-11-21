@@ -1,67 +1,75 @@
-import { PagesFunction, D1Database } from '../_utils';
+import {
+  PagesFunction,
+  Env,
+  jsonResponse,
+  errorResponse,
+  handleOptions,
+  verifyPassword,
+  hashPassword,
+  createSessionToken,
+  resolveJwtSecret,
+} from '../_utils';
 
-export const onRequestOptions: PagesFunction = async () => {
-  return new Response(null, {
-    status: 204,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With'
-    }
-  });
+export const onRequestOptions: PagesFunction = async ({ request, env }) => {
+  return handleOptions(request, env);
 };
 
-export const onRequestPost: PagesFunction<{ DB: D1Database; JWT_SECRET?: string }> = async (context) => {
+export const onRequestPost: PagesFunction<Env> = async (context) => {
   const { request, env } = context;
 
-  // Set explicit JSON and CORS headers
-  const jsonHeaders = {
-    'Content-Type': 'application/json',
-    'Access-Control-Allow-Origin': '*'
-  };
-
   try {
-    const body = await request.json().catch(() => ({})) as any;
-    const identifier = (body.identifier || body.username || body.email || body.emailOrUsername || '').trim().toLowerCase();
-    const rawPassword = (body.password || '').trim();
+    const body = (await request.json().catch(() => ({}))) as any;
+    const identifier = String(body.identifier || body.username || body.email || body.emailOrUsername || '')
+      .trim()
+      .toLowerCase();
+    const rawPassword = String(body.password || '').trim();
 
     if (!identifier || !rawPassword) {
-      return new Response(JSON.stringify({ error: 'يرجى إدخال اسم المستخدم وكلمة المرور' }), { status: 400, headers: jsonHeaders });
+      return errorResponse('يرجى إدخال اسم المستخدم وكلمة المرور', 400, undefined, request, env);
     }
 
     if (!env.DB) {
-      return new Response(JSON.stringify({ error: 'قاعدة البيانات غير متصلة' }), { status: 500, headers: jsonHeaders });
+      return errorResponse('قاعدة البيانات غير متصلة', 500, undefined, request, env);
     }
 
-    // Query User by Username or Email (Case-insensitive)
-    const user = await env.DB.prepare(
-      `SELECT * FROM users WHERE (LOWER(username) = ? OR LOWER(email) = ?) AND is_active = 1 LIMIT 1`
-    ).bind(identifier, identifier).first() as any;
+    const jwtSecret = resolveJwtSecret(env, request.url);
+    if (!jwtSecret) {
+      return errorResponse('مفتاح توقيع الجلسات (JWT_SECRET) غير مهيأ على الخادم', 503, undefined, request, env);
+    }
 
+    // Explicit safe column projection + password_hash strictly for internal verification (never serialized)
+    const user: any = await env.DB.prepare(
+      `SELECT id, national_id, full_name, username, email, password_hash, role_id, department,
+              job_title, phone, clearance_level, is_active, permissions_json, allowed_company_ids
+       FROM users
+       WHERE (LOWER(username) = ? OR LOWER(email) = ?) AND is_active = 1
+       LIMIT 1`
+    )
+      .bind(identifier, identifier)
+      .first();
+
+    // Generic 401 prevents user enumeration and never leaks hashes or debug fields
     if (!user) {
-      return new Response(JSON.stringify({ error: 'اسم المستخدم غير مسجل بالمنظومة', debug: { searched: identifier } }), { status: 401, headers: jsonHeaders });
+      return errorResponse('بيانات الدخول غير صحيحة', 401, undefined, request, env);
     }
 
-    // Compute input SHA-256
-    const msgBuffer = new TextEncoder().encode(rawPassword);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-    const hashedInput = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
-
-    // Permissive matching for root seed and normal hashes
-    const isPasswordValid = 
-      (hashedInput.toLowerCase() === (user.password_hash || '').toLowerCase()) ||
-      (user.password_hash === rawPassword) ||
-      (rawPassword === 'admin123') ||
-      (hashedInput === '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9');
-
-    if (!isPasswordValid) {
-      return new Response(JSON.stringify({ 
-        error: 'كلمة المرور غير صحيحة',
-        debug: { inputHash: hashedInput, storedHash: user.password_hash }
-      }), { status: 401, headers: jsonHeaders });
+    const { valid, needsUpgrade } = await verifyPassword(rawPassword, user.password_hash);
+    if (!valid) {
+      return errorResponse('بيانات الدخول غير صحيحة', 401, undefined, request, env);
     }
 
-    // Parse real permissions and allowed companies from D1 row
+    // Transparently upgrade legacy unsalted SHA-256 or legacy plaintext hash to salted PBKDF2-SHA256
+    if (needsUpgrade) {
+      try {
+        const upgradedHash = await hashPassword(rawPassword);
+        await env.DB.prepare(`UPDATE users SET password_hash = ? WHERE id = ?`)
+          .bind(upgradedHash, user.id)
+          .run();
+      } catch (upgradeErr) {
+        console.warn('[Auth] Transparent password hash upgrade skipped:', upgradeErr);
+      }
+    }
+
     let perms: string[] = [];
     try {
       if (user.permissions_json) {
@@ -77,7 +85,10 @@ export const onRequestPost: PagesFunction<{ DB: D1Database; JWT_SECRET?: string 
     let allowedCompanies: string[] = ['all'];
     try {
       if (user.allowed_company_ids) {
-        allowedCompanies = typeof user.allowed_company_ids === 'string' ? JSON.parse(user.allowed_company_ids) : user.allowed_company_ids;
+        allowedCompanies =
+          typeof user.allowed_company_ids === 'string'
+            ? JSON.parse(user.allowed_company_ids)
+            : user.allowed_company_ids;
       }
     } catch {
       allowedCompanies = ['all'];
@@ -90,7 +101,7 @@ export const onRequestPost: PagesFunction<{ DB: D1Database; JWT_SECRET?: string 
       .replace(/\(HRMS\)|\(ATS\)|\(CTS\)|\(CFO\)|\(HRD\)|\(C-Suite\)/gi, '')
       .trim();
 
-    // Safe Token Generation without external crashes
+    // Explicit safe serializer — NEVER includes password_hash, password, or salt
     const sanitizedUser = {
       id: user.id,
       national_id: user.national_id,
@@ -102,7 +113,6 @@ export const onRequestPost: PagesFunction<{ DB: D1Database; JWT_SECRET?: string 
       clearance_level: user.clearance_level,
       job_title: cleanJobTitle,
       phone: user.phone,
-      // camelCase compatibility
       nationalId: user.national_id,
       fullName: user.full_name,
       nameAr: user.full_name,
@@ -114,27 +124,33 @@ export const onRequestPost: PagesFunction<{ DB: D1Database; JWT_SECRET?: string 
       clearanceLevel: user.clearance_level,
       permissions: perms,
       allowedCompanyIds: allowedCompanies,
-      isActive: Boolean(user.is_active)
+      isActive: Boolean(user.is_active),
     };
 
-    const tokenPayload = btoa(JSON.stringify({ sub: user.id, exp: Date.now() + 86400000 }));
+    const token = await createSessionToken(
+      {
+        sub: user.id,
+        id: user.id,
+        role: user.role_id,
+        username: user.username,
+        email: user.email,
+      },
+      jwtSecret
+    );
 
-    return new Response(JSON.stringify({
-      success: true,
-      token: tokenPayload,
-      user: sanitizedUser
-    }), {
-      status: 200,
-      headers: jsonHeaders
-    });
-
+    return jsonResponse(
+      {
+        success: true,
+        token,
+        user: sanitizedUser,
+      },
+      200,
+      { 'Cache-Control': 'no-store' },
+      request,
+      env
+    );
   } catch (err: any) {
-    return new Response(JSON.stringify({ 
-      error: 'خطأ أثناء المعالجة في الخادم', 
-      details: err?.message || String(err) 
-    }), { 
-      status: 500, 
-      headers: jsonHeaders 
-    });
+    console.error('[Auth Login Error]:', err);
+    return errorResponse('خطأ أثناء المعالجة في الخادم', 500, undefined, request, env);
   }
 };

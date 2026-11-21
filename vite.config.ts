@@ -238,7 +238,7 @@ function sqlServerBridgePlugin() {
           try {
             const body = await parseBody(req);
             const bridge = getBridge();
-            const result = bridge.saveJournal(body);
+            const result = await bridge.saveJournal(body, targetDb);
             res.setHeader('Content-Type', 'application/json');
             res.end(JSON.stringify(result));
           } catch (err: any) {

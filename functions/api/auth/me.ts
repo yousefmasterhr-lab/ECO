@@ -3,11 +3,12 @@ import {
   jsonResponse,
   errorResponse,
   handleOptions,
+  resolveJwtSecret,
   verifySessionToken,
 } from '../_utils';
 
-export const onRequestOptions: PagesFunction = async () => {
-  return handleOptions();
+export const onRequestOptions: PagesFunction = async ({ request, env }) => {
+  return handleOptions(request, env);
 };
 
 export const onRequestGet: PagesFunction = async (context) => {
@@ -16,31 +17,42 @@ export const onRequestGet: PagesFunction = async (context) => {
 
     const authHeader = request.headers.get('Authorization') || '';
     if (!authHeader.startsWith('Bearer ')) {
-      return errorResponse('رمز المصادقة مفقود (Authorization header missing)', 401);
+      return errorResponse('رمز المصادقة مفقود (Authorization header missing)', 401, undefined, request, env);
+    }
+
+    const jwtSecret = resolveJwtSecret(env, request.url);
+    if (!jwtSecret) {
+      return errorResponse('مفتاح توقيع الجلسات غير مهيأ على الخادم', 503, undefined, request, env);
     }
 
     const token = authHeader.substring(7).trim();
-    const payload = await verifySessionToken(token, env.JWT_SECRET);
+    const payload = await verifySessionToken(token, jwtSecret);
+    const userId = payload?.sub || payload?.id;
 
-    if (!payload || !payload.id) {
-      return errorResponse('رمز المصادقة غير صالح أو منتهي الصلاحية', 401);
+    if (!payload || !userId) {
+      return errorResponse('رمز المصادقة غير صالح أو منتهي الصلاحية', 401, undefined, request, env);
     }
 
     if (!env.DB) {
-      // If DB is offline but token is valid, return payload data
       return jsonResponse({
         success: true,
-        user: payload,
-      });
+        user: {
+          id: userId,
+          sub: userId,
+          role: payload.role,
+          username: payload.username,
+          email: payload.email,
+        },
+      }, 200, { 'Cache-Control': 'no-store' }, request, env);
     }
 
-    // Refresh user state from D1 database
+    // Refresh user state from D1 database (explicit safe column projection — zero password_hash)
     const user: any = await env.DB.prepare(
       `SELECT id, national_id, full_name, username, email, role_id, department, job_title, phone, clearance_level, is_active, permissions_json, allowed_company_ids, created_at
        FROM users
        WHERE id = ?
        LIMIT 1`
-    ).bind(payload.id).first();
+    ).bind(userId).first();
 
     if (!user || user.is_active !== 1) {
       return errorResponse('الحساب غير موجود أو تم تعطيله', 403);

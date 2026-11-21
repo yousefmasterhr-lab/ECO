@@ -3,7 +3,7 @@ import {
   jsonResponse,
   errorResponse,
   handleOptions,
-  sha256Hex,
+  hashPassword,
 } from './_utils';
 
 export const onRequestOptions: PagesFunction = async () => {
@@ -375,8 +375,8 @@ export const onRequestPost: PagesFunction = async (context) => {
       }
     }
 
-    // Hash Password
-    const passwordHash = await sha256Hex(password);
+    // Hash Password (Salted PBKDF2-SHA256)
+    const passwordHash = await hashPassword(password);
     const newUserId = body.id || ('usr_' + crypto.randomUUID());
     const storedNationalId = nationalId || ('NID_UNSET_' + newUserId);
 
@@ -488,7 +488,10 @@ export const onRequestPut: PagesFunction = async (context) => {
       const fullName = body.fullName || body.nameAr || 'مستخدم جديد';
       const username = body.username || `user_${Date.now()}`;
       const email = body.email || `${username}@hrsup.com`;
-      const pwd = body.password ? await sha256Hex(body.password) : 'admin123';
+      if (!body.password || String(body.password).length < 6) {
+        return errorResponse('كلمة المرور مطلوبة (6 أحرف على الأقل) عند إنشاء مستخدم جديد', 400);
+      }
+      const pwd = await hashPassword(String(body.password));
       const roleId = body.roleId || body.role || 'HR_MANAGER';
       const department = body.department || body.departmentAr || 'الإدارة';
       const jobTitle = body.jobTitleAr || body.job_title || roleId;
@@ -562,7 +565,10 @@ export const onRequestPut: PagesFunction = async (context) => {
     }
 
     if (body.password) {
-      const newHash = await sha256Hex(body.password);
+      if (String(body.password).length < 6) {
+        return errorResponse('كلمة المرور يجب ألا تقل عن 6 أحرف', 400);
+      }
+      const newHash = await hashPassword(String(body.password));
       queryParams.push(newHash);
       passwordClause = ', password_hash = ?';
     }

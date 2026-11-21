@@ -104,24 +104,16 @@ class HRStorageService {
   }
 
   /**
-   * Ensures any legacy v1 or pre-overhaul cached HR data is completely wiped once
-   * so the re-architected Egyptian HR module starts cleanly with 0 placeholder records.
+   * Removes deprecated v1 browser-only localStorage keys.
+   * Data-Safety Invariant (RULE-005): NEVER purge v2 records or invoke /api/hr/purge on startup.
    */
   private ensureInitialCleanPurge() {
     if (typeof window === 'undefined') return;
     try {
       LEGACY_V1_KEYS.forEach((key) => localStorage.removeItem(key));
-
-      if (!localStorage.getItem(STORAGE_KEYS.PURGE_FLAG)) {
-        Object.values(STORAGE_KEYS).forEach((key) => {
-          if (key !== STORAGE_KEYS.PURGE_FLAG && key !== STORAGE_KEYS.SETTINGS) {
-            localStorage.removeItem(key);
-          }
-        });
-        localStorage.setItem(STORAGE_KEYS.PURGE_FLAG, 'true');
-        fetch('/api/hr/purge', { method: 'POST' }).catch(() => {});
-      }
-    } catch {}
+    } catch (err) {
+      console.warn('[HRStorage] Failed to clear legacy v1 localStorage keys:', err);
+    }
   }
 
   private loadFromLocalStorage() {
@@ -178,34 +170,10 @@ class HRStorageService {
   }
 
   /**
-   * تفريغ وتصفير موديول الموارد البشرية بالكامل (ذاكرة + المتصفح + قاعدة البيانات)
+   * Hard-blocked per RULE-005 / Core Law #9: client-triggered full HR data wipe is permanently disabled.
    */
   public async purgeAllHRData(): Promise<void> {
-    this.employees = [];
-    this.contracts = [];
-    this.attendance = [];
-    this.leaves = [];
-    this.advances = [];
-    this.candidates = [];
-    this.custodyItems = [];
-
-    if (typeof window !== 'undefined') {
-      try {
-        LEGACY_V1_KEYS.forEach((key) => localStorage.removeItem(key));
-        Object.values(STORAGE_KEYS).forEach((key) => {
-          if (key !== STORAGE_KEYS.PURGE_FLAG && key !== STORAGE_KEYS.SETTINGS) {
-            localStorage.removeItem(key);
-          }
-        });
-        localStorage.setItem(STORAGE_KEYS.PURGE_FLAG, 'true');
-      } catch {}
-
-      try {
-        await fetch('/api/hr/purge', { method: 'POST' });
-      } catch {}
-    }
-
-    this.notify();
+    throw new Error('تم تعطيل المسح الجماعي لبيانات الموارد البشرية لحماية بيانات الإنتاج (RULE-005).');
   }
 
   /**
@@ -345,11 +313,19 @@ class HRStorageService {
     this.persistLocal();
     this.notify();
 
-    fetch('/api/hr/attendance', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(record),
-    }).catch(() => {});
+    try {
+      const res = await fetch('/api/hr/attendance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(record),
+      });
+      if (!res.ok) {
+        const errBody = await res.text().catch(() => '');
+        console.error(`[HRStorage] Failed to persist attendance (${res.status}):`, errBody);
+      }
+    } catch (err) {
+      console.error('[HRStorage] Network error persisting attendance:', err);
+    }
   }
 
   // --- Leaves ---
@@ -367,11 +343,19 @@ class HRStorageService {
     this.persistLocal();
     this.notify();
 
-    fetch('/api/hr/leaves', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(request),
-    }).catch(() => {});
+    try {
+      const res = await fetch('/api/hr/leaves', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(request),
+      });
+      if (!res.ok) {
+        const errBody = await res.text().catch(() => '');
+        console.error(`[HRStorage] Failed to persist leave (${res.status}):`, errBody);
+      }
+    } catch (err) {
+      console.error('[HRStorage] Network error persisting leave:', err);
+    }
   }
 
   // --- Loans & Advances ---

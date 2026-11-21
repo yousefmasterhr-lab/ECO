@@ -806,7 +806,7 @@ export const HRProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     showToast(`تم إرسال أمر إعادة تعيين البصمة للموظف: ${emp.nameAr} لأجهزة الموقع بنجاح`);
   };
 
-  // Punch Attendance
+  // Punch Attendance (computed synchronously before setState to avoid React 18 deferred updater null reads)
   const punchAttendance = (employeeId: string, status: AttendanceStatus, location?: string) => {
     const emp = employees.find(e => e.id === employeeId);
     if (!emp) return;
@@ -814,14 +814,10 @@ export const HRProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     const todayStr = new Date().toISOString().slice(0, 10);
     const nowTime = new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
 
-    let recordToSave: AttendanceRecord | null = null;
-    setAttendanceRecords(prev => {
-      const existing = prev.find(a => a.employeeId === employeeId && a.date === todayStr);
-      if (existing) {
-        recordToSave = { ...existing, status, checkOut: nowTime, note: location };
-        return prev.map(a => (a.id === existing.id ? recordToSave! : a));
-      } else {
-        recordToSave = {
+    const existing = attendanceRecords.find(a => a.employeeId === employeeId && a.date === todayStr);
+    const recordToSave: AttendanceRecord = existing
+      ? { ...existing, status, checkOut: nowTime, note: location }
+      : {
           id: `ATT-${Date.now()}`,
           employeeId,
           employeeName: emp.nameAr,
@@ -830,13 +826,12 @@ export const HRProvider: React.FC<{ children: React.ReactNode }> = ({ children }
           status,
           workLocation: location || emp.workLocation,
         };
-        return [recordToSave, ...prev];
-      }
-    });
 
-    if (recordToSave) {
-      hrStorage.saveAttendance(recordToSave);
-    }
+    setAttendanceRecords(prev => {
+      const idx = prev.findIndex(a => a.id === recordToSave.id);
+      return idx >= 0 ? prev.map(a => (a.id === recordToSave.id ? recordToSave : a)) : [recordToSave, ...prev];
+    });
+    hrStorage.saveAttendance(recordToSave);
 
     const labelMap = {
       present: 'حاضر',
@@ -860,14 +855,17 @@ export const HRProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     showToast(`تم تقديم طلب الإجازة بنجاح: ${req.employeeName}`);
   };
 
-  // Update Leave Status
+  // Update Leave Status (computed synchronously before setState — zero side effects inside updater)
   const updateLeaveStatus = (id: string, status: LeaveStatus) => {
-    setLeaveRequests(prev => {
-      const updatedList = prev.map(l => (l.id === id ? { ...l, status, approvedBy: 'إدارة الموارد البشرية' } : l));
-      const target = updatedList.find(l => l.id === id);
-      if (target) hrStorage.saveLeave(target);
-      return updatedList;
-    });
+    const currentTarget = leaveRequests.find(l => l.id === id);
+    if (!currentTarget) return;
+    const updatedTarget: LeaveRequest = {
+      ...currentTarget,
+      status,
+      approvedBy: 'إدارة الموارد البشرية',
+    };
+    setLeaveRequests(prev => prev.map(l => (l.id === id ? updatedTarget : l)));
+    hrStorage.saveLeave(updatedTarget);
     showToast(`تم تحديث حالة الإجازة: ${status === 'approved' ? 'معتمدة' : 'مرفوضة'}`);
   };
 

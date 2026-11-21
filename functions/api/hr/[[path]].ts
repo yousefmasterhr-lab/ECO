@@ -192,7 +192,7 @@ export const onRequestGet: PagesFunction = async (context) => {
           env.DB.prepare('SELECT count(*) as count FROM hr_employees').first(),
           env.DB.prepare('SELECT count(*) as count FROM hr_contracts').first(),
           env.DB.prepare('SELECT count(*) as count FROM hr_loans WHERE status = "نشطة"').first(),
-          env.DB.prepare('SELECT count(*) as count FROM hr_leaves WHERE status = "قيد المراجعة"').first(),
+          env.DB.prepare("SELECT count(*) as count FROM hr_leaves WHERE status IN ('pending', 'قيد المراجعة')").first(),
         ]);
         return jsonResponse({
           success: true,
@@ -376,6 +376,17 @@ export const onRequestPost: PagesFunction = async (context) => {
         await env.DB.prepare(`
           INSERT INTO hr_attendance (id, employee_id, company_id, date, check_in, check_out, work_hours, late_minutes, overtime_hours, status, notes)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ON CONFLICT(id) DO UPDATE SET
+            employee_id = excluded.employee_id,
+            company_id = excluded.company_id,
+            date = excluded.date,
+            check_in = excluded.check_in,
+            check_out = excluded.check_out,
+            work_hours = excluded.work_hours,
+            late_minutes = excluded.late_minutes,
+            overtime_hours = excluded.overtime_hours,
+            status = excluded.status,
+            notes = excluded.notes
         `).bind(
           id,
           body.employeeId || body.employee_id,
@@ -386,8 +397,8 @@ export const onRequestPost: PagesFunction = async (context) => {
           Number(body.workHours || body.work_hours || 0),
           Number(body.lateMinutes || body.late_minutes || 0),
           Number(body.overtimeHours || body.overtime_hours || 0),
-          body.status || 'حاضر',
-          body.notes || ''
+          body.status || 'present',
+          body.notes ?? body.note ?? ''
         ).run();
 
         return jsonResponse({ success: true, id, message: 'تم تسجيل الحضور بنجاح' });
@@ -398,17 +409,28 @@ export const onRequestPost: PagesFunction = async (context) => {
         await env.DB.prepare(`
           INSERT INTO hr_leaves (id, employee_id, company_id, leave_type, start_date, end_date, days_count, reason, attachment_data, status, approved_by)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ON CONFLICT(id) DO UPDATE SET
+            employee_id = excluded.employee_id,
+            company_id = excluded.company_id,
+            leave_type = excluded.leave_type,
+            start_date = excluded.start_date,
+            end_date = excluded.end_date,
+            days_count = excluded.days_count,
+            reason = excluded.reason,
+            attachment_data = excluded.attachment_data,
+            status = excluded.status,
+            approved_by = excluded.approved_by
         `).bind(
           id,
           body.employeeId || body.employee_id,
           body.companyId || body.company_id || '',
-          body.leaveType || body.leave_type || 'اعتيادية',
+          body.leaveType || body.leave_type || body.type || 'annual',
           body.startDate || body.start_date,
           body.endDate || body.end_date,
           Number(body.daysCount || body.days_count || 1),
           body.reason || '',
           body.attachmentData || body.attachment_data || '',
-          body.status || 'معتمد',
+          body.status || 'pending',
           body.approvedBy || body.approved_by || ''
         ).run();
 
@@ -512,16 +534,8 @@ export const onRequestPost: PagesFunction = async (context) => {
       }
 
       case 'purge': {
-        await env.DB.batch([
-          env.DB.prepare('DELETE FROM hr_payroll_runs'),
-          env.DB.prepare('DELETE FROM hr_rewards_penalties'),
-          env.DB.prepare('DELETE FROM hr_loans'),
-          env.DB.prepare('DELETE FROM hr_leaves'),
-          env.DB.prepare('DELETE FROM hr_attendance'),
-          env.DB.prepare('DELETE FROM hr_contracts'),
-          env.DB.prepare('DELETE FROM hr_employees'),
-        ]);
-        return jsonResponse({ success: true, purged: true, message: 'تم تفريغ وتصفير جميع جداول الموارد البشرية بنجاح' });
+        // Hard-blocked per RULE-005 / Core Law #9: never permit an app request to wipe production HR tables
+        return errorResponse('تم تعطيل مسار المسح الجماعي (/api/hr/purge) نهائياً لحماية بيانات الموارد البشرية', 403);
       }
 
       default:
@@ -545,16 +559,8 @@ export const onRequestDelete: PagesFunction = async (context) => {
     const { resource, id } = parsePath(context);
 
     if (resource === 'purge') {
-      await env.DB.batch([
-        env.DB.prepare('DELETE FROM hr_payroll_runs'),
-        env.DB.prepare('DELETE FROM hr_rewards_penalties'),
-        env.DB.prepare('DELETE FROM hr_loans'),
-        env.DB.prepare('DELETE FROM hr_leaves'),
-        env.DB.prepare('DELETE FROM hr_attendance'),
-        env.DB.prepare('DELETE FROM hr_contracts'),
-        env.DB.prepare('DELETE FROM hr_employees'),
-      ]);
-      return jsonResponse({ success: true, purged: true, message: 'تم تفريغ وتصفير جميع جداول الموارد البشرية بنجاح' });
+      // Hard-blocked per RULE-005 / Core Law #9: never permit an app request to wipe production HR tables
+      return errorResponse('تم تعطيل مسار المسح الجماعي (/api/hr/purge) نهائياً لحماية بيانات الموارد البشرية', 403);
     }
 
     if (!id) return errorResponse('معرف السجل مطلوب للحذف', 400);

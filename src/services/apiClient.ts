@@ -85,7 +85,11 @@ export const setApiBaseUrl = (url: string): void => {
  * These routes run at Cloudflare Edge and must remain strictly decoupled from the local SQL Server bridge.
  */
 export const isCloudflareEdgeRoute = (endpoint: string): boolean => {
-  const clean = endpoint.toLowerCase().replace(/^\/+/, '');
+  const clean = endpoint
+    .toLowerCase()
+    .replace(/^https?:\/\/[^/]+/, '')
+    .split('?')[0]
+    .replace(/^\/+/, '');
   return (
     clean.startsWith('api/auth') ||
     clean.startsWith('api/users') ||
@@ -104,6 +108,9 @@ export const isCloudflareEdgeRoute = (endpoint: string): boolean => {
     clean.startsWith('api/departments') ||
     clean.startsWith('api/authorized-persons') ||
     clean.startsWith('api/hr') ||
+    clean.startsWith('api/ats') ||
+    clean.startsWith('api/cts') ||
+    clean.startsWith('api/automation') ||
     clean.startsWith('api/reception') ||
     clean.startsWith('api/insurance')
   );
@@ -136,6 +143,16 @@ export const isUserAuthenticated = (): boolean => {
     return Boolean(session || token);
   } catch {
     return false;
+  }
+};
+
+const notifyAuthExpired = (endpoint: string) => {
+  if (typeof window === 'undefined') return;
+  if (endpoint.includes('/api/auth/login')) return;
+  try {
+    window.dispatchEvent(new CustomEvent('eco-auth-expired', { detail: { endpoint } }));
+  } catch {
+    // Ignore non-browser environments
   }
 };
 
@@ -175,20 +192,7 @@ export async function apiRequest<T = any>(
 
   // Guard Financial & System Queries: Do NOT ping https://datatest.hrsup.com while on /login or unauthenticated (unless it's an edge or system hub route)
   if (!isEdge && !isSystemHubRoute(cleanEndpoint) && !isUserAuthenticated()) {
-    return Promise.resolve({
-      connected: false,
-      isFailSafe: true,
-      data: [],
-      accounts: [],
-      costCenters: [],
-      databases: [],
-      vouchers: [],
-      cheques: [],
-      journals: [],
-      items: [],
-      clients: [],
-      suppliers: [],
-    } as unknown as T);
+    return Promise.reject(new Error('Authentication required before calling accounting bridge endpoints'));
   }
 
   const targetUrl = endpoint.startsWith('http')
@@ -204,6 +208,9 @@ export async function apiRequest<T = any>(
     });
 
     if (!response.ok) {
+      if (response.status === 401) {
+        notifyAuthExpired(cleanEndpoint);
+      }
       // If 502/503/504 Bad Gateway from tunnel during temporary reconnect, retry once
       if (retries > 0 && [502, 503, 504].includes(response.status)) {
         await new Promise(resolve => setTimeout(resolve, 800));
@@ -259,13 +266,12 @@ export function setupFetchInterceptor(): void {
       // Guard Financial & System Queries: Do NOT ping https://datatest.hrsup.com while on /login or unauthenticated (unless it's an edge or system hub route)
       if (!isEdge && !isSystemHubRoute(cleanUrl) && !isUserAuthenticated()) {
         return new Response(JSON.stringify({
-          success: true,
-          data: [],
+          success: false,
+          error: 'Authentication required before calling accounting bridge endpoints',
           unauthenticated: true,
-          isFailSafe: true,
           connected: false,
         }), {
-          status: 200,
+          status: 401,
           headers: { 'Content-Type': 'application/json' },
         });
       }
@@ -306,6 +312,9 @@ export function setupFetchInterceptor(): void {
 
       try {
         const res = await originalFetch.call(this, urlString, init);
+        if (res.status === 401) {
+          notifyAuthExpired(cleanUrl);
+        }
         // Handle transient 502/503/504 from Cloudflare Tunnel reconnection
         if ([502, 503, 504].includes(res.status)) {
           await new Promise(r => setTimeout(r, 600));
@@ -325,13 +334,12 @@ export function setupFetchInterceptor(): void {
       const isEdge = isCloudflareEdgeRoute(urlString);
       if (!isEdge && !isSystemHubRoute(urlString) && !isUserAuthenticated()) {
         return new Response(JSON.stringify({
-          success: true,
-          data: [],
+          success: false,
+          error: 'Authentication required before calling accounting bridge endpoints',
           unauthenticated: true,
-          isFailSafe: true,
           connected: false,
         }), {
-          status: 200,
+          status: 401,
           headers: { 'Content-Type': 'application/json' },
         });
       }
@@ -356,11 +364,19 @@ export function setupFetchInterceptor(): void {
       if (!headers.has('Accept')) {
         headers.set('Accept', 'application/json');
       }
+      const sessionToken = localStorage.getItem('eco_session_token') || sessionStorage.getItem('eco_session_token');
+      if (sessionToken && !headers.has('Authorization')) {
+        headers.set('Authorization', `Bearer ${sessionToken}`);
+      }
       init = {
         ...init,
         headers,
       };
-      return originalFetch.call(this, urlString, init);
+      const res = await originalFetch.call(this, urlString, init);
+      if (res.status === 401) {
+        notifyAuthExpired(urlString);
+      }
+      return res;
     }
 
     return originalFetch.call(this, input, init);

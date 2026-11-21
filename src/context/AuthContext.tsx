@@ -1160,6 +1160,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     navigate('/login');
   }, [user, logAuditEvent, navigate]);
 
+  // Handle backend HTTP 401 session expiration events cleanly (re-login without silent failure)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleAuthExpired = () => {
+      const hasSession =
+        localStorage.getItem('eco_session_token') ||
+        sessionStorage.getItem('eco_session_token') ||
+        localStorage.getItem(STORAGE_KEY_AUTH) ||
+        sessionStorage.getItem(STORAGE_KEY_AUTH);
+      if (!hasSession) return;
+      clearSessionToken();
+      localStorage.removeItem(STORAGE_KEY_AUTH);
+      sessionStorage.removeItem(STORAGE_KEY_AUTH);
+      setUser(null);
+      setShowWelcomeSplash(false);
+      if (window.location.pathname !== '/login') {
+        navigate('/login');
+      }
+    };
+    window.addEventListener('eco-auth-expired', handleAuthExpired);
+    return () => window.removeEventListener('eco-auth-expired', handleAuthExpired);
+  }, [navigate]);
+
   const switchUserRole = useCallback(
     (role: UserRole) => {
       const seed = PRECONFIGURED_SEED_USERS.find(acc => acc.user.role === role);

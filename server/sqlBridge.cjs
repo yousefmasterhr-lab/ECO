@@ -6,9 +6,13 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error('[CRITICAL] Unhandled Rejection at:', promise, 'reason:', reason);
 });
 
-// Keep Event Loop Running even if background tasks or timers are idle
-setInterval(() => {}, 1000 * 60 * 60);
+// Keep Event Loop Running in server mode without blocking test runners
+const keepAliveTimer = setInterval(() => {}, 1000 * 60 * 60);
+if (process.env.SQL_BRIDGE_NO_LISTEN === '1' && typeof keepAliveTimer.unref === 'function') {
+  keepAliveTimer.unref();
+}
 
+const crypto = require('crypto');
 const { execFile } = require('child_process');
 const path = require('path');
 const fs = require('fs');
@@ -19,32 +23,182 @@ const sql = require('mssql');
 
 const app = express();
 
-// Robust Reflective CORS Middleware
-app.use((req, res, next) => {
-  const origin = req.headers.origin || '*';
-  res.setHeader('Access-Control-Allow-Origin', origin);
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-  
-  // Dynamically mirror requested headers or allow all
-  const requestedHeaders = req.headers['access-control-request-headers'] || '*';
-  res.setHeader('Access-Control-Allow-Headers', requestedHeaders);
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Max-Age', '86400'); // Cache preflight for 24h
+// ============================================================================
+// Security Hardening (P0-B): Strict CORS Allowlist, HS256 JWT & Bridge Secret
+// ============================================================================
+const DEFAULT_PRODUCTION_ORIGINS = [
+  'https://eco.hrsup.com',
+  'https://erp.hrsup.com',
+  'https://hrsup.com',
+];
 
-  // Immediately respond to preflight OPTIONS requests with 200 OK
+const DEV_LOCALHOST_REGEX = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d{2,5})?$/i;
+
+function getAllowedOrigins() {
+  const configured = String(process.env.ALLOWED_ORIGINS || '')
+    .split(',')
+    .map((o) => o.trim().replace(/\/+$/, ''))
+    .filter((o) => Boolean(o) && o !== '*');
+  return configured.length > 0 ? configured : DEFAULT_PRODUCTION_ORIGINS;
+}
+
+function isProductionEnv() {
+  return String(process.env.NODE_ENV || '').toLowerCase() === 'production';
+}
+
+function isOriginAllowed(origin) {
+  if (!origin || typeof origin !== 'string') return false;
+  const clean = origin.trim().replace(/\/+$/, '');
+  if (!clean || clean === 'null') return false;
+  if (getAllowedOrigins().includes(clean)) return true;
+  if (!isProductionEnv() && DEV_LOCALHOST_REGEX.test(clean)) return true;
+  return false;
+}
+
+function timingSafeCompareStrings(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string' || a.length === 0 || b.length === 0) {
+    return false;
+  }
+  const bufA = Buffer.from(a, 'utf8');
+  const bufB = Buffer.from(b, 'utf8');
+  if (bufA.length !== bufB.length) {
+    // Burn comparable time before returning false
+    crypto.timingSafeEqual(bufA, bufA);
+    return false;
+  }
+  return crypto.timingSafeEqual(bufA, bufB);
+}
+
+const DEV_FALLBACK_JWT_SECRET = 'eco-erp-local-dev-jwt-secret-set-JWT_SECRET-in-production-env';
+
+function resolveBridgeJwtSecret() {
+  const raw = String(process.env.JWT_SECRET || '').trim();
+  if (raw.length >= 16) return raw;
+  if (isProductionEnv()) return null; // Fail closed in production
+  return DEV_FALLBACK_JWT_SECRET;
+}
+
+function base64UrlEncode(input) {
+  const buf = Buffer.isBuffer(input) ? input : Buffer.from(String(input), 'utf8');
+  return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+function base64UrlDecodeToBuffer(str) {
+  if (typeof str !== 'string' || !/^[A-Za-z0-9_-]+$/.test(str)) return null;
+  const padded = str.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - (str.length % 4)) % 4);
+  try {
+    return Buffer.from(padded, 'base64');
+  } catch {
+    return null;
+  }
+}
+
+function createJwtNode(payload, secret, ttlSeconds = 86400) {
+  if (!secret || typeof secret !== 'string' || secret.length < 16) {
+    throw new Error('JWT_SECRET is not configured');
+  }
+  const nowSec = Math.floor(Date.now() / 1000);
+  const fullPayload = {
+    ...payload,
+    sub: String(payload.sub || payload.id || ''),
+    role: String(payload.role || '').toUpperCase(),
+    iat: typeof payload.iat === 'number' ? payload.iat : nowSec,
+    exp: typeof payload.exp === 'number' ? payload.exp : nowSec + ttlSeconds,
+  };
+  const headerB64 = base64UrlEncode(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+  const payloadB64 = base64UrlEncode(JSON.stringify(fullPayload));
+  const signingInput = `${headerB64}.${payloadB64}`;
+  const sig = crypto.createHmac('sha256', secret).update(signingInput).digest();
+  return `${signingInput}.${base64UrlEncode(sig)}`;
+}
+
+function verifyJwtNode(token, secret) {
+  if (!token || typeof token !== 'string' || !secret || typeof secret !== 'string') return null;
+  const parts = token.trim().split('.');
+  if (parts.length !== 3) return null;
+  const [headerB64, payloadB64, sigB64] = parts;
+  if (!headerB64 || !payloadB64 || !sigB64) return null;
+
+  const headerBuf = base64UrlDecodeToBuffer(headerB64);
+  const payloadBuf = base64UrlDecodeToBuffer(payloadB64);
+  const providedSig = base64UrlDecodeToBuffer(sigB64);
+  if (!headerBuf || !payloadBuf || !providedSig) return null;
+
+  let header;
+  let payload;
+  try {
+    header = JSON.parse(headerBuf.toString('utf8'));
+    payload = JSON.parse(payloadBuf.toString('utf8'));
+  } catch {
+    return null;
+  }
+
+  // Strictly enforce HS256 (blocks alg: "none" and algorithm confusion attacks)
+  if (!header || header.alg !== 'HS256') return null;
+  if (!payload || typeof payload !== 'object') return null;
+
+  const expectedSig = crypto.createHmac('sha256', secret).update(`${headerB64}.${payloadB64}`).digest();
+  if (expectedSig.length !== providedSig.length || !crypto.timingSafeEqual(expectedSig, providedSig)) {
+    return null;
+  }
+
+  const nowSec = Math.floor(Date.now() / 1000);
+  if (typeof payload.exp !== 'number' || payload.exp <= nowSec) return null;
+  if (!payload.sub && !payload.id) return null;
+
+  return {
+    ...payload,
+    sub: String(payload.sub || payload.id),
+    role: String(payload.role || '').toUpperCase(),
+  };
+}
+
+function verifyBridgeSecret(req) {
+  const configured = String(process.env.BRIDGE_SHARED_SECRET || '').trim();
+  if (configured.length < 16) {
+    return { ok: false, status: 503, error: 'BRIDGE_SHARED_SECRET is not configured on bridge server' };
+  }
+  const provided = String(req.headers['x-bridge-secret'] || '').trim();
+  if (!provided || !timingSafeCompareStrings(provided, configured)) {
+    return { ok: false, status: 403, error: 'Invalid or missing X-Bridge-Secret header' };
+  }
+  return { ok: true };
+}
+
+// Strict Allowlist CORS Middleware (Zero wildcard '*', Zero blind reflection)
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  res.setHeader('Vary', 'Origin');
+
+  if (origin && isOriginAllowed(origin)) {
+    const cleanOrigin = origin.trim().replace(/\/+$/, '');
+    res.setHeader('Access-Control-Allow-Origin', cleanOrigin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+  }
+
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'Content-Type, Authorization, Accept, X-Database-Context, X-Database-Key, X-Bridge-Secret, X-Sql-Server-Host, X-Sql-Server-Port, X-Local-Portproxy-Target'
+  );
+  res.setHeader('Access-Control-Max-Age', '86400');
+
   if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+    if (origin && !isOriginAllowed(origin)) {
+      return res.status(403).json({ success: false, error: 'CORS origin not allowed' });
+    }
+    return res.status(204).end();
   }
   next();
 });
 
-app.use(express.json());
+app.use(express.json({ limit: '5mb' }));
 
 let activeConfig = {
   server: process.env.DB_SERVER || '100.68.121.85',
   port: parseInt(process.env.DB_PORT || '1433', 10),
   user: process.env.DB_USER || 'sa',
-  password: process.env.DB_PASSWORD || process.env.MSSQL_PASSWORD || 'sa123456789',
+  password: process.env.DB_PASSWORD || process.env.MSSQL_PASSWORD || '',
   database: process.env.DB_NAME || 'MK_Khalil_Db_2026',
   options: {
     encrypt: false,
@@ -59,7 +213,7 @@ let currentPool = null;
 async function getPool(overrideConfig = null) {
   if (overrideConfig) {
     if (typeof overrideConfig === 'string') {
-      const targetDb = overrideConfig;
+      const targetDb = sanitizeDatabaseName(overrideConfig);
       if (activeConfig.database !== targetDb) {
         if (currentPool) {
           try { await currentPool.close(); } catch (_) {}
@@ -70,7 +224,8 @@ async function getPool(overrideConfig = null) {
     } else if (typeof overrideConfig === 'object') {
       const newServer = overrideConfig.server || overrideConfig.host;
       const newPort = overrideConfig.port ? parseInt(overrideConfig.port, 10) : activeConfig.port;
-      const newDb = overrideConfig.database || overrideConfig.db;
+      const rawNewDb = overrideConfig.database || overrideConfig.db;
+      const newDb = rawNewDb ? sanitizeDatabaseName(rawNewDb) : null;
 
       const needsRebuild = 
         (newServer && activeConfig.server !== newServer) || 
@@ -169,16 +324,8 @@ function updateConfig(newConfig = {}) {
   return getConfig();
 }
 
-// Intercept incoming connection overrides from headers and query parameters dynamically
-app.use((req, res, next) => {
-  const host = req.query.host || req.query.sql_server_host || req.headers['x-sql-server-host'];
-  const port = req.query.port || req.query.sql_server_port || req.headers['x-sql-server-port'];
-  const portProxy = req.query.portProxyTarget || req.query.local_portproxy_target || req.headers['x-local-portproxy-target'];
-  if (host || port || portProxy) {
-    updateConfig({ host, port, portProxyTarget: portProxy });
-  }
-  next();
-});
+// Security Hardening (P0-B): Unauthenticated global DB host/port override middleware removed.
+// Bridge network configuration can ONLY be modified via authenticated Admin + X-Bridge-Secret POST /api/system/config.
 
 // ============================================================================
 // 1. Proactive Fast Socket Probe & Circuit Breaker Architecture
@@ -303,8 +450,14 @@ function executeSqlRawJson(sqlQuery, targetDb = 'Tarabot_Data_2026') {
     const psScript = `
       $ErrorActionPreference = "Stop"
       try {
-        $connString = 'Server=.\\SQLEXPRESS;Database=${targetDb};User Id=sa;Password=sa123456789;TrustServerCertificate=True;Timeout=5;'
-        $conn = New-Object System.Data.SqlClient.SqlConnection($connString)
+        $csb = New-Object System.Data.SqlClient.SqlConnectionStringBuilder
+        $csb["Data Source"] = ".\\SQLEXPRESS"
+        $csb["Initial Catalog"] = $env:ECO_SQL_DB
+        $csb["User ID"] = $env:ECO_SQL_USER
+        $csb["Password"] = $env:ECO_SQL_PWD
+        $csb["TrustServerCertificate"] = $true
+        $csb["Connect Timeout"] = 5
+        $conn = New-Object System.Data.SqlClient.SqlConnection($csb.ConnectionString)
         $conn.Open()
         $cmd = $conn.CreateCommand()
         $cmd.CommandText = @"
@@ -338,7 +491,13 @@ ${cleanQuery}
 
     execFile('powershell', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', psScript], {
       maxBuffer: 25 * 1024 * 1024,
-      encoding: 'utf8'
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        ECO_SQL_DB: targetDb,
+        ECO_SQL_USER: DB_USER || 'sa',
+        ECO_SQL_PWD: DB_PASSWORD || '',
+      },
     }, (error, stdout, stderr) => {
       if (error) {
         return reject(new Error(stderr || error.message));
@@ -455,10 +614,103 @@ async function getDatabasePool(dbName = process.env.DB_NAME || 'MK_Khalil_Db_202
 // Backward-compatible alias
 // (getPool is defined as standalone dynamic pool function above)
 
-// Universal Context Middleware (Extract target DB from Header or Query Param)
+// Universal Context Middleware (Extract and sanitize target DB from Header or Query Param)
 app.use((req, res, next) => {
-  req.targetDb = req.headers['x-database-context'] || req.query.db || req.query.databaseContext || process.env.DB_NAME || 'MK_Khalil_Db_2026';
+  const rawTargetDb = req.headers['x-database-context'] || req.query.db || req.query.databaseContext || process.env.DB_NAME || 'MK_Khalil_Db_2026';
+  req.targetDb = sanitizeDatabaseName(String(rawTargetDb));
   next();
+});
+
+// Minimal public liveness endpoint (zero sensitive host/DB internals exposed)
+app.get('/api/health', (req, res) => {
+  res.json({ ok: true, status: 'healthy' });
+});
+
+// Centralized Deny-by-Default Auth + Server-Side RBAC + Bridge Secret Guard (P0-B)
+const BRIDGE_ADMIN_ROLES = new Set(['SUPER_ADMIN', 'ADMIN']);
+const BRIDGE_FINANCE_ROLES = new Set(['SUPER_ADMIN', 'ADMIN', 'FINANCE_OFFICER', 'FINANCE', 'MANAGER']);
+const BRIDGE_HR_ROLES = new Set(['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR_SPECIALIST', 'HR', 'MANAGER']);
+
+app.use((req, res, next) => {
+  const p = (req.path || '/').replace(/\/+$/, '') || '/';
+  // Strict public allowlist: OPTIONS preflight & GET /api/health ONLY
+  if (req.method === 'OPTIONS' || (req.method === 'GET' && p === '/api/health')) {
+    return next();
+  }
+
+  const secret = resolveBridgeJwtSecret();
+  if (!secret) {
+    return res.status(503).json({
+      success: false,
+      error: 'Authentication service misconfigured: JWT_SECRET is required in production',
+    });
+  }
+
+  const authHeader = String(req.headers.authorization || '');
+  const match = authHeader.match(/^Bearer\s+(.+)$/i);
+  const token = match ? match[1].trim() : '';
+  if (!token) {
+    return res.status(401).json({ success: false, error: 'Authentication required (Bearer token missing)' });
+  }
+
+  const payload = verifyJwtNode(token, secret);
+  if (!payload) {
+    return res.status(401).json({ success: false, error: 'Invalid or expired authentication token' });
+  }
+
+  req.authUser = payload;
+  const role = String(payload.role || '').toUpperCase();
+
+  // Hard-locked bridge control endpoints: require BOTH Admin JWT AND timing-safe X-Bridge-Secret
+  if (p === '/api/system/query' || p === '/api/system/config' || p === '/api/system/settings') {
+    if (!BRIDGE_ADMIN_ROLES.has(role)) {
+      return res.status(403).json({ success: false, error: 'Forbidden: Administrator role required' });
+    }
+    const bridgeCheck = verifyBridgeSecret(req);
+    if (!bridgeCheck.ok) {
+      return res.status(bridgeCheck.status).json({ success: false, error: bridgeCheck.error });
+    }
+    return next();
+  }
+
+  // Other /api/system/* endpoints require Admin role
+  if (p.startsWith('/api/system')) {
+    if (!BRIDGE_ADMIN_ROLES.has(role)) {
+      return res.status(403).json({ success: false, error: 'Forbidden: Administrator role required' });
+    }
+    return next();
+  }
+
+  // HR endpoints require HR/Admin/Manager roles
+  if (p.startsWith('/api/hr')) {
+    if (!BRIDGE_HR_ROLES.has(role)) {
+      return res.status(403).json({ success: false, error: 'Forbidden: HR privileges required' });
+    }
+    return next();
+  }
+
+  // Finance, Financial, Sales, Journal, SQL & status endpoints require Finance/Admin/Manager roles
+  if (
+    p.startsWith('/api/finance') ||
+    p.startsWith('/api/financial') ||
+    p.startsWith('/api/sales') ||
+    p.startsWith('/api/journal-entries') ||
+    p.startsWith('/api/sql') ||
+    p.startsWith('/api/general-journal') ||
+    p === '/api/status' ||
+    p === '/status'
+  ) {
+    if (!BRIDGE_FINANCE_ROLES.has(role)) {
+      return res.status(403).json({ success: false, error: 'Forbidden: Finance privileges required' });
+    }
+    return next();
+  }
+
+  // Default deny for unknown roles on any remaining bridge path
+  if (!BRIDGE_ADMIN_ROLES.has(role)) {
+    return res.status(403).json({ success: false, error: 'Forbidden: Insufficient privileges' });
+  }
+  return next();
 });
 
 // In-memory per-database cache for reactive performance
@@ -3422,29 +3674,38 @@ async function getFederationHealth() {
   }
 }
 
-// 3. Read-Only Query Console
+// 3. Read-Only Query Console (Strictly Admin + X-Bridge-Secret + Single-Statement Read-Only SELECT)
 async function executeFederatedQuery(sqlQuery, dbName = 'Tarabot_Data_2026') {
-  const cleanQuery = (sqlQuery || '').trim();
+  const safeDbName = sanitizeDatabaseName(dbName);
+  const cleanQuery = String(sqlQuery || '').trim().replace(/;+\s*$/, '');
   if (!cleanQuery) {
     throw new Error('نص الاستعلام البرمجي فارغ.');
   }
 
-  // Strict mutation prevention
-  const forbidden = /\b(ALTER|DROP|CREATE|INSERT|UPDATE|DELETE|TRUNCATE|EXEC|EXECUTE|GRANT|REVOKE|DENY|SHUTDOWN)\b/i;
+  // Reject multi-statement batching, SQL comments, and non-SELECT entry points
+  if (cleanQuery.includes(';') || cleanQuery.includes('--') || cleanQuery.includes('/*') || cleanQuery.includes('*/')) {
+    throw new Error('تم حظر الاستعلام: لا يُسمح بتعدد الأوامر أو التعليقات البرمجية في استعلامات القراءة.');
+  }
+  if (!/^(SELECT|WITH)\b/i.test(cleanQuery)) {
+    throw new Error('يُسمح فقط باستعلامات القراءة (SELECT / WITH).');
+  }
+
+  // Strict mutation, system-proc, and exfiltration prevention
+  const forbidden = /\b(ALTER|DROP|CREATE|INSERT|UPDATE|DELETE|TRUNCATE|MERGE|EXEC|EXECUTE|GRANT|REVOKE|DENY|SHUTDOWN|BACKUP|RESTORE|BULK|INTO|OPENROWSET|OPENDATASOURCE|OPENQUERY|WAITFOR|DBCC|RECONFIGURE)\b|\b(xp_|sp_)/i;
   if (forbidden.test(cleanQuery)) {
-    throw new Error('عمليات التعديل أو الحذف أو الإنشاء محظورة أمنياً بحسب سياسة الحوكمة. النظام يدعم فقط استعلامات القراءة (Read-Only SELECT).');
+    throw new Error('عمليات التعديل أو الحذف أو الإنشاء أو الإجراءات النظامية محظورة أمنياً. النظام يدعم فقط استعلامات القراءة الآمنة.');
   }
 
   const start = Date.now();
   try {
-    const pool = await getPool(dbName);
+    const pool = await getPool(safeDbName);
     const result = await pool.request().query(cleanQuery);
     const durationMs = Date.now() - start;
     const rows = result.recordset || [];
 
     return {
       success: true,
-      database: dbName,
+      database: safeDbName,
       rows,
       rowCount: rows.length,
       columns: rows.length > 0 ? Object.keys(rows[0]) : [],
@@ -3455,7 +3716,7 @@ async function executeFederatedQuery(sqlQuery, dbName = 'Tarabot_Data_2026') {
     const durationMs = Date.now() - start;
     return {
       success: false,
-      database: dbName,
+      database: safeDbName,
       rows: [],
       rowCount: 0,
       columns: [],
@@ -3641,7 +3902,7 @@ async function getMultiYearBalanceBridge() {
 // 0. Primary Financial Bridge Status & Health
 app.get(['/api/finance/status', '/api/status', '/status'], async (req, res) => {
   try {
-    const targetDb = req.query.db || req.headers['x-database-context'] || process.env.DB_NAME || 'MK_Khalil_Db_2026';
+    const targetDb = sanitizeDatabaseName(req.query.db || req.headers['x-database-context'] || process.env.DB_NAME || 'MK_Khalil_Db_2026');
     const pool = await getPool(targetDb);
     const result = await pool.request().query('SELECT 1 AS isAlive');
     res.json({
@@ -3845,6 +4106,15 @@ app.get('/api/finance/reports/statement', handleStatementOrLedger);
 app.get('/api/finance/ledger', handleStatementOrLedger);
 
 // Additional Core Endpoints (Context-Federated)
+app.get('/api/finance/status', async (req, res) => {
+  try {
+    const status = await getStatus(req.targetDb);
+    res.json(status);
+  } catch (err) {
+    res.status(500).json({ connected: false, error: err.message });
+  }
+});
+
 app.get('/api/finance/chart', async (req, res) => {
   try {
     const forceRefresh = req.query.refresh === 'true';
@@ -3852,6 +4122,56 @@ app.get('/api/finance/chart', async (req, res) => {
     res.json(accounts);
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/financial/chart-of-accounts/tree', async (req, res) => {
+  try {
+    const forceRefresh = req.query.refresh === 'true';
+    const flatAccounts = await getAccounts(forceRefresh, req.targetDb);
+    const l1Map = new Map();
+    for (const acc of flatAccounts || []) {
+      const l1Key = acc.level1Code || acc.Level1_ID || '1';
+      if (!l1Map.has(l1Key)) {
+        l1Map.set(l1Key, {
+          id: l1Key,
+          nameAr: acc.level1NameAr || acc.Level1_Name_A || `حساب رئيسي ${l1Key}`,
+          nameEn: acc.level1NameEn || acc.Level1_Name_E || '',
+          level: 1,
+          childrenMap: new Map(),
+        });
+      }
+      const l1 = l1Map.get(l1Key);
+      const l4Key = acc.level4Code || acc.Level4_ID || `${l1Key}01`;
+      if (!l1.childrenMap.has(l4Key)) {
+        l1.childrenMap.set(l4Key, {
+          id: l4Key,
+          nameAr: acc.level4NameAr || acc.Level4_Name_A || `حساب فرعي ${l4Key}`,
+          nameEn: acc.level4NameEn || acc.Level4_Name_E || '',
+          level: 4,
+          children: [],
+        });
+      }
+      l1.childrenMap.get(l4Key).children.push({
+        id: acc.code || acc.Level5_ID,
+        nameAr: acc.nameAr || acc.Level5_Name_A || '',
+        nameEn: acc.nameEn || acc.Level5_Name_E || '',
+        level: 5,
+        isLeaf: true,
+        debitBalance: Number(acc.debitBalance || 0),
+        creditBalance: Number(acc.creditBalance || 0),
+      });
+    }
+    const tree = Array.from(l1Map.values()).map((l1) => ({
+      id: l1.id,
+      nameAr: l1.nameAr,
+      nameEn: l1.nameEn,
+      level: 1,
+      children: Array.from(l1.childrenMap.values()),
+    }));
+    res.json({ success: true, tree });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 
@@ -3917,7 +4237,7 @@ let journalsFastCache = new Map();
 
 app.get(['/api/finance/journals', '/api/journal-entries', '/api/sql/general-journal', '/api/finance/general-journal', '/api/general-journal'], async (req, res) => {
   try {
-    const targetDb = req.query.db || req.headers['x-database-context'] || req.targetDb || process.env.DB_NAME || 'MK_Khalil_Db_2026';
+    const targetDb = sanitizeDatabaseName(req.query.db || req.headers['x-database-context'] || req.targetDb || process.env.DB_NAME || 'MK_Khalil_Db_2026');
     const force = req.query.force === 'true' || req.query.refresh === 'true';
     const cacheKey = String(targetDb).trim();
 
@@ -4010,14 +4330,8 @@ journalSummaryEndpoints.forEach(path => {
   });
 });
 
-// GET /api/finance/journals/:id/details
-const journalDetailRoutes = [
-  '/api/finance/journals/:id/details',
-  '/api/journal-entries/:id/details',
-  '/api/sql/general-journal/:id/details'
-];
-
-app.get(journalDetailRoutes, async (req, res) => {
+// GET /api/finance/journals/:id/details (explicit canonical registration + legacy aliases)
+const handleJournalDetails = async (req, res) => {
   try {
     const rawId = req.params.id;
     const cleanId = String(rawId).replace(/^JV-/, '').trim();
@@ -4067,7 +4381,7 @@ app.get(journalDetailRoutes, async (req, res) => {
             COALESCE(d.Account_Code, CAST(d.Level5_ID AS NVARCHAR(50))) AS [accountCode],
             COALESCE(a.Account_Name, d.Account_Name, N'حساب غير محدد') AS [accountName],
             ISNULL(d.Debit, 0) AS [debit],
-            ISNULL(Credit, 0) AS [credit],
+            ISNULL(d.Credit, 0) AS [credit],
             COALESCE(d.CostCenter_Code, CAST(d.Costcenter_ID AS NVARCHAR(50)), '') AS [costCenterCode],
             COALESCE(c.CostCenter_Name, d.CostCenter_Name, '') AS [costCenterName],
             COALESCE(d.Detail_Notes, d.Notes, d.Description, '') AS [lineNotes]
@@ -4104,18 +4418,26 @@ app.get(journalDetailRoutes, async (req, res) => {
     console.error(`[SQL Bridge Error] /api/finance/journals/${req.params.id}/details:`, err.message);
     res.status(500).json({ success: false, error: err.message, lines: [] });
   }
-});
+};
 
-app.get(['/api/finance/journals/:noteNo/lines', '/api/journal-entries/:noteNo/lines'], async (req, res) => {
+app.get('/api/finance/journals/:id/details', handleJournalDetails);
+app.get('/api/journal-entries/:id/details', handleJournalDetails);
+app.get('/api/sql/general-journal/:id/details', handleJournalDetails);
+
+const handleJournalLines = async (req, res) => {
   try {
     const lines = await getJournalLines(req.params.noteNo, req.targetDb);
     res.json(lines);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-});
+};
 
-app.post(['/api/finance/journals/save', '/api/financial/vouchers', '/api/finance/vouchers/save', '/api/journal-entries/save'], async (req, res) => {
+app.get('/api/finance/journals/:noteNo/lines', handleJournalLines);
+app.get('/api/journal-entries/:noteNo/lines', handleJournalLines);
+
+// Note: /api/finance/vouchers/save is owned exclusively by saveVoucher() above (zero route shadowing)
+const handleSaveJournal = async (req, res) => {
   try {
     const targetDb = req.query.db || req.headers['x-database-context'] || req.headers['x-database-key'] || req.targetDb || process.env.DB_NAME || 'MK_Khalil_Db_2026';
     const result = await saveJournal(req.body, targetDb);
@@ -4124,7 +4446,11 @@ app.post(['/api/finance/journals/save', '/api/financial/vouchers', '/api/finance
     console.error('[SQL Bridge Error] saveJournal:', err.message);
     res.status(400).json({ success: false, error: err.message });
   }
-});
+};
+
+app.post('/api/finance/journals/save', handleSaveJournal);
+app.post('/api/financial/vouchers', handleSaveJournal);
+app.post('/api/journal-entries/save', handleSaveJournal);
 
 app.delete(['/api/finance/journals/:id', '/api/financial/vouchers/:id', '/api/finance/vouchers/:id'], async (req, res) => {
   try {
@@ -4133,7 +4459,7 @@ app.delete(['/api/finance/journals/:id', '/api/financial/vouchers/:id', '/api/fi
     if (!noteNo || isNaN(noteNo)) {
       return res.status(400).json({ success: false, error: 'رقم السند غير صالح للحذف' });
     }
-    const targetDb = req.query.db || req.headers['x-database-context'] || req.headers['x-database-key'] || req.targetDb || process.env.DB_NAME || 'MK_Khalil_Db_2026';
+    const targetDb = sanitizeDatabaseName(req.query.db || req.headers['x-database-context'] || req.headers['x-database-key'] || req.targetDb || process.env.DB_NAME || 'MK_Khalil_Db_2026');
     const pool = await getPool(targetDb);
     const tx = new sql.Transaction(pool);
     await tx.begin();
@@ -4218,7 +4544,7 @@ app.get(['/api/financial/databases', '/api/finance/databases'], async (req, res)
 
 app.get(['/api/financial/vouchers/next-number', '/api/finance/journals/next-number', '/api/finance/vouchers/next-number'], async (req, res) => {
   try {
-    const targetDb = req.query.db || req.headers['x-database-context'] || req.headers['x-database-key'] || req.targetDb || process.env.DB_NAME || 'MK_Khalil_Db_2026';
+    const targetDb = sanitizeDatabaseName(req.query.db || req.headers['x-database-context'] || req.headers['x-database-key'] || req.targetDb || process.env.DB_NAME || 'MK_Khalil_Db_2026');
     const pool = await getPool(targetDb);
     const maxRes = await pool.request().query(`SELECT ISNULL(MAX(Note_No), 0) + 1 AS nextNo FROM [${targetDb}].dbo.GeneralLedger_Head`);
     res.json({ success: true, nextNo: Number(maxRes.recordset[0].nextNo) });
@@ -4250,6 +4576,114 @@ app.get('/api/finance/sales/invoices', (req, res) => {
 
 app.post('/api/finance/sales/save', (req, res) => {
   res.json(saveSalesInvoice(req.body));
+});
+
+// Phase 05 SalesClient 1:1 Parity Routes (/api/sales/*)
+const salesReturnsStore = [];
+const salesCustomClients = [];
+
+app.get('/api/sales/clients', (req, res) => {
+  const baseClients = (getClients() || []).map((c, idx) => ({
+    Level4_ID: Number(c.level4Id || 1204),
+    Client_ID: Number(c.id || c.Client_ID || 1204001 + idx),
+    Client_Name_A: c.nameAr || c.Client_Name_A || '',
+    Client_Name_E: c.nameEn || c.Client_Name_E || '',
+    Client_Status: Number(c.status || 0),
+    SalesMan_ID: Number(c.salesManId || 1),
+    Tel: c.phone || c.Tel || '',
+    Mobile: c.mobile || c.Mobile || '',
+    Manger_Name: c.managerName || c.Manger_Name || '',
+    C_Email: c.email || c.C_Email || '',
+    Card_No: c.taxId || c.Card_No || '',
+    Vat_No: c.vatNo || c.Vat_No || '',
+    Address: c.address || c.Address || '',
+    Limit_Amount: Number(c.creditLimit || c.Limit_Amount || 0),
+    Balance: Number(c.balance || c.Balance || 0),
+    Notice: c.notes || c.Notice || '',
+  }));
+  res.json({ success: true, data: [...salesCustomClients, ...baseClients] });
+});
+
+app.post('/api/sales/clients', (req, res) => {
+  const dto = req.body || {};
+  if (!dto.Client_Name_A || !String(dto.Client_Name_A).trim()) {
+    return res.status(400).json({ success: false, error: 'اسم العميل مطلوب' });
+  }
+  const created = {
+    Level4_ID: Number(dto.Level4_ID || 1204),
+    Client_ID: Date.now(),
+    Client_Name_A: String(dto.Client_Name_A).trim(),
+    Client_Name_E: dto.Client_Name_E || '',
+    Client_Status: 0,
+    SalesMan_ID: Number(dto.SalesMan_ID || 1),
+    Tel: dto.Tel || '',
+    Fax: dto.Fax || '',
+    Mobile: dto.Mobile || '',
+    Manger_Name: dto.Manger_Name || '',
+    C_Email: dto.C_Email || '',
+    Card_No: dto.Card_No || '',
+    Vat_No: dto.Vat_No || '',
+    Address: dto.Address || '',
+    Limit_Amount: Number(dto.Limit_Amount || 0),
+    Balance: 0,
+    Notice: dto.Notice || '',
+  };
+  salesCustomClients.unshift(created);
+  res.json({ success: true, data: created });
+});
+
+app.get('/api/sales/items', (req, res) => {
+  const items = (getItems() || []).map((it, idx) => ({
+    Item_ID: Number(it.id || it.Item_ID || 1001 + idx),
+    Item_Name_A: it.nameAr || it.Item_Name_A || '',
+    Item_Name_E: it.nameEn || it.Item_Name_E || '',
+    Item_Description: it.description || it.Item_Description || '',
+    Default_Unit_ID: Number(it.unitId || it.Default_Unit_ID || 1),
+    Unit_Name_A: it.unit || it.Unit_Name_A || 'وحدة',
+    Sales_Price: Number(it.price || it.salesPrice || it.Sales_Price || 0),
+    Last_Cost: Number(it.cost || it.Last_Cost || 0),
+    Vat_Per: Number(it.vatPer ?? it.Vat_Per ?? 14),
+    Level5_ID: Number(it.accountId || it.Level5_ID || 4101001),
+  }));
+  res.json({ success: true, data: items });
+});
+
+app.get('/api/sales/invoices', (req, res) => {
+  res.json({ success: true, data: getSalesInvoices() || [] });
+});
+
+app.get('/api/sales/invoices/:id', (req, res) => {
+  const id = String(req.params.id);
+  const list = getSalesInvoices() || [];
+  const found = list.find((inv) => String(inv.Note_No ?? inv.noteNo ?? inv.id) === id);
+  if (!found) {
+    return res.status(404).json({ success: false, error: `Sales invoice #${id} not found` });
+  }
+  res.json({ success: true, data: found });
+});
+
+app.post('/api/sales/invoices', (req, res) => {
+  try {
+    const saved = saveSalesInvoice(req.body);
+    res.json({ success: true, data: saved });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/sales/returns', (req, res) => {
+  res.json({ success: true, data: salesReturnsStore });
+});
+
+app.post('/api/sales/returns', (req, res) => {
+  const dto = req.body || {};
+  const record = {
+    ...dto,
+    Note_No: dto.Note_No || 5000 + salesReturnsStore.length + 1,
+    ItemsCount: Array.isArray(dto.lines) ? dto.lines.length : 0,
+  };
+  salesReturnsStore.unshift(record);
+  res.json({ success: true, data: record });
 });
 
 app.get('/api/finance/purchases/invoices', (req, res) => {
@@ -4343,67 +4777,7 @@ app.get('/api/finance/reports/cfo-metrics', async (req, res) => {
   }
 });
 
-// Live Database Auto-Discovery Route from SQL Server (sys.databases)
-app.all('/api/system/databases', async (req, res) => {
-  try {
-    const host = req.headers['x-sql-server-host'] || req.query.host || req.body?.host;
-    const port = req.headers['x-sql-server-port'] || req.query.port || req.body?.port;
-    const pool = await getPool(host ? { server: host, port } : null);
-
-    // Query real user databases and real sizes from SQL Server system catalogs
-    const query = `
-      SELECT 
-        d.name AS id,
-        d.name AS databaseName,
-        d.create_date AS createdDate,
-        d.state_desc AS state,
-        CASE 
-          WHEN d.name LIKE '%Salary%' OR d.name LIKE '%HR%' THEN 'Payroll'
-          WHEN d.name LIKE '%2026%' OR d.name LIKE '%Active%' THEN 'Active'
-          ELSE 'Archive'
-        END AS category,
-        -- Real size in MB from sys.master_files
-        ISNULL((
-          SELECT CAST(SUM(CAST(mf.size AS BIGINT)) * 8 / 1024 AS INT)
-          FROM sys.master_files mf 
-          WHERE mf.database_id = d.database_id
-        ), 0) AS sizeMB,
-        -- Live status check
-        DATABASEPROPERTYEX(d.name, 'Status') AS dbStatus
-      FROM sys.databases d
-      WHERE d.database_id > 4 -- Skip system DBs (master, tempdb, model, msdb)
-        AND d.state = 0
-      ORDER BY d.name ASC;
-    `;
-    const result = await pool.request().query(query);
-    console.log(`[SQL Bridge] Discovered ${result.recordset.length} databases with real sizes.`);
-
-    const databases = (result.recordset || []).map(d => ({
-      ...d,
-      name: d.databaseName || d.id,
-      displayNameAr: d.databaseName || d.id,
-      displayNameEn: d.databaseName || d.id,
-      createDate: d.createdDate,
-      status: d.dbStatus || d.state || 'ONLINE',
-      state: d.state || 'ONLINE',
-      category: d.category || 'Active',
-      sizeMB: Number(d.sizeMB || 0),
-      sizeMb: Number(d.sizeMB || 0),
-      dbStatus: d.dbStatus || 'ONLINE'
-    }));
-
-    res.json({
-      success: true,
-      databases,
-      server: activeConfig.server,
-      total: databases.length,
-      timestamp: new Date().toISOString()
-    });
-  } catch (err) {
-    console.error('[SQL Bridge Error] /api/system/databases:', err.message);
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
+// Note: /api/system/databases is handled by the single canonical route registered above (no shadowed duplicate).
 
 app.get(['/api/system/config', '/api/system/settings'], (req, res) => {
   res.json({
@@ -4484,14 +4858,13 @@ function emptyHrMemoryStore() {
   });
 }
 
+// Hard-blocked per RULE-005 / Core Law #9: never permit an app request to wipe HR records
 app.post('/api/hr/purge', (req, res) => {
-  emptyHrMemoryStore();
-  res.json({ success: true, purged: true, message: 'تم تفريغ وتصفير كافة سجلات الموارد البشرية بنجاح' });
+  res.status(403).json({ success: false, error: 'تم تعطيل مسار المسح الجماعي (/api/hr/purge) نهائياً لحماية بيانات الموارد البشرية' });
 });
 
 app.delete('/api/hr/purge', (req, res) => {
-  emptyHrMemoryStore();
-  res.json({ success: true, purged: true, message: 'تم تفريغ وتصفير كافة سجلات الموارد البشرية بنجاح' });
+  res.status(403).json({ success: false, error: 'تم تعطيل مسار المسح الجماعي (/api/hr/purge) نهائياً لحماية بيانات الموارد البشرية' });
 });
 
 app.get('/api/hr/:resource', (req, res) => {
@@ -4537,24 +4910,31 @@ app.delete('/api/hr/:resource/:id', (req, res) => {
 
 const PORT = process.env.PORT || 5000;
 let serverInstance = null;
-try {
-  serverInstance = app.listen(PORT, '0.0.0.0', () => {
-    console.log(`[SQL Bridge] Running on port ${PORT} (0.0.0.0:${PORT}) | Mode: ${circuitState.activeMode === 'LOCAL' ? 'LOCAL (Offline)' : 'REMOTE (Tailscale)'}`);
-  });
-  serverInstance.on('error', (err) => {
-    if (err.code === 'EADDRINUSE') {
-      console.warn(`[SQL Bridge] Warning: Port ${PORT} is already in use by another active process.`);
-      console.warn(`[SQL Bridge] The bridge is actively serving requests on port ${PORT}.`);
-    } else {
-      console.error('[SQL Bridge Server Error]:', err.message);
-    }
-  });
-} catch (e) {
-  console.log(`[SQL Bridge] Listen skipped:`, e.message);
+if (process.env.SQL_BRIDGE_NO_LISTEN !== '1') {
+  try {
+    serverInstance = app.listen(PORT, '0.0.0.0', () => {
+      console.log(`[SQL Bridge] Running on port ${PORT} (0.0.0.0:${PORT}) | Mode: ${circuitState.activeMode === 'LOCAL' ? 'LOCAL (Offline)' : 'REMOTE (Tailscale)'}`);
+    });
+    serverInstance.on('error', (err) => {
+      if (err.code === 'EADDRINUSE') {
+        console.warn(`[SQL Bridge] Warning: Port ${PORT} is already in use by another active process.`);
+        console.warn(`[SQL Bridge] The bridge is actively serving requests on port ${PORT}.`);
+      } else {
+        console.error('[SQL Bridge Server Error]:', err.message);
+      }
+    });
+  } catch (e) {
+    console.log(`[SQL Bridge] Listen skipped:`, e.message);
+  }
 }
 
 module.exports = {
   app,
+  verifyJwtNode,
+  createJwtNode,
+  verifyBridgeSecret,
+  isOriginAllowed,
+  resolveBridgeJwtSecret,
   getDatabasePool,
   getPool,
   sanitizeDatabaseName,

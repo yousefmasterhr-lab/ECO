@@ -149,34 +149,27 @@ export class FinancialClient {
   }
 
   public async getChartOfAccountsTree(): Promise<any[]> {
-    try {
-      const res = await fetch(`${this.baseUrl}/chart-of-accounts/tree`, {
-        headers: this.getHeaders(),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        return data.tree || [];
-      }
-    } catch {}
-
-    // Fallback: dynamic import from local verified dataset
-    const mod = await import('../data/tarabot_chart_of_accounts.json');
-    const rawList = mod.default || [];
-    return this.buildTreeFromFlatAccounts(rawList);
+    const res = await fetch(`${this.baseUrl}/chart-of-accounts/tree`, {
+      headers: this.getHeaders(),
+    });
+    if (!res.ok) {
+      const errText = await res.text().catch(() => '');
+      throw new Error(`Failed to fetch chart of accounts tree (HTTP ${res.status}): ${errText}`);
+    }
+    const data = await res.json();
+    return Array.isArray(data.tree) ? data.tree : [];
   }
 
   public async getNextVoucherNumber(): Promise<number> {
-    try {
-      const res = await fetch(`${this.baseUrl}/vouchers/next-number`, {
-        headers: this.getHeaders(),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        return Number(data.nextNo);
-      }
-    } catch {}
-
-    return 1001;
+    const res = await fetch(`${this.baseUrl}/vouchers/next-number`, {
+      headers: this.getHeaders(),
+    });
+    if (!res.ok) {
+      const errText = await res.text().catch(() => '');
+      throw new Error(`Failed to fetch next voucher number (HTTP ${res.status}): ${errText}`);
+    }
+    const data = await res.json();
+    return Number(data.nextNo);
   }
 
   public async saveAndPostVoucher(payload: ClientVoucherPayload): Promise<{ success: boolean; noteNo: number; message: string }> {
@@ -255,90 +248,6 @@ export class FinancialClient {
       console.error('[financialClient] saveAndPostVoucher error:', e);
       throw new Error(e.message || 'فشل الاتصال بقاعدة البيانات المركزية لترحيل القيد المحاسبي.');
     }
-  }
-
-  private buildTreeFromFlatAccounts(accounts: any[]): any[] {
-    const l1Map = new Map<string, any>();
-    const l2Map = new Map<string, any>();
-    const l3Map = new Map<string, any>();
-    const l4Map = new Map<string, any>();
-
-    for (const acc of accounts) {
-      // Level 1
-      if (!l1Map.has(acc.Level1_ID)) {
-        l1Map.set(acc.Level1_ID, {
-          id: Number(acc.Level1_ID),
-          code: String(acc.Level1_ID),
-          nameAr: acc.Level1_Name_A,
-          nameEn: acc.Level1_Name_A,
-          level: 1,
-          children: [],
-        });
-      }
-
-      // Level 2
-      const l2Key = `${acc.Level1_ID}_${acc.Level2_ID}`;
-      if (!l2Map.has(l2Key)) {
-        const l2Node = {
-          id: Number(acc.Level2_ID),
-          code: String(acc.Level2_ID),
-          nameAr: acc.Level2_Name_A,
-          nameEn: acc.Level2_Name_A,
-          level: 2,
-          parentId: Number(acc.Level1_ID),
-          children: [],
-        };
-        l2Map.set(l2Key, l2Node);
-        l1Map.get(acc.Level1_ID).children.push(l2Node);
-      }
-
-      // Level 3
-      const l3Key = `${acc.Level2_ID}_${acc.Level3_ID}`;
-      if (!l3Map.has(l3Key)) {
-        const l3Node = {
-          id: Number(acc.Level3_ID),
-          code: String(acc.Level3_ID),
-          nameAr: acc.Level3_Name_A,
-          nameEn: acc.Level3_Name_A,
-          level: 3,
-          parentId: Number(acc.Level2_ID),
-          children: [],
-        };
-        l3Map.set(l3Key, l3Node);
-        l2Map.get(l2Key).children.push(l3Node);
-      }
-
-      // Level 4
-      const l4Key = `${acc.Level3_ID}_${acc.Level4_ID}`;
-      if (!l4Map.has(l4Key)) {
-        const l4Node = {
-          id: Number(acc.Level4_ID),
-          code: String(acc.Level4_ID),
-          nameAr: acc.Level4_Name_A,
-          nameEn: acc.Level4_Name_A,
-          level: 4,
-          parentId: Number(acc.Level3_ID),
-          children: [],
-        };
-        l4Map.set(l4Key, l4Node);
-        l3Map.get(l3Key).children.push(l4Node);
-      }
-
-      // Level 5 Leaf
-      const l5Node = {
-        id: Number(acc.Level5_ID),
-        code: String(acc.Level5_ID),
-        nameAr: acc.Level5_Name_A,
-        nameEn: acc.Level5_Name_E || acc.Level5_Name_A,
-        level: 5,
-        parentId: Number(acc.Level4_ID),
-        accountNature: Number(acc.Account_Nature || 0),
-        isLeaf: true,
-      };
-      l4Map.get(l4Key).children.push(l5Node);
-    }
-
-    return Array.from(l1Map.values());
   }
 }
 

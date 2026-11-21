@@ -181,7 +181,7 @@ export function getSqlServerConfig(): SqlServerBaseConfig {
     server: process.env.DB_SERVER || '100.68.121.85',
     port: parseInt(process.env.DB_PORT || '1433', 10),
     user: process.env.DB_USER || 'sa',
-    password: process.env.DB_PASSWORD || process.env.MSSQL_PASSWORD || 'sa123456789',
+    password: process.env.DB_PASSWORD || process.env.MSSQL_PASSWORD || '',
     options: {
       encrypt: false,
       trustServerCertificate: true,
